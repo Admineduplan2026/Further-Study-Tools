@@ -99,15 +99,15 @@ textarea{min-height:110px;resize:vertical}
 .opt:hover{border-color:var(--ink)}
 .opt[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft)}
 
-/* Scholarships: three-page flow */
+/* Scholarship and Faculty step flows */
 .stepper{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:8px 28px;font-size:14px;color:var(--muted)}
 .stepper li{display:flex;align-items:center;gap:10px}
 .stepper li span{flex:none;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;border:1px solid #b9c1c9;font-weight:500}
 .stepper li[aria-current="step"]{color:var(--ink);font-weight:500}
 .stepper li[aria-current="step"] span{background:var(--brand);border-color:var(--brand);color:#fff}
 .stepper li.done span{background:var(--brand-soft);border-color:var(--brand-soft);color:var(--brand)}
-button.pick{font:inherit;text-align:left;color:var(--ink);background:#fff;cursor:pointer;align-items:flex-start;width:100%}
-button.pick:hover{border-color:var(--ink)}
+button.pick,a.pick{font:inherit;text-align:left;color:var(--ink);background:#fff;cursor:pointer;align-items:flex-start;width:100%;text-decoration:none}
+button.pick:hover,a.pick:hover{border-color:var(--ink)}
 button.pick[aria-pressed="true"]{border-color:var(--brand);background:var(--brand-soft);box-shadow:inset 0 0 0 1px var(--brand)}
 .pick .name{font-size:18px;font-weight:500;line-height:1.3}
 .pick .desc{font-size:15px;color:var(--muted)}

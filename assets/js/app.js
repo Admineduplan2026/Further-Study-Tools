@@ -2,7 +2,6 @@
 "use strict";
 /* ---------- Data (sample; replace with real partner data) ---------- */
 var FIELDS={med:"Medicine & Health",eng:"Engineering",cs:"Computer Science & IT",biz:"Business & Finance",design:"Design & Creative Arts",law:"Law",edu:"Education",sci:"Science",hosp:"Hospitality & Tourism",comm:"Communication & Media"};
-var INTERESTS={help:"Helping people",build:"Building and fixing things",computers:"Computers and coding",numbers:"Numbers and money",design:"Drawing and design",argue:"Debating and arguing a case",teach:"Teaching and explaining",experiments:"Experiments and discovery",travel:"Food, travel and hosting",write:"Writing and media",lead:"Running a business"};
 var COURSES=[
  {name:"Bachelor of Medicine and Surgery (MBBS)",field:"med",level:"Degree",years:5,int:["help","experiments"]},
  {name:"Diploma in Nursing",field:"med",level:"Diploma",years:3,int:["help"]},
@@ -47,6 +46,9 @@ var QUESTIONS=[
 /* ---------- Helpers ---------- */
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
 var SCH=window.EDUPLAN_SCHOLARSHIPS||{types:[]};
+var FAC=window.EDUPLAN_FACULTIES||{fields:[]};
+function facField(code){for(var i=0;i<FAC.fields.length;i++){if(FAC.fields[i].code===code)return FAC.fields[i];}return null;}
+function facCourse(f,id){for(var i=0;i<f.courses.length;i++){if(f.courses[i].id===id)return f.courses[i];}return null;}
 function schType(id){for(var i=0;i<SCH.types.length;i++){if(SCH.types[i].id===id)return SCH.types[i];}return null;}
 function uni(id){for(var i=0;i<UNIS.length;i++){if(UNIS[i].id===id)return UNIS[i];}return null;}
 function unisFor(field){return UNIS.filter(function(u){return u.fields.indexOf(field)>-1;});}
@@ -56,13 +58,6 @@ var ARROW='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="c
 function store(k,v){try{if(v===undefined){var r=localStorage.getItem(k);return r?JSON.parse(r):null;}localStorage.setItem(k,JSON.stringify(v));}catch(e){}return null;}
 
 /* ---------- Pure logic ---------- */
-function matchCourses(picked,level){
-  return COURSES.map(function(c){
-    var hit=c.int.filter(function(x){return picked.indexOf(x)>-1;}).length;
-    return {c:c,hit:hit,pct:Math.round(100*hit/Math.max(1,picked.length))};
-  }).filter(function(r){return r.hit>0&&(!level||r.c.level===level);})
-    .sort(function(a,b){return b.pct-a.pct||b.hit-a.hit||a.c.years-b.c.years;});
-}
 function guidedResult(answers){
   var score={},level=null;
   answers.forEach(function(ai,qi){var q=QUESTIONS[qi];if(ai==null)return;var v=q.a[ai][1];
@@ -73,13 +68,11 @@ function guidedResult(answers){
   var pref=list.filter(function(c){return level==="Diploma"?c.level==="Diploma":level==="Degree"?(c.level==="Degree"&&c.years<=4):level==="Long"?c.level==="Degree":true;});
   return {fields:top,level:level,courses:pref.length?pref:list};
 }
-window.__eduplan={matchCourses:matchCourses,guidedResult:guidedResult};
+window.__eduplan={guidedResult:guidedResult};
 
 /* ---------- State ---------- */
-var S={int:{picked:["computers","numbers"],level:""},
-       guide:{step:0,answers:[]},
+var S={guide:{step:0,answers:[]},
        cons:store("eduplan-consult")||{},consDone:null,
-       courseField:"",
        schType:null,schPick:{}};
 
 /* ---------- Views ---------- */
@@ -106,32 +99,24 @@ V.about=function(){return ''+
  '</div></section>'+
  '<section class="panel"><h2>Ready to talk?</h2><p class="muted">A counsellor will go through your options with you and your family.</p><div><a class="btn" href="#consultation">Book a free consultation</a></div></section>';
 };
-V.courses=function(){
- var list=COURSES.filter(function(c){return !S.courseField||c.field===S.courseField;});
- return '<section class="stack"><span class="eyebrow">Courses</span><h1>Browse courses by field</h1><p class="lead">Durations are typical for Malaysia and vary by institution.</p></section>'+
- '<section class="section"><div class="field" style="max-width:340px"><label for="course-field">Field of study</label><select id="course-field">'+opts(FIELDS,S.courseField,"All fields")+'</select></div>'+
- '<p class="muted" aria-live="polite">'+list.length+' course'+(list.length===1?"":"s")+' shown</p><div class="grid">'+
- list.map(function(c){return '<div class="item"><h3>'+esc(c.name)+'</h3><div class="meta"><span class="pill brand">'+esc(FIELDS[c.field])+'</span><span class="pill">'+c.level+'</span><span class="pill">'+years(c.years)+'</span></div><p>Offered at '+unisFor(c.field).map(function(u){return esc(u.name);}).join(", ")+'.</p></div>';}).join("")+
- '</div></section>';
-};
 V.universities=function(){return ''+
  '<section class="stack"><span class="eyebrow">Universities</span><h1>Partner universities and colleges</h1><p class="lead">Placeholder institutions. Replace them with your real partners before launch.</p></section>'+
  '<section class="grid">'+UNIS.map(function(u){return '<div class="item"><h3>'+esc(u.name)+'</h3><p>'+esc(u.city)+'</p><div class="meta">'+u.fields.map(function(f){return '<span class="pill brand">'+esc(FIELDS[f])+'</span>';}).join("")+'</div><p>'+esc(u.hostel)+'.</p></div>';}).join("")+'</section>';
 };
 /* Scholarship-based: Page 1 is the entry button, Page 2 picks the type, Page 3 shows that type.
    Page 3 is only reachable after a type is chosen on Page 2 (see route()). */
-function stepper(step,last){
- var names=["Scholarship-based","Scholarship type",last||"Requirements or tuition waiver"];
+function stepper(names,step){
  return '<ol class="stepper" aria-label="Progress">'+names.map(function(n,k){var cur=k+1===step;return '<li'+(cur?' aria-current="step"':(k+1<step?' class="done"':''))+'><span aria-hidden="true">'+(k+1)+'</span>Page '+(k+1)+': '+esc(n)+'</li>';}).join("")+'</ol>';
 }
+function schStepper(step,last){return stepper(["Scholarship-based","Scholarship type",last||"Requirements or tuition waiver"],step);}
 function schCta(note){return '<div class="row"><a class="btn" href="#consultation" data-topic="Scholarships"'+(note?' data-note="'+esc(note)+'"':'')+'>Ask a counsellor about scholarships</a></div>';}
 V.scholarships=function(){
- return '<section class="stack">'+stepper(2)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
+ return '<section class="stack">'+schStepper(2)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
  '<span class="eyebrow">Option 1 · Scholarship based</span><h1>Choose a scholarship type</h1><p class="lead">Scholarships come from two places. Pick one to continue.</p></section>'+
  '<section class="grid">'+SCH.types.map(function(t){return '<button type="button" class="item pick" data-schtype="'+esc(t.id)+'"><span class="name">'+esc(t.label)+'</span><span class="desc">'+esc(t.desc)+'</span><span class="textlink">Continue '+ARROW+'</span></button>';}).join("")+'</section>';
 };
 function schPage3(t){
- var head='<section class="stack">'+stepper(3,t.kind==="waiver"?"Tuition waiver":"Requirements")+'<div><a class="btn ghost" href="#scholarships">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>';
+ var head='<section class="stack">'+schStepper(3,t.kind==="waiver"?"Tuition waiver":"Requirements")+'<div><a class="btn ghost" href="#scholarships">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>';
  if(t.kind==="waiver"){
   return head+'<h1>Tuition waiver by university</h1><p class="lead">'+esc(t.desc)+'.</p></section>'+
   '<section class="grid">'+t.universities.map(function(u){return '<div class="item"><h3>'+esc(u.name)+'</h3><table class="tiers"><thead><tr><th scope="col">SPM result</th><th scope="col">Tuition waiver</th></tr></thead><tbody>'+
@@ -149,25 +134,36 @@ function schPage3(t){
 }
 SCH.types.forEach(function(t){V["scholarships-"+t.id]=function(){return schPage3(t);};});
 
+/* Interest-based: Page 1 is the entry button, Page 2 picks a faculty (00-10), Page 3 lists its courses,
+   Page 4 lists the universities offering the chosen course. Routes: #faculty, #faculty/05, #faculty/05/biotechnology. */
+var FAC_STEPS=["Interest-based","Faculty","Courses","Universities"];
+V.faculty=function(){
+ var f=S.fac&&S.fac.field,c=S.fac&&S.fac.course;
+ if(c)return facUnis(f,c);
+ if(f)return facCourses(f);
+ return '<section class="stack">'+stepper(FAC_STEPS,2)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
+ '<span class="eyebrow">Option 2 · Interest based</span><h1>Choose a faculty</h1><p class="lead">Pick the field you are interested in to see its courses.</p></section>'+
+ '<section class="grid">'+FAC.fields.map(function(f){return '<a class="item pick" href="#faculty/'+esc(f.code)+'"><span class="big">'+esc(f.code)+'</span><span class="name">'+esc(f.name)+'</span><span class="desc">'+esc(f.zh)+'</span><span class="hint">'+f.courses.length+' course'+(f.courses.length===1?'':'s')+'</span></a>';}).join("")+'</section>';
+};
+function facCourses(f){
+ return '<section class="stack">'+stepper(FAC_STEPS,3)+'<div><a class="btn ghost" href="#faculty">Back</a></div>'+
+ '<span class="eyebrow">Faculty '+esc(f.code)+'</span><h1>'+esc(f.name)+'</h1><p class="lead">'+esc(f.zh)+'. Choose a course to see which universities offer it.</p></section>'+
+ '<section class="grid">'+f.courses.map(function(c){return '<a class="item pick" href="#faculty/'+esc(f.code)+'/'+esc(c.id)+'"><span class="name">'+esc(c.name)+'</span><span class="desc">'+esc(c.desc)+'</span><span class="textlink">See universities '+ARROW+'</span></a>';}).join("")+'</section>';
+}
+function facUnis(f,c){
+ var list=c.universities||[];
+ return '<section class="stack">'+stepper(FAC_STEPS,4)+'<div><a class="btn ghost" href="#faculty/'+esc(f.code)+'">Back</a></div>'+
+ '<span class="eyebrow">Faculty '+esc(f.code)+' · '+esc(f.name)+'</span><h1>'+esc(c.name)+'</h1><p class="lead">'+esc(c.desc)+'</p></section>'+
+ '<section class="section"><h2>Universities offering this course</h2>'+
+ (list.length?'<div class="grid">'+list.map(function(u){return '<div class="item"><h3>'+esc(u.name)+'</h3>'+(u.note?'<p>'+esc(u.note)+'</p>':'')+'</div>';}).join("")+'</div>'
+  :'<div class="empty">The university list for this course is being prepared. A counsellor can tell you which universities offer it.</div>')+
+ '<div class="row"><a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(c.name)+'.">Ask a counsellor about this course</a></div></section>';
+}
+
 V.accommodation=function(){return ''+
  '<section class="stack"><span class="eyebrow">Accommodation</span><h1>Where you will stay</h1><p class="lead">Hostel options at each institution. Monthly rent is a placeholder figure.</p></section>'+
  '<section class="grid">'+UNIS.map(function(u){return '<div class="item"><span class="big">'+(u.rent?"RM "+u.rent:"Rental help")+'</span><span class="hint">'+(u.rent?"per month, shared room":"no hostel on campus")+'</span><h3>'+esc(u.name)+'</h3><p>'+esc(u.city)+'. '+esc(u.hostel)+'.</p></div>';}).join("")+'</section>'+
  '<section class="panel"><h2>Need help choosing a hostel?</h2><div><a class="btn" href="#consultation">Ask a counsellor</a></div></section>';
-};
-
-V["interest-match"]=function(){
- var p=S.int.picked,res=p.length?matchCourses(p,S.int.level):[];
- return '<section class="stack"><span class="eyebrow">Option 2 · Interest based</span><h1>Turn what you enjoy into a course</h1><p class="lead">Pick up to three things you enjoy.</p></section>'+
- '<section class="two"><div class="panel"><div class="fields">'+
-  '<div class="field"><span class="legend" id="int-legend">I enjoy ('+p.length+' of 3 picked)</span><div class="chips" role="group" aria-labelledby="int-legend">'+
-   Object.keys(INTERESTS).map(function(k){var on=p.indexOf(k)>-1;return '<button type="button" class="chip" data-int="'+k+'" aria-pressed="'+on+'"'+(!on&&p.length>=3?" disabled":"")+'>'+esc(INTERESTS[k])+'</button>';}).join("")+'</div></div>'+
-  '<div class="field"><label for="int-level">Level</label><select id="int-level"><option value="">Diploma or degree</option><option value="Diploma"'+(S.int.level==="Diploma"?" selected":"")+'>Diploma only</option><option value="Degree"'+(S.int.level==="Degree"?" selected":"")+'>Degree only</option></select></div>'+
- '</div></div>'+
- '<div class="results" aria-live="polite"><h2>'+(p.length?res.length+' course'+(res.length===1?"":"s")+' match':'Your matches appear here')+'</h2>'+
-  (!p.length?'<div class="empty">Pick at least one interest to see matching courses.</div>'
-   :res.length?res.map(function(r){var c=r.c;return '<div class="res"><div class="score"><span class="big">'+r.pct+'%</span><small>match</small></div><div class="body"><h3>'+esc(c.name)+'</h3><div class="meta"><span class="pill brand">'+esc(FIELDS[c.field])+'</span><span class="pill">'+c.level+'</span><span class="pill">'+years(c.years)+'</span></div><p>Offered at '+unisFor(c.field).map(function(u){return esc(u.name);}).join(", ")+'.</p></div></div>';}).join("")
-   :'<div class="empty">No course matches at this level. Choose "Diploma or degree" to see more.</div>')+
-  '<div class="row"><a class="btn" href="#consultation" data-topic="Choosing a course">Talk through these with a counsellor</a></div></div></section>';
 };
 
 V.guided=function(){
@@ -214,17 +210,25 @@ V.consultation=function(){
 /* ---------- Router ---------- */
 var app=document.getElementById("app");
 function route(){
- var h=(location.hash||"#home").slice(1),r=h;
+ var h=(location.hash||"#home").slice(1),r=h,view;
  if(r==="scholarship-match")r="scholarships";
+ if(r==="courses"||r==="interest-match")r="faculty";
  if(r.indexOf("scholarships-")===0&&S.schType!==r.slice(13))r="scholarships";
- if(!V[r])r="home";
+ S.fac=null;
+ if(r.indexOf("faculty/")===0){
+  var p=r.split("/"),f=facField(p[1]),c=f&&p[2]?facCourse(f,p[2]):null;
+  r=f?"faculty/"+f.code+(c?"/"+c.id:""):"faculty";
+  if(f)S.fac={field:f,course:c};
+ }
+ view=r.indexOf("faculty/")===0?"faculty":r;
+ if(!V[view])r=view="home";
  if(r!==h&&h)history.replaceState(null,"","#"+r);
- return r;
+ return view;
 }
 function render(keepScroll){
  var r=route();
  app.innerHTML=V[r]();
- var navKey={"interest-match":"courses","guided":"","home":""}[r];
+ var navKey={"guided":"","home":""}[r];
  if(navKey===undefined)navKey=r.indexOf("scholarships-")===0?"scholarships":r;
  Array.prototype.forEach.call(document.querySelectorAll("nav.main a"),function(a){if(a.getAttribute("data-nav")===navKey)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
  if(!keepScroll){window.scrollTo(0,0);}
@@ -236,13 +240,10 @@ window.addEventListener("hashchange",function(){render(false);app.focus({prevent
 function readCons(){["cons-name","cons-phone","cons-email","cons-qual","cons-topic","cons-msg"].forEach(function(id){var el=document.getElementById(id);if(el)S.cons[id]=el.value;});store("eduplan-consult",S.cons);}
 app.addEventListener("change",function(ev){
  var t=ev.target,id=t.id;
- if(id==="course-field"){S.courseField=t.value;rerender(id);}
- else if(id==="int-level"){S.int.level=t.value;rerender(id);}
- else if(id&&id.indexOf("cons-")===0){readCons();}
+ if(id&&id.indexOf("cons-")===0){readCons();}
 });
 app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
- if(t.hasAttribute("data-int")){var k=t.getAttribute("data-int"),p=S.int.picked,ix=p.indexOf(k);if(ix>-1)p.splice(ix,1);else if(p.length<3)p.push(k);render(true);var b=app.querySelector('[data-int="'+k+'"]');if(b)b.focus();return;}
  if(t.hasAttribute("data-schtype")){S.schType=t.getAttribute("data-schtype");location.hash="#scholarships-"+S.schType;return;}
  if(t.hasAttribute("data-schpick")){S.schPick[S.schType]=t.getAttribute("data-schpick");render(true);var sp=app.querySelector('[data-schpick="'+S.schPick[S.schType]+'"]');if(sp)sp.focus();return;}
  if(t.hasAttribute("data-ans")){S.guide.answers[S.guide.step]=Number(t.getAttribute("data-ans"));rerender("guide-next");return;}
