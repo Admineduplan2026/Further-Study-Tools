@@ -312,6 +312,8 @@ function applyApi(d){
  return true;
 }
 
+/* A snapshot of the sheet data embedded in the page (used by the Claude artifact, which cannot call the API). */
+if(window.EDUPLAN_SHEET_DATA)applyApi(window.EDUPLAN_SHEET_DATA);
 render(false);
 if(window.EDUPLAN_API_URL&&window.fetch){
  fetch(window.EDUPLAN_API_URL).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
