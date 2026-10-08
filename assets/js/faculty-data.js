@@ -8,6 +8,7 @@ window.EDUPLAN_FACULTIES={
   fields:[
     {code:"00",name:"Generic programmes",zh:"通用课程",courses:[
       {id:"foundation",name:"Foundation / Asasi / Matrikulasi",desc:"预科",universities:[]},
+      {id:"form-6",name:"Form 6 / Tingkatan 6",desc:"中六（STPM）",universities:[]},
       {id:"languages-centre",name:"Centre for Languages / Pusat Bahasa",desc:"语言中心",universities:[]},
       {id:"general-studies",name:"General Studies / Pengajian Umum",desc:"通识课程",universities:[]}
     ]},
