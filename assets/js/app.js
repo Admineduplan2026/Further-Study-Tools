@@ -31,15 +31,25 @@ var UNIS=[
  {id:"e",name:"Sample College E",city:"Kuching",fields:["edu","biz","hosp"],hostel:"On-campus hostel",rent:300},
  {id:"f",name:"Sample University F",city:"Kuala Lumpur",fields:["law","biz","edu"],hostel:"No hostel. Eduplan helps you find a rented room nearby",rent:null}
 ];
+/* Each scholarship and its requirements live together. Step 1 shows name, summary, cover and type;
+   step 2 shows everything in "req". Leave language, documents or deadline as null until confirmed. */
 var SCHOLARSHIPS=[
- {name:"Merit Scholarship",uni:"a",min:"A",income:null,fields:null,cover:100,cocu:false,type:"Merit"},
- {name:"High Achiever Award",uni:"b",min:"A",income:null,fields:null,cover:50,cocu:false,type:"Merit"},
- {name:"Bursary for B40 Families",uni:"c",min:"C",income:["B40"],fields:null,cover:70,cocu:false,type:"Need-based"},
- {name:"Need-based Grant",uni:"d",min:"B",income:["B40","M40"],fields:null,cover:40,cocu:false,type:"Need-based"},
- {name:"Engineering Talent Scholarship",uni:"b",min:"B",income:null,fields:["eng"],cover:60,cocu:false,type:"Field-specific"},
- {name:"Future Teachers Award",uni:"e",min:"B",income:null,fields:["edu"],cover:50,cocu:false,type:"Field-specific"},
- {name:"Sports and Co-curricular Award",uni:"f",min:"C",income:null,fields:null,cover:30,cocu:true,type:"Sports & co-curricular"},
- {name:"Early Bird Tuition Waiver",uni:"c",min:"C",income:null,fields:null,cover:20,cocu:false,type:"Tuition waiver"}
+ {id:"merit",name:"Merit Scholarship",uni:"a",cover:100,type:"Merit",summary:"Full tuition for students with excellent results.",
+  req:{min:"A",income:null,fields:null,cocu:false,language:null,documents:null,deadline:null}},
+ {id:"high-achiever",name:"High Achiever Award",uni:"b",cover:50,type:"Merit",summary:"Half of tuition fees for top-scoring students.",
+  req:{min:"A",income:null,fields:null,cocu:false,language:null,documents:null,deadline:null}},
+ {id:"b40-bursary",name:"Bursary for B40 Families",uni:"c",cover:70,type:"Need-based",summary:"Support with fees for students from B40 households.",
+  req:{min:"C",income:["B40"],fields:null,cocu:false,language:null,documents:null,deadline:null}},
+ {id:"need-grant",name:"Need-based Grant",uni:"d",cover:40,type:"Need-based",summary:"Help with fees for students from B40 and M40 families.",
+  req:{min:"B",income:["B40","M40"],fields:null,cocu:false,language:null,documents:null,deadline:null}},
+ {id:"engineering-talent",name:"Engineering Talent Scholarship",uni:"b",cover:60,type:"Field-specific",summary:"For students starting an engineering course.",
+  req:{min:"B",income:null,fields:["eng"],cocu:false,language:null,documents:null,deadline:null}},
+ {id:"future-teachers",name:"Future Teachers Award",uni:"e",cover:50,type:"Field-specific",summary:"For students who want to become teachers.",
+  req:{min:"B",income:null,fields:["edu"],cocu:false,language:null,documents:null,deadline:null}},
+ {id:"sports-cocu",name:"Sports and Co-curricular Award",uni:"f",cover:30,type:"Sports & co-curricular",summary:"For students who represent their school, state or country.",
+  req:{min:"C",income:null,fields:null,cocu:true,language:null,documents:null,deadline:null}},
+ {id:"early-bird",name:"Early Bird Tuition Waiver",uni:"c",cover:20,type:"Tuition waiver",summary:"A tuition discount for students who register early.",
+  req:{min:"C",income:null,fields:null,cocu:false,language:null,documents:null,deadline:null}}
 ];
 var RANK={A:3,B:2,C:1};
 var QUESTIONS=[
@@ -57,6 +67,7 @@ var QUESTIONS=[
 
 /* ---------- Helpers ---------- */
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function scholarship(id){for(var i=0;i<SCHOLARSHIPS.length;i++){if(SCHOLARSHIPS[i].id===id)return SCHOLARSHIPS[i];}return null;}
 function uni(id){for(var i=0;i<UNIS.length;i++){if(UNIS[i].id===id)return UNIS[i];}return null;}
 function unisFor(field){return UNIS.filter(function(u){return u.fields.indexOf(field)>-1;});}
 function opts(map,sel,first){var h=first?'<option value="">'+esc(first)+'</option>':"";Object.keys(map).forEach(function(k){h+='<option value="'+esc(k)+'"'+(k===sel?" selected":"")+'>'+esc(map[k])+'</option>';});return h;}
@@ -67,11 +78,12 @@ function store(k,v){try{if(v===undefined){var r=localStorage.getItem(k);return r
 /* ---------- Pure logic ---------- */
 function matchScholarships(i){
   return SCHOLARSHIPS.filter(function(s){
-    if(RANK[i.grade]<RANK[s.min])return false;
-    if(s.income&&s.income.indexOf(i.income)===-1)return false;
-    if(s.cocu&&!i.cocu)return false;
+    var q=s.req;
+    if(RANK[i.grade]<RANK[q.min])return false;
+    if(q.income&&q.income.indexOf(i.income)===-1)return false;
+    if(q.cocu&&!i.cocu)return false;
     var u=uni(s.uni);
-    if(i.field){ if(s.fields){ if(s.fields.indexOf(i.field)===-1)return false; } else if(u.fields.indexOf(i.field)===-1)return false; }
+    if(i.field){ if(q.fields){ if(q.fields.indexOf(i.field)===-1)return false; } else if(u.fields.indexOf(i.field)===-1)return false; }
     return true;
   }).sort(function(a,b){return b.cover-a.cover;});
 }
@@ -99,7 +111,8 @@ var S={sch:{grade:"B",income:"M40",field:"",cocu:false},
        int:{picked:["computers","numbers"],level:""},
        guide:{step:0,answers:[]},
        cons:store("eduplan-consult")||{},consDone:null,
-       courseField:""};
+       courseField:"",
+       pick:{step:1,id:null}};
 
 /* ---------- Views ---------- */
 var V={};
@@ -137,10 +150,36 @@ V.universities=function(){return ''+
  '<section class="stack"><span class="eyebrow">Universities</span><h1>Partner universities and colleges</h1><p class="lead">Placeholder institutions. Replace them with your real partners before launch.</p></section>'+
  '<section class="grid">'+UNIS.map(function(u){return '<div class="item"><h3>'+esc(u.name)+'</h3><p>'+esc(u.city)+'</p><div class="meta">'+u.fields.map(function(f){return '<span class="pill brand">'+esc(FIELDS[f])+'</span>';}).join("")+'</div><p>'+esc(u.hostel)+'.</p></div>';}).join("")+'</section>';
 };
-V.scholarships=function(){return ''+
- '<section class="stack"><span class="eyebrow">Scholarships</span><h1>Scholarships you can apply for</h1><p class="lead">Answer four questions and see which ones fit you.</p><div><a class="btn" href="#scholarship-match">Find my scholarships</a></div></section>'+
- '<section class="grid">'+SCHOLARSHIPS.map(function(s){var u=uni(s.uni);return '<div class="item"><span class="big">'+s.cover+'%</span><span class="hint">of tuition fees</span><h3>'+esc(s.name)+'</h3><p>'+esc(u.name)+', '+esc(u.city)+'</p><div class="meta"><span class="pill">'+esc(s.type)+'</span><span class="pill">Minimum grade '+s.min+'</span>'+(s.income?'<span class="pill">'+s.income.join(" / ")+' families</span>':"")+'</div></div>';}).join("")+'</section>';
+function stepper(step){
+ var names=["Scholarship options","Requirements for the Scholarship"];
+ return '<ol class="stepper" aria-label="Progress">'+names.map(function(n,k){var cur=k+1===step;return '<li'+(cur?' aria-current="step"':(k+1<step?' class="done"':''))+'><span aria-hidden="true">'+(k+1)+'</span>Step '+(k+1)+': '+n+'</li>';}).join("")+'</ol>';
+}
+V.scholarships=function(){
+ var p=S.pick,sel=scholarship(p.id);
+ if(p.step===2&&sel)return reqView(sel);
+ return '<section class="stack"><span class="eyebrow">Scholarships</span><h1>Scholarships you can apply for</h1><p class="lead">Answer four questions and see which ones fit you.</p><div><a class="btn" href="#scholarship-match">Find my scholarships</a></div></section>'+
+ '<section class="section">'+stepper(1)+'<h2 id="pick-h">Choose a scholarship</h2>'+
+ '<div class="grid" role="group" aria-labelledby="pick-h">'+SCHOLARSHIPS.map(function(s){var u=uni(s.uni),on=s.id===p.id;return '<button type="button" class="item pick" data-pick="'+esc(s.id)+'" aria-pressed="'+on+'"><span class="big">'+s.cover+'%</span><span class="hint">of tuition fees</span><span class="name">'+esc(s.name)+'</span><span class="desc">'+esc(s.summary)+'</span><span class="desc">'+esc(u.name)+', '+esc(u.city)+'</span><span class="meta"><span class="pill">'+esc(s.type)+'</span>'+(on?'<span class="pill brand">Selected</span>':'')+'</span></button>';}).join("")+'</div>'+
+ '<div class="row"><button type="button" class="btn" id="pick-next"'+(sel?'':' disabled')+'>See requirements '+ARROW+'</button><span class="hint" aria-live="polite">'+(sel?'Selected: '+esc(sel.name):'Choose one scholarship to continue.')+'</span></div></section>';
 };
+function reqView(s){
+ var u=uni(s.uni),q=s.req,tbc='<span class="muted">To be confirmed</span>';
+ var rows=[
+  ["Academic results",'Minimum grade '+q.min+'<span class="hint">From SPM, UEC, STPM, A-Level or your latest results.</span>'],
+  ["Household income",q.income?esc(q.income.join(" / "))+' families':'Open to all income groups'],
+  ["Field of study",q.fields?q.fields.map(function(f){return esc(FIELDS[f]);}).join(", ")+' only':'Any field offered at '+esc(u.name)+': '+u.fields.map(function(f){return esc(FIELDS[f]);}).join(", ")],
+  ["Sports or co-curricular",q.cocu?'Required: I represent my school, state or country in sports or co-curricular activities.':'Not required'],
+  ["Language results",q.language?esc(q.language):tbc],
+  ["Documents to prepare",q.documents?'<ul>'+q.documents.map(function(d){return '<li>'+esc(d)+'</li>';}).join("")+'</ul>':tbc],
+  ["Application deadline",q.deadline?esc(q.deadline):tbc]
+ ];
+ return '<section class="stack">'+stepper(2)+'<div><button type="button" class="btn ghost" id="pick-back">Back to scholarship options</button></div>'+
+ '<span class="eyebrow">Requirements for the Scholarship</span><h1>'+esc(s.name)+'</h1><p class="lead">'+esc(u.name)+', '+esc(u.city)+'</p>'+
+ '<div class="meta"><span class="pill brand">'+s.cover+'% of tuition fees</span><span class="pill">'+esc(s.type)+'</span></div></section>'+
+ '<section class="panel"><h2>What you need to apply</h2><dl class="reqs">'+rows.map(function(r){return '<dt>'+r[0]+'</dt><dd>'+r[1]+'</dd>';}).join("")+'</dl>'+
+ '<p class="hint">Items marked "To be confirmed" are added once Eduplan confirms them with the university.</p>'+
+ '<div class="row"><a class="btn" href="#consultation" data-topic="Scholarships" data-note="Interested in: '+esc(s.name)+'.">Ask a counsellor about this scholarship</a></div></section>';
+}
 V.accommodation=function(){return ''+
  '<section class="stack"><span class="eyebrow">Accommodation</span><h1>Where you will stay</h1><p class="lead">Hostel options at each institution. Monthly rent is a placeholder figure.</p></section>'+
  '<section class="grid">'+UNIS.map(function(u){return '<div class="item"><span class="big">'+(u.rent?"RM "+u.rent:"Rental help")+'</span><span class="hint">'+(u.rent?"per month, shared room":"no hostel on campus")+'</span><h3>'+esc(u.name)+'</h3><p>'+esc(u.city)+'. '+esc(u.hostel)+'.</p></div>';}).join("")+'</section>'+
@@ -157,7 +196,7 @@ V["scholarship-match"]=function(){
   '<label class="check" for="sch-cocu"><input type="checkbox" id="sch-cocu"'+(i.cocu?" checked":"")+'><span>I represent my school, state or country in sports or co-curricular activities.</span></label>'+
  '</div></div>'+
  '<div class="results" aria-live="polite"><h2>'+res.length+' scholarship'+(res.length===1?"":"s")+' match</h2>'+
-  (res.length?res.map(function(s){var u=uni(s.uni);return '<div class="res"><div class="score"><span class="big">'+s.cover+'%</span><small>tuition</small></div><div class="body"><h3>'+esc(s.name)+'</h3><p>'+esc(u.name)+', '+esc(u.city)+'</p><div class="meta"><span class="pill">'+esc(s.type)+'</span><span class="pill">Minimum grade '+s.min+'</span>'+(s.fields?'<span class="pill brand">'+esc(FIELDS[s.fields[0]])+' only</span>':"")+'</div></div></div>';}).join("")
+  (res.length?res.map(function(s){var u=uni(s.uni);return '<div class="res"><div class="score"><span class="big">'+s.cover+'%</span><small>tuition</small></div><div class="body"><h3>'+esc(s.name)+'</h3><p>'+esc(u.name)+', '+esc(u.city)+'</p><div class="meta"><span class="pill">'+esc(s.type)+'</span><span class="pill">Minimum grade '+s.req.min+'</span>'+(s.req.fields?'<span class="pill brand">'+esc(FIELDS[s.req.fields[0]])+' only</span>':"")+'</div></div></div>';}).join("")
    :'<div class="empty">No scholarship fits these answers. Try "Any field", or book a consultation: a counsellor may know of awards that are not listed here.</div>')+
   '<div class="row"><a class="btn" href="#consultation" data-topic="Scholarships">Ask a counsellor about these</a></div></div></section>';
 };
@@ -230,7 +269,7 @@ function render(keepScroll){
  if(!keepScroll){window.scrollTo(0,0);}
 }
 function rerender(focusId){render(true);if(focusId){var el=document.getElementById(focusId);if(el)el.focus();}}
-window.addEventListener("hashchange",function(){render(false);app.focus({preventScroll:true});});
+window.addEventListener("hashchange",function(){if(route()==="scholarships")S.pick.step=1;render(false);app.focus({preventScroll:true});});
 
 /* ---------- Events (delegated) ---------- */
 function readCons(){["cons-name","cons-phone","cons-email","cons-qual","cons-topic","cons-msg"].forEach(function(id){var el=document.getElementById(id);if(el)S.cons[id]=el.value;});store("eduplan-consult",S.cons);}
@@ -247,6 +286,9 @@ app.addEventListener("change",function(ev){
 app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
  if(t.hasAttribute("data-int")){var k=t.getAttribute("data-int"),p=S.int.picked,ix=p.indexOf(k);if(ix>-1)p.splice(ix,1);else if(p.length<3)p.push(k);render(true);var b=app.querySelector('[data-int="'+k+'"]');if(b)b.focus();return;}
+ if(t.hasAttribute("data-pick")){S.pick.id=t.getAttribute("data-pick");render(true);var pb=app.querySelector('[data-pick="'+S.pick.id+'"]');if(pb)pb.focus();return;}
+ if(t.id==="pick-next"){if(scholarship(S.pick.id)){S.pick.step=2;rerender();window.scrollTo(0,0);app.focus({preventScroll:true});}return;}
+ if(t.id==="pick-back"){S.pick.step=1;rerender();window.scrollTo(0,0);var sb=app.querySelector('[data-pick="'+S.pick.id+'"]');if(sb)sb.focus({preventScroll:true});return;}
  if(t.hasAttribute("data-ans")){S.guide.answers[S.guide.step]=Number(t.getAttribute("data-ans"));rerender("guide-next");return;}
  if(t.id==="guide-next"){S.guide.step++;rerender();app.focus({preventScroll:true});return;}
  if(t.id==="guide-back"){S.guide.step=Math.max(0,S.guide.step-1);rerender();return;}
