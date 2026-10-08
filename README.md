@@ -8,6 +8,7 @@ The Eduplan website is a static site (no build step) made from the Eduplan artif
 ```
 index.html              page shell: header, navigation, footer
 assets/css/styles.css   all styles
+assets/js/config.js            EDUPLAN_API_URL: the school data API (empty = local data only)
 assets/js/scholarship-data.js  all scholarship data (Foundation and Campus scholarships)
 assets/js/faculty-data.js      all faculty data (fields 00-10, their courses, universities offering each)
 assets/js/app.js        page code, plus the sample data used by Guided questions, Universities and Accommodation
@@ -26,6 +27,12 @@ Scholarship-based flow: Page 1 is the "Scholarship based" button (home and About
 Page 2 (`#scholarships`) picks Foundation Scholarship or Campus Scholarship -> Page 3
 (`#scholarships-foundation` or `#scholarships-campus`). Page 3 opens only after a choice on Page 2.
 To add a foundation, university or waiver tier, edit `assets/js/scholarship-data.js` only.
+
+### School data from Google Sheets (API)
+
+Partner institutions fill in `data/eduplan-school-data.xlsx` (imported as a Google Sheet). The Apps Script in
+`apps-script/Code.gs` serves the rows marked Published = Yes as JSON, and the website loads them when
+`EDUPLAN_API_URL` is set in `assets/js/config.js`. Setup steps: `docs/google-sheet-api-setup.md`.
 
 ### Run it locally
 
