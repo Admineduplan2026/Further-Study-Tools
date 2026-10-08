@@ -87,7 +87,7 @@ var V={};
 V.home=function(){return ''+
  '<section class="stack"><h1>Specific Tools for Study Further</h1><p class="lead">Three ways to find your course and university. Free of charge.</p></section>'+
  '<section class="section"><div class="tools">'+
-  '<a class="tool t1" href="#scholarship-match"><span class="k">Option 1 · Scholarship based</span><span class="t">Don\'t Let Fees Decide Your Future: Match With a Scholarship</span><span class="go">Find my scholarships '+ARROW+'</span></a>'+
+  '<a class="tool t1" href="#scholarships"><span class="k">Option 1 · Scholarship based</span><span class="t">Don\'t Let Fees Decide Your Future: Match With a Scholarship</span><span class="go">Find my scholarships '+ARROW+'</span></a>'+
   '<a class="tool t2" href="#interest-match"><span class="k">Option 2 · Interest based</span><span class="t">From Interest to Career: Courses Matched to You in any field</span><span class="go">Match my interests '+ARROW+'</span></a>'+
   '<a class="tool t3" href="#guided"><span class="k">Option 3 · Guidance based</span><span class="t">From "I Don\'t Know" to "I\'m Enrolled", One Step at a Time</span><span class="go">Start the 5 questions '+ARROW+'</span></a>'+
  '</div><div><a class="textlink" href="#courses">Others: browse all courses '+ARROW+'</a></div></section>'+
@@ -100,7 +100,7 @@ V.home=function(){return ''+
 V.about=function(){return ''+
  '<section class="stack"><span class="eyebrow">About Us</span><h1>We lead students to the right place to study</h1><p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></section>'+
  '<section class="section"><h2>Three ways we guide you</h2><div class="grid">'+
-  '<div class="item"><h3>Scholarship based</h3><p>For students who need funding. We match your results and family income with scholarships you can apply for.</p><a class="textlink" href="#scholarship-match">Open the tool '+ARROW+'</a></div>'+
+  '<div class="item"><h3>Scholarship based</h3><p>For students who need funding. We match your results and family income with scholarships you can apply for.</p><a class="textlink" href="#scholarships">Open the tool '+ARROW+'</a></div>'+
   '<div class="item"><h3>Interest based</h3><p>For students who know what they enjoy. We turn your interests into courses and universities.</p><a class="textlink" href="#interest-match">Open the tool '+ARROW+'</a></div>'+
   '<div class="item"><h3>Guidance based</h3><p>For students who are still unsure. Five short questions, then a counsellor walks you through each step.</p><a class="textlink" href="#guided">Open the tool '+ARROW+'</a></div>'+
  '</div></section>'+

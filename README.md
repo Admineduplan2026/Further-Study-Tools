@@ -8,12 +8,18 @@ The Eduplan website is a static site (no build step) made from the Eduplan artif
 ```
 index.html              page shell: header, navigation, footer
 assets/css/styles.css   all styles
-assets/js/app.js        data (courses, universities, scholarships) and the three tools
+assets/js/scholarship-data.js  all scholarship data (Foundation and Campus scholarships)
+assets/js/app.js        data (courses, universities) and the three tools
 assets/img/             logo and the three tool card illustrations
 ```
 
 Pages (hash links): Home, About Us, Courses, Universities, Scholarships, Accommodation,
-Scholarship match, Interest match, Guided questions, and Free Consultation.
+Interest match, Guided questions, and Free Consultation.
+
+Scholarship-based flow: Page 1 is the "Scholarship based" button (home and About Us) ->
+Page 2 (`#scholarships`) picks Foundation Scholarship or Campus Scholarship -> Page 3
+(`#scholarships-foundation` or `#scholarships-campus`). Page 3 opens only after a choice on Page 2.
+To add a foundation, university or waiver tier, edit `assets/js/scholarship-data.js` only.
 
 ### Run it locally
 
@@ -32,6 +38,6 @@ pick the branch and the `/ (root)` folder, and save.
 
 The universities, scholarships, fees and contact details are placeholders. Replace:
 
-- the data arrays at the top of `assets/js/app.js` (`COURSES`, `UNIS`, `SCHOLARSHIPS`)
+- the data arrays at the top of `assets/js/app.js` (`COURSES`, `UNIS`)
 - `[YOUR PHONE NUMBER]`, `[YOUR EMAIL]` and `[YOUR OFFICE ADDRESS]` in `index.html` and `assets/js/app.js`
 - then remove the yellow "Sample data" banner at the top of `index.html`
