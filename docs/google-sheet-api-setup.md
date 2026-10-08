@@ -17,13 +17,16 @@
 
 ---
 
-## 一、建立 Google Sheet（约 3 分钟）
+## 一、Google Sheet
 
-1. 打开 Google Drive → **New → File upload**，上传 `data/eduplan-school-data.xlsx`。
-2. 右键点该文件 → **Open with → Google Sheets**。
-3. 在 Google Sheets 里按 **File → Save as Google Sheets**，之后只使用这份 Google 版本。
-4. 检查分页名称必须完全是：`Instructions`、`Institutions`、`Programmes`、`Campus Scholarships`、`Foundation Scholarships`、`Lists`。
-   第 2 行（蓝色小字）是 API 读取用的代码，**不要修改或删除**。
+Eduplan 的 Google Sheet「Eduplan School Data」已经建立好（分页、下拉选单、自动公式、保护范围都已设定）。
+如需另建一份，可上传 `data/eduplan-school-data.xlsx` 到 Google Drive → **Open with → Google Sheets** → **File → Save as Google Sheets**。
+
+分页名称必须完全是：`Instructions`、`Institutions`、`Programmes`、`Campus Scholarships`、`Foundation Scholarships`、`Lists`。
+第 2 行（蓝色小字）是 API 读取用的代码，**不要修改或删除**。
+
+**共享设定：** 不要使用「Anyone with the link → Editor」。请改为 **Restricted**（或 Viewer），再以 Editor 身份个别邀请学校。
+受保护的范围（标题行、Published 栏、Foundation Scholarships、Lists）只有表格拥有者能修改，但其他格子任何编辑者都能改，包括已发布的资料。
 
 ## 二、部署 API（约 5 分钟）
 
@@ -100,4 +103,13 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 | Check data 显示 "course … is not in the Lists sheet" | 课程栏不是从下拉选单选择的，请重新选择 |
 | 网站新增了 Faculty 课程 | 请 Eduplan 重新产生资料表的 `Lists` 分页，或在 Lists 的 J–M 栏加上同样格式的一行 |
 
-在 Claude 的 artifact 预览中，页面通常不能连接外部网址，所以 artifact 只会显示本地资料；正式网站（GitHub Pages 等）才会读取 API。
+## 九、Claude artifact 同步
+
+artifact 不能直接连接 API，所以改用「快照」：读取 Google Sheet → 用与 API 相同的规则转换 → 写入 artifact 页面。
+
+```
+node tools/sync-artifact.js <sheet-values.json> <artifact.html> <out.html>
+```
+
+`sheet-values.json` 是各分页从第 1 行开始的资料（institutions、programmes、campus、foundation、lists）。
+由 Claude 用 Google Sheets 连接器读取后执行，再重新发布 artifact；可设定为每日自动执行。
