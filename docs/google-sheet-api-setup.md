@@ -87,6 +87,8 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 - `course` 从下拉选单选择，对应网站的 Faculty 00–10 课程类别。
 - 金额只填数字（马币），日期用 `YYYY-MM-DD`。
 - 奖学金条件每行一项（在格子里按 Alt+Enter 或 Ctrl+Enter 换行）。
+- Campus Scholarships 的 `applies_to` 以 `Foundation Programmes` 或 `Undergraduate Programmes` 开头时，网站第 4 页会出现「考试（SPM / O-Level / UEC / STPM / A-Level）」和「Foundation / Undergraduate」按钮来筛选。
+  Foundation / Matriculation / Diploma 的 CGPA 条件，`qualification` 选 `Foundation`；SPM / O-Level 学生选 Undergraduate 时会显示这些条件。
 
 ## 七、以后修改 API 代码
 
