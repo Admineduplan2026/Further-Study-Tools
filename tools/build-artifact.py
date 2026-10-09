@@ -7,7 +7,7 @@ first=h.index("</style>")                      # host wrapper style ends here
 a=h.index("<style>",first)+len("<style>");b=h.index("</style>",a)
 h=h[:a]+"\n"+open("assets/css/styles.css").read()+"\n"+h[b:]
 a=h.index("<script>")+len("<script>");b=h.index("</script>",a)
-js="\n".join(open("assets/js/"+f).read() for f in ["config.js","scholarship-data.js","faculty-data.js","app.js"])
+js="\n".join(open("assets/js/"+f).read() for f in ["config.js","scholarship-data.js","faculty-data.js","app.js","i18n.js"])
 assert "EDUPLAN_SHEET_DATA=" not in js
 js=js.replace('"assets/img/founder.jpg"','"data:image/jpeg;base64,'+base64.b64encode(open("assets/img/founder.jpg","rb").read()).decode()+'"')
 open(sys.argv[2],"w").write(h[:a]+"\n"+js+"\n"+h[b:])

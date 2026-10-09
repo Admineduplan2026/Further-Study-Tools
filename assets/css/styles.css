@@ -3,7 +3,7 @@
 :root{
   --bg:#ffffff; --ink:#111418; --muted:#58616c; --line:#e3e7eb; --soft:#f3f6f8;
   --brand:#0a6ea8; --brand-soft:#e4f2fa; --ok:#12715b; --ok-soft:#e3f4ef; --warn:#8a5a00; --warn-soft:#fdf3d8; --err:#b3261e;
-  --display:'Outfit','Avenir Next','Segoe UI',sans-serif; --body:'Outfit','Avenir Next','Segoe UI',sans-serif;
+  --display:'Outfit','Avenir Next','Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif; --body:'Outfit','Avenir Next','Segoe UI','PingFang SC','Microsoft YaHei','Noto Sans SC',sans-serif;
   --r:20px;
 }
 *{box-sizing:border-box}
@@ -142,6 +142,11 @@ footer .cols div{display:flex;flex-direction:column;gap:4px}
   .score{width:auto;text-align:left;display:flex;align-items:baseline;gap:8px}
   .score small{margin:0}
 }
+.lang{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:3px;gap:2px;background:#fff}
+.lang button{font:inherit;font-size:13px;font-weight:500;min-height:36px;min-width:48px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--muted);cursor:pointer}
+.lang button:hover{color:var(--ink)}
+.lang button[aria-pressed="true"]{background:var(--ink);color:#fff}
+@media (max-width:820px){.bar .lang{order:2}.bar nav.main{order:3;flex-basis:100%}}
 .founder{display:grid;grid-template-columns:160px minmax(0,1fr);gap:28px;align-items:center;border:1px solid var(--line);border-radius:var(--r);padding:28px}
 .avatar{width:160px;aspect-ratio:1;border-radius:50%;background:var(--brand-soft);color:var(--brand);display:grid;place-items:center;overflow:hidden}
 .avatar img{width:100%;height:100%;object-fit:cover}
