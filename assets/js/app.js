@@ -124,10 +124,10 @@ var JOURNEY=[["Discover","Find the field of study you aspire to","#faculty"],["C
  ["Fund","Check the scholarships you qualify for","#scholarships"],["Enrol","We guide you all the way to registration","#consultation"]];
 V.about=function(){return ''+
  '<section class="stack" data-reveal><span class="eyebrow">About Us</span><h1>We lead students to the right place to study</h1><p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></section>'+
- '<section class="mission" data-reveal><span class="eyebrow">Our mission</span><p class="mission-text">'+esc(MISSION)+'</p>'+
-  '<ol class="journey">'+JOURNEY.map(function(j,k){return '<li style="--i:'+k+'"><a href="'+j[2]+'"><span class="jn">'+(k+1)+'</span><span class="jt">'+esc(j[0])+'</span><span class="jd">'+esc(j[1])+'</span></a></li>';}).join("")+'</ol></section>'+
  '<section class="vision" data-reveal><span class="eyebrow">Our vision</span><p class="mission-text">'+esc(VISION)+'</p>'+
   '<ul class="vpoints">'+VISION_POINTS.map(function(v,k){return '<li style="--i:'+k+'"><span class="vt">'+esc(v[0])+'</span><span class="vd">'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
+ '<section class="mission" data-reveal><span class="eyebrow">Our mission</span><p class="mission-text">'+esc(MISSION)+'</p>'+
+  '<ol class="journey">'+JOURNEY.map(function(j,k){return '<li style="--i:'+k+'"><a href="'+j[2]+'"><span class="jn" aria-hidden="true"></span><span class="jt">'+esc(j[0])+'</span><span class="jd">'+esc(j[1])+'</span></a></li>';}).join("")+'</ol></section>'+
  '<section class="section" data-reveal><h2>Meet our founder</h2>'+founderCard(FOUNDER)+'</section>'+
  '<section class="section"><h2 data-reveal>Three ways we guide you</h2><div class="grid lift">'+
   '<div class="item" data-reveal style="--i:0"><h3>Scholarship based</h3><p>For students who need funding. We match your results and family income with scholarships you can apply for.</p><a class="textlink" href="#scholarships">Open the tool '+ARROW+'</a></div>'+

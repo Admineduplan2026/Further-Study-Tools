@@ -161,7 +161,9 @@ footer .cols div{display:flex;flex-direction:column;gap:4px}
 .journey li{position:relative;z-index:1}
 .journey a{display:flex;flex-direction:column;gap:6px;text-decoration:none;color:var(--ink);border-radius:14px;padding:0 4px 4px}
 .jn{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid var(--brand);color:var(--brand);font-weight:500;transition:background .2s,color .2s,transform .2s}
-.journey a:hover .jn,.journey a:focus-visible .jn{background:var(--brand);color:#fff;transform:scale(1.08)}
+.jn::after{content:"";width:12px;height:12px;border-radius:50%;background:var(--brand);transition:background .2s}
+.journey a:hover .jn,.journey a:focus-visible .jn{background:var(--brand);transform:scale(1.08)}
+.journey a:hover .jn::after,.journey a:focus-visible .jn::after{background:#fff}
 .jt{font-weight:500;margin-top:6px}
 .jd{font-size:14px;color:var(--muted)}
 .vision{border-radius:var(--r);padding:40px 32px;background:var(--ink);color:#fff;display:flex;flex-direction:column;gap:22px}
