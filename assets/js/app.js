@@ -450,10 +450,11 @@ function applyApi(d){
  (d.institutions||[]).forEach(function(i){inst[i.institution_id]=i;});
  FAC.fields.forEach(function(f){f.courses.forEach(function(c){c.universities=[];courses[c.id]=c;});});
  (d.programmes||[]).forEach(function(p){
-  var c=courses[p.course_id],i=inst[p.institution_id];if(!c||!i)return;
+  var i=inst[p.institution_id];if(!i)return;
+  uniq([p.course_id].concat(p.also_course_ids||[])).forEach(function(id){var c=courses[id];if(!c)return;
   c.universities.push({inst:p.institution_id,name:i.short_name||i.name,place:[i.city,i.state].filter(Boolean).join(", "),campus:p.campus,programme:p.programme_name,level:p.level,mode:p.study_mode,
    years:p.duration_years,intakes:p.intakes,fee:p.tuition_fee_rm,entry:p.entry_spm,uec:p.entry_uec,olevel:p.entry_olevel,stpm:p.entry_stpm,entry_other:p.entry_other,english:p.english_requirement,
-   deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes});
+   deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes});});
  });
  var campus=schType("campus"),fnd=schType("foundation");
  if(campus){

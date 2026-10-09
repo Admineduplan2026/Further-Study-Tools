@@ -48,7 +48,7 @@ var CACHE_SECONDS = 21600;    // cached JSON is kept up to 6 hours, but replaced
 var FIELDS = {
   institutions: ['institution_id*', 'name*', 'short_name', 'type*', 'state', 'city', 'website', 'admissions_email',
     'admissions_phone', 'whatsapp', 'hostel', 'hostel_fee_min', 'hostel_fee_max', 'last_updated'],
-  programmes: ['programme_id*', 'institution_id*', 'course*', 'programme_name*', 'level*', 'study_mode', 'duration_years',
+  programmes: ['programme_id*', 'institution_id*', 'course*', 'also_in_courses', 'programme_name*', 'level*', 'study_mode', 'duration_years',
     'intakes', 'campus', 'entry_spm', 'entry_uec', 'entry_olevel', 'entry_stpm', 'entry_other', 'english_requirement', 'tuition_fee_rm', 'mqa_reference',
     'application_deadline', 'apply_url', 'notes', 'last_updated'],
   campus: ['scholarship_id*', 'institution_id*', 'scholarship_name', 'type', 'qualification*', 'minimum_result*',
@@ -227,6 +227,13 @@ function buildEduplanData(values, formatDate, generatedAt) {
     }
     mine(read('programmes', school.programmes, label)).forEach(function (p) {
       p.course_id = courseIds[p.course] || '';
+      // Optional extra courses the programme is also listed under (one dropdown label per line).
+      p.also_course_ids = [];
+      String(p.also_in_courses || '').split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean).forEach(function (l) {
+        if (courseIds[l]) { if (p.also_course_ids.indexOf(courseIds[l]) < 0 && courseIds[l] !== p.course_id) p.also_course_ids.push(courseIds[l]); }
+        else skipped.push({ sheet: p._sheet, row: p._row, reason: 'also_in_courses "' + l + '" is not in the Lists sheet (the programme is still shown under its main course)' });
+      });
+      delete p.also_in_courses;
       if (p.course_id) { programmes.push(p); return; }
       skipped.push({ sheet: p._sheet, row: p._row, reason: 'course "' + p.course + '" is not in the Lists sheet' });
     });
