@@ -91,16 +91,30 @@ V.home=function(){return ''+
   '<div class="stack"><span class="n">Step 3</span><h3>Talk to a counsellor</h3><p class="muted">Book a free consultation. We guide you from application to registration.</p></div>'+
  '</div></section>';
 };
-/* About Us: founder profile. Replace the [BRACKETED] placeholders; photo is an image URL or path (empty shows a placeholder). */
-var FOUNDER={name:"[FOUNDER NAME]",role:"Founder & CEO",photo:"",
- bio:"[Short introduction: education and work background, years of experience in education counselling, and why Eduplan was started.]",
+/* About Us: founder profile, from his Facebook profile. Replace [FOUNDER NAME]; photo is an image path (empty shows a placeholder). */
+var FOUNDER={name:"[FOUNDER NAME]",role:"Founder & CEO",photo:"assets/img/founder.jpg",
+ bio:"Founder and CEO of Eduplan, where he has led student guidance as Chief Education Advisor since May 2020. He has worked in higher education recruitment and student guidance since 2015, at BERJAYA University College, Xiamen University Malaysia and FSI Center 升学情报.",
+ honours:["PJM award recipient"],
+ career:[
+  {title:"Chief Education Advisor",org:"Eduplan",when:"May 2020 – Present"},
+  {title:"Manager",org:"FSI Center 升学情报",when:"Oct 2017 – Apr 2020",place:"Kajang, Malaysia"},
+  {title:"Student Recruitment",org:"Xiamen University Malaysia",when:"Jul 2016 – Sep 2017",place:"Sepang"},
+  {title:"Sales/Marketing",org:"BERJAYA University College",when:"Dec 2015 – Jul 2016",place:"Kuala Lumpur"}],
+ education:[{title:"Business Administration",org:"Universiti Tunku Abdul Rahman (UTAR)",when:"Class of 2008"}],
  facebook:"https://www.facebook.com/jiannsheng/"};
+function timeline(label,rows){
+ return rows&&rows.length?'<div class="stack tl"><h3>'+esc(label)+'</h3><ol class="timeline">'+rows.map(function(r){
+  return '<li><span class="tl-title">'+esc(r.title)+'</span><span class="tl-org">'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';
+}
 function founderCard(f){
- return '<div class="founder"><div class="avatar">'+(f.photo?'<img src="'+esc(f.photo)+'" alt="'+esc(f.name)+'">'
+ return '<div class="founder"><div class="avatar">'+(f.photo?'<img src="'+esc(f.photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan">'
    :'<svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="currentColor"/></svg>')+'</div>'+
-  '<div class="stack"><span class="eyebrow">'+esc(f.role)+'</span><h3 class="fname">'+esc(f.name)+'</h3><p class="muted">'+esc(f.bio)+'</p>'+
+  '<div class="stack"><span class="eyebrow">'+esc(f.role)+'</span><h3 class="fname">'+esc(f.name)+'</h3>'+
+  (f.honours&&f.honours.length?'<div class="meta">'+f.honours.map(function(h){return '<span class="pill brand">'+esc(h)+'</span>';}).join("")+'</div>':'')+
+  '<p class="muted">'+esc(f.bio)+'</p>'+
   '<div class="row">'+(f.facebook?'<a class="btn ghost" href="'+esc(f.facebook)+'" target="_blank" rel="noopener">Facebook '+ARROW+'</a>':'')+
-  '<a class="btn" href="#consultation">Book a free consultation</a></div></div></div>';
+  '<a class="btn" href="#consultation">Book a free consultation</a></div></div>'+
+  '<div class="founder-cv">'+timeline("Career",f.career)+timeline("Education",f.education)+'</div></div>';
 }
 V.about=function(){return ''+
  '<section class="stack"><span class="eyebrow">About Us</span><h1>We lead students to the right place to study</h1><p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></section>'+
