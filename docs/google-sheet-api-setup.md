@@ -1,37 +1,50 @@
 # Eduplan 院校资料表 + API 设定说明
 
-学校在 Google Sheet 填写资料 → Eduplan 审核（Published = Yes）→ 网站通过 API 自动显示。
+每所院校一份 Google Sheet，全部放在同一个 Google Drive 文件夹。学校填写 → Eduplan 审核（Published = Yes）→ 网站通过 API 自动显示。
 
 ```
-学校填写 Google Sheet ──► Apps Script API (/exec) ──► Eduplan 网站
-     (黄色格)          只输出 Published = Yes 的资料     Faculty 第 4 页、Scholarships
+Google Drive 文件夹「Eduplan School Data」
+├── 00 Master（Eduplan 专用，捷径）   Foundation Scholarships、Lists、API 代码
+├── TARUMT                              ┐
+├── UTAR                                ├ 每校一份：Institutions、Programmes、Campus Scholarships
+├── UCSI                                ┘
+└── _Template（新增学校时复制）        名称以 _ 开头的文件不会被读取
+        │
+        ▼
+Apps Script API (/exec) ──► 网站（约 1 分钟内更新）
+每日 5:47 同步 ──────────► Claude artifact
 ```
 
 所需文件（都在本仓库）：
 
 | 文件 | 用途 |
 |---|---|
-| `data/eduplan-school-data.xlsx` | 资料表模板，导入成 Google Sheet |
-| `apps-script/Code.gs` | API 代码，贴进 Google Sheet 的 Apps Script |
-| `assets/js/config.js` | 填入 API 网址，网站就会读取资料表 |
+| `apps-script/Code.gs` | API 代码，贴进 Master Sheet 的 Apps Script |
+| `assets/js/config.js` | API 网址 |
+| `tools/sync-artifact.js` | 把资料快照写进 Claude artifact |
+| `data/eduplan-school-data.xlsx` | 最初的单一资料表模板（已改为每校一份，仅作备份） |
 
 ---
 
-## 一、Google Sheet
+## 一、Google Drive 结构
 
-Eduplan 的 Google Sheet「Eduplan School Data」已经建立好（分页、下拉选单、自动公式、保护范围都已设定）。
-如需另建一份，可上传 `data/eduplan-school-data.xlsx` 到 Google Drive → **Open with → Google Sheets** → **File → Save as Google Sheets**。
+- 文件夹：**Eduplan School Data**（ID `1YlVGAe04L2BTQo7bzoLzG6wQl3mhaaoS`，写在 `Code.gs` 的 `SCHOOL_FOLDER_ID`）。
+- **每校一份 Sheet，文件名 = institution_id**（例如 `UTAR`）。该文件只能发布这个 institution_id 的资料；
+  在别校文件里填写的资料会被略过，Check data 会显示原因。
+- 每份学校 Sheet 有：`Instructions`、`Institutions`、`Programmes`、`Campus Scholarships`，以及隐藏的 `Lists`（下拉选单用）。
+- **Master Sheet**（Eduplan 专用）：`Foundation Scholarships`、`Lists`，以及 API 代码。课程类别对照以 Master 的 `Lists` 为准。
+- 受保护（只有 Eduplan 帐号能改）：标题行、Published 栏、Faculty (auto) 公式栏、Instructions、Lists。
 
-分页名称必须完全是：`Instructions`、`Institutions`、`Programmes`、`Campus Scholarships`、`Foundation Scholarships`、`Lists`。
-第 2 行（蓝色小字）是 API 读取用的代码，**不要修改或删除**。
+**新增一所学校：** 在文件夹里右键 `_Template` → **Make a copy** → 改名为该校的 institution_id（例如 `SEGI`），
+在 Institutions 第 4 行填写 institution_id（与文件名相同）、全名和类型，再以 Editor 身份分享给该校负责人。
 
-**共享设定：** 不要使用「Anyone with the link → Editor」。请改为 **Restricted**（或 Viewer），再以 Editor 身份个别邀请学校。
-受保护的范围（标题行、Published 栏、Foundation Scholarships、Lists）只有表格拥有者能修改，但其他格子任何编辑者都能改，包括已发布的资料。
+**共享：** 每份学校 Sheet 只分享给该校负责人（Editor）。不要使用「Anyone with the link」。
 
 ## 二、部署 API（约 5 分钟）
 
-1. 在 Google Sheet 里按 **Extensions → Apps Script**。
+1. 在 **Master Sheet** 里按 **Extensions → Apps Script**。
 2. 删除编辑器里原有的内容，把 `apps-script/Code.gs` 的全部内容贴上，按 **Save**。
+   部署的帐号必须能打开「Eduplan School Data」文件夹（第一次执行会要求 Google Drive 权限）。
 3. 按 **Deploy → New deployment**：
    - 左边齿轮选 **Web app**
    - Description：`Eduplan API`
@@ -69,7 +82,7 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 2. Eduplan 核对资料（尽量以学校官网或 MQA 资料为准）。
 3. 确认无误后，把 `Published` 改为 **Yes**。
 4. 顶部菜单 **Eduplan → Check data**：显示网站会看到多少笔资料，以及哪些行被略过、原因是什么（例如缺少必填项、院校编号不存在、课程类别不在清单中）。
-5. 需要立即生效时按 **Eduplan → Refresh website data now**；否则 5 分钟内自动更新。
+5. 网站约 1 分钟内自动更新（API 每 30 秒检查一次各文件的最后修改时间）；需要立即生效时按 **Eduplan → Refresh website data now**。
 
 要下架某笔资料：把 `Published` 改为 **No**。
 
@@ -101,6 +114,8 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 |---|---|
 | 打开 API 网址要求登入 | 部署时 Who has access 没选 **Anyone**，重新部署 |
 | 网站没有显示新资料 | 检查 `Published` 是否为 Yes；用 **Eduplan → Check data** 看是否被略过；按 Refresh |
+| Check data 显示 "belongs in its own sheet" | 该行的 institution_id 和文件名不同，请把资料移到该校自己的 Sheet |
+| Check data 没有列出某所学校 | 文件不在「Eduplan School Data」文件夹、文件名以 _ 开头，或部署 API 的帐号没有该文件的权限 |
 | Check data 显示 "institution_id … is not a published institution" | 该院校在 Institutions 分页尚未填写或尚未发布 |
 | Check data 显示 "course … is not in the Lists sheet" | 课程栏不是从下拉选单选择的，请重新选择 |
 | 网站新增了 Faculty 课程 | 请 Eduplan 重新产生资料表的 `Lists` 分页，或在 Lists 的 J–M 栏加上同样格式的一行 |
@@ -113,5 +128,6 @@ artifact 不能直接连接 API，所以改用「快照」：读取 Google Sheet
 node tools/sync-artifact.js <sheet-values.json> <artifact.html> <out.html>
 ```
 
-`sheet-values.json` 是各分页从第 1 行开始的资料（institutions、programmes、campus、foundation、lists）。
-由 Claude 用 Google Sheets 连接器读取后执行，再重新发布 artifact；可设定为每日自动执行。
+`sheet-values.json` 是各分页从第 1 行开始的资料：Master 的 `foundation`、`lists`，以及
+`schools`（文件夹里每份学校 Sheet 的 `institutions`、`programmes`、`campus`）。
+每天早上 5:47（马来西亚时间）由 Claude 自动读取文件夹里所有学校 Sheet、执行并重新发布 artifact。

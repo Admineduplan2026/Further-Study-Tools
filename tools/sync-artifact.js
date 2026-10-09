@@ -4,9 +4,12 @@
  *
  *   node tools/sync-artifact.js <sheet-values.json> <artifact.html> <out.html> [--if-changed]
  *
- * sheet-values.json holds the rows of each tab exactly as read from the sheet
- * (Google Sheets get_values, from row 1), keyed by:
- *   {"institutions": [[...], ...], "programmes": [...], "campus": [...], "foundation": [...], "lists": [...]}
+ * sheet-values.json holds the rows of each tab exactly as read (Google Sheets get_values, from row 1):
+ *   {"foundation": [[...], ...], "lists": [...],                      <- master sheet (Eduplan only)
+ *    "schools": [{"name": "UTAR", "institutions": [...], "programmes": [...], "campus": [...]}, ...]}
+ * with one "schools" entry per school sheet in the "Eduplan School Data" Drive folder
+ * (names starting with "_" are skipped by the API, so leave them out here too).
+ * The older single-sheet form {"institutions", "programmes", "campus", "foundation", "lists"} still works.
  * The rows go through the same transform as the Apps Script API (apps-script/Code.gs),
  * so the artifact shows exactly what the website would show. The snapshot is written as
  * window.EDUPLAN_SHEET_DATA, which assets/js/app.js applies before the first render.
@@ -23,9 +26,12 @@ const ctx = {};
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, "..", "apps-script", "Code.gs"), "utf8"), ctx);
 const values = JSON.parse(fs.readFileSync(valuesFile, "utf8"));
-for (const k of ["institutions", "programmes", "campus", "foundation", "lists"]) {
-  if (!Array.isArray(values[k])) { console.error("missing tab in sheet values: " + k); process.exit(1); }
-}
+const need = (obj, keys, where) => keys.forEach(k => {
+  if (!Array.isArray(obj[k])) { console.error("missing tab in sheet values: " + where + k); process.exit(1); }
+});
+need(values, ["foundation", "lists"], "");
+if (Array.isArray(values.schools)) values.schools.forEach(s => need(s, ["institutions", "programmes", "campus"], (s.name || "?") + " > "));
+else need(values, ["institutions", "programmes", "campus"], "");
 const data = ctx.buildEduplanData(values, null, new Date().toISOString());
 
 const MARK = "/* EDUPLAN_SHEET_DATA */";
@@ -35,7 +41,7 @@ const at = html.indexOf(MARK);
 const summary = {
   institutions: data.institutions.length, programmes: data.programmes.length,
   campus_scholarships: data.campus_scholarships.length, foundation_scholarships: data.foundation_scholarships.length,
-  skipped: data.skipped
+  sources: data.sources, skipped: data.skipped
 };
 if (ifChanged && at > -1) {
   const start = html.lastIndexOf("\n", at) + 1;

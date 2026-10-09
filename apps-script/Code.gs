@@ -1,18 +1,30 @@
 /**
  * Eduplan school data API (Google Apps Script).
  *
- * Paste this file into the Google Sheet made from data/eduplan-school-data.xlsx
- * (Extensions > Apps Script), then Deploy > New deployment > Web app,
- * "Execute as: Me", "Who has access: Anyone". The /exec URL it gives you goes into
- * assets/js/config.js on the website. See docs/google-sheet-api-setup.md.
+ * Data lives in one Google Drive folder ("Eduplan School Data", SCHOOL_FOLDER_ID below):
+ *   - one Google Sheet per school (TARUMT, UTAR, UCSI, ...) with the tabs
+ *     Institutions, Programmes and Campus Scholarships (+ a hidden Lists tab for the dropdowns);
+ *   - this master sheet (the one this script is bound to), Eduplan only, with
+ *     Foundation Scholarships and Lists.
+ * Each school sheet is named after its institution_id (UTAR, UCSI, ...) and may only publish that
+ * institution. Files whose name starts with "_" (for example "_Template") are ignored.
+ *
+ * Paste this file into the master sheet (Extensions > Apps Script), then
+ * Deploy > Manage deployments > Edit > Version: New version > Deploy (the /exec URL stays the same).
+ * The account that deploys it must be able to open the folder. See docs/google-sheet-api-setup.md.
  *
  * GET <url>            -> JSON with every row marked Published = Yes
- * GET <url>?nocache=1  -> same, skipping the 5-minute cache
+ * GET <url>?nocache=1  -> same, rebuilt from the sheets now
+ * Edits show up within about a minute: each request compares the folder's last-edit times
+ * (checked at most every FRESH_SECONDS) with the cached copy.
  *
  * Only the public columns listed in FIELDS are returned. Internal columns
  * (contact_person, contact_email) are never sent to the website.
  */
 
+var SCHOOL_FOLDER_ID = '1YlVGAe04L2BTQo7bzoLzG6wQl3mhaaoS';
+var SCHOOL_TABS = ['institutions', 'programmes', 'campus'];
+var MASTER_TABS = ['foundation', 'lists'];
 var SHEETS = {
   institutions: 'Institutions',
   programmes: 'Programmes',
@@ -22,8 +34,9 @@ var SHEETS = {
 };
 var KEY_ROW = 2;      // row holding the API keys
 var FIRST_ROW = 4;    // first data row
-var CACHE_KEY = 'eduplan-api-v1';
-var CACHE_SECONDS = 300;
+var CACHE_KEY = 'eduplan-api-v2';
+var FRESH_SECONDS = 30;       // how often the folder's last-edit times are re-checked
+var CACHE_SECONDS = 21600;    // cached JSON is kept up to 6 hours, but replaced as soon as a sheet changes
 
 // Public fields per sheet. Fields ending in * are required.
 var FIELDS = {
@@ -43,10 +56,16 @@ var NUMBERS = ['hostel_fee_min', 'hostel_fee_max', 'duration_years', 'tuition_fe
 function doGet(e) {
   var cache = CacheService.getScriptCache();
   var noCache = e && e.parameter && e.parameter.nocache;
-  var json = noCache ? null : cache.get(CACHE_KEY);
+  var stamp = cache.get(CACHE_KEY + ':stamp');
+  if (!stamp || noCache) {
+    stamp = editStamp_();
+    cache.put(CACHE_KEY + ':stamp', stamp, FRESH_SECONDS);
+  }
+  var key = CACHE_KEY + ':' + stamp;
+  var json = noCache ? null : cache.get(key);
   if (!json) {
     json = JSON.stringify(buildFromSheets_());
-    if (json.length < 90000) cache.put(CACHE_KEY, json, CACHE_SECONDS);
+    if (json.length < 90000) cache.put(key, json, CACHE_SECONDS);
   }
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
 }
@@ -61,6 +80,8 @@ function onOpen() {
 function showCheck() {
   var d = buildFromSheets_();
   var lines = [
+    'School sheets read: ' + (d.sources || []).join(', '),
+    '',
     'Published rows the website will show:',
     '  Institutions: ' + d.institutions.length,
     '  Programmes: ' + d.programmes.length,
@@ -74,17 +95,46 @@ function showCheck() {
 }
 
 function clearCache() {
-  CacheService.getScriptCache().remove(CACHE_KEY);
+  CacheService.getScriptCache().remove(CACHE_KEY + ':stamp');
   SpreadsheetApp.getUi().alert('Done. The website shows the latest published data on its next load.');
 }
 
-function buildFromSheets_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var tz = ss.getSpreadsheetTimeZone();
-  var values = {};
-  Object.keys(SHEETS).forEach(function (k) {
+/** School sheets in the folder (not starting with "_"), sorted by name. */
+function schoolFiles_() {
+  var out = [], it = DriveApp.getFolderById(SCHOOL_FOLDER_ID).getFilesByType(MimeType.GOOGLE_SHEETS);
+  var master = SpreadsheetApp.getActiveSpreadsheet().getId();
+  while (it.hasNext()) {
+    var f = it.next();
+    if (f.getId() !== master && f.getName().charAt(0) !== '_' && !f.isTrashed()) out.push(f);
+  }
+  return out.sort(function (a, b) { return a.getName() < b.getName() ? -1 : 1; });
+}
+
+/** Changes whenever any school sheet or the master sheet is edited, added or removed. */
+function editStamp_() {
+  var parts = schoolFiles_().map(function (f) { return f.getId() + ':' + f.getLastUpdated().getTime(); });
+  parts.push(DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId()).getLastUpdated().getTime());
+  var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, parts.join('|'));
+  return Utilities.base64EncodeWebSafe(digest).slice(0, 22);
+}
+
+function tabValues_(ss, keys) {
+  var out = {};
+  keys.forEach(function (k) {
     var sh = ss.getSheetByName(SHEETS[k]);
-    values[k] = sh ? sh.getDataRange().getValues() : [];
+    out[k] = sh ? sh.getDataRange().getValues() : [];
+  });
+  return out;
+}
+
+function buildFromSheets_() {
+  var master = SpreadsheetApp.getActiveSpreadsheet();
+  var tz = master.getSpreadsheetTimeZone();
+  var values = tabValues_(master, MASTER_TABS);
+  values.schools = schoolFiles_().map(function (f) {
+    var v = tabValues_(SpreadsheetApp.openById(f.getId()), SCHOOL_TABS);
+    v.name = f.getName();
+    return v;
   });
   return buildEduplanData(values, function (d) { return Utilities.formatDate(d, tz, 'yyyy-MM-dd'); }, new Date().toISOString());
 }
@@ -106,11 +156,16 @@ function buildEduplanData(values, formatDate, generatedAt) {
     return String(v).trim();
   }
 
-  function read(sheetKey, fieldKey) {
-    var rows = values[sheetKey] || [];
+  // Each school sheet is read on its own; a row may only use an institution_id that the same
+  // file defines on its Institutions tab, so one school cannot publish data for another.
+  // Older single-sheet data (institutions/programmes/campus at the top level) is read as one source.
+  var schools = values.schools || [{ name: '', institutions: values.institutions, programmes: values.programmes, campus: values.campus }];
+
+  function read(sheetKey, rows, label) {
+    rows = rows || [];
     if (rows.length < KEY_ROW) return [];
     var keys = rows[KEY_ROW - 1].map(function (k) { return String(k).trim(); });
-    var spec = FIELDS[fieldKey || sheetKey];
+    var spec = FIELDS[sheetKey];
     var out = [];
     for (var r = FIRST_ROW - 1; r < rows.length; r++) {
       var raw = {};
@@ -124,8 +179,9 @@ function buildEduplanData(values, formatDate, generatedAt) {
         if (f.slice(-1) === '*' && (v === '' || v === null)) missing.push(key);
         obj[key] = v;
       });
-      if (missing.length) { skipped.push({ sheet: SHEETS[sheetKey], row: r + 1, reason: 'missing ' + missing.join(', ') }); continue; }
+      if (missing.length) { skipped.push({ sheet: label + SHEETS[sheetKey], row: r + 1, reason: 'missing ' + missing.join(', ') }); continue; }
       obj._row = r + 1;
+      obj._sheet = label + SHEETS[sheetKey];
       out.push(obj);
     }
     return out;
@@ -138,37 +194,48 @@ function buildEduplanData(values, formatDate, generatedAt) {
     if (label && id) courseIds[label] = id;
   });
 
-  var institutions = read('institutions');
-  var known = {};
-  institutions.forEach(function (i) { known[i.institution_id] = true; });
-
-  function needsInstitution(list, sheetKey) {
-    return list.filter(function (x) {
-      if (known[x.institution_id]) return true;
-      skipped.push({ sheet: SHEETS[sheetKey], row: x._row, reason: 'institution_id ' + x.institution_id + ' is not a published institution' });
-      return false;
+  var institutions = [], programmes = [], campus = [], known = {}, sources = [];
+  schools.forEach(function (school) {
+    var label = school.name ? school.name + ' \u203a ' : '';
+    if (school.name) sources.push(school.name);
+    var own = {}, fileId = String(school.name || '').split(/[\s(]/)[0].toUpperCase();
+    read('institutions', school.institutions, label).forEach(function (i) {
+      if (fileId && String(i.institution_id).toUpperCase() !== fileId) {
+        skipped.push({ sheet: i._sheet, row: i._row, reason: 'institution_id ' + i.institution_id + ' belongs in its own sheet (this file is ' + school.name + ')' });
+        return;
+      }
+      if (known[i.institution_id]) {
+        skipped.push({ sheet: i._sheet, row: i._row, reason: 'institution_id ' + i.institution_id + ' is already used in ' + known[i.institution_id] });
+        return;
+      }
+      known[i.institution_id] = school.name || 'this sheet';
+      own[i.institution_id] = true;
+      institutions.push(i);
     });
-  }
-
-  var programmes = needsInstitution(read('programmes'), 'programmes').filter(function (p) {
-    p.course_id = courseIds[p.course] || '';
-    if (p.course_id) return true;
-    skipped.push({ sheet: SHEETS.programmes, row: p._row, reason: 'course "' + p.course + '" is not in the Lists sheet' });
-    return false;
+    function mine(list) {
+      return list.filter(function (x) {
+        if (own[x.institution_id]) return true;
+        skipped.push({ sheet: x._sheet, row: x._row, reason: 'institution_id ' + x.institution_id + ' is not a published institution in this sheet' });
+        return false;
+      });
+    }
+    mine(read('programmes', school.programmes, label)).forEach(function (p) {
+      p.course_id = courseIds[p.course] || '';
+      if (p.course_id) { programmes.push(p); return; }
+      skipped.push({ sheet: p._sheet, row: p._row, reason: 'course "' + p.course + '" is not in the Lists sheet' });
+    });
+    mine(read('campus', school.campus, label)).forEach(function (c) {
+      if (c.waiver_percent !== null || c.fixed_amount_rm !== null) { campus.push(c); return; }
+      skipped.push({ sheet: c._sheet, row: c._row, reason: 'fill in waiver_percent or fixed_amount_rm' });
+    });
   });
 
-  var campus = needsInstitution(read('campus'), 'campus').filter(function (s) {
-    if (s.waiver_percent !== null || s.fixed_amount_rm !== null) return true;
-    skipped.push({ sheet: SHEETS.campus, row: s._row, reason: 'fill in waiver_percent or fixed_amount_rm' });
-    return false;
-  });
-
-  var foundation = read('foundation').map(function (f) {
+  var foundation = read('foundation', values.foundation, '').map(function (f) {
     f.requirements = f.requirements.split(/\r?\n/).map(function (s) { return s.trim(); }).filter(Boolean);
     return f;
   });
 
-  function strip(list) { return list.map(function (x) { delete x._row; return x; }); }
+  function strip(list) { return list.map(function (x) { delete x._row; delete x._sheet; return x; }); }
   return {
     version: 1,
     generated_at: generatedAt || new Date().toISOString(),
@@ -176,6 +243,7 @@ function buildEduplanData(values, formatDate, generatedAt) {
     programmes: strip(programmes),
     campus_scholarships: strip(campus),
     foundation_scholarships: strip(foundation),
+    sources: sources,
     skipped: skipped
   };
 }
