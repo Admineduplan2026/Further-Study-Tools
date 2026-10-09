@@ -173,10 +173,23 @@ V.universities=function(){
 function uniHead(u,step,back){
  return '<section class="stack">'+stepper(UNI_STEPS,step)+'<div><a class="btn ghost" href="'+back+'">Back</a></div><span class="eyebrow">Universities</span>';
 }
+/* Banner with the institution's 3D virtual tour as its background (Institutions "virtual_tour_url").
+   The tour is decoration until the visitor presses "Explore", which makes it interactive. */
+function uniMeta(u){return '<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>';}
+function uniTour(u,title,lead,meta){
+ if(!u.tour)return '';
+ return '<section class="tourhero" data-tour-box><iframe src="'+esc(u.tour)+'" title="'+esc(u.name)+' 3D campus tour" loading="lazy" referrerpolicy="no-referrer"'+
+  ' sandbox="allow-scripts allow-same-origin allow-popups" allow="fullscreen; gyroscope; accelerometer; xr-spatial-tracking" tabindex="-1"></iframe>'+
+  '<div class="tourveil"></div><div class="tourtext"><span class="eyebrow">3D campus tour</span><h1>'+esc(title)+'</h1>'+(lead?'<p class="lead">'+esc(lead)+'</p>':'')+(meta||'')+
+  '<div class="row"><button type="button" class="btn" data-tour="on">Explore the 3D campus tour</button>'+
+  '<a class="btn ghost" href="'+esc(u.tour)+'" target="_blank" rel="noopener">Open in new tab '+ARROW+'</a></div></div>'+
+  '<button type="button" class="btn tourexit" data-tour="off">Back to page</button></section>';
+}
 function uniPage(u){
  var n=uniScholarships(u);
- return uniHead(u,2,"#universities")+'<h1>'+esc(u.name)+'</h1>'+(u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':'')+
- '<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div></section>'+
+ return uniHead(u,2,"#universities")+(u.tour?'':'<h1>'+esc(u.name)+'</h1>'+(u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':''))+
+ (u.tour?'':uniMeta(u))+'</section>'+
+ uniTour(u,u.name,u.fullName!==u.name?u.fullName:"",uniMeta(u))+
  '<section class="panel">'+facts([["Website",u.website],["Admissions email",u.email],["Admissions phone",u.phone],["WhatsApp",u.whatsapp],["Last updated",u.lastUpdated]])+
   '<div class="row">'+(u.website?'<a class="btn ghost" href="'+esc(u.website)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'')+
   (n?'<a class="btn ghost" href="#scholarships-campus/'+esc(u.id.toLowerCase())+'">Scholarships ('+n+') '+ARROW+'</a>':'')+'</div></section>'+
@@ -191,8 +204,9 @@ function uniPage(u){
 function uniLevelPage(u,lv){
  var L=LEVELS.filter(function(x){return x[0]===lv;})[0],ps=u.progs.filter(function(p){return uniLevel(p.level)[0]===lv;});
  var subs=uniq(L[2].concat(ps.map(function(p){return uniLevel(p.level)[1];})));
- return uniHead(u,3,"#universities/"+esc(u.id.toLowerCase()))+'<h1>'+esc(u.name)+' · '+L[1]+'</h1><p class="lead">'+esc(L[2].join(" / "))+'</p>'+
+ return uniHead(u,3,"#universities/"+esc(u.id.toLowerCase()))+(u.tour?'':'<h1>'+esc(u.name)+' · '+L[1]+'</h1><p class="lead">'+esc(L[2].join(" / "))+'</p>')+
  '<div class="chips" role="group" aria-label="Study level">'+LEVELS.map(function(x){return '<a class="chip" href="#universities/'+esc(u.id.toLowerCase())+'/'+x[0]+'"'+(x[0]===lv?' aria-current="page"':'')+'>'+x[1]+'</a>';}).join("")+'</div></section>'+
+ uniTour(u,u.name+' · '+L[1],L[2].join(" / "))+
  (ps.length?subs.map(function(sl){
   var sp=ps.filter(function(p){return uniLevel(p.level)[1]===sl;});if(!sp.length)return '';
   var byFac={},order=[];sp.forEach(function(p){var f=facOfCourse(p.course_id),k=f?f.code:"--";if(!byFac[k]){byFac[k]={f:f,list:[]};order.push(k);}byFac[k].list.push(p);});
@@ -485,6 +499,8 @@ app.addEventListener("click",function(ev){
  if(t.hasAttribute("data-schtype")){S.schType=t.getAttribute("data-schtype");location.hash="#scholarships-"+S.schType;return;}
  if(t.hasAttribute("data-schq")||t.hasAttribute("data-schl")){var k=t.hasAttribute("data-schq")?"schQ":"schL";S[k]=t.getAttribute(k==="schQ"?"data-schq":"data-schl");render(true);
   var f=app.querySelector('[data-'+k.toLowerCase()+'="'+S[k]+'"]');if(f)f.focus();return;}
+ if(t.hasAttribute("data-tour")){var box=t.closest("[data-tour-box]"),on=t.getAttribute("data-tour")==="on";box.classList.toggle("live",on);
+  (on?box.querySelector(".tourexit"):box.querySelector('[data-tour="on"]')).focus();return;}
  if(t.hasAttribute("data-ans")){S.guide.answers[S.guide.step]=Number(t.getAttribute("data-ans"));rerender("guide-next");return;}
  if(t.id==="guide-next"){S.guide.step++;rerender();app.focus({preventScroll:true});return;}
  if(t.id==="guide-back"){S.guide.step=Math.max(0,S.guide.step-1);rerender();return;}
@@ -518,7 +534,7 @@ function applyApi(d){
  (d.institutions||[]).forEach(function(i){inst[i.institution_id]=i;});
  FAC.fields.forEach(function(f){f.courses.forEach(function(c){c.universities=[];courses[c.id]=c;});});
  UNIV=(d.institutions||[]).map(function(i){return {id:i.institution_id,name:i.short_name||i.name,fullName:i.name,type:i.type,place:[i.city,i.state].filter(Boolean).join(", "),
-  website:i.website,email:i.admissions_email,phone:i.admissions_phone,whatsapp:i.whatsapp,lastUpdated:i.last_updated,progs:[]};})
+  website:i.website,tour:/^https:\/\//i.test(i.virtual_tour_url||"")?i.virtual_tour_url:"",email:i.admissions_email,phone:i.admissions_phone,whatsapp:i.whatsapp,lastUpdated:i.last_updated,progs:[]};})
   .sort(function(a,b){return a.name<b.name?-1:1;});
  (d.programmes||[]).forEach(function(p){
   var i=inst[p.institution_id];if(!i)return;

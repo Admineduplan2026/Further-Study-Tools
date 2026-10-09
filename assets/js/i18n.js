@@ -64,7 +64,7 @@ var ZH={
  "Interest-based":"兴趣导向","Courses":"课程",
  "Choose a university to see its programmes by level: foundation, undergraduate and postgraduate.":"选择大学，按阶段查看课程：预科、本科与研究生。",
  "View university":"查看大学","The university list is being prepared.":"大学名单正在整理中。","Website":"官网","Admissions email":"招生电邮","Admissions phone":"招生电话",
- "Choose a study level":"选择升学阶段","View programmes":"查看课程","Programmes":"课程","Professional Certificate":"专业证书",
+ "Choose a study level":"选择升学阶段","3D campus tour":"3D 校园导览","Explore the 3D campus tour":"进入 3D 校园导览","Open in new tab":"在新分页打开","Back to page":"返回页面","View programmes":"查看课程","Programmes":"课程","Professional Certificate":"专业证书",
  "Certificate / Diploma / Bachelor's Degree":"证书／文凭／学士学位","Master's Degree / PhD / Professional Certificate":"硕士学位／博士／专业证书",
  "Location":"地点","To be confirmed":"待确认","Entry requirements":"入学条件","Not listed by the institution":"院校未列出","Others":"其他",
  "Scholarships you can apply for":"可申请的奖学金","No campus scholarship listed for this level yet.":"此阶段暂未列出大学奖学金。",

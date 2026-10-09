@@ -46,7 +46,7 @@ var CACHE_SECONDS = 21600;    // cached JSON is kept up to 6 hours, but replaced
 
 // Public fields per sheet. Fields ending in * are required.
 var FIELDS = {
-  institutions: ['institution_id*', 'name*', 'short_name', 'type*', 'state', 'city', 'website', 'admissions_email',
+  institutions: ['institution_id*', 'name*', 'short_name', 'type*', 'state', 'city', 'website', 'virtual_tour_url', 'admissions_email',
     'admissions_phone', 'whatsapp', 'hostel', 'hostel_fee_min', 'hostel_fee_max', 'last_updated'],
   programmes: ['programme_id*', 'institution_id*', 'course*', 'also_in_courses', 'programme_name*', 'level*', 'study_mode', 'duration_years',
     'intakes', 'campus', 'entry_spm', 'entry_uec', 'entry_olevel', 'entry_stpm', 'entry_other', 'english_requirement', 'tuition_fee_rm', 'mqa_reference',

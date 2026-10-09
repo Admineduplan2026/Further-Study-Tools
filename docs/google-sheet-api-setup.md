@@ -102,6 +102,7 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 - 奖学金条件每行一项（在格子里按 Alt+Enter 或 Ctrl+Enter 换行）。
 - Programmes 的入学条件分开填写：`entry_spm`、`entry_uec`、`entry_olevel`、`entry_stpm`，其他资格（A-Level、文凭等）及附加条件填 `entry_other`。
   没有列出的资格请留空，网站会显示 "Not listed by the institution"。学费留空时显示 "To be confirmed"。
+- Institutions 的 `virtual_tour_url`（选填）：院校的 3D 校园导览网址（必须以 https:// 开头），会成为 Universities 页面该校的背景。
 - 一个课程可同时列在多个课程类别：在 `also_in_courses` 栏填写其他类别（与下拉选单完全相同，每行一个）。例如 XMUM 的 Foundation in Science 同时列在 00 预科和 09 传统医学。
 - 课程页面会**自动**列出同一院校、同一阶段可申请的 Campus Scholarships（依 `level` 对应 `applies_to` 的 Foundation / Undergraduate / Postgraduate；`applies_to` 留空的奖学金适用所有阶段）。
 - Campus Scholarships 的 `applies_to` 以 `Foundation Programmes` 或 `Undergraduate Programmes` 开头时，网站第 4 页会出现「考试（SPM / O-Level / UEC / STPM / A-Level）」和「Foundation / Undergraduate」按钮来筛选。
