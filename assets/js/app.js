@@ -109,7 +109,15 @@ V.universities=function(){return ''+
 function stepper(names,step){
  return '<ol class="stepper" aria-label="Progress">'+names.map(function(n,k){var cur=k+1===step;return '<li'+(cur?' aria-current="step"':(k+1<step?' class="done"':''))+'><span aria-hidden="true">'+(k+1)+'</span>Page '+(k+1)+': '+esc(n)+'</li>';}).join("")+'</ol>';
 }
-function schStepper(step,last){return stepper(["Scholarship-based","Scholarship type",last||"Requirements or tuition waiver"],step);}
+function schStepper(step,t){
+ var names=!t?["Scholarship-based","Scholarship type","Choose a scholarship","Details"]
+  :t.kind==="waiver"?["Scholarship-based","Scholarship type","University","Scholarship details"]
+  :["Scholarship-based","Scholarship type","Requirements"];
+ return stepper(names,step);
+}
+function schUni(t,id){if(!t||!t.universities||!id)return null;id=String(id).toLowerCase();for(var i=0;i<t.universities.length;i++){if(String(t.universities[i].id).toLowerCase()===id)return t.universities[i];}return null;}
+function schTierCell(r){return r.waiver!=null?r.waiver+'%':rm(r.amount);}
+function schBest(u){var w=u.tiers.filter(function(r){return r.waiver!=null;}).map(function(r){return r.waiver;});return w.length?Math.max.apply(null,w):null;}
 function schCta(note){return '<div class="row"><a class="btn" href="#consultation" data-topic="Scholarships"'+(note?' data-note="'+esc(note)+'"':'')+'>Ask a counsellor about scholarships</a></div>';}
 V.scholarships=function(){
  return '<section class="stack">'+schStepper(2)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
@@ -117,17 +125,8 @@ V.scholarships=function(){
  '<section class="grid">'+SCH.types.map(function(t){return '<button type="button" class="item pick" data-schtype="'+esc(t.id)+'"><span class="name">'+esc(t.label)+'</span><span class="desc">'+esc(t.desc)+'</span><span class="textlink">Continue '+ARROW+'</span></button>';}).join("")+'</section>';
 };
 function schPage3(t){
- var head='<section class="stack">'+schStepper(3,t.kind==="waiver"?"Tuition waiver":"Requirements")+'<div><a class="btn ghost" href="#scholarships">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>';
- if(t.kind==="waiver"){
-  return head+'<h1>Tuition waiver by university</h1><p class="lead">'+esc(t.desc)+'.</p></section>'+
-  '<section class="grid">'+t.universities.map(function(u){
-   var spm=u.tiers.every(function(r){return /^SPM /.test(r.result);}),notes=u.tiers.filter(function(r){return r.conditions;}),link=u.tiers.filter(function(r){return r.url;})[0];
-   return '<div class="item"><h3>'+esc(u.name)+'</h3><table class="tiers"><thead><tr><th scope="col">'+(spm?'SPM result':'Result')+'</th><th scope="col">Tuition waiver</th></tr></thead><tbody>'+
-   u.tiers.map(function(r){return '<tr><td>'+esc(r.result)+'</td><td><span class="big">'+(r.waiver!=null?r.waiver+'%':esc(rm(r.amount)))+'</span></td></tr>';}).join("")+'</tbody></table>'+
-   notes.map(function(r){return '<p>'+esc(r.result)+': '+esc(r.conditions)+'</p>';}).join("")+
-   (link?'<a class="textlink" href="'+esc(link.url)+'" target="_blank" rel="noopener">Official information '+ARROW+'</a>':'')+'</div>';}).join("")+'</section>'+
-  '<section class="panel"><h2>Not sure which tier you reach?</h2>'+schCta("Campus Scholarship: tuition waiver")+'</section>';
- }
+ if(t.kind==="waiver")return S.schUni?schDetails(t,S.schUni):schUniList(t);
+ var head='<section class="stack">'+schStepper(3,t)+'<div><a class="btn ghost" href="#scholarships">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>';
  var pick=S.schPick[t.id],sel=null;
  t.items.forEach(function(it){if(it.id===pick&&it.name)sel=it;});
  return head+'<h1>Choose a foundation scholarship</h1><p class="lead">'+esc(t.desc)+'. Select '+t.items.map(function(it){return it.id;}).join(", ").replace(/, ([^,]*)$/," or $1")+' to see its requirements.</p></section>'+
@@ -138,6 +137,30 @@ function schPage3(t){
    facts([["Organiser",sel.organiser],["Award",sel.award],["Application deadline",sel.deadline]])+
    (sel.url?'<a class="textlink" href="'+esc(sel.url)+'" target="_blank" rel="noopener">Official information '+ARROW+'</a>':'')+schCta("Interested in: "+sel.name+".")+'</div>'
    :'<div class="empty">Select a scholarship to see its requirements.</div>')+'</div></section>';
+}
+function schUniList(t){
+ return '<section class="stack">'+schStepper(3,t)+'<div><a class="btn ghost" href="#scholarships">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>'+
+ '<h1>Choose a university</h1><p class="lead">'+esc(t.desc)+'. Tap a university to see its scholarship details.</p></section>'+
+ (t.universities.length?'<section class="grid">'+t.universities.map(function(u){
+   var best=schBest(u),desc=u.description||[u.type,u.place].filter(Boolean).join(", ");
+   return '<a class="item pick" href="#scholarships-'+esc(t.id)+'/'+esc(String(u.id).toLowerCase())+'"><span class="name">'+esc(u.name)+'</span>'+
+   (u.fullName&&u.fullName!==u.name?'<span class="desc">'+esc(u.fullName)+'</span>':'')+(desc?'<span class="desc">'+esc(desc)+'</span>':'')+
+   '<span class="meta"><span class="pill">'+u.tiers.length+' scholarship tier'+(u.tiers.length===1?'':'s')+'</span>'+(best!=null?'<span class="pill brand">Up to '+best+'% tuition waiver</span>':'')+'</span>'+
+   '<span class="textlink">View scholarship details '+ARROW+'</span></a>';}).join("")+'</section>'
+  :'<div class="empty">No universities listed yet.</div>');
+}
+function schDetails(t,u){
+ var spm=u.tiers.every(function(r){return /^SPM /.test(r.result);}),notes=u.tiers.filter(function(r){return r.conditions;}),
+  dl=u.tiers.filter(function(r){return r.deadline;}),site=u.website||(u.tiers.filter(function(r){return r.url;})[0]||{}).url;
+ return '<section class="stack">'+schStepper(4,t)+'<div><a class="btn ghost" href="#scholarships-'+esc(t.id)+'">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>'+
+ '<h1>'+esc(u.name)+'</h1>'+(u.fullName&&u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':'')+
+ ((u.type||u.place)?'<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>':'')+'</section>'+
+ '<section class="panel"><h2>Scholarship tiers</h2><table class="tiers"><thead><tr><th scope="col">'+(spm?'SPM result':'Result')+'</th><th scope="col">Tuition waiver</th></tr></thead><tbody>'+
+  u.tiers.map(function(r){return '<tr><td>'+esc(r.result)+'</td><td><span class="big">'+esc(schTierCell(r))+'</span></td></tr>';}).join("")+'</tbody></table>'+
+  facts(notes.map(function(r){return ["Conditions ("+r.result+")",r.conditions];}).concat(dl.map(function(r){return ["Deadline ("+r.result+")",r.deadline];})).concat([["Last updated",u.lastUpdated]]))+
+  '<div class="row">'+(site?'<a class="btn" href="'+esc(site)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+
+  '<p class="hint">Information is for reference only. Please confirm with the university\u2019s official website.</p></section>'+
+ '<section class="panel"><h2>Not sure which tier you reach?</h2>'+schCta("Campus Scholarship: "+u.name)+'</section>';
 }
 SCH.types.forEach(function(t){V["scholarships-"+t.id]=function(){return schPage3(t);};});
 
@@ -227,14 +250,20 @@ function route(){
  var h=(location.hash||"#home").slice(1),r=h,view;
  if(r==="scholarship-match")r="scholarships";
  if(r==="courses"||r==="interest-match")r="faculty";
- if(r.indexOf("scholarships-")===0&&S.schType!==r.slice(13))r="scholarships";
+ S.schUni=null;
+ if(r.indexOf("scholarships-")===0){
+  var sp=r.slice(13).split("/"),st=schType(sp[0]);
+  if(!st||S.schType!==st.id)r="scholarships";
+  else if(sp[1]){S.schUni=schUni(st,sp[1]);r="scholarships-"+st.id+(S.schUni?"/"+String(S.schUni.id).toLowerCase():"");}
+  else r="scholarships-"+st.id;
+ }
  S.fac=null;
  if(r.indexOf("faculty/")===0){
   var p=r.split("/"),f=facField(p[1]),c=f&&p[2]?facCourse(f,p[2]):null;
   r=f?"faculty/"+f.code+(c?"/"+c.id:""):"faculty";
   if(f)S.fac={field:f,course:c};
  }
- view=r.indexOf("faculty/")===0?"faculty":r;
+ view=r.indexOf("faculty/")===0?"faculty":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
  if(!V[view])r=view="home";
  if(r!==h&&h)history.replaceState(null,"","#"+r);
  return view;
@@ -303,8 +332,15 @@ function applyApi(d){
   var byInst={},order=[];
   (d.campus_scholarships||[]).forEach(function(s){
    var i=inst[s.institution_id];if(!i)return;
-   if(!byInst[s.institution_id]){byInst[s.institution_id]={id:s.institution_id,name:i.short_name||i.name,tiers:[]};order.push(s.institution_id);}
-   byInst[s.institution_id].tiers.push({result:s.qualification+" "+s.minimum_result,waiver:s.waiver_percent,amount:s.fixed_amount_rm,conditions:s.other_conditions,url:s.info_url});
+   if(!byInst[s.institution_id]){
+    var local=schUni(campus,s.institution_id)||{};
+    byInst[s.institution_id]={id:s.institution_id,name:i.short_name||i.name,fullName:i.name,type:i.type,place:[i.city,i.state].filter(Boolean).join(", "),
+     website:i.website,lastUpdated:i.last_updated,description:local.description,tiers:[]};
+    order.push(s.institution_id);
+   }
+   var bu=byInst[s.institution_id];
+   if(s.last_updated&&(!bu.lastUpdated||s.last_updated>bu.lastUpdated))bu.lastUpdated=s.last_updated;
+   bu.tiers.push({result:s.qualification+" "+s.minimum_result,waiver:s.waiver_percent,amount:s.fixed_amount_rm,conditions:s.other_conditions,deadline:s.deadline,url:s.info_url});
   });
   campus.universities=order.map(function(k){return byInst[k];});
  }

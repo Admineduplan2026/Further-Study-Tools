@@ -3,6 +3,8 @@
    - kind "requirements": each item is one option (A, B, C...). Set name and requirements to null
      for a slot that is still to be added; it is shown as "coming soon" and cannot be selected.
    - kind "waiver": each university lists its tiers; waiver is the % of tuition fees waived.
+     Optional per university: fullName, type, description (shown on the university list),
+     website (Official website button) and lastUpdated (YYYY-MM-DD). Leave out what is not confirmed.
    The page code reads this object as is, so new entries need no code changes. */
 window.EDUPLAN_SCHOLARSHIPS={
   types:[
@@ -14,8 +16,11 @@ window.EDUPLAN_SCHOLARSHIPS={
      ]},
     {id:"campus",label:"Campus Scholarship",desc:"Scholarships offered by colleges / universities",kind:"waiver",
      universities:[
-       {id:"tarumt",name:"TARUMT",tiers:[{result:"SPM 7A",waiver:25},{result:"SPM 8A",waiver:50},{result:"SPM 8A+",waiver:100}]},
-       {id:"utar",name:"UTAR",tiers:[{result:"SPM 7A",waiver:25},{result:"SPM 8A",waiver:50},{result:"SPM 8A+",waiver:100}]}
+       {id:"tarumt",name:"TARUMT",fullName:"Tunku Abdul Rahman University of Management and Technology",type:"Private University",
+        tiers:[{result:"SPM 7A",waiver:25},{result:"SPM 8A",waiver:50},{result:"SPM 8A+",waiver:100}]},
+       {id:"utar",name:"UTAR",fullName:"Universiti Tunku Abdul Rahman",type:"Private University",
+        description:"Private university offering SPM-based entry scholarships.",
+        tiers:[{result:"SPM 7A",waiver:25},{result:"SPM 8A",waiver:50},{result:"SPM 8A+",waiver:100}]}
      ]}
   ]
 };
