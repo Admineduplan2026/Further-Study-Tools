@@ -23,6 +23,12 @@
  */
 
 var SCHOOL_FOLDER_ID = '1YlVGAe04L2BTQo7bzoLzG6wQl3mhaaoS';
+var MASTER_SHEET_ID = '1htCbXcJsB8juU0pY4uKu8nIeJYyfG611g9WlNFka3Es';  // used when the script is not opened from the master sheet
+
+/** The master sheet: the sheet this script is bound to, or MASTER_SHEET_ID for a standalone script. */
+function master_() {
+  return SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(MASTER_SHEET_ID);
+}
 var SCHOOL_TABS = ['institutions', 'programmes', 'campus'];
 var MASTER_TABS = ['foundation', 'lists'];
 var SHEETS = {
@@ -102,7 +108,7 @@ function clearCache() {
 /** School sheets in the folder (not starting with "_"), sorted by name. */
 function schoolFiles_() {
   var out = [], it = DriveApp.getFolderById(SCHOOL_FOLDER_ID).getFilesByType(MimeType.GOOGLE_SHEETS);
-  var master = SpreadsheetApp.getActiveSpreadsheet().getId();
+  var master = master_().getId();
   while (it.hasNext()) {
     var f = it.next();
     if (f.getId() !== master && f.getName().charAt(0) !== '_' && !f.isTrashed()) out.push(f);
@@ -113,7 +119,7 @@ function schoolFiles_() {
 /** Changes whenever any school sheet or the master sheet is edited, added or removed. */
 function editStamp_() {
   var parts = schoolFiles_().map(function (f) { return f.getId() + ':' + f.getLastUpdated().getTime(); });
-  parts.push(DriveApp.getFileById(SpreadsheetApp.getActiveSpreadsheet().getId()).getLastUpdated().getTime());
+  parts.push(DriveApp.getFileById(master_().getId()).getLastUpdated().getTime());
   var digest = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, parts.join('|'));
   return Utilities.base64EncodeWebSafe(digest).slice(0, 22);
 }
@@ -128,7 +134,7 @@ function tabValues_(ss, keys) {
 }
 
 function buildFromSheets_() {
-  var master = SpreadsheetApp.getActiveSpreadsheet();
+  var master = master_();
   var tz = master.getSpreadsheetTimeZone();
   var values = tabValues_(master, MASTER_TABS);
   values.schools = schoolFiles_().map(function (f) {
