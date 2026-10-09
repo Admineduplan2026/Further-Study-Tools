@@ -74,7 +74,7 @@ window.__eduplan={guidedResult:guidedResult};
 /* ---------- State ---------- */
 var S={guide:{step:0,answers:[]},
        cons:store("eduplan-consult")||{},consDone:null,
-       schType:null,schPick:{}};
+       schType:null};
 
 /* ---------- Views ---------- */
 var V={};
@@ -112,13 +112,21 @@ function stepper(names,step){
 function schStepper(step,t){
  var names=!t?["Scholarship-based","Scholarship type","Choose a scholarship","Details"]
   :t.kind==="waiver"?["Scholarship-based","Scholarship type","University","Scholarship details"]
-  :["Scholarship-based","Scholarship type","Requirements"];
+  :["Scholarship-based","Scholarship type","Scholarship","Requirements"];
  return stepper(names,step);
 }
 function schUni(t,id){if(!t||!t.universities||!id)return null;id=String(id).toLowerCase();for(var i=0;i<t.universities.length;i++){if(String(t.universities[i].id).toLowerCase()===id)return t.universities[i];}return null;}
+function schItem(t,id){if(!t||!t.items||!id)return null;id=String(id).toLowerCase();for(var i=0;i<t.items.length;i++){if(t.items[i].name&&String(t.items[i].id).toLowerCase()===id)return t.items[i];}return null;}
 function schTierCell(r){return r.waiver!=null?r.waiver+'%':rm(r.amount);}
 function schBest(u){var w=u.tiers.filter(function(r){return r.waiver!=null;}).map(function(r){return r.waiver;});return w.length?Math.max.apply(null,w):null;}
+/* Tiers grouped by scholarship name, in sheet order; tiers without a name share one group. */
+function schGroups(u){var g={},order=[];u.tiers.forEach(function(r){var k=r.scheme||"";if(!g[k]){g[k]=[];order.push(k);}g[k].push(r);});return order.map(function(k){return {name:k,tiers:g[k]};});}
+function lines(v){return (Array.isArray(v)?v:String(v||"").split(/\r?\n/)).map(function(s){return String(s).trim();}).filter(Boolean);}
+function uniq(a){return a.filter(function(x,i){return a.indexOf(x)===i;});}
+function reqList(a){return '<ul class="reqlist">'+a.map(function(r){return '<li>'+esc(r)+'</li>';}).join("")+'</ul>';}
 function schCta(note){return '<div class="row"><a class="btn" href="#consultation" data-topic="Scholarships"'+(note?' data-note="'+esc(note)+'"':'')+'>Ask a counsellor about scholarships</a></div>';}
+function schHead(step,t,back){return '<section class="stack">'+schStepper(step,t)+'<div><a class="btn ghost" href="'+back+'">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>';}
+var SCH_NOTE='<p class="hint">Information is for reference only. Please confirm with the university’s official website.</p>';
 V.scholarships=function(){
  return '<section class="stack">'+schStepper(2)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
  '<span class="eyebrow">Option 1 · Scholarship based</span><h1>Choose a scholarship type</h1><p class="lead">Scholarships come from two places. Pick one to continue.</p></section>'+
@@ -126,40 +134,50 @@ V.scholarships=function(){
 };
 function schPage3(t){
  if(t.kind==="waiver")return S.schUni?schDetails(t,S.schUni):schUniList(t);
- var head='<section class="stack">'+schStepper(3,t)+'<div><a class="btn ghost" href="#scholarships">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>';
- var pick=S.schPick[t.id],sel=null;
- t.items.forEach(function(it){if(it.id===pick&&it.name)sel=it;});
- return head+'<h1>Choose a foundation scholarship</h1><p class="lead">'+esc(t.desc)+'. Select '+t.items.map(function(it){return it.id;}).join(", ").replace(/, ([^,]*)$/," or $1")+' to see its requirements.</p></section>'+
- '<section class="two"><div class="opts" role="group" aria-label="'+esc(t.label)+' options">'+t.items.map(function(it){
-   if(!it.name)return '<button type="button" class="opt" disabled>'+esc(it.id)+'. More foundation scholarships coming soon</button>';
-   return '<button type="button" class="opt" data-schpick="'+esc(it.id)+'" aria-pressed="'+(sel===it)+'">'+esc(it.id)+'. '+esc(it.name)+'</button>';}).join("")+'</div>'+
- '<div class="results" aria-live="polite">'+(sel?'<div class="panel"><span class="eyebrow">Requirements</span><h2>'+esc(sel.id)+'. '+esc(sel.name)+'</h2><ul class="reqlist">'+sel.requirements.map(function(r){return '<li>'+esc(r)+'</li>';}).join("")+'</ul>'+
-   facts([["Organiser",sel.organiser],["Award",sel.award],["Application deadline",sel.deadline]])+
-   (sel.url?'<a class="textlink" href="'+esc(sel.url)+'" target="_blank" rel="noopener">Official information '+ARROW+'</a>':'')+schCta("Interested in: "+sel.name+".")+'</div>'
-   :'<div class="empty">Select a scholarship to see its requirements.</div>')+'</div></section>';
+ return S.schItem?schReq(t,S.schItem):schItemList(t);
+}
+/* Foundation Page 3: one card per scholarship; Page 4 (#scholarships-foundation/<id>) shows its requirements. */
+function schItemList(t){
+ var items=t.items.filter(function(it){return it.name;});
+ return schHead(3,t,"#scholarships")+'<h1>Choose a foundation scholarship</h1><p class="lead">'+esc(t.desc)+'. Tap a scholarship to see its requirements.</p></section>'+
+ (items.length?'<section class="grid">'+items.map(function(it){
+   return '<a class="item pick" href="#scholarships-'+esc(t.id)+'/'+esc(String(it.id).toLowerCase())+'"><span class="name">'+esc(it.name)+'</span>'+
+   (it.organiser?'<span class="desc">'+esc(it.organiser)+'</span>':'')+(it.award?'<span class="meta"><span class="pill brand">'+esc(it.award)+'</span></span>':'')+
+   '<span class="textlink">View requirements '+ARROW+'</span></a>';}).join("")+'</section>'
+  :'<div class="empty">No foundation scholarships listed yet.</div>');
+}
+function schReq(t,it){
+ return schHead(4,t,"#scholarships-"+esc(t.id))+'<h1>'+esc(it.name)+'</h1>'+(it.organiser?'<p class="lead">'+esc(it.organiser)+'</p>':'')+'</section>'+
+ '<section class="panel"><h2>Requirements</h2>'+reqList(lines(it.requirements))+
+  facts([["Award",it.award],["Application deadline",it.deadline],["Last updated",it.lastUpdated]])+
+  '<div class="row">'+(it.url?'<a class="btn" href="'+esc(it.url)+'" target="_blank" rel="noopener">Official information '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+SCH_NOTE+'</section>'+
+ '<section class="panel"><h2>Want help applying?</h2>'+schCta("Interested in: "+it.name+".")+'</section>';
 }
 function schUniList(t){
- return '<section class="stack">'+schStepper(3,t)+'<div><a class="btn ghost" href="#scholarships">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>'+
- '<h1>Choose a university</h1><p class="lead">'+esc(t.desc)+'. Tap a university to see its scholarship details.</p></section>'+
+ return schHead(3,t,"#scholarships")+'<h1>Choose a university</h1><p class="lead">'+esc(t.desc)+'. Tap a university to see its scholarship details.</p></section>'+
  (t.universities.length?'<section class="grid">'+t.universities.map(function(u){
-   var best=schBest(u),desc=u.description||[u.type,u.place].filter(Boolean).join(", ");
+   var best=schBest(u),desc=u.description||[u.type,u.place].filter(Boolean).join(", "),n=schGroups(u).length;
    return '<a class="item pick" href="#scholarships-'+esc(t.id)+'/'+esc(String(u.id).toLowerCase())+'"><span class="name">'+esc(u.name)+'</span>'+
    (u.fullName&&u.fullName!==u.name?'<span class="desc">'+esc(u.fullName)+'</span>':'')+(desc?'<span class="desc">'+esc(desc)+'</span>':'')+
-   '<span class="meta"><span class="pill">'+u.tiers.length+' scholarship tier'+(u.tiers.length===1?'':'s')+'</span>'+(best!=null?'<span class="pill brand">Up to '+best+'% tuition waiver</span>':'')+'</span>'+
+   '<span class="meta"><span class="pill">'+n+' scholarship'+(n===1?'':'s')+'</span>'+(best!=null?'<span class="pill brand">Up to '+best+'% tuition waiver</span>':'')+'</span>'+
    '<span class="textlink">View scholarship details '+ARROW+'</span></a>';}).join("")+'</section>'
   :'<div class="empty">No universities listed yet.</div>');
 }
 function schDetails(t,u){
- var spm=u.tiers.every(function(r){return /^SPM /.test(r.result);}),notes=u.tiers.filter(function(r){return r.conditions;}),
-  dl=u.tiers.filter(function(r){return r.deadline;}),site=u.website||(u.tiers.filter(function(r){return r.url;})[0]||{}).url;
- return '<section class="stack">'+schStepper(4,t)+'<div><a class="btn ghost" href="#scholarships-'+esc(t.id)+'">Back</a></div><span class="eyebrow">'+esc(t.label)+'</span>'+
- '<h1>'+esc(u.name)+'</h1>'+(u.fullName&&u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':'')+
+ var site=u.website||(u.tiers.filter(function(r){return r.url;})[0]||{}).url;
+ return schHead(4,t,"#scholarships-"+esc(t.id))+'<h1>'+esc(u.name)+'</h1>'+(u.fullName&&u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':'')+
  ((u.type||u.place)?'<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>':'')+'</section>'+
- '<section class="panel"><h2>Scholarship tiers</h2><table class="tiers"><thead><tr><th scope="col">'+(spm?'SPM result':'Result')+'</th><th scope="col">Tuition waiver</th></tr></thead><tbody>'+
-  u.tiers.map(function(r){return '<tr><td>'+esc(r.result)+'</td><td><span class="big">'+esc(schTierCell(r))+'</span></td></tr>';}).join("")+'</tbody></table>'+
-  facts(notes.map(function(r){return ["Conditions ("+r.result+")",r.conditions];}).concat(dl.map(function(r){return ["Deadline ("+r.result+")",r.deadline];})).concat([["Last updated",u.lastUpdated]]))+
-  '<div class="row">'+(site?'<a class="btn" href="'+esc(site)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+
-  '<p class="hint">Information is for reference only. Please confirm with the university\u2019s official website.</p></section>'+
+ schGroups(u).map(function(g){
+  var tr=g.tiers,spm=tr.every(function(r){return /^SPM /.test(r.result);}),waiver=tr.every(function(r){return r.waiver!=null;}),
+   cond=uniq([].concat.apply([],tr.map(function(r){return lines(r.conditions);}))),
+   applies=uniq(tr.map(function(r){return r.applies;}).filter(Boolean)),dl=uniq(tr.map(function(r){return r.deadline;}).filter(Boolean));
+  return '<section class="panel"><h2>'+esc(g.name||"Scholarship tiers")+'</h2>'+
+  '<table class="tiers"><thead><tr><th scope="col">'+(spm?'SPM result':'Eligibility')+'</th><th scope="col">'+(waiver?'Tuition waiver':'Award')+'</th></tr></thead><tbody>'+
+   tr.map(function(r){return '<tr><td>'+esc(r.result)+'</td><td><span class="big">'+esc(schTierCell(r))+'</span></td></tr>';}).join("")+'</tbody></table>'+
+  facts([["Applies to",applies.join("; ")],["Application deadline",dl.join("; ")]])+
+  (cond.length?'<h3>Conditions</h3>'+reqList(cond):'')+'</section>';}).join("")+
+ '<section class="panel">'+facts([["Last updated",u.lastUpdated]])+
+  '<div class="row">'+(site?'<a class="btn" href="'+esc(site)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+SCH_NOTE+'</section>'+
  '<section class="panel"><h2>Not sure which tier you reach?</h2>'+schCta("Campus Scholarship: "+u.name)+'</section>';
 }
 SCH.types.forEach(function(t){V["scholarships-"+t.id]=function(){return schPage3(t);};});
@@ -250,11 +268,11 @@ function route(){
  var h=(location.hash||"#home").slice(1),r=h,view;
  if(r==="scholarship-match")r="scholarships";
  if(r==="courses"||r==="interest-match")r="faculty";
- S.schUni=null;
+ S.schUni=S.schItem=null;
  if(r.indexOf("scholarships-")===0){
   var sp=r.slice(13).split("/"),st=schType(sp[0]);
   if(!st||S.schType!==st.id)r="scholarships";
-  else if(sp[1]){S.schUni=schUni(st,sp[1]);r="scholarships-"+st.id+(S.schUni?"/"+String(S.schUni.id).toLowerCase():"");}
+  else if(sp[1]){var sel=st.kind==="waiver"?(S.schUni=schUni(st,sp[1])):(S.schItem=schItem(st,sp[1]));r="scholarships-"+st.id+(sel?"/"+String(sel.id).toLowerCase():"");}
   else r="scholarships-"+st.id;
  }
  S.fac=null;
@@ -288,7 +306,6 @@ app.addEventListener("change",function(ev){
 app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
  if(t.hasAttribute("data-schtype")){S.schType=t.getAttribute("data-schtype");location.hash="#scholarships-"+S.schType;return;}
- if(t.hasAttribute("data-schpick")){S.schPick[S.schType]=t.getAttribute("data-schpick");render(true);var sp=app.querySelector('[data-schpick="'+S.schPick[S.schType]+'"]');if(sp)sp.focus();return;}
  if(t.hasAttribute("data-ans")){S.guide.answers[S.guide.step]=Number(t.getAttribute("data-ans"));rerender("guide-next");return;}
  if(t.id==="guide-next"){S.guide.step++;rerender();app.focus({preventScroll:true});return;}
  if(t.id==="guide-back"){S.guide.step=Math.max(0,S.guide.step-1);rerender();return;}
@@ -340,11 +357,11 @@ function applyApi(d){
    }
    var bu=byInst[s.institution_id];
    if(s.last_updated&&(!bu.lastUpdated||s.last_updated>bu.lastUpdated))bu.lastUpdated=s.last_updated;
-   bu.tiers.push({result:s.qualification+" "+s.minimum_result,waiver:s.waiver_percent,amount:s.fixed_amount_rm,conditions:s.other_conditions,deadline:s.deadline,url:s.info_url});
+   bu.tiers.push({scheme:s.scholarship_name,applies:s.applies_to,result:s.qualification==="Other"?s.minimum_result:s.qualification+" "+s.minimum_result,waiver:s.waiver_percent,amount:s.fixed_amount_rm,conditions:s.other_conditions,deadline:s.deadline,url:s.info_url});
   });
   campus.universities=order.map(function(k){return byInst[k];});
  }
- if(fnd)fnd.items=(d.foundation_scholarships||[]).map(function(f){return {id:f.option_id,name:f.scholarship_name,requirements:f.requirements,organiser:f.organiser,award:f.award_value,deadline:f.deadline,url:f.info_url};});
+ if(fnd)fnd.items=(d.foundation_scholarships||[]).map(function(f){return {id:f.option_id,name:f.scholarship_name,requirements:f.requirements,organiser:f.organiser,award:f.award_value,deadline:f.deadline,url:f.info_url,lastUpdated:f.last_updated};});
  return true;
 }
 
