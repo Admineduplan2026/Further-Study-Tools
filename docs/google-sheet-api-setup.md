@@ -100,6 +100,9 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 - `course` 从下拉选单选择，对应网站的 Faculty 00–10 课程类别。
 - 金额只填数字（马币），日期用 `YYYY-MM-DD`。
 - 奖学金条件每行一项（在格子里按 Alt+Enter 或 Ctrl+Enter 换行）。
+- Programmes 的入学条件分开填写：`entry_spm`、`entry_uec`、`entry_olevel`、`entry_stpm`，其他资格（A-Level、文凭等）及附加条件填 `entry_other`。
+  没有列出的资格请留空，网站会显示 "Not listed by the institution"。学费留空时显示 "To be confirmed"。
+- 课程页面会**自动**列出同一院校、同一阶段可申请的 Campus Scholarships（依 `level` 对应 `applies_to` 的 Foundation / Undergraduate / Postgraduate；`applies_to` 留空的奖学金适用所有阶段）。
 - Campus Scholarships 的 `applies_to` 以 `Foundation Programmes` 或 `Undergraduate Programmes` 开头时，网站第 4 页会出现「考试（SPM / O-Level / UEC / STPM / A-Level）」和「Foundation / Undergraduate」按钮来筛选。
   Foundation / Matriculation / Diploma 的 CGPA 条件，`qualification` 选 `Foundation`；SPM / O-Level 学生选 Undergraduate 时会显示这些条件。
 
