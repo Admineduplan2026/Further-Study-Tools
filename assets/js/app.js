@@ -173,17 +173,15 @@ V.universities=function(){
 function uniHead(u,step,back){
  return '<section class="stack">'+stepper(UNI_STEPS,step)+'<div><a class="btn ghost" href="'+back+'">Back</a></div><span class="eyebrow">Universities</span>';
 }
-/* Banner with the institution's 3D virtual tour as its background (Institutions "virtual_tour_url").
-   The tour is decoration until the visitor presses "Explore", which makes it interactive. */
+/* Banner for an institution with a 3D virtual tour (Institutions "virtual_tour_url"). Tour sites usually refuse to be
+   embedded in other pages, so the banner has its own animated background and the tour opens in a new tab. */
 function uniMeta(u){return '<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>';}
 function uniTour(u,title,lead,meta){
  if(!u.tour)return '';
- return '<section class="tourhero" data-tour-box><iframe src="'+esc(u.tour)+'" title="'+esc(u.name)+' 3D campus tour" loading="lazy" referrerpolicy="no-referrer"'+
-  ' sandbox="allow-scripts allow-same-origin allow-popups" allow="fullscreen; gyroscope; accelerometer; xr-spatial-tracking" tabindex="-1"></iframe>'+
-  '<div class="tourveil"></div><div class="tourtext"><span class="eyebrow">3D campus tour</span><h1>'+esc(title)+'</h1>'+(lead?'<p class="lead">'+esc(lead)+'</p>':'')+(meta||'')+
-  '<div class="row"><button type="button" class="btn" data-tour="on">Explore the 3D campus tour</button>'+
-  '<a class="btn ghost" href="'+esc(u.tour)+'" target="_blank" rel="noopener">Open in new tab '+ARROW+'</a></div></div>'+
-  '<button type="button" class="btn tourexit" data-tour="off">Back to page</button></section>';
+ return '<section class="tourhero"><div class="tourbg" aria-hidden="true"><span></span><span></span><span></span></div><div class="tourveil"></div>'+
+  '<div class="tourtext"><span class="eyebrow">3D campus tour</span><h1>'+esc(title)+'</h1>'+(lead?'<p class="lead">'+esc(lead)+'</p>':'')+(meta||'')+
+  '<div class="row"><a class="btn" href="'+esc(u.tour)+'" target="_blank" rel="noopener">Explore the 3D campus tour '+ARROW+'</a></div>'+
+  '<p class="hint">Opens '+esc(u.name)+'\u2019s official virtual tour in a new tab.</p></div></section>';
 }
 function uniPage(u){
  var n=uniScholarships(u);
@@ -499,8 +497,6 @@ app.addEventListener("click",function(ev){
  if(t.hasAttribute("data-schtype")){S.schType=t.getAttribute("data-schtype");location.hash="#scholarships-"+S.schType;return;}
  if(t.hasAttribute("data-schq")||t.hasAttribute("data-schl")){var k=t.hasAttribute("data-schq")?"schQ":"schL";S[k]=t.getAttribute(k==="schQ"?"data-schq":"data-schl");render(true);
   var f=app.querySelector('[data-'+k.toLowerCase()+'="'+S[k]+'"]');if(f)f.focus();return;}
- if(t.hasAttribute("data-tour")){var box=t.closest("[data-tour-box]"),on=t.getAttribute("data-tour")==="on";box.classList.toggle("live",on);
-  (on?box.querySelector(".tourexit"):box.querySelector('[data-tour="on"]')).focus();return;}
  if(t.hasAttribute("data-ans")){S.guide.answers[S.guide.step]=Number(t.getAttribute("data-ans"));rerender("guide-next");return;}
  if(t.id==="guide-next"){S.guide.step++;rerender();app.focus({preventScroll:true});return;}
  if(t.id==="guide-back"){S.guide.step=Math.max(0,S.guide.step-1);rerender();return;}
