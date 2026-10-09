@@ -91,8 +91,20 @@ V.home=function(){return ''+
   '<div class="stack"><span class="n">Step 3</span><h3>Talk to a counsellor</h3><p class="muted">Book a free consultation. We guide you from application to registration.</p></div>'+
  '</div></section>';
 };
+/* About Us: founder profile. Replace the [BRACKETED] placeholders; photo is an image URL or path (empty shows a placeholder). */
+var FOUNDER={name:"[FOUNDER NAME]",role:"Founder & CEO",photo:"",
+ bio:"[Short introduction: education and work background, years of experience in education counselling, and why Eduplan was started.]",
+ facebook:"https://www.facebook.com/jiannsheng/"};
+function founderCard(f){
+ return '<div class="founder"><div class="avatar">'+(f.photo?'<img src="'+esc(f.photo)+'" alt="'+esc(f.name)+'">'
+   :'<svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="currentColor"/></svg>')+'</div>'+
+  '<div class="stack"><span class="eyebrow">'+esc(f.role)+'</span><h3 class="fname">'+esc(f.name)+'</h3><p class="muted">'+esc(f.bio)+'</p>'+
+  '<div class="row">'+(f.facebook?'<a class="btn ghost" href="'+esc(f.facebook)+'" target="_blank" rel="noopener">Facebook '+ARROW+'</a>':'')+
+  '<a class="btn" href="#consultation">Book a free consultation</a></div></div></div>';
+}
 V.about=function(){return ''+
  '<section class="stack"><span class="eyebrow">About Us</span><h1>We lead students to the right place to study</h1><p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></section>'+
+ '<section class="section"><h2>Meet our founder</h2>'+founderCard(FOUNDER)+'</section>'+
  '<section class="section"><h2>Three ways we guide you</h2><div class="grid">'+
   '<div class="item"><h3>Scholarship based</h3><p>For students who need funding. We match your results and family income with scholarships you can apply for.</p><a class="textlink" href="#scholarships">Open the tool '+ARROW+'</a></div>'+
   '<div class="item"><h3>Interest based</h3><p>For students who know what they enjoy. We turn your interests into courses and universities.</p><a class="textlink" href="#faculty">Open the tool '+ARROW+'</a></div>'+
