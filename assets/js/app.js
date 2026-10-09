@@ -173,20 +173,27 @@ V.universities=function(){
 function uniHead(u,step,back){
  return '<section class="stack">'+stepper(UNI_STEPS,step)+'<div><a class="btn ghost" href="'+back+'">Back</a></div><span class="eyebrow">Universities</span>';
 }
-/* Banner for an institution with a 3D virtual tour (Institutions "virtual_tour_url"). Tour sites usually refuse to be
-   embedded in other pages, so the banner has its own animated background and the tour opens in a new tab. */
+/* Type and location pills for an institution. */
 function uniMeta(u){return '<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>';}
+/* Campus banner: the institution's campus photo (CAMPUS_PHOTOS, files in assets/img/campus) or an animated
+   background, plus a button for its 3D virtual tour (Institutions "virtual_tour_url"). Tour sites usually refuse
+   to be embedded in other pages, so the tour opens in a new tab. */
+var CAMPUS_PHOTOS={xmum:"assets/img/campus/xmum.jpg"};
+function uniPhoto(u){return CAMPUS_PHOTOS[String(u.id).toLowerCase()]||"";}
+function hasBanner(u){return !!(u.tour||uniPhoto(u));}
 function uniTour(u,title,lead,meta){
- if(!u.tour)return '';
- return '<section class="tourhero"><div class="tourbg" aria-hidden="true"><span></span><span></span><span></span></div><div class="tourveil"></div>'+
-  '<div class="tourtext"><span class="eyebrow">3D campus tour</span><h1>'+esc(title)+'</h1>'+(lead?'<p class="lead">'+esc(lead)+'</p>':'')+(meta||'')+
-  '<div class="row"><a class="btn" href="'+esc(u.tour)+'" target="_blank" rel="noopener">Explore the 3D campus tour '+ARROW+'</a></div>'+
-  '<p class="hint">Opens '+esc(u.name)+'\u2019s official virtual tour in a new tab.</p></div></section>';
+ if(!hasBanner(u))return '';
+ var photo=uniPhoto(u);
+ return '<section class="tourhero">'+(photo?'<div class="tourphoto" aria-hidden="true" style="background-image:url(\''+esc(photo)+'\')"></div>'
+   :'<div class="tourbg" aria-hidden="true"><span></span><span></span><span></span></div>')+'<div class="tourveil"></div>'+
+  '<div class="tourtext">'+(u.tour?'<span class="eyebrow">3D campus tour</span>':'')+'<h1>'+esc(title)+'</h1>'+(lead?'<p class="lead">'+esc(lead)+'</p>':'')+(meta||'')+
+  (u.tour?'<div class="row"><a class="btn" href="'+esc(u.tour)+'" target="_blank" rel="noopener">Explore the 3D campus tour '+ARROW+'</a></div>'+
+  '<p class="hint">Opens '+esc(u.name)+'\u2019s official virtual tour in a new tab.</p>':'')+'</div></section>';
 }
 function uniPage(u){
  var n=uniScholarships(u);
- return uniHead(u,2,"#universities")+(u.tour?'':'<h1>'+esc(u.name)+'</h1>'+(u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':''))+
- (u.tour?'':uniMeta(u))+'</section>'+
+ return uniHead(u,2,"#universities")+(hasBanner(u)?'':'<h1>'+esc(u.name)+'</h1>'+(u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':''))+
+ (hasBanner(u)?'':uniMeta(u))+'</section>'+
  uniTour(u,u.name,u.fullName!==u.name?u.fullName:"",uniMeta(u))+
  '<section class="panel">'+facts([["Website",u.website],["Admissions email",u.email],["Admissions phone",u.phone],["WhatsApp",u.whatsapp],["Last updated",u.lastUpdated]])+
   '<div class="row">'+(u.website?'<a class="btn ghost" href="'+esc(u.website)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'')+
@@ -202,7 +209,7 @@ function uniPage(u){
 function uniLevelPage(u,lv){
  var L=LEVELS.filter(function(x){return x[0]===lv;})[0],ps=u.progs.filter(function(p){return uniLevel(p.level)[0]===lv;});
  var subs=uniq(L[2].concat(ps.map(function(p){return uniLevel(p.level)[1];})));
- return uniHead(u,3,"#universities/"+esc(u.id.toLowerCase()))+(u.tour?'':'<h1>'+esc(u.name)+' · '+L[1]+'</h1><p class="lead">'+esc(L[2].join(" / "))+'</p>')+
+ return uniHead(u,3,"#universities/"+esc(u.id.toLowerCase()))+(hasBanner(u)?'':'<h1>'+esc(u.name)+' · '+L[1]+'</h1><p class="lead">'+esc(L[2].join(" / "))+'</p>')+
  '<div class="chips" role="group" aria-label="Study level">'+LEVELS.map(function(x){return '<a class="chip" href="#universities/'+esc(u.id.toLowerCase())+'/'+x[0]+'"'+(x[0]===lv?' aria-current="page"':'')+'>'+x[1]+'</a>';}).join("")+'</div></section>'+
  uniTour(u,u.name+' · '+L[1],L[2].join(" / "))+
  (ps.length?subs.map(function(sl){

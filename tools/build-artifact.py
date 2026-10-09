@@ -9,5 +9,8 @@ h=h[:a]+"\n"+open("assets/css/styles.css").read()+"\n"+h[b:]
 a=h.index("<script>")+len("<script>");b=h.index("</script>",a)
 js="\n".join(open("assets/js/"+f).read() for f in ["config.js","scholarship-data.js","faculty-data.js","app.js","i18n.js"])
 assert "EDUPLAN_SHEET_DATA=" not in js
-js=js.replace('"assets/img/founder.jpg"','"data:image/jpeg;base64,'+base64.b64encode(open("assets/img/founder.jpg","rb").read()).decode()+'"')
+import re
+# Images referenced from the JS ("assets/img/....jpg|png|webp") are inlined, since the artifact is a single page.
+MIME={"jpg":"jpeg","jpeg":"jpeg","png":"png","webp":"webp"}
+js=re.sub(r'"(assets/img/[\w./-]+\.(jpg|jpeg|png|webp))"',lambda m:'"data:image/'+MIME[m.group(2)]+';base64,'+base64.b64encode(open(m.group(1),"rb").read()).decode()+'"',js)
 open(sys.argv[2],"w").write(h[:a]+"\n"+js+"\n"+h[b:])

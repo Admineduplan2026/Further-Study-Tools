@@ -152,15 +152,17 @@ a.chip{display:inline-flex;align-items:center;text-decoration:none}
 .tourbg span:nth-child(2){background:#1f9e8f;right:-20%;top:10%;animation-duration:22s;animation-delay:-6s}
 .tourbg span:nth-child(3){background:#3b4fb8;left:20%;bottom:-45%;animation-duration:26s;animation-delay:-12s}
 @keyframes tourdrift{0%{transform:translate(0,0) scale(1)}50%{transform:translate(12%,8%) scale(1.15)}100%{transform:translate(-8%,-6%) scale(.95)}}
-.tourveil{position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(9,20,30,0) 0%,rgba(9,20,30,.55) 100%)}
+.tourphoto{position:absolute;inset:-2%;z-index:-2;background-size:cover;background-position:center 40%;animation:tourzoom 24s ease-in-out infinite alternate}
+@keyframes tourzoom{0%{transform:scale(1) translate(0,0)}100%{transform:scale(1.12) translate(-2%,-1%)}}
+.tourveil{position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(9,20,30,.72) 0%,rgba(9,20,30,.38) 55%,rgba(9,20,30,.08) 100%),linear-gradient(180deg,rgba(9,20,30,0) 45%,rgba(9,20,30,.6) 100%)}
 .tourtext{padding:32px;color:#fff;display:flex;flex-direction:column;gap:12px;max-width:760px}
 .tourtext .eyebrow{color:#9fd3f2}
 .tourtext .lead{color:#e6edf2}
 .tourtext .hint{color:#c9d6df}
 .tourtext .btn{background:#fff;color:var(--ink);border-color:#fff}
 .tourtext .btn:hover{background:var(--brand-soft);border-color:var(--brand-soft)}
-@media (prefers-reduced-motion:reduce){.tourbg span{animation:none}}
-@media (max-width:820px){.tourhero{min-height:320px}.tourtext{padding:20px}}
+@media (prefers-reduced-motion:reduce){.tourbg span,.tourphoto{animation:none}}
+@media (max-width:820px){.tourhero{min-height:320px}.tourtext{padding:20px}.tourveil{background:linear-gradient(180deg,rgba(9,20,30,.5) 0%,rgba(9,20,30,.8) 100%)}}
 .progs{display:flex;flex-direction:column;gap:16px}
 .prog{border:1px solid var(--line);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:20px}
 .prog h4{font-family:var(--display);font-size:14px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
