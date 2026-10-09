@@ -5,7 +5,12 @@ import sys,base64
 h=open(sys.argv[1]).read()
 first=h.index("</style>")                      # host wrapper style ends here
 a=h.index("<style>",first)+len("<style>");b=h.index("</style>",a)
-h=h[:a]+"\n"+open("assets/css/styles.css").read()+"\n"+h[b:]
+import re,base64
+css=open("assets/css/styles.css").read()
+# Images the stylesheet references (url("../img/x.svg"), relative to assets/css) are inlined, since the artifact is a single page.
+CSSMIME={"svg":"svg+xml","png":"png","jpg":"jpeg","jpeg":"jpeg","webp":"webp"}
+css=re.sub(r'url\("\.\./img/([\w./-]+\.(svg|png|jpg|jpeg|webp))"\)',lambda m:'url("data:image/'+CSSMIME[m.group(2)]+';base64,'+base64.b64encode(open("assets/img/"+m.group(1),"rb").read()).decode()+'")',css)
+h=h[:a]+"\n"+css+"\n"+h[b:]
 a=h.index("<script>")+len("<script>");b=h.index("</script>",a)
 js="\n".join(open("assets/js/"+f).read() for f in ["config.js","scholarship-data.js","faculty-data.js","app.js","i18n.js"])
 assert "EDUPLAN_SHEET_DATA=" not in js
