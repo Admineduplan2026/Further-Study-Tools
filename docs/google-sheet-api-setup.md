@@ -90,8 +90,8 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 
 | 分页 | 一行代表 | 网站显示位置 | 必填栏位 |
 |---|---|---|---|
-| Institutions | 一所院校 | 所有分页的院校名称 | institution_id, name, type |
-| Programmes | 一个课程 | Faculty → 课程 → 第 4 页 | programme_id, institution_id, course, programme_name, level |
+| Institutions | 一所院校 | Universities 页面（Published = Yes 的院校自动列出） | institution_id, name, type |
+| Programmes | 一个课程 | Faculty → 课程 → 第 4 页；Universities → 院校 → 阶段 | programme_id, institution_id, course, programme_name, level |
 | Campus Scholarships | 一个奖学金等级（如 SPM 7A = 25%） | Scholarships → Campus Scholarship | scholarship_id, institution_id, qualification, minimum_result，以及 waiver_percent 或 fixed_amount_rm 其中一项 |
 | Foundation Scholarships | 一个基金会奖学金（A、B、C…） | Scholarships → Foundation Scholarship | option_id, scholarship_name, requirements |
 

@@ -136,10 +136,72 @@ V.about=function(){return ''+
  '</div></section>'+
  '<section class="panel" data-reveal><h2>Ready to talk?</h2><p class="muted">A counsellor will go through your options with you and your family.</p><div><a class="btn" href="#consultation">Book a free consultation</a></div></section>';
 };
-V.universities=function(){return ''+
- '<section class="stack"><span class="eyebrow">Universities</span><h1>Partner universities and colleges</h1><p class="lead">Placeholder institutions. Replace them with your real partners before launch.</p></section>'+
- '<section class="grid">'+UNIS.map(function(u){return '<div class="item"><h3>'+esc(u.name)+'</h3><p>'+esc(u.city)+'</p><div class="meta">'+u.fields.map(function(f){return '<span class="pill brand">'+esc(FIELDS[f])+'</span>';}).join("")+'</div><p>'+esc(u.hostel)+'.</p></div>';}).join("")+'</section>';
+/* Universities: Page 1 lists every published institution from the school sheets, Page 2 shows one
+   institution and its study levels, Page 3 lists that level's programmes by sub-level and faculty.
+   Routes: #universities, #universities/xmum, #universities/xmum/undergraduate. */
+var UNIV=[];   /* institutions from the sheet data (applyApi); each has .progs */
+var LEVELS=[["foundation","Foundation",["Foundation"]],["undergraduate","Undergraduate",["Certificate","Diploma","Bachelor's Degree"]],
+ ["postgraduate","Postgraduate",["Master's Degree","PhD","Professional Certificate"]]];
+var UNI_STEPS=["Universities","University","Programmes"];
+/* Lists "level" value -> [study level, sub-level]. */
+function uniLevel(l){
+ l=l||"";
+ if(/pre-?university|foundation/i.test(l))return ["foundation","Foundation"];
+ if(/^certificate/i.test(l))return ["undergraduate","Certificate"];
+ if(/diploma/i.test(l))return ["undergraduate","Diploma"];
+ if(/bachelor|degree/i.test(l)&&!/master/i.test(l))return ["undergraduate","Bachelor's Degree"];
+ if(/master/i.test(l))return ["postgraduate","Master's Degree"];
+ if(/phd|doctor/i.test(l))return ["postgraduate","PhD"];
+ if(/professional/i.test(l))return ["postgraduate","Professional Certificate"];
+ return ["undergraduate",l||"Other"];
+}
+function univ(id){id=String(id||"").toLowerCase();for(var i=0;i<UNIV.length;i++){if(UNIV[i].id.toLowerCase()===id)return UNIV[i];}return null;}
+function facOfCourse(cid){for(var i=0;i<FAC.fields.length;i++){for(var j=0;j<FAC.fields[i].courses.length;j++){if(FAC.fields[i].courses[j].id===cid)return FAC.fields[i];}}return null;}
+function uniScholarships(u){var t=schType("campus"),c=t&&schUni(t,u.id);return c?schGroupBy(c.tiers).length:0;}
+V.universities=function(){
+ var x=S.uni&&univ(S.uni.id);
+ if(x)return S.uni.level?uniLevelPage(x,S.uni.level):uniPage(x);
+ return '<section class="stack">'+stepper(UNI_STEPS,1)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
+ '<span class="eyebrow">Universities</span><h1>Partner universities and colleges</h1><p class="lead">Choose a university to see its programmes by level: foundation, undergraduate and postgraduate.</p></section>'+
+ (UNIV.length?'<section class="grid">'+UNIV.map(function(u){var n=uniScholarships(u);
+  return '<a class="item pick" href="#universities/'+esc(u.id.toLowerCase())+'"><span class="name">'+esc(u.name)+'</span>'+(u.fullName!==u.name?'<span class="desc">'+esc(u.fullName)+'</span>':'')+
+   '<span class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>'+
+   '<span class="meta"><span class="pill brand">'+u.progs.length+' programme'+(u.progs.length===1?'':'s')+'</span>'+(n?'<span class="pill ok">'+n+' scholarship'+(n===1?'':'s')+'</span>':'')+'</span>'+
+   '<span class="textlink">View university '+ARROW+'</span></a>';}).join("")+'</section>'
+  :'<div class="empty">The university list is being prepared.</div>');
 };
+function uniHead(u,step,back){
+ return '<section class="stack">'+stepper(UNI_STEPS,step)+'<div><a class="btn ghost" href="'+back+'">Back</a></div><span class="eyebrow">Universities</span>';
+}
+function uniPage(u){
+ var n=uniScholarships(u);
+ return uniHead(u,2,"#universities")+'<h1>'+esc(u.name)+'</h1>'+(u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':'')+
+ '<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div></section>'+
+ '<section class="panel">'+facts([["Website",u.website],["Admissions email",u.email],["Admissions phone",u.phone],["WhatsApp",u.whatsapp],["Last updated",u.lastUpdated]])+
+  '<div class="row">'+(u.website?'<a class="btn ghost" href="'+esc(u.website)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'')+
+  (n?'<a class="btn ghost" href="#scholarships-campus/'+esc(u.id.toLowerCase())+'">Scholarships ('+n+') '+ARROW+'</a>':'')+'</div></section>'+
+ '<section class="section"><h2>Choose a study level</h2><div class="grid">'+LEVELS.map(function(L){
+  var ps=u.progs.filter(function(p){return uniLevel(p.level)[0]===L[0];});
+  var subs=L[2].map(function(sl){var k=ps.filter(function(p){return uniLevel(p.level)[1]===sl;}).length;return k?'<span class="pill">'+esc(sl)+' · '+k+'</span>':'';}).join("");
+  return '<a class="item pick" href="#universities/'+esc(u.id.toLowerCase())+'/'+L[0]+'"><span class="name">'+L[1]+'</span>'+
+   '<span class="desc">'+esc(L[2].join(" / "))+'</span>'+
+   '<span class="meta"><span class="pill brand">'+ps.length+' programme'+(ps.length===1?'':'s')+'</span>'+subs+'</span>'+
+   '<span class="textlink">View programmes '+ARROW+'</span></a>';}).join("")+'</div></section>';
+}
+function uniLevelPage(u,lv){
+ var L=LEVELS.filter(function(x){return x[0]===lv;})[0],ps=u.progs.filter(function(p){return uniLevel(p.level)[0]===lv;});
+ var subs=uniq(L[2].concat(ps.map(function(p){return uniLevel(p.level)[1];})));
+ return uniHead(u,3,"#universities/"+esc(u.id.toLowerCase()))+'<h1>'+esc(u.name)+' · '+L[1]+'</h1><p class="lead">'+esc(L[2].join(" / "))+'</p>'+
+ '<div class="chips" role="group" aria-label="Study level">'+LEVELS.map(function(x){return '<a class="chip" href="#universities/'+esc(u.id.toLowerCase())+'/'+x[0]+'"'+(x[0]===lv?' aria-current="page"':'')+'>'+x[1]+'</a>';}).join("")+'</div></section>'+
+ (ps.length?subs.map(function(sl){
+  var sp=ps.filter(function(p){return uniLevel(p.level)[1]===sl;});if(!sp.length)return '';
+  var byFac={},order=[];sp.forEach(function(p){var f=facOfCourse(p.course_id),k=f?f.code:"--";if(!byFac[k]){byFac[k]={f:f,list:[]};order.push(k);}byFac[k].list.push(p);});
+  order.sort();
+  return '<section class="section">'+(sl!==L[1]?'<h2>'+esc(sl)+'</h2>':'')+order.map(function(k){var g=byFac[k];
+   return '<div class="stack"><h3 class="fachead">'+(g.f?'Faculty '+esc(g.f.code)+' · '+esc(g.f.name):'Other')+'</h3><div class="progs">'+g.list.map(progCard).join("")+'</div></div>';}).join("")+'</section>';}).join("")
+  :'<div class="empty">No '+L[1].toLowerCase()+' programmes listed for '+esc(u.name)+' yet.</div>')+
+ '<p class="hint">Information is for reference only. Please confirm with the university’s official website.</p>';
+}
 /* Scholarship-based: Page 1 is the entry button, Page 2 picks the type, Page 3 shows that type.
    Page 3 is only reachable after a type is chosen on Page 2 (see route()). */
 function stepper(names,step){
@@ -374,13 +436,19 @@ function route(){
   else if((S.schType=st.id)&&sp[1]){var sel=st.kind==="waiver"?(S.schUni=schUni(st,sp[1])):(S.schItem=schItem(st,sp[1]));r="scholarships-"+st.id+(sel?"/"+String(sel.id).toLowerCase():"");}
   else r="scholarships-"+st.id;
  }
+ S.uni=null;
+ if(r.indexOf("universities/")===0){
+  var up=r.split("/"),ux=univ(up[1]),ul=ux&&up[2]&&LEVELS.some(function(x){return x[0]===up[2];})?up[2]:null;
+  if(ux){r="universities/"+ux.id.toLowerCase()+(ul?"/"+ul:"");S.uni={id:ux.id,level:ul};}
+  else if(UNIV.length)r="universities";   /* before the sheet data arrives, keep the link as it is */
+ }
  S.fac=null;
  if(r.indexOf("faculty/")===0){
   var p=r.split("/"),f=facField(p[1]),c=f&&p[2]?facCourse(f,p[2]):null;
   r=f?"faculty/"+f.code+(c?"/"+c.id:""):"faculty";
   if(f)S.fac={field:f,course:c};
  }
- view=r.indexOf("faculty/")===0?"faculty":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
+ view=r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
  if(!V[view])r=view="home";
  if(r!==h&&h)history.replaceState(null,"","#"+r);
  return view;
@@ -449,12 +517,16 @@ function applyApi(d){
  var inst={},courses={};
  (d.institutions||[]).forEach(function(i){inst[i.institution_id]=i;});
  FAC.fields.forEach(function(f){f.courses.forEach(function(c){c.universities=[];courses[c.id]=c;});});
+ UNIV=(d.institutions||[]).map(function(i){return {id:i.institution_id,name:i.short_name||i.name,fullName:i.name,type:i.type,place:[i.city,i.state].filter(Boolean).join(", "),
+  website:i.website,email:i.admissions_email,phone:i.admissions_phone,whatsapp:i.whatsapp,lastUpdated:i.last_updated,progs:[]};})
+  .sort(function(a,b){return a.name<b.name?-1:1;});
  (d.programmes||[]).forEach(function(p){
   var i=inst[p.institution_id];if(!i)return;
-  uniq([p.course_id].concat(p.also_course_ids||[])).forEach(function(id){var c=courses[id];if(!c)return;
-  c.universities.push({inst:p.institution_id,name:i.short_name||i.name,place:[i.city,i.state].filter(Boolean).join(", "),campus:p.campus,programme:p.programme_name,level:p.level,mode:p.study_mode,
+  var prog={inst:p.institution_id,name:i.short_name||i.name,place:[i.city,i.state].filter(Boolean).join(", "),campus:p.campus,programme:p.programme_name,level:p.level,mode:p.study_mode,
    years:p.duration_years,intakes:p.intakes,fee:p.tuition_fee_rm,entry:p.entry_spm,uec:p.entry_uec,olevel:p.entry_olevel,stpm:p.entry_stpm,entry_other:p.entry_other,english:p.english_requirement,
-   deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes});});
+   deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes,course_id:p.course_id};
+  var u=univ(p.institution_id);if(u)u.progs.push(prog);
+  uniq([p.course_id].concat(p.also_course_ids||[])).forEach(function(id){if(courses[id])courses[id].universities.push(prog);});
  });
  var campus=schType("campus"),fnd=schType("foundation");
  if(campus){

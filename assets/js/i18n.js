@@ -62,13 +62,17 @@ var ZH={
  "Universities offering this course":"开办此课程的大学","The university list for this course is being prepared. A counsellor can tell you which universities offer it.":"此课程的大学名单正在整理中，升学顾问可以告诉你哪些大学开办这个课程。",
  "Programme page":"课程网页","Tuition fee (whole programme)":"学费（整个课程）","Intakes":"开课月份","Entry (SPM)":"入学条件（SPM）","Entry (other)":"入学条件（其他）","English":"英文要求","Application deadline":"截止日期","Notes":"备注",
  "Interest-based":"兴趣导向","Courses":"课程",
+ "Choose a university to see its programmes by level: foundation, undergraduate and postgraduate.":"选择大学，按阶段查看课程：预科、本科与研究生。",
+ "View university":"查看大学","The university list is being prepared.":"大学名单正在整理中。","Website":"官网","Admissions email":"招生电邮","Admissions phone":"招生电话",
+ "Choose a study level":"选择升学阶段","View programmes":"查看课程","Programmes":"课程","Professional Certificate":"专业证书",
+ "Certificate / Diploma / Bachelor's Degree":"证书／文凭／学士学位","Master's Degree / PhD / Professional Certificate":"硕士学位／博士／专业证书",
  "Location":"地点","To be confirmed":"待确认","Entry requirements":"入学条件","Not listed by the institution":"院校未列出","Others":"其他",
  "Scholarships you can apply for":"可申请的奖学金","No campus scholarship listed for this level yet.":"此阶段暂未列出大学奖学金。",
  "Other scholarships open to all students":"其他开放给所有学生的奖学金",
  "Pre-university (Foundation / Matriculation / Form 6 / A-Level)":"大学先修（预科／大学先修班／中六／A-Level）","Certificate":"证书",
  "Bachelor's Degree":"学士学位","Master's Degree":"硕士学位","PhD":"博士","Full-time":"全日制","Part-time":"兼读制",
  /* Scholarship flow */
- "Scholarship-based":"奖学金导向","Scholarship type":"奖学金类别","Scholarship":"奖学金","Requirements":"申请条件","University":"大学","Scholarship details":"奖学金详情","Choose a scholarship":"选择奖学金","Details":"详情",
+ "Scholarship-based":"奖学金导向","Scholarship type":"奖学金类别","Scholarship":"奖学金","Requirements":"申请条件","University":"院校","Scholarship details":"奖学金详情","Choose a scholarship":"选择奖学金","Details":"详情",
  "Choose a scholarship type":"选择奖学金类别","Scholarships come from two places. Pick one to continue.":"奖学金有两种来源，请选择其中一种继续。",
  "Foundation Scholarship":"基金会奖学金","Campus Scholarship":"大学奖学金",
  "Scholarships and financial aid from foundations and funds":"由基金会及基金提供的奖学金与助学金","Scholarships offered by colleges / universities":"由学院／大学提供的奖学金",
@@ -77,7 +81,7 @@ var ZH={
  "Kampar Campus and Sungai Long Campus. Scholarships for Foundation and Undergraduate programmes, automatically offered on SPM, O-Level, UEC, STPM or A-Level results.":"金宝校区与双溪龙校区。预科与学士课程奖学金，依据 SPM、O-Level、UEC、STPM 或 A-Level 成绩自动颁发。",
  "Private University":"私立大学","Scholarship tiers":"奖学金等级","Tuition waiver":"学费减免","Award":"奖励","Eligibility":"资格","Result":"成绩","Conditions":"条件","Applies to":"适用于",
  "Not sure which tier you reach?":"不确定自己符合哪个等级？","Find your scholarship":"查找你的奖学金","Your qualification":"你的考试资格","Study level":"升学阶段",
- "Foundation":"预科","Undergraduate":"学士","Qualification":"考试资格",
+ "Foundation":"预科","Undergraduate":"本科","Postgraduate":"研究生","Qualification":"考试资格",
  /* Guided */
  "Not sure yet? Start here":"还不确定？从这里开始","Five short questions. There are no wrong answers.":"五道简单问题，没有错误答案。",
  "Which school subjects do you enjoy most?":"你最喜欢哪些科目？","Biology and Chemistry":"生物与化学","Maths and Physics":"数学与物理","Accounts and Economics":"会计与经济","Art and Design":"美术与设计","Languages and History":"语文与历史",
@@ -101,12 +105,16 @@ var ZH={
  "Copied. Paste it into WhatsApp or an email to Eduplan.":"已复制。请粘贴到 WhatsApp 或电邮发送给 Eduplan。",
  "The summary is selected. Press Ctrl+C (or long-press on a phone) to copy it.":"摘要已选取。请按 Ctrl+C 复制（手机请长按）。"
 };
-var LEVEL={Foundation:"预科",Undergraduate:"学士"};
+var LEVEL={Foundation:"预科",Undergraduate:"本科",Postgraduate:"研究生"};
 var ZH_PATTERNS=[
  [/^Page (\d): (.+)$/,function(m){return "第 "+m[1]+" 页："+tr(m[2]);}],
  [/^(\d+) courses?$/,"$1 门课程"],
  [/^(\d+) scholarships?$/,"$1 项奖学金"],
  [/^(\d+) universit(?:y|ies)$/,"$1 所大学"],
+ [/^Scholarships \((\d+)\)$/,"奖学金（$1）"],
+ [/^(.+) \u00b7 (Foundation|Undergraduate|Postgraduate)$/,function(m){return m[1]+" · "+LEVEL[m[2]];}],
+ [/^No (foundation|undergraduate|postgraduate) programmes listed for (.+) yet\.$/,function(m){return m[2]+" 暂未列出"+LEVEL[m[1].charAt(0).toUpperCase()+m[1].slice(1)]+"课程。";}],
+ [/^(.+) \u00b7 (\d+)$/,function(m){var z=tr(m[1]);return (z||m[1])+" · "+m[2];}],
  [/^(\d+) programmes?$/,"$1 个课程"],
  [/^Up to (\d+)% tuition waiver$/,"最高 $1% 学费减免"],
  [/^Faculty (\d\d)$/,"科系 $1"],
