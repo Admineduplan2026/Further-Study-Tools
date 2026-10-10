@@ -15,7 +15,8 @@
  *
  * GET <url>            -> JSON with every row marked Published = Yes
  * GET <url>?nocache=1  -> same, rebuilt from the sheets now
- * POST <url> {"action":"chat",...} -> AI study assistant reply (see Chat.gs and docs/ai-chatbot-setup.md)
+ * POST <url> {"action":"chat",...}  -> AI study assistant reply (Chat.gs, docs/ai-chatbot-setup.md)
+ * POST <url> {"action":"apply",...} -> stores an application in Eduplan's private Drive (Apply.gs, docs/application-form-setup.md)
  * Edits show up within about a minute: each request compares the folder's last-edit times
  * (checked at most every FRESH_SECONDS) with the cached copy.
  *
@@ -65,6 +66,15 @@ var NUMBERS = ['hostel_fee_min', 'hostel_fee_max', 'duration_years', 'tuition_fe
 function doGet(e) {
   var json = apiJson_(e && e.parameter && e.parameter.nocache);
   return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* POST: the AI study assistant (Chat.gs) and the application form (Apply.gs). */
+function doPost(e) {
+  var body;
+  try { body = JSON.parse(e.postData.contents); } catch (err) { return chatJson_({ error: 'bad_request' }); }
+  if (body && body.action === 'chat') return chatJson_(chatReply_(body.messages));
+  if (body && body.action === 'apply') return chatJson_(applySubmit_(body));
+  return chatJson_({ error: 'bad_request' });
 }
 
 /* The published data as a JSON string, from the cache when no sheet has changed. Also used by the AI chat (Chat.gs). */

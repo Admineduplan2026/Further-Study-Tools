@@ -1,7 +1,7 @@
 /**
  * Eduplan AI study assistant (the chat bubble on the website).
  *
- * The website POSTs {"action":"chat","messages":[{"role":"user"|"assistant","content":"..."}]} to the same /exec URL.
+ * The website POSTs {"action":"chat","messages":[{"role":"user"|"assistant","content":"..."}]} to the same /exec URL (doPost in Code.gs).
  * This script adds the instructions and the published school data (ChatKnowledge.gs) and asks Claude for the reply.
  * The Anthropic API key stays here, in Script Properties; it is never sent to the browser.
  *
@@ -17,13 +17,6 @@ var CHAT_DEFAULT_DAILY_LIMIT = 300;
 var CHAT_MAX_TURNS = 12;        // only the latest messages are sent
 var CHAT_MAX_CHARS = 1500;      // per message
 var CHAT_FALLBACK_MODELS = ['claude-opus-5-5', 'claude-opus-5', 'claude-fable-5-1', 'claude-sonnet-5-5'];  // accept fallbacks: "default" (Haiku does not)
-
-function doPost(e) {
-  var body;
-  try { body = JSON.parse(e.postData.contents); } catch (err) { return chatJson_({ error: 'bad_request' }); }
-  if (body && body.action === 'chat') return chatJson_(chatReply_(body.messages));
-  return chatJson_({ error: 'bad_request' });
-}
 
 function chatJson_(o) {
   return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON);

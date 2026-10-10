@@ -117,7 +117,14 @@ V.about=function(){return ''+
 var UNIV=[];   /* institutions from the sheet data (applyApi); each has .progs */
 var LEVELS=[["foundation","Foundation",["Foundation"]],["undergraduate","Undergraduate",["Certificate","Diploma","Bachelor's Degree"]],
  ["postgraduate","Postgraduate",["Master's Degree","PhD","Professional Certificate"]]];
-var UNI_STEPS=["Universities","University","Programmes"];
+/* The three routes and their pages. Each ends with Ask more, Apply and Accommodation (see the Journey section). */
+var FLOWS={
+ faculty:["Faculty","Courses","University & programme","Ask more","Apply","Accommodation"],
+ universities:["Universities","University","Programme","Ask more","Apply","Accommodation"],
+ scholarships:["Scholarship","Scholarship type","Requirements","University","Programme","Ask more","Apply","Accommodation"]
+};
+/* University pages are pages 1-3 of their own route, or pages 4-5 when the student came from a scholarship. */
+function uniStepper(step){return S.flow==="scholarships"?stepper(FLOWS.scholarships,step===3?5:4):stepper(FLOWS.universities,step);}
 /* Lists "level" value -> [study level, sub-level]. */
 function uniLevel(l){
  l=l||"";
@@ -136,7 +143,7 @@ function uniScholarships(u){var t=schType("campus"),c=t&&schUni(t,u.id);return c
 V.universities=function(){
  var x=S.uni&&univ(S.uni.id);
  if(x)return S.uni.level?uniLevelPage(x,S.uni.level):uniPage(x);
- return '<section class="stack">'+stepper(UNI_STEPS,1)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
+ return '<section class="stack">'+uniStepper(1)+'<div><a class="btn ghost" href="'+(S.flow==="scholarships"?esc(sget("eduplan-schback")||"#scholarships"):"#home")+'">Back</a></div>'+
  '<span class="eyebrow">Universities</span><h1>Partner universities and colleges</h1><p class="lead">Choose a university to see its programmes by level: foundation, undergraduate and postgraduate.</p></section>'+
  (UNIV.length?'<section class="grid">'+UNIV.map(function(u){var n=uniScholarships(u);
   return '<a class="item pick" href="#universities/'+esc(u.id.toLowerCase())+'"><span class="name">'+esc(u.name)+'</span>'+(u.fullName!==u.name?'<span class="desc">'+esc(u.fullName)+'</span>':'')+
@@ -146,7 +153,7 @@ V.universities=function(){
   :'<div class="empty">The university list is being prepared.</div>');
 };
 function uniHead(u,step,back){
- return '<section class="stack">'+stepper(UNI_STEPS,step)+'<div><a class="btn ghost" href="'+back+'">Back</a></div><span class="eyebrow">Universities</span>';
+ return '<section class="stack">'+uniStepper(step)+'<div><a class="btn ghost" href="'+back+'">Back</a></div><span class="eyebrow">Universities</span>';
 }
 /* Type and location pills for an institution. */
 function uniMeta(u){return '<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>';}
@@ -217,12 +224,8 @@ function facNav(ps){
 function stepper(names,step){
  return '<ol class="stepper" aria-label="Progress">'+names.map(function(n,k){var cur=k+1===step;return '<li'+(cur?' aria-current="step"':(k+1<step?' class="done"':''))+'><span aria-hidden="true">'+(k+1)+'</span>Page '+(k+1)+': '+esc(n)+'</li>';}).join("")+'</ol>';
 }
-function schStepper(step,t){
- var names=!t?["Scholarship-based","Scholarship type","Choose a scholarship","Details"]
-  :t.kind==="waiver"?["Scholarship-based","Scholarship type","University","Scholarship details"]
-  :["Scholarship-based","Scholarship type","Scholarship","Requirements"];
- return stepper(names,step);
-}
+/* Scholarship pages: 1 home card, 2 type, 3 choosing a scholarship and its requirements (both pages), then universities (4) and programmes (5). */
+function schStepper(step){return stepper(FLOWS.scholarships,Math.min(step,3));}
 function schUni(t,id){if(!t||!t.universities||!id)return null;id=String(id).toLowerCase();for(var i=0;i<t.universities.length;i++){if(String(t.universities[i].id).toLowerCase()===id)return t.universities[i];}return null;}
 function schItem(t,id){if(!t||!t.items||!id)return null;id=String(id).toLowerCase();for(var i=0;i<t.items.length;i++){if(t.items[i].name&&String(t.items[i].id).toLowerCase()===id)return t.items[i];}return null;}
 function schTierCell(r){return r.waiver!=null?r.waiver+'%':rm(r.amount);}
@@ -259,7 +262,8 @@ function schReq(t,it){
  '<section class="panel"><h2>Requirements</h2>'+reqList(lines(it.requirements))+
   facts([["Award",it.award],["Application deadline",it.deadline],["Last updated",it.lastUpdated]])+
   '<div class="row">'+(it.url?'<a class="btn" href="'+esc(it.url)+'" target="_blank" rel="noopener">Official information '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+SCH_NOTE+'</section>'+
- '<section class="panel"><h2>Want help applying?</h2>'+schCta("Interested in: "+it.name+".")+'</section>';
+ '<section class="panel"><h2>Next: choose a university</h2><p class="muted">Find a university and programme to apply to with this scholarship.</p>'+
+  '<div class="row"><a class="btn" href="#universities" data-flow="scholarships">Choose a university '+ARROW+'</a><a class="btn ghost" href="#consultation" data-topic="Scholarships" data-note="'+esc("Interested in: "+it.name+".")+'">Ask a counsellor</a></div></section>';
 }
 function schUniList(t){
  return schHead(3,t,"#scholarships")+'<h1>Choose a university</h1><p class="lead">'+esc(t.desc)+'. Tap a university to see its scholarship details.</p></section>'+
@@ -314,18 +318,20 @@ function schDetails(t,u){
  (u.tiers.some(schLevel)?schFilter(u):schGroupBy(u.tiers).map(function(g){return schPanel(g);}).join(""))+
  '<section class="panel">'+facts([["Last updated",u.lastUpdated]])+
   '<div class="row">'+(site?'<a class="btn" href="'+esc(site)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+SCH_NOTE+'</section>'+
- '<section class="panel"><h2>Not sure which tier you reach?</h2>'+schCta("Campus Scholarship: "+u.name)+'</section>';
+ '<section class="panel"><h2>Next: choose your programme at '+esc(u.name)+'</h2><p class="muted">Not sure which tier you reach? A counsellor can check with you.</p>'+
+  '<div class="row">'+(univ(u.id)?'<a class="btn" href="#universities/'+esc(String(u.id).toLowerCase())+'" data-flow="scholarships">See '+esc(u.name)+' programmes '+ARROW+'</a>':'')+
+  '<a class="btn ghost" href="#consultation" data-topic="Scholarships" data-note="'+esc("Campus Scholarship: "+u.name)+'">Ask a counsellor</a></div></section>';
 }
 SCH.types.forEach(function(t){V["scholarships-"+t.id]=function(){return schPage3(t);};});
 
 /* Interest-based: Page 1 is the entry button, Page 2 picks a faculty (00-10), Page 3 lists its courses,
    Page 4 lists the universities offering the chosen course. Routes: #faculty, #faculty/05, #faculty/05/biotechnology. */
-var FAC_STEPS=["Interest-based","Faculty","Courses","Universities"];
+var FAC_STEPS=FLOWS.faculty;
 V.faculty=function(){
  var f=S.fac&&S.fac.field,c=S.fac&&S.fac.course;
  if(c)return facUnis(f,c);
  if(f)return facCourses(f);
- return '<section class="stack">'+stepper(FAC_STEPS,2)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
+ return '<section class="stack">'+stepper(FAC_STEPS,1)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
  '<span class="eyebrow">Option 2 · Interest based</span><h1>Choose a faculty</h1><p class="lead">Pick the field you are interested in to see its courses.</p></section>'+
  '<section class="grid">'+FAC.fields.map(function(f){return '<a class="item pick" href="#faculty/'+esc(f.code)+'"><span class="big">'+esc(f.code)+'</span><span class="name">'+esc(f.name)+'</span><span class="desc">'+esc(f.zh)+'</span><span class="hint">'+f.courses.length+' course'+(f.courses.length===1?'':'s')+'</span></a>';}).join("")+'</section>';
 };
@@ -336,7 +342,7 @@ function facCount(c){
  return '<span class="meta"><span class="pill brand">'+n+' universit'+(n===1?'y':'ies')+'</span><span class="pill">'+l.length+' programme'+(l.length===1?'':'s')+'</span></span>';
 }
 function facCourses(f){
- return '<section class="stack">'+stepper(FAC_STEPS,3)+'<div><a class="btn ghost" href="#faculty">Back</a></div>'+
+ return '<section class="stack">'+stepper(FAC_STEPS,2)+'<div><a class="btn ghost" href="#faculty">Back</a></div>'+
  '<span class="eyebrow">Faculty '+esc(f.code)+'</span><h1>'+esc(f.name)+'</h1><p class="lead">'+esc(f.zh)+'. Choose a course to see which universities offer it.</p></section>'+
  '<section class="grid">'+f.courses.map(function(c){return '<a class="item pick" href="#faculty/'+esc(f.code)+'/'+esc(c.id)+'"><span class="name">'+esc(c.name)+'</span><span class="desc">'+esc(c.desc)+'</span>'+facCount(c)+'<span class="textlink">See universities '+ARROW+'</span></a>';}).join("")+'</section>';
 }
@@ -378,13 +384,12 @@ function progCard(u,fold){
    '<a class="textlink" href="#scholarships-foundation">Other scholarships open to all students '+ARROW+'</a></div>'+
   (notes.length?'<div class="stack"><h4>Notes</h4>'+notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join("")+'</div>':'')+
   '<div class="row">'+(u.url?'<a class="btn ghost" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'')+
-   (u.id?'<a class="btn ghost" href="#apply/'+esc(u.id)+'">Apply with Eduplan</a>':'')+
-   '<a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(u.programme||u.name)+' ('+esc(u.name)+').">Ask a counsellor about this course</a></div>'+(fold?'</div></details>':'</article>');
+   (u.id?'<a class="btn" href="#next/'+esc(u.id)+'">Choose this programme '+ARROW+'</a>':'<a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(u.programme||u.name)+' ('+esc(u.name)+').">Ask a counsellor about this course</a>')+'</div>'+(fold?'</div></details>':'</article>');
 }
 function progFold(u){return progCard(u,true);}
 function facUnis(f,c){
  var list=c.universities||[];
- return '<section class="stack">'+stepper(FAC_STEPS,4)+'<div><a class="btn ghost" href="#faculty/'+esc(f.code)+'">Back</a></div>'+
+ return '<section class="stack">'+stepper(FAC_STEPS,3)+'<div><a class="btn ghost" href="#faculty/'+esc(f.code)+'">Back</a></div>'+
  '<span class="eyebrow">Faculty '+esc(f.code)+' · '+esc(f.name)+'</span><h1>'+esc(c.name)+'</h1><p class="lead">'+esc(c.desc)+'</p></section>'+
  '<section class="section"><h2>Universities offering this course</h2>'+
  (list.length?'<div class="progs">'+list.map(function(u){return progCard(u);}).join("")+'</div>'
@@ -442,17 +447,18 @@ function guideResult(r){
 
 V.consultation=function(){
  if(S.consDone){
-  return '<section class="stack"><span class="eyebrow">Free Consultation</span><h1>Your request is ready to send</h1><p class="lead">Copy the summary and send it to Eduplan by WhatsApp or email. A counsellor replies to arrange a time.</p></section>'+
+  return '<section class="stack">'+(S.pick?flowStep("Ask more"):'')+'<span class="eyebrow">Free Consultation</span><h1>Your request is ready to send</h1><p class="lead">Copy the summary and send it to Eduplan by WhatsApp or email. A counsellor replies to arrange a time.</p></section>'+
   '<section class="panel" style="max-width:720px"><pre class="summary" id="cons-summary">'+esc(S.consDone)+'</pre>'+
   '<div class="row"><button type="button" class="btn" id="cons-copy">Copy summary</button><button type="button" class="btn ghost" id="cons-edit">Edit my answers</button></div>'+
   '<p class="muted" id="cons-copied" aria-live="polite"></p>'+
-  '<p class="muted">Send to: WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL].</p></section>';
+  '<p class="muted">Send to: WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL].</p>'+
+  (findProg(S.pick)?'<div class="row"><a class="btn" href="#apply/'+esc(S.pick)+'">Continue to the application form '+ARROW+'</a></div>':'')+'</section>';
  }
  var c=S.cons,e=S.consErr||{};
  function f(id,label,type,hint,req){return '<div class="field"><label for="'+id+'">'+label+(req?"":' <span class="hint">(optional)</span>')+'</label><input type="'+type+'" id="'+id+'" value="'+esc(c[id]||"")+'"'+(e[id]?' aria-invalid="true" aria-describedby="'+id+'-err"':"")+'>'+(hint?'<span class="hint">'+hint+'</span>':"")+(e[id]?'<span class="err" id="'+id+'-err">'+esc(e[id])+'</span>':"")+'</div>';}
  var topics=["Scholarships","Choosing a course","Choosing a university","Accommodation","I am not sure what to study"];
  var quals=["SPM","UEC","STPM","A-Level","Foundation or Matriculation","Diploma","Other"];
- return '<section class="stack"><span class="eyebrow">Free Consultation</span><h1>Book a free consultation</h1><p class="lead">Tell us a little about yourself. It takes about a minute.</p></section>'+
+ return '<section class="stack">'+(S.pick?flowStep("Ask more"):'')+'<span class="eyebrow">Free Consultation</span><h1>Book a free consultation</h1><p class="lead">Tell us a little about yourself. It takes about a minute.</p></section>'+
  '<section class="panel" style="max-width:720px"><form class="fields" id="cons-form" novalidate>'+
   f("cons-name","Full name","text","",true)+
   f("cons-phone","Phone or WhatsApp number","tel","Example: 012-345 6789",true)+
@@ -464,23 +470,35 @@ V.consultation=function(){
  '</form></section>';
 };
 
-/* ---------- Application form (#apply) ----------
-   One short form for applying through Eduplan. It covers every item on the universities' own application forms
-   (based on the XMUM Foundation application form): programme, personal and contact details, parent/guardian and
-   emergency contact, education, English tests, disability, documents and declarations.
-   Nothing is sent anywhere: the student copies or prints the summary and sends it to Eduplan.
-   Answers are kept in sessionStorage only (they include NRIC numbers), so they are gone when the tab is closed. */
-var APPLY_STEPS=["Programme","About you","Contact","Family","Education","Confirm"];
+/* ---------- Journey: Ask more -> Apply -> Accommodation ----------
+   Every route ends the same way once a programme is chosen:
+     #next/<programme_id>  Ask more (AI assistant or free consultation, or go straight to the form)
+     #apply                the application form, with document uploads
+     #stay                 accommodation help, then the application is sent to Eduplan
+   S.flow remembers which route the student came from, so these pages show that route's progress bar.
+   Answers are kept in sessionStorage only (they include NRIC numbers) and uploaded files only in memory. */
+function flowStep(name){var f=FLOWS[S.flow];if(!f)return "";var i=f.indexOf(name);return i<0?"":stepper(f,i+1);}
+function setFlow(f){S.flow=f;try{sessionStorage.setItem("eduplan-flow",f||"");}catch(e){}}
+function sget(k){try{return sessionStorage.getItem(k)||"";}catch(e){return "";}}
+function sset(k,v){try{sessionStorage.setItem(k,v||"");}catch(e){}}
+
+var APPLY_STEPS=["Programme","About you","Contact","Family","Education","Documents"];
 var APPLY_KEY="eduplan-apply",QUALS=["SPM","UEC","O-Level","STPM","A-Level","Foundation / Matriculation","Diploma","Bachelor's degree","Other"];
 var MY_STATES=["Johor","Kedah","Kelantan","Melaka","Negeri Sembilan","Pahang","Perak","Perlis","Pulau Pinang","Sabah","Sarawak","Selangor","Terengganu","Kuala Lumpur","Labuan","Putrajaya"];
+/* Documents to upload: [id, label, how many files, required when]. Photos are made smaller before sending. */
+var UPLOADS=[["ic","NRIC or passport (front and back)",2,"always"],["results","Results slip (SPM / UEC / O-Level or equivalent)",3,"actual"],
+ ["photo","Passport-size photo",1,""],["eng","English language certificate",2,""],["sch","Scholarship application form",2,""],["fee","Proof of application fee payment",1,""]];
+var FILE_MAX=5*1024*1024,FILES_TOTAL=20*1024*1024;
 function applyLoad(){var a=null;try{a=JSON.parse(sessionStorage.getItem(APPLY_KEY));}catch(e){}
- a=a||{};a.v=a.v||{nationality:"Malaysian",residence:"Malaysia",country:"Malaysia",perm_same:true,em_same:true,disability:"No"};a.step=a.step||1;a.edu=a.edu||2;a.eng=a.eng||1;return a;}
-function applySave(){try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng}));}catch(e){}}
+ a=a||{};a.v=a.v||{nationality:"Malaysian",residence:"Malaysia",country:"Malaysia",perm_same:true,em_same:true,disability:"No"};a.step=a.step||1;a.edu=a.edu||2;a.eng=a.eng||1;a.files={};return a;}
+function applySave(){try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng,complete:S.app.complete,sent:S.app.sent}));}catch(e){}}
 function allProgs(){var out=[];UNIV.forEach(function(u){u.progs.forEach(function(p){out.push({u:u,p:p});});});return out;}
-function applyProg(){var id=S.app.v.prog;return allProgs().filter(function(x){return x.p.id===id;})[0]||null;}
+function findProg(id){id=String(id||"").toLowerCase();return id?allProgs().filter(function(x){return String(x.p.id).toLowerCase()===id;})[0]||null:null;}
+function applyProg(){return findProg(S.app.v.prog);}
 /* Academic tracks come from the programme's notes line "Academic tracks: A, B, C." in the school sheet. */
 function progTracks(p){var m=String(p&&p.notes||"").match(/Academic tracks?:\s*([^\n]+?)\.?\s*(?:\n|$)/i);return m?m[1].split(/\s*,\s*/).filter(Boolean):[];}
 function applyAge(dob){var d=new Date(dob);if(!dob||isNaN(d))return null;var n=new Date(),a=n.getFullYear()-d.getFullYear();if(n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))a--;return a;}
+function needFile(u){return u[3]==="always"||(u[3]==="actual"&&S.app.v.h_status==="Actual");}
 
 function af(id,label,o){
  o=o||{};var v=S.app.v[id],e=(S.app.err||{})[id],req=!o.opt,inv=e?' aria-invalid="true" aria-describedby="'+id+'-err"':'';
@@ -494,6 +512,15 @@ function af(id,label,o){
 function acheck(id,label,o){o=o||{};var e=(S.app.err||{})[id];
  return '<div class="field full"><label class="check"><input type="checkbox" name="'+id+'" id="ap-'+id+'"'+(S.app.v[id]?' checked':'')+(o.rerender?' data-rerender':'')+(e?' aria-invalid="true" aria-describedby="'+id+'-err"':'')+'><span>'+label+'</span></label>'+(e?'<span class="err" id="'+id+'-err">'+esc(e)+'</span>':'')+'</div>';}
 function agroup(title,body){return '<fieldset class="fgroup"><legend>'+title+'</legend><div class="fgrid">'+body+'</div></fieldset>';}
+function kb(n){return n>1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";}
+function uploadBox(u){
+ var list=S.app.files[u[0]]||[],e=(S.app.err||{})["f_"+u[0]],req=needFile(u);
+ return '<div class="field full upload"><label for="ap-f_'+u[0]+'">'+esc(u[1])+(req?'':' <span class="hint">(optional)</span>')+'</label>'+
+  (list.length?'<ul class="files">'+list.map(function(f,k){return '<li><span class="fname">'+esc(f.name)+'</span><span class="hint">'+kb(f.size)+'</span><button type="button" class="chip" data-apply="rmfile" data-file="'+u[0]+':'+k+'" aria-label="Remove '+esc(f.name)+'">Remove</button></li>';}).join("")+'</ul>':'')+
+  (list.length<u[2]?'<input type="file" id="ap-f_'+u[0]+'" data-upload="'+u[0]+'" accept="image/*,application/pdf"'+(u[2]-list.length>1?' multiple':'')+(e?' aria-invalid="true" aria-describedby="f_'+u[0]+'-err"':'')+'>'+
+   '<span class="hint">Photo or PDF'+(u[2]>1?', up to '+u[2]+' files':'')+'.</span>':'')+
+  (e?'<span class="err" id="f_'+u[0]+'-err">'+esc(e)+'</span>':'')+'</div>';
+}
 
 function applyStep(n){
  var v=S.app.v,x=applyProg();
@@ -540,11 +567,9 @@ function applyStep(n){
    agroup("Others",af("disability","Do you have a disability?",{opts:["No","Yes"],rerender:true})+(v.disability==="Yes"?af("dis_info","Please give details",{area:true,rows:2,full:true}):''));
  }
  var age=applyAge(v.dob),xm=x&&x.u.id==="XMUM";
- var docs=["A copy of your NRIC (Malaysian students) or passport (international students)","A certified true copy of your SPM / UEC / O-Level results or equivalent",
-  "A certified true copy of your English language certificate (if any)","Scholarship application form, if you are applying for a scholarship","Proof of payment of the application fee"];
- return agroup("Documents to prepare",'<div class="field full"><span class="hint">Your counsellor collects these from you after you send this form.'+(xm?' XMUM scholarship and study grant form: <a href="http://www.xmu.edu.my/14698/list.htm" target="_blank" rel="noopener">xmu.edu.my</a>.':'')+'</span></div>'+
-   docs.map(function(d,k){return acheck("doc"+k,d);}).join(""))+
-  agroup("Declaration",acheck("decl","I declare that the information in this application is true, correct and complete. I understand that the university may change or withdraw a decision made on incorrect or incomplete information. I agree that Eduplan and the university may use and process my personal data for this application, as set out in their personal data protection notices.")+
+ return agroup("Upload your documents",'<div class="field full"><span class="hint">Take a clear photo of each document, or choose a PDF. Each file can be up to 5 MB. Files stay on this page until you send your application, so add them again if you reload.'+
+   (xm?' XMUM scholarship and study grant form: <a href="http://www.xmu.edu.my/14698/list.htm" target="_blank" rel="noopener">xmu.edu.my</a>.':'')+'</span></div>'+UPLOADS.map(uploadBox).join(""))+
+  agroup("Declaration",acheck("decl","I declare that the information in this application is true, correct and complete. I understand that the university may change or withdraw a decision made on incorrect or incomplete information. I agree that Eduplan keeps my application and documents and shares them with the university to process this application, as set out in their personal data protection notices.")+
    (age!==null&&age<18?'<div class="field full"><span class="hint">You are under 18, so your parent or legal guardian must also agree.</span></div>'+
     acheck("decl_g","I am the applicant’s parent or legal guardian. I consent to this application and understand that the university’s fees and charges are payable by the dates it sets.")+
     af("decl_g_name","Parent / guardian name",{full:true}):''));
@@ -565,7 +590,8 @@ function applyErrors(n){
   if(!v.em_same){["e_name","e_rel","e_mobile"].forEach(function(k){need(k);});phone("e_mobile");}}
  if(n===5){["ed1_school","ed1_from","ed1_to","ed1_qual","h_type","h_status","h_school","h_start","h_end","h_results"].forEach(function(k){need(k);});
   if(v.disability==="Yes")need("dis_info");}
- if(n===6){if(!v.decl)e.decl="Please tick to confirm.";var a2=applyAge(v.dob);if(a2!==null&&a2<18){if(!v.decl_g)e.decl_g="Your parent or guardian must tick to agree.";need("decl_g_name");}}
+ if(n===6){UPLOADS.forEach(function(u){if(needFile(u)&&!(S.app.files[u[0]]||[]).length)e["f_"+u[0]]="Please add this document.";});
+  if(!v.decl)e.decl="Please tick to confirm.";var a2=applyAge(v.dob);if(a2!==null&&a2<18){if(!v.decl_g)e.decl_g="Your parent or guardian must tick to agree.";need("decl_g_name");}}
  return e;
 }
 
@@ -587,26 +613,105 @@ function applySummary(){
  L.push("Subjects and grades:");String(v.h_results||"").split(/\r?\n/).filter(function(s){return s.trim();}).forEach(function(s){L.push("  "+s.trim());});
  sec("English language");var any=false;for(var j=1;j<=S.app.eng;j++){if(v["en"+j+"_type"]){any=true;L.push(v["en"+j+"_type"]+" | "+(v["en"+j+"_score"]||"-")+" | "+(v["en"+j+"_date"]||"-"));}}if(!any)L.push("None yet");
  sec("Others");row("Disability",v.disability==="Yes"?"Yes: "+(v.dis_info||""):"No");
- sec("Documents ready");L.push([0,1,2,3,4].map(function(k){return (v["doc"+k]?"[x] ":"[ ] ")+["NRIC / passport copy","Certified results","English certificate","Scholarship form","Application fee payment"][k];}).join("\n"));
+ sec("Documents");UPLOADS.forEach(function(u){var l=S.app.files[u[0]]||[];L.push((l.length?"[x] ":"[ ] ")+u[1]+(l.length?" ("+l.length+" file"+(l.length===1?"":"s")+")":""));});
+ sec("Accommodation");if(v.acc==="Yes"){L.push("Needs help: Yes");row("Type",v.acc_type);row("Room",v.acc_room);row("Budget per month (RM)",v.acc_budget);row("Move-in",v.acc_move);row("Notes",v.acc_notes);}else L.push("Needs help: "+(v.acc||"Not answered"));
  sec("Declaration");L.push("Applicant agreed: Yes");if(v.decl_g)L.push("Parent / guardian agreed: Yes ("+v.decl_g_name+")");
  return L.join("\n");
 }
 
-V.apply=function(){
- var a=S.app;
- if(a.done)return '<section class="stack"><span class="eyebrow">Apply with Eduplan</span><h1>Your application is ready</h1><p class="lead">Send it to Eduplan by WhatsApp or email. A counsellor checks it with you and tells you the next steps, including signatures, documents and the application fee.</p></section>'+
-  '<section class="panel" style="max-width:760px"><pre class="summary" id="apply-summary">'+esc(a.done)+'</pre>'+
-  '<div class="row noprint"><button type="button" class="btn" data-apply="copy">Copy summary</button><button type="button" class="btn ghost" data-apply="print">Print or save as PDF</button><button type="button" class="btn ghost" data-apply="edit">Edit my answers</button></div>'+
-  '<p class="muted noprint" id="apply-copied" aria-live="polite"></p>'+
-  '<p class="muted noprint">Send to: WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL]. This page keeps your answers only until you close the tab.</p>'+
-  '<div class="row noprint"><button type="button" class="btn ghost" data-apply="clear">Start a new application</button></div></section>';
- return '<section class="stack">'+stepper(APPLY_STEPS,a.step)+'<span class="eyebrow">Apply with Eduplan</span><h1>Application form</h1>'+
-  '<p class="lead">One form for your university application. It takes about 10 minutes. Your answers stay on this device until you close the tab.</p></section>'+
-  '<section class="panel" style="max-width:760px"><form class="fields" id="apply-form" novalidate>'+applyStep(a.step)+
-  '<div class="row">'+(a.step>1?'<button type="button" class="btn ghost" data-apply="back">Back</button>':'')+
-  '<button type="submit" class="btn">'+(a.step<APPLY_STEPS.length?'Next':'Prepare my application')+'</button></div></form></section>';
+/* Photos are resized (longest side 1800 px, JPEG) so they upload quickly; PDFs and anything that cannot be read as an image are kept as they are. */
+function readUpload(file){
+ return new Promise(function(done,fail){
+  if(file.size>FILE_MAX*3)return fail(new Error("big"));
+  var rd=new FileReader();
+  rd.onerror=function(){fail(new Error("read"));};
+  rd.onload=function(){
+   var url=rd.result,keep=function(){if(file.size>FILE_MAX)return fail(new Error("big"));done({name:file.name,type:file.type||"application/octet-stream",size:file.size,data:url.split(",")[1]});};
+   if(!/^image\/(jpeg|png|webp|heic|heif)$/i.test(file.type))return keep();
+   var img=new Image();
+   img.onload=function(){try{var k=Math.min(1,1800/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);
+     c.getContext("2d").drawImage(img,0,0,c.width,c.height);var out=c.toDataURL("image/jpeg",0.82),b=out.split(",")[1],size=Math.round(b.length*3/4);
+     if(size>FILE_MAX)return fail(new Error("big"));done({name:file.name.replace(/\.\w+$/,"")+".jpg",type:"image/jpeg",size:size,data:b});}catch(e){keep();}};
+   img.onerror=keep;img.src=url;
+  };
+  rd.readAsDataURL(file);
+ });
+}
+function filesTotal(){var t=0;Object.keys(S.app.files).forEach(function(k){S.app.files[k].forEach(function(f){t+=f.size;});});return t;}
+
+function progSummary(x){
+ return '<div class="pickcard"><span class="eyebrow">'+esc(x.u.fullName||x.u.name)+'</span><h2>'+esc(x.p.programme)+'</h2>'+
+  '<div class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):"",x.p.campus||x.u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div></div>';
+}
+/* Ask more (#next/<id>): the step between choosing a programme and applying. */
+V.next=function(){
+ var x=findProg(S.pick);
+ if(!x)return '<section class="stack"><h1>Choose a programme first</h1><p class="lead">Find a programme by faculty, university or scholarship, then come back here.</p><div class="row"><a class="btn" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div></section>';
+ var note="Interested in: "+x.p.programme+" ("+x.u.name+").";
+ return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x)+
+  '<h1>Any questions before you apply?</h1><p class="lead">Ask our AI study assistant, talk to a counsellor for free, or go straight to the application form.</p></section>'+
+  '<section class="grid">'+
+   '<button type="button" class="item pick" data-ask="'+esc("I am interested in "+x.p.programme+" at "+x.u.name+". ")+'"><span class="name">Ask the AI study assistant</span><span class="desc">Quick answers about fees, entry requirements and scholarships, any time.</span><span class="textlink">Open the chat '+ARROW+'</span></button>'+
+   '<a class="item pick" href="#consultation" data-topic="Choosing a university" data-note="'+esc(note)+'"><span class="name">Book a free consultation</span><span class="desc">A counsellor goes through your options with you and your family.</span><span class="textlink">Book a time '+ARROW+'</span></a>'+
+   '<a class="item pick" href="#apply/'+esc(x.p.id)+'"><span class="name">I am ready to apply</span><span class="desc">Fill in one form and upload your documents. About 10 minutes.</span><span class="textlink">Start the application '+ARROW+'</span></a>'+
+  '</section>';
 };
+
+V.apply=function(){
+ var a=S.app,n=APPLY_STEPS.length;
+ return '<section class="stack">'+flowStep("Apply")+'<span class="eyebrow">Apply with Eduplan</span><h1>Application form</h1>'+
+  '<p class="lead">One form for your university application. It takes about 10 minutes. Your answers stay on this device until you close the tab.</p></section>'+
+  '<section class="panel" style="max-width:760px"><div class="formstep"><span>Part '+a.step+' of '+n+': '+esc(APPLY_STEPS[a.step-1])+'</span><span class="bar" aria-hidden="true"><i style="width:'+Math.round(a.step/n*100)+'%"></i></span></div>'+
+  '<form class="fields" id="apply-form" novalidate>'+applyStep(a.step)+
+  '<div class="row">'+(a.step>1?'<button type="button" class="btn ghost" data-apply="back">Back</button>':'')+
+  '<button type="submit" class="btn">'+(a.step<n?'Next':'Continue')+'</button></div></form></section>';
+};
+
+/* Accommodation (#stay), then send. */
+V.stay=function(){
+ var a=S.app,v=a.v;
+ var head='<section class="stack">'+flowStep("Accommodation")+'<span class="eyebrow">Apply with Eduplan</span>';
+ if(a.sent)return head+'<h1>Application sent</h1><p class="lead">Thank you. Your reference number is <strong>'+esc(a.sent)+'</strong>. A counsellor will contact you about signatures, the application fee and the next steps.</p></section>'+
+  '<section class="panel" style="max-width:760px"><div class="row"><button type="button" class="btn ghost" data-apply="clear">Start a new application</button><a class="btn ghost" href="#home">Back to home</a></div></section>';
+ if(!a.complete)return head+'<h1>Finish your application first</h1><p class="lead">Accommodation help is the last step of the application.</p><div class="row"><a class="btn" href="#apply">Go to the application form</a></div></section>';
+ var x=applyProg();
+ return head+'<h1>Do you need help with accommodation?</h1><p class="lead">Eduplan can help you find a hostel or a room near '+esc(x?x.u.name:"your campus")+'.</p></section>'+
+  '<section class="panel" style="max-width:760px"><form class="fields" id="stay-form" novalidate>'+
+   agroup("Accommodation",af("acc","Do you need accommodation help?",{opts:[["Yes","Yes, please help me"],["No","No, I have arranged it"]],first:"Choose",rerender:true,full:true})+
+    (v.acc==="Yes"?af("acc_type","Type",{opts:["On-campus hostel","Rented room near campus","Not sure yet"],first:"Choose"})+af("acc_room","Room",{opts:["Single room","Shared room","No preference"],first:"Choose"})+
+     af("acc_budget","Budget per month (RM)",{opt:true,mode:"numeric"})+af("acc_move","Move-in month",{type:"month",opt:true})+af("acc_notes","Anything else",{area:true,rows:2,full:true,opt:true}):''))+
+   '<div class="row"><button type="button" class="btn ghost" data-apply="edit">Back to the form</button><button type="submit" class="btn" id="stay-send"'+(a.sending?' disabled':'')+'>'+(a.sending?'Sending…':'Send my application to Eduplan')+'</button></div>'+
+   '<p class="muted" id="stay-msg" aria-live="polite">'+(a.sendMsg?esc(a.sendMsg):'')+'</p>'+
+  '</form></section>'+(a.fallback?applyFallback():'');
+};
+/* When the application cannot be sent from this page: share to WhatsApp (phones), or copy / print and send the photos separately. */
+function applyFallback(){
+ var share=navigator.canShare&&window.File;
+ return '<section class="panel" style="max-width:760px"><h2>Send it yourself</h2><p class="muted">Send this summary and your document photos to Eduplan by WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL].</p>'+
+  '<pre class="summary" id="apply-summary">'+esc(applySummary())+'</pre>'+
+  '<div class="row noprint">'+(share?'<button type="button" class="btn" data-apply="share">Share with documents</button>':'')+
+  '<button type="button" class="btn'+(share?' ghost':'')+'" data-apply="copy">Copy summary</button><button type="button" class="btn ghost" data-apply="print">Print or save as PDF</button></div>'+
+  '<p class="muted noprint" id="apply-copied" aria-live="polite"></p></section>';
+}
+function applyFilesForShare(){var out=[];Object.keys(S.app.files).forEach(function(k){S.app.files[k].forEach(function(f){var bin=atob(f.data),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);out.push(new File([u],k+"-"+f.name,{type:f.type}));});});return out;}
+/* Sends to the Apps Script (apps-script/Apply.gs), which stores the application in Eduplan's private Google Drive. */
+function applySend(){
+ var a=S.app,url=window.EDUPLAN_API_URL,files=[];
+ Object.keys(a.files).forEach(function(k){a.files[k].forEach(function(f){files.push({doc:k,name:f.name,type:f.type,data:f.data});});});
+ var fb=function(msg){a.sending=false;a.fallback=true;a.sendMsg=msg;rerender("stay-msg");};
+ if(!url||!window.fetch||window.EDUPLAN_SHEET_DATA)return fb("This preview cannot send files. Please send your application yourself below.");
+ a.sending=true;a.sendMsg="";rerender();
+ var x=applyProg(),v=a.v;
+ fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"apply",summary:applySummary(),files:files,
+  fields:{name:String(v.name_en||"").toUpperCase(),ic:v.ic,mobile:v.mobile,email:v.email,university:x?x.u.name:"",programme:x?x.p.programme:"",track:v.track||"",intake:v.intake,accommodation:v.acc||""}})})
+  .then(function(r){return r.json();})
+  .then(function(d){if(!d||!d.ref)throw new Error(d&&d.error||"failed");a.sending=false;a.sent=d.ref;a.files={};applySave();rerender();window.scrollTo(0,0);})
+  .catch(function(){fb("Your application could not be sent just now. Please send it yourself below, or try again later.");});
+}
+
 S.app=applyLoad();
+S.flow=sget("eduplan-flow")||null;
+S.pick=sget("eduplan-pick")||null;
 
 /* ---------- Router ---------- */
 var app=document.getElementById("app");
@@ -633,12 +738,17 @@ function route(){
   r=f?"faculty/"+f.code+(c?"/"+c.id:""):"faculty";
   if(f)S.fac={field:f,course:c};
  }
+ if(r.indexOf("next/")===0){
+  var nx=findProg(r.split("/")[1]);
+  if(nx){S.pick=nx.p.id;sset("eduplan-pick",S.pick);r="next";}
+  else if(UNIV.length)r="next";
+ }
  if(r==="apply"||r.indexOf("apply/")===0){
   var pid=r.split("/")[1],hit=pid?allProgs().filter(function(x){return String(x.p.id).toLowerCase()===pid.toLowerCase();})[0]:null;
-  if(hit){S.app.v.prog=hit.p.id;S.app.v.track="";S.app.step=1;S.app.done=null;S.app.err={};applySave();r="apply";}
+  if(hit){if(S.app.v.prog!==hit.p.id){S.app.v.prog=hit.p.id;S.app.v.track="";}S.app.step=1;S.app.err={};S.app.complete=false;S.app.sent=null;applySave();r="apply";}
   else if(!pid||UNIV.length)r="apply";   /* before the sheet data arrives, keep the programme in the link */
  }
- view=r.indexOf("apply")===0?"apply":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
+ view=r.indexOf("next")===0?"next":r.indexOf("apply")===0?"apply":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
  if(!V[view])r=view="home";
  if(r!==h&&h)history.replaceState(null,"","#"+r);
  return view;
@@ -654,6 +764,10 @@ function reveal(){
 }
 function render(keepScroll){
  var r=route();
+ if(r==="faculty")setFlow("faculty");
+ else if(r.indexOf("scholarships")===0)setFlow("scholarships");
+ else if(r==="universities"&&S.flow!=="scholarships")setFlow("universities");
+ if((r==="faculty"&&S.fac&&S.fac.course)||(r==="universities"&&S.uni&&S.uni.level))sset("eduplan-last",location.hash);
  app.innerHTML=V[r]();
  reveal();
  var navKey={"guided":"","home":""}[r];
@@ -667,11 +781,24 @@ window.addEventListener("hashchange",function(){render(false);app.focus({prevent
 /* ---------- Events (delegated) ---------- */
 function readCons(){["cons-name","cons-phone","cons-email","cons-qual","cons-topic","cons-msg"].forEach(function(id){var el=document.getElementById(id);if(el)S.cons[id]=el.value;});store("eduplan-consult",S.cons);}
 /* Application form: answers are saved as they are typed; some choices show or hide fields. */
-function applyField(t){if(!t.name||!t.closest("#apply-form"))return false;S.app.v[t.name]=t.type==="checkbox"?t.checked:t.value;if(t.name==="prog")S.app.v.track="";applySave();
+function applyField(t){if(!t.name||!t.closest("#apply-form,#stay-form"))return false;S.app.v[t.name]=t.type==="checkbox"?t.checked:t.value;if(t.name==="prog")S.app.v.track="";applySave();
  /* Clear this field's error as soon as it is answered. */
  if(S.app.err&&S.app.err[t.name]&&(t.type==="checkbox"?t.checked:String(t.value).trim())){delete S.app.err[t.name];t.removeAttribute("aria-invalid");var m=document.getElementById(t.name+"-err");if(m)m.remove();}
  return true;}
 app.addEventListener("input",function(ev){applyField(ev.target);});
+/* Links into the university pages from a scholarship keep the scholarship route; other links start the university route. */
+document.addEventListener("click",function(ev){
+ var a=ev.target.closest&&ev.target.closest('a[href^="#"]');if(!a)return;
+ if(a.getAttribute("data-flow")==="scholarships"){setFlow("scholarships");sset("eduplan-schback",location.hash);return;}
+ if(/^#universities/.test(a.getAttribute("href"))&&(a.closest("header,footer")||!/^#universities/.test(location.hash)))setFlow("universities");
+},true);
+/* Document uploads: each file is read (photos made smaller) and kept in memory until the application is sent. */
+app.addEventListener("change",function(ev){
+ var t=ev.target,id=t.getAttribute&&t.getAttribute("data-upload");if(!id||!t.files)return;
+ var u=UPLOADS.filter(function(x){return x[0]===id;})[0],list=S.app.files[id]=S.app.files[id]||[],picked=Array.prototype.slice.call(t.files,0,u[2]-list.length),bad="";
+ Promise.all(picked.map(function(f){return readUpload(f).then(function(r){if(filesTotal()+r.size>FILES_TOTAL){bad="All your files together can be up to 20 MB.";return;}list.push(r);},function(){bad="That file is too large or cannot be read. Use a photo or a PDF up to 5 MB.";});}))
+  .then(function(){S.app.err=S.app.err||{};if(bad)S.app.err["f_"+id]=bad;else delete S.app.err["f_"+id];rerender(list.length<u[2]?"ap-f_"+id:null);});
+});
 app.addEventListener("change",function(ev){
  var t=ev.target,id=t.id;
  if(applyField(t)){if(t.hasAttribute("data-rerender"))rerender(t.id);return;}
@@ -679,15 +806,18 @@ app.addEventListener("change",function(ev){
 });
 app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
+ if(t.hasAttribute("data-ask")){window.dispatchEvent(new CustomEvent("eduplan:ask",{detail:{text:t.getAttribute("data-ask")}}));return;}
  if(t.hasAttribute("data-apply")){var act=t.getAttribute("data-apply"),A=S.app;
   if(act==="back"){A.err={};A.step=Math.max(1,A.step-1);applySave();rerender();window.scrollTo(0,0);}
   else if(act==="add-edu"){A.edu=Math.min(5,A.edu+1);applySave();rerender("ap-ed"+A.edu+"_school");}
   else if(act==="add-eng"){A.eng=Math.min(3,A.eng+1);applySave();rerender("ap-en"+A.eng+"_type");}
-  else if(act==="edit"){A.done=null;A.step=1;applySave();rerender();window.scrollTo(0,0);}
-  else if(act==="clear"){try{sessionStorage.removeItem(APPLY_KEY);}catch(e){}S.app=applyLoad();rerender();window.scrollTo(0,0);}
+  else if(act==="edit"){A.fallback=false;A.sendMsg="";location.hash="#apply";}
+  else if(act==="rmfile"){var fp=t.getAttribute("data-file").split(":");(A.files[fp[0]]||[]).splice(Number(fp[1]),1);rerender("ap-f_"+fp[0]);}
+  else if(act==="share"){navigator.share({title:"Eduplan application",text:applySummary(),files:applyFilesForShare()}).catch(function(){});}
+  else if(act==="clear"){try{sessionStorage.removeItem(APPLY_KEY);}catch(e){}S.app=applyLoad();location.hash="#apply";}
   else if(act==="print")window.print();
   else if(act==="copy"){var out=document.getElementById("apply-copied"),fb=function(){var pre=document.getElementById("apply-summary"),rg=document.createRange();rg.selectNodeContents(pre);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(rg);out.textContent="The summary is selected. Press Ctrl+C (or long-press on a phone) to copy it.";};
-   try{navigator.clipboard.writeText(A.done).then(function(){out.textContent="Copied. Paste it into WhatsApp or an email to Eduplan.";},fb);}catch(e){fb();}}
+   try{navigator.clipboard.writeText(applySummary()).then(function(){out.textContent="Copied. Paste it into WhatsApp or an email to Eduplan.";},fb);}catch(e){fb();}}
   return;}
  if(t.hasAttribute("data-jump")){var g=app.querySelector('.facgroup[data-fac="'+t.getAttribute("data-jump")+'"]');if(g){var hd=document.querySelector("header.site"),off=(hd&&getComputedStyle(hd).position==="sticky"?hd.offsetHeight:0)+12;
   window.scrollTo({top:g.getBoundingClientRect().top+window.pageYOffset-off,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});var sm=g.querySelector("summary");if(sm)sm.focus({preventScroll:true});}return;}
@@ -711,7 +841,12 @@ app.addEventListener("submit",function(ev){
  if(ev.target.id==="apply-form"){ev.preventDefault();var A=S.app,er=applyErrors(A.step),k=Object.keys(er)[0];A.err=er;
   if(k){rerender("ap-"+k);return;}
   if(A.step<APPLY_STEPS.length){A.step++;applySave();rerender();window.scrollTo(0,0);var f=app.querySelector("#apply-form input,#apply-form select,#apply-form textarea");if(f)f.focus({preventScroll:true});}
-  else{A.done=applySummary();rerender();window.scrollTo(0,0);}
+  else{A.complete=true;applySave();location.hash="#stay";}
+  return;}
+ if(ev.target.id==="stay-form"){ev.preventDefault();var B=S.app,es={};
+  if(!B.v.acc)es.acc="Please choose one.";if(B.v.acc==="Yes"){if(!B.v.acc_type)es.acc_type="Please choose one.";if(!B.v.acc_room)es.acc_room="Please choose one.";}
+  B.err=es;var k2=Object.keys(es)[0];if(k2){rerender("ap-"+k2);return;}
+  if(!B.sending)applySend();
   return;}
  if(ev.target.id!=="cons-form")return;ev.preventDefault();readCons();
  var c=S.cons,e={};

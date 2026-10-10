@@ -129,6 +129,8 @@ function open(o){
  if(o){render();setTimeout(function(){input.focus();},0);}else fab.focus();
 }
 fab.addEventListener("click",function(){open(panel.hidden);});
+/* Other pages can open the chat with a question started, e.g. the "Ask more" step after choosing a programme. */
+window.addEventListener("eduplan:ask",function(ev){open(true);input.value=(ev.detail&&ev.detail.text)||"";grow();input.focus();input.setSelectionRange(input.value.length,input.value.length);});
 form.addEventListener("submit",function(ev){ev.preventDefault();send(input.value);});
 input.addEventListener("input",grow);
 input.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&!ev.shiftKey&&!ev.isComposing){ev.preventDefault();send(input.value);}});
