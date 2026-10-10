@@ -342,10 +342,13 @@ function progScholarships(u){
 var ENTRY=[["entry","SPM"],["uec","UEC"],["olevel","O-Level"],["stpm","STPM"],["entry_other","Others"]];
 function progCard(u){
  var sch=progScholarships(u),meta=[u.level,u.years!=null?years(u.years):"",u.mode].filter(Boolean);
+ /* Postgraduate brochures give a yearly fee, not a whole-programme total: a notes line "Annual fee: ..." is shown as the fee. */
+ var annual=lines(u.notes).filter(function(x){return /^Annual fee: /.test(x);}).map(function(x){return x.replace(/^Annual fee: /,"");}),notes=lines(u.notes).filter(function(x){return !/^Annual fee: /.test(x);});
  return '<article class="prog"><div class="stack"><span class="eyebrow">'+esc(u.name)+'</span><h3 class="fname">'+esc(u.programme||u.name)+'</h3>'+
   (meta.length?'<div class="meta">'+meta.map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>':'')+'</div>'+
   '<dl class="facts">'+
-   '<dt>Tuition fee (whole programme)</dt><dd>'+(u.fee!=null?esc(rm(u.fee)):'<span class="hint">To be confirmed</span>')+'</dd>'+
+   (u.fee==null&&annual.length?'<dt>Tuition fee (per year)</dt><dd>'+annual.map(function(x){return '<span class="line">'+esc(x)+'</span>';}).join("")+'</dd>':
+   '<dt>Tuition fee (whole programme)</dt><dd>'+(u.fee!=null?esc(rm(u.fee)):'<span class="hint">To be confirmed</span>')+'</dd>')+
    '<dt>Location</dt><dd>'+(u.campus||u.place?esc(u.campus||u.place):'<span class="hint">To be confirmed</span>')+'</dd>'+
    (u.intakes?'<dt>Intakes</dt><dd>'+esc(u.intakes)+'</dd>':'')+(u.deadline?'<dt>Application deadline</dt><dd>'+esc(u.deadline)+'</dd>':'')+
    (u.english?'<dt>English</dt><dd>'+esc(u.english)+'</dd>':'')+(u.mqa?'<dt>MQA</dt><dd>'+esc(u.mqa)+'</dd>':'')+'</dl>'+
@@ -355,7 +358,7 @@ function progCard(u){
    (sch.length?'<ul class="schlinks">'+sch.map(function(g){return '<li><a href="'+esc(g.href)+'"><span class="name">'+esc(g.name)+'</span>'+(g.best!=null?'<span class="pill brand">Up to '+g.best+'% tuition waiver</span>':'')+'</a></li>';}).join("")+'</ul>'
     :'<p class="hint">No campus scholarship listed for this level yet.</p>')+
    '<a class="textlink" href="#scholarships-foundation">Other scholarships open to all students '+ARROW+'</a></div>'+
-  (lines(u.notes).length?'<div class="stack"><h4>Notes</h4>'+lines(u.notes).map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join("")+'</div>':'')+
+  (notes.length?'<div class="stack"><h4>Notes</h4>'+notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join("")+'</div>':'')+
   '<div class="row">'+(u.url?'<a class="btn ghost" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'')+
    '<a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(u.programme||u.name)+' ('+esc(u.name)+').">Ask a counsellor about this course</a></div></article>';
 }

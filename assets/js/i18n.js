@@ -7,6 +7,8 @@
 (function(){
 "use strict";
 var ZH={
+ "Tuition fee (per year)":"学费（每年）",
+ "Not applicable: postgraduate entry is based on a Bachelor's or Master's degree (see Others).":"不适用：研究生课程以学士或硕士学位入学（见「其他」）。",
  "Not accepted directly for this degree in the XMUM brochure. Enter through Foundation/Matriculation, STPM, A-Level, UEC or a Diploma first.":"XMUM 简章未接受以此资格直接报读此学位，需先完成预科／大学先修班、STPM、A-Level、UEC 或文凭课程。",
  "Not accepted directly for this degree in the XMUM brochure. Enter through Foundation/Matriculation, A-Level or a Diploma first.":"XMUM 简章未接受以此资格直接报读此学位，需先完成预科／大学先修班、A-Level 或文凭课程。",
  "Twelve short questions about what you enjoy. There are no wrong answers.":"十二道关于你兴趣的简单问题，没有错误答案。",
@@ -130,6 +132,7 @@ var ZH_PATTERNS=[
  [/^No (foundation|undergraduate|postgraduate) programmes listed for (.+) yet\.$/,function(m){return m[2]+" 暂未列出"+LEVEL[m[1].charAt(0).toUpperCase()+m[1].slice(1)]+"课程。";}],
  [/^(.+) \u00b7 (\d+)$/,function(m){var z=tr(m[1]);return (z||m[1])+" · "+m[2];}],
  [/^(\d+) programmes?$/,"$1 个课程"],
+ [/^RM ([\d,]+) \(Local\); RM ([\d,]+) \(International(, subject to 6% Sales & Service Tax \(SST\))?\)\.( Fees subject to 6% Sales & Service Tax \(SST\)\.)?$/,function(m){return "RM "+m[1]+"（本地生）；RM "+m[2]+"（国际生"+(m[3]?"，另加 6% 销售与服务税":"")+"）。"+(m[4]?"学费另加 6% 销售与服务税。":"");}],
  [/^Up to (\d+)% tuition waiver$/,"最高 $1% 学费减免"],
  [/^Faculty (\d\d)$/,"科系 $1"],
  [/^Faculty (\d\d) · (.+)$/,"科系 $1 · $2"],
