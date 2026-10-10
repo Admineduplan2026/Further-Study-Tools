@@ -7,6 +7,17 @@
 (function(){
 "use strict";
 var ZH={
+ "Ask Eduplan":"问 Eduplan","Eduplan study assistant":"Eduplan 升学助手","AI answers from Eduplan’s course and scholarship data":"根据 Eduplan 的课程与奖学金资料以 AI 回答",
+ "Close chat":"关闭对话","Your question":"你的问题","Type your question…":"输入你的问题…","Send":"发送","New chat":"新对话",
+ "AI answers can be wrong. Please confirm with a counsellor. Do not type personal details such as your IC number.":"AI 的回答可能有误，请与升学顾问确认。请勿输入身份证号码等个人资料。",
+ "Hi! I can help you find courses, compare universities and check scholarships. What would you like to know?":"你好！我可以帮你找课程、比较大学和查询奖学金。你想了解什么？",
+ "What can I study at XMUM with UEC?":"我用 UEC 可以在 XMUM 读什么？","Which scholarships are there for SPM students?":"SPM 学生有哪些奖学金？",
+ "I like computers. Which courses suit me?":"我喜欢电脑，适合读什么课程？","How much is the Master of Science in Mathematics at XMUM?":"XMUM 的数学硕士学费多少？",
+ "The assistant is not switched on yet. Please book a free consultation and a counsellor will answer you.":"升学助手尚未开通。请预约免费咨询，由升学顾问为你解答。",
+ "The assistant has answered many questions today. Please try again tomorrow, or book a free consultation.":"升学助手今天已回答了很多问题，请明天再试，或预约免费咨询。",
+ "The assistant is busy right now. Please try again in a moment.":"升学助手目前忙碌，请稍后再试。",
+ "Sorry, I can't help with that. Please ask about courses, universities or scholarships.":"抱歉，我无法回答这个问题。请询问课程、大学或奖学金相关问题。",
+ "The assistant is not available here. Please book a free consultation and a counsellor will answer you.":"此处无法使用升学助手。请预约免费咨询，由升学顾问为你解答。",
  "Show details":"展开详情","Hide details":"收起详情","Expand all":"全部展开","Collapse all":"全部收起",
  "Tuition fee (per year)":"学费（每年）",
  "Not applicable: postgraduate entry is based on a Bachelor's or Master's degree (see Others).":"不适用：研究生课程以学士或硕士学位入学（见「其他」）。",

@@ -15,6 +15,7 @@
  *
  * GET <url>            -> JSON with every row marked Published = Yes
  * GET <url>?nocache=1  -> same, rebuilt from the sheets now
+ * POST <url> {"action":"chat",...} -> AI study assistant reply (see Chat.gs and docs/ai-chatbot-setup.md)
  * Edits show up within about a minute: each request compares the folder's last-edit times
  * (checked at most every FRESH_SECONDS) with the cached copy.
  *
@@ -60,20 +61,44 @@ var NUMBERS = ['hostel_fee_min', 'hostel_fee_max', 'duration_years', 'tuition_fe
 /* ---------------- Web app entry points ---------------- */
 
 function doGet(e) {
+  var json = apiJson_(e && e.parameter && e.parameter.nocache);
+  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+}
+
+/* The published data as a JSON string, from the cache when no sheet has changed. Also used by the AI chat (Chat.gs). */
+function apiJson_(noCache) {
   var cache = CacheService.getScriptCache();
-  var noCache = e && e.parameter && e.parameter.nocache;
   var stamp = cache.get(CACHE_KEY + ':stamp');
   if (!stamp || noCache) {
     stamp = editStamp_();
     cache.put(CACHE_KEY + ':stamp', stamp, FRESH_SECONDS);
   }
   var key = CACHE_KEY + ':' + stamp;
-  var json = noCache ? null : cache.get(key);
+  var json = noCache ? null : cacheGet_(cache, key);
   if (!json) {
     json = JSON.stringify(buildFromSheets_());
-    if (json.length < 90000) cache.put(key, json, CACHE_SECONDS);
+    cachePut_(cache, key, json);
   }
-  return ContentService.createTextOutput(json).setMimeType(ContentService.MimeType.JSON);
+  return json;
+}
+
+/* CacheService keeps at most 100 KB per value, so the JSON is stored in numbered pieces. */
+var CACHE_PIECE = 90000;
+function cachePut_(cache, key, text) {
+  var parts = {}, n = Math.ceil(text.length / CACHE_PIECE);
+  if (n > 50) return;  // too large to cache; rebuilt on every request
+  for (var i = 0; i < n; i++) parts[key + ':' + i] = text.substr(i * CACHE_PIECE, CACHE_PIECE);
+  parts[key + ':n'] = String(n);
+  cache.putAll(parts, CACHE_SECONDS);
+}
+function cacheGet_(cache, key) {
+  var n = Number(cache.get(key + ':n'));
+  if (!n) return null;
+  var keys = [];
+  for (var i = 0; i < n; i++) keys.push(key + ':' + i);
+  var got = cache.getAll(keys), out = '';
+  for (var j = 0; j < n; j++) { if (got[keys[j]] == null) return null; out += got[keys[j]]; }
+  return out;
 }
 
 function onOpen() {
