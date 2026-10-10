@@ -24,7 +24,7 @@ Until steps 1 to 4 below are done, the bubble tells students the assistant is no
 
 In the master sheet: **Extensions > Apps Script**.
 
-1. Replace `Code.gs` with the latest `apps-script/Code.gs` from GitHub (it now shares its data cache with the chat).
+1. Replace `Code.gs` with the latest `apps-script/Code.gs` from GitHub (it now also reads the FAQ tab and shares its data cache with the chat).
 2. Click **+ > Script**, name it `Chat`, and paste `apps-script/Chat.gs`.
 3. Click **+ > Script**, name it `ChatKnowledge`, and paste `apps-script/ChatKnowledge.gs`.
 4. Save.
@@ -47,6 +47,23 @@ In the master sheet: **Extensions > Apps Script**.
    - `busy`: Anthropic is overloaded or rate-limiting; try again in a minute.
 2. **Deploy > Manage deployments > Edit > Version: New version > Deploy**. The `/exec` URL stays the same,
    so nothing changes on the website.
+
+## Teach the assistant your own answers (FAQ tab)
+
+The master sheet has a **FAQ** tab (Eduplan only). Each row is one question students often ask and the answer
+Eduplan's counsellors approve, for example how the free consultation works or how to apply.
+
+| Column | What to write |
+|---|---|
+| No. (`faq_id`) | 1, 2, 3 … |
+| Category | optional, e.g. Application, Fees, Accommodation, Eduplan |
+| Question | the way students ask it, in any language |
+| Answer | the approved answer |
+| Published | `Yes` = the assistant uses it |
+
+Rows marked Published = Yes are added to the assistant's reference data within about a minute, and the
+assistant bases its answer on them whenever a student asks something similar (it may shorten or translate the answer,
+but keeps its facts). Use **Eduplan > Check data** to see how many FAQ answers are live.
 
 ## Cost and limits
 

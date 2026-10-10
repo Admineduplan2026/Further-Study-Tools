@@ -5,7 +5,7 @@
  *   node tools/sync-artifact.js <sheet-values.json> <artifact.html> <out.html> [--if-changed]
  *
  * sheet-values.json holds the rows of each tab exactly as read (Google Sheets get_values, from row 1):
- *   {"foundation": [[...], ...], "lists": [...],                      <- master sheet (Eduplan only)
+ *   {"foundation": [[...], ...], "faq": [...], "lists": [...],        <- master sheet (Eduplan only; "faq" optional)
  *    "schools": [{"name": "UTAR", "institutions": [...], "programmes": [...], "campus": [...]}, ...]}
  * with one "schools" entry per school sheet in the "Eduplan School Data" Drive folder
  * (names starting with "_" are skipped by the API, so leave them out here too).
@@ -40,7 +40,7 @@ let html = fs.readFileSync(inFile, "utf8");
 const at = html.indexOf(MARK);
 const summary = {
   institutions: data.institutions.length, programmes: data.programmes.length,
-  campus_scholarships: data.campus_scholarships.length, foundation_scholarships: data.foundation_scholarships.length,
+  campus_scholarships: data.campus_scholarships.length, foundation_scholarships: data.foundation_scholarships.length, faq: data.faq.length,
   sources: data.sources, skipped: data.skipped
 };
 if (ifChanged && at > -1) {

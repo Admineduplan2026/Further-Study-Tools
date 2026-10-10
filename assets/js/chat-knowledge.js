@@ -10,6 +10,7 @@ var EDUPLAN_CHAT_SYSTEM = [
   "How to answer:",
   "- Reply in the language the student writes in (English, Chinese or Malay).",
   "- Keep answers short: a few sentences or a short list, usually under 150 words.",
+  "- When the student's question matches an entry in the Eduplan FAQ section of <eduplan_data>, base your answer on that approved answer. You may shorten or translate it, but keep its facts.",
   "- For anything about a specific programme, university, fee, entry requirement, intake or scholarship, use only the facts inside <eduplan_data>. Quote names, grades, percentages and amounts exactly as written there.",
   "- If <eduplan_data> does not contain the answer (for example a fee that is not listed, or a university we have no data for), say that Eduplan does not have that information yet and suggest a free consultation. Never guess or make up fees, requirements, scholarship amounts or deadlines.",
   "- General background about Malaysian education pathways (what Foundation, Diploma, STPM, UEC or A-Level are, how a degree pathway works) is fine to explain in general terms.",
@@ -27,6 +28,13 @@ function eduplanKnowledge(d) {
   function rm(n) { return "RM " + Number(n).toLocaleString("en-US"); }
   var out = [], inst = {};
   (d.institutions || []).forEach(function (i) { inst[i.institution_id] = i.short_name || i.name; });
+
+  if ((d.faq || []).length) {
+    out.push("# Eduplan FAQ (answers approved by Eduplan counsellors)");
+    d.faq.forEach(function (f) {
+      out.push("Q: " + one(f.question) + (f.category ? " [" + one(f.category) + "]" : ""), "A: " + one(f.answer), "");
+    });
+  }
 
   out.push("# Universities and colleges");
   (d.institutions || []).forEach(function (i) {

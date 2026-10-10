@@ -31,12 +31,13 @@ function master_() {
   return SpreadsheetApp.getActiveSpreadsheet() || SpreadsheetApp.openById(MASTER_SHEET_ID);
 }
 var SCHOOL_TABS = ['institutions', 'programmes', 'campus'];
-var MASTER_TABS = ['foundation', 'lists'];
+var MASTER_TABS = ['foundation', 'faq', 'lists'];
 var SHEETS = {
   institutions: 'Institutions',
   programmes: 'Programmes',
   campus: 'Campus Scholarships',
   foundation: 'Foundation Scholarships',
+  faq: 'FAQ',
   lists: 'Lists'
 };
 var KEY_ROW = 2;      // row holding the API keys
@@ -54,7 +55,8 @@ var FIELDS = {
     'application_deadline', 'apply_url', 'notes', 'last_updated'],
   campus: ['scholarship_id*', 'institution_id*', 'scholarship_name', 'type', 'qualification*', 'minimum_result*',
     'waiver_percent', 'fixed_amount_rm', 'applies_to', 'other_conditions', 'deadline', 'info_url', 'last_updated'],
-  foundation: ['option_id*', 'scholarship_name*', 'organiser', 'requirements*', 'award_value', 'deadline', 'info_url', 'last_updated']
+  foundation: ['option_id*', 'scholarship_name*', 'organiser', 'requirements*', 'award_value', 'deadline', 'info_url', 'last_updated'],
+  faq: ['faq_id*', 'category', 'question*', 'answer*', 'last_updated']  // answers for the AI study assistant
 };
 var NUMBERS = ['hostel_fee_min', 'hostel_fee_max', 'duration_years', 'tuition_fee_rm', 'waiver_percent', 'fixed_amount_rm'];
 
@@ -118,6 +120,7 @@ function showCheck() {
     '  Programmes: ' + d.programmes.length,
     '  Campus scholarship tiers: ' + d.campus_scholarships.length,
     '  Foundation scholarships: ' + d.foundation_scholarships.length,
+    '  FAQ answers for the AI assistant: ' + d.faq.length,
     '',
     d.skipped.length ? 'Rows skipped (fix these):' : 'No problems found.'
   ];
@@ -273,6 +276,8 @@ function buildEduplanData(values, formatDate, generatedAt) {
     return f;
   });
 
+  var faq = read('faq', values.faq, '');
+
   function strip(list) { return list.map(function (x) { delete x._row; delete x._sheet; return x; }); }
   return {
     version: 1,
@@ -281,6 +286,7 @@ function buildEduplanData(values, formatDate, generatedAt) {
     programmes: strip(programmes),
     campus_scholarships: strip(campus),
     foundation_scholarships: strip(foundation),
+    faq: strip(faq),
     sources: sources,
     skipped: skipped
   };
