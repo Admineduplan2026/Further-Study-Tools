@@ -378,6 +378,7 @@ function progCard(u,fold){
    '<a class="textlink" href="#scholarships-foundation">Other scholarships open to all students '+ARROW+'</a></div>'+
   (notes.length?'<div class="stack"><h4>Notes</h4>'+notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join("")+'</div>':'')+
   '<div class="row">'+(u.url?'<a class="btn ghost" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'')+
+   (u.id?'<a class="btn ghost" href="#apply/'+esc(u.id)+'">Apply with Eduplan</a>':'')+
    '<a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(u.programme||u.name)+' ('+esc(u.name)+').">Ask a counsellor about this course</a></div>'+(fold?'</div></details>':'</article>');
 }
 function progFold(u){return progCard(u,true);}
@@ -463,6 +464,150 @@ V.consultation=function(){
  '</form></section>';
 };
 
+/* ---------- Application form (#apply) ----------
+   One short form for applying through Eduplan. It covers every item on the universities' own application forms
+   (based on the XMUM Foundation application form): programme, personal and contact details, parent/guardian and
+   emergency contact, education, English tests, disability, documents and declarations.
+   Nothing is sent anywhere: the student copies or prints the summary and sends it to Eduplan.
+   Answers are kept in sessionStorage only (they include NRIC numbers), so they are gone when the tab is closed. */
+var APPLY_STEPS=["Programme","About you","Contact","Family","Education","Confirm"];
+var APPLY_KEY="eduplan-apply",QUALS=["SPM","UEC","O-Level","STPM","A-Level","Foundation / Matriculation","Diploma","Bachelor's degree","Other"];
+var MY_STATES=["Johor","Kedah","Kelantan","Melaka","Negeri Sembilan","Pahang","Perak","Perlis","Pulau Pinang","Sabah","Sarawak","Selangor","Terengganu","Kuala Lumpur","Labuan","Putrajaya"];
+function applyLoad(){var a=null;try{a=JSON.parse(sessionStorage.getItem(APPLY_KEY));}catch(e){}
+ a=a||{};a.v=a.v||{nationality:"Malaysian",residence:"Malaysia",country:"Malaysia",perm_same:true,em_same:true,disability:"No"};a.step=a.step||1;a.edu=a.edu||2;a.eng=a.eng||1;return a;}
+function applySave(){try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng}));}catch(e){}}
+function allProgs(){var out=[];UNIV.forEach(function(u){u.progs.forEach(function(p){out.push({u:u,p:p});});});return out;}
+function applyProg(){var id=S.app.v.prog;return allProgs().filter(function(x){return x.p.id===id;})[0]||null;}
+/* Academic tracks come from the programme's notes line "Academic tracks: A, B, C." in the school sheet. */
+function progTracks(p){var m=String(p&&p.notes||"").match(/Academic tracks?:\s*([^\n]+?)\.?\s*(?:\n|$)/i);return m?m[1].split(/\s*,\s*/).filter(Boolean):[];}
+function applyAge(dob){var d=new Date(dob);if(!dob||isNaN(d))return null;var n=new Date(),a=n.getFullYear()-d.getFullYear();if(n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))a--;return a;}
+
+function af(id,label,o){
+ o=o||{};var v=S.app.v[id],e=(S.app.err||{})[id],req=!o.opt,inv=e?' aria-invalid="true" aria-describedby="'+id+'-err"':'';
+ var lab='<label for="ap-'+id+'">'+label+(req?'':' <span class="hint">(optional)</span>')+'</label>',ctl;
+ if(o.opts)ctl='<select id="ap-'+id+'" name="'+id+'"'+inv+(o.rerender?' data-rerender':'')+'>'+(o.first?'<option value="">'+esc(o.first)+'</option>':'')+
+   o.opts.map(function(x){var val=typeof x==="string"?x:x[0],t=typeof x==="string"?x:x[1];return '<option value="'+esc(val)+'"'+(String(v||"")===val?' selected':'')+'>'+esc(t)+'</option>';}).join("")+'</select>';
+ else if(o.area)ctl='<textarea id="ap-'+id+'" name="'+id+'" rows="'+(o.rows||3)+'"'+inv+'>'+esc(v||"")+'</textarea>';
+ else ctl='<input id="ap-'+id+'" name="'+id+'" type="'+(o.type||"text")+'" value="'+esc(v||"")+'"'+(o.list?' list="'+o.list+'"':'')+(o.auto?' autocomplete="'+o.auto+'"':'')+(o.mode?' inputmode="'+o.mode+'"':'')+inv+'>';
+ return '<div class="field'+(o.full?' full':'')+'">'+lab+ctl+(o.hint?'<span class="hint">'+o.hint+'</span>':'')+(e?'<span class="err" id="'+id+'-err">'+esc(e)+'</span>':'')+'</div>';
+}
+function acheck(id,label,o){o=o||{};var e=(S.app.err||{})[id];
+ return '<div class="field full"><label class="check"><input type="checkbox" name="'+id+'" id="ap-'+id+'"'+(S.app.v[id]?' checked':'')+(o.rerender?' data-rerender':'')+(e?' aria-invalid="true" aria-describedby="'+id+'-err"':'')+'><span>'+label+'</span></label>'+(e?'<span class="err" id="'+id+'-err">'+esc(e)+'</span>':'')+'</div>';}
+function agroup(title,body){return '<fieldset class="fgroup"><legend>'+title+'</legend><div class="fgrid">'+body+'</div></fieldset>';}
+
+function applyStep(n){
+ var v=S.app.v,x=applyProg();
+ if(n===1){
+  var byU=UNIV.filter(function(u){return u.progs.length;}).map(function(u){
+   return '<optgroup label="'+esc(u.name)+'">'+u.progs.map(function(p){return '<option value="'+esc(p.id)+'"'+(v.prog===p.id?' selected':'')+'>'+esc(p.programme)+'</option>';}).join("")+'</optgroup>';}).join("");
+  var e=(S.app.err||{}).prog,tr=x?progTracks(x.p):[];
+  return agroup("Programme",
+   '<div class="field full"><label for="ap-prog">Programme</label><select id="ap-prog" name="prog" data-rerender'+(e?' aria-invalid="true" aria-describedby="prog-err"':'')+'><option value="">Choose a programme</option>'+byU+'</select>'+
+    (x?'<span class="hint">'+esc(x.u.fullName||x.u.name)+(x.p.level?' · '+esc(x.p.level):'')+'</span>':'<span class="hint">Not sure yet? <a href="#consultation">Book a free consultation</a> first.</span>')+(e?'<span class="err" id="prog-err">'+esc(e)+'</span>':'')+'</div>'+
+   (tr.length?af("track","Academic track",{opts:tr,first:"Choose a track"}):'')+
+   af("intake","Intake (month and year)",{type:"month",hint:x&&x.p.intakes?"Intakes: "+esc(x.p.intakes):"Example: 2026-04"}));
+ }
+ if(n===2)return agroup("Personal details",
+   af("name_en","Full name (as on NRIC/passport)",{full:true,auto:"name",hint:"In capital letters, for example TAN WEI MING."})+
+   af("name_zh","Chinese name",{opt:true})+af("ic","NRIC / passport no.",{hint:"Example: 080101-14-1234"})+
+   af("dob","Date of birth",{type:"date",auto:"bday"})+af("gender","Gender",{opts:["Male","Female"],first:"Choose"})+
+   af("marital","Marital status",{opts:["Single","Married"],first:"Choose"})+af("race","Race")+af("religion","Religion")+
+   af("nationality","Nationality")+af("residence","Country of permanent residence"));
+ if(n===3)return agroup("Contact details",
+   af("mobile","Mobile",{type:"tel",auto:"tel",hint:"Example: 012-345 6789"})+af("email","Email",{type:"email",auto:"email"})+af("tel","Home telephone",{type:"tel",opt:true})+
+   af("addr","Correspondence address",{area:true,rows:2,full:true,auto:"street-address"})+af("town","Town / city")+af("postcode","Postcode",{mode:"numeric",auto:"postal-code"})+
+   af("state","State",{list:"my-states"})+af("country","Country")+
+   acheck("perm_same","My permanent address is the same",{rerender:true})+
+   (v.perm_same?'':af("p_addr","Permanent address",{area:true,rows:2,full:true})+af("p_town","Town / city")+af("p_postcode","Postcode",{mode:"numeric"})+
+    af("p_state","State",{list:"my-states"})+af("p_country","Country")+af("p_tel","Home telephone (permanent address)",{type:"tel",opt:true}))+
+   '<datalist id="my-states">'+MY_STATES.map(function(s){return '<option value="'+s+'">';}).join("")+'</datalist>');
+ if(n===4)return agroup("Parent / guardian",
+   af("g_name","Full name",{full:true})+af("g_name_zh","Chinese name",{opt:true})+af("g_rel","Relationship",{hint:"Father, mother, guardian …"})+
+   af("g_mobile","Mobile",{type:"tel"})+af("g_email","Email",{type:"email",opt:true})+af("g_job","Occupation",{opt:true})+af("g_tel","Home telephone",{type:"tel",opt:true}))+
+  agroup("Emergency contact",acheck("em_same","Same as parent / guardian",{rerender:true})+
+   (v.em_same?'':af("e_name","Full name",{full:true})+af("e_name_zh","Chinese name",{opt:true})+af("e_rel","Relationship")+af("e_mobile","Mobile",{type:"tel"})+af("e_tel","Home telephone",{type:"tel",opt:true})));
+ if(n===5){
+  var rows="";for(var i=1;i<=S.app.edu;i++)rows+='<div class="rowset"><span class="rowno">'+i+'</span>'+af("ed"+i+"_school","School / institution and location",{full:true,opt:i>1})+
+   af("ed"+i+"_from","From",{type:"month",opt:i>1})+af("ed"+i+"_to","To",{type:"month",opt:i>1})+af("ed"+i+"_qual","Qualification",{opts:QUALS,first:"Choose",opt:i>1,full:true})+'</div>';
+  var eng="";for(var j=1;j<=S.app.eng;j++)eng+='<div class="rowset"><span class="rowno">'+j+'</span>'+af("en"+j+"_type","Test",{opt:true,hint:"MUET, IELTS, TOEFL, SPM English …"})+af("en"+j+"_score","Score / band",{opt:true})+af("en"+j+"_date","Date taken or to be taken",{type:"month",opt:true})+'</div>';
+  return agroup("Education background",'<div class="field full"><span class="hint">Start with your most recent school. Add every school from secondary school onwards.</span></div>'+rows+
+    (S.app.edu<5?'<div class="field full"><button type="button" class="btn ghost" data-apply="add-edu">Add another school</button></div>':''))+
+   agroup("Highest qualification",af("h_type","Qualification",{opts:QUALS,first:"Choose"})+af("h_status","Results",{opts:[["Actual","Actual results"],["Forecast","Forecast / not out yet"]],first:"Choose"})+
+    af("h_school","Institution",{full:true})+af("h_start","Year started",{type:"month"})+af("h_end","Year completed",{type:"month"})+
+    af("h_results","Subjects and grades",{area:true,rows:5,full:true,hint:"One subject per line, for example: Mathematics A+"}))+
+   agroup("English language",'<div class="field full"><span class="hint">Any English test you have taken or will take.</span></div>'+eng+
+    (S.app.eng<3?'<div class="field full"><button type="button" class="btn ghost" data-apply="add-eng">Add another test</button></div>':''))+
+   agroup("Others",af("disability","Do you have a disability?",{opts:["No","Yes"],rerender:true})+(v.disability==="Yes"?af("dis_info","Please give details",{area:true,rows:2,full:true}):''));
+ }
+ var age=applyAge(v.dob),xm=x&&x.u.id==="XMUM";
+ var docs=["A copy of your NRIC (Malaysian students) or passport (international students)","A certified true copy of your SPM / UEC / O-Level results or equivalent",
+  "A certified true copy of your English language certificate (if any)","Scholarship application form, if you are applying for a scholarship","Proof of payment of the application fee"];
+ return agroup("Documents to prepare",'<div class="field full"><span class="hint">Your counsellor collects these from you after you send this form.'+(xm?' XMUM scholarship and study grant form: <a href="http://www.xmu.edu.my/14698/list.htm" target="_blank" rel="noopener">xmu.edu.my</a>.':'')+'</span></div>'+
+   docs.map(function(d,k){return acheck("doc"+k,d);}).join(""))+
+  agroup("Declaration",acheck("decl","I declare that the information in this application is true, correct and complete. I understand that the university may change or withdraw a decision made on incorrect or incomplete information. I agree that Eduplan and the university may use and process my personal data for this application, as set out in their personal data protection notices.")+
+   (age!==null&&age<18?'<div class="field full"><span class="hint">You are under 18, so your parent or legal guardian must also agree.</span></div>'+
+    acheck("decl_g","I am the applicant’s parent or legal guardian. I consent to this application and understand that the university’s fees and charges are payable by the dates it sets.")+
+    af("decl_g_name","Parent / guardian name",{full:true}):''));
+}
+
+function applyErrors(n){
+ var v=S.app.v,e={},x=applyProg();
+ function need(id,msg){if(!String(v[id]==null?"":v[id]).trim())e[id]=msg||"Please fill this in.";}
+ function phone(id){var d=String(v[id]||"").replace(/\D/g,"");if(d&&(d.length<9||d.length>13))e[id]="Enter a phone number with 9 to 13 digits.";}
+ function mail(id){var m=String(v[id]||"").trim();if(m&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m))e[id]="Enter an email like name@example.com.";}
+ if(n===1){need("prog","Choose a programme.");if(x&&progTracks(x.p).length)need("track","Choose an academic track.");need("intake","Enter the intake month and year.");}
+ if(n===2){["name_en","ic","dob","gender","marital","race","religion","nationality","residence"].forEach(function(k){need(k);});
+  var a=applyAge(v.dob);if(v.dob&&(a===null||a<10||a>80))e.dob="Check the date of birth.";}
+ if(n===3){["mobile","email","addr","town","postcode","state","country"].forEach(function(k){need(k);});
+  if(!v.perm_same)["p_addr","p_town","p_postcode","p_state","p_country"].forEach(function(k){need(k);});
+  phone("mobile");phone("tel");phone("p_tel");mail("email");}
+ if(n===4){["g_name","g_rel","g_mobile"].forEach(function(k){need(k);});phone("g_mobile");phone("g_tel");mail("g_email");
+  if(!v.em_same){["e_name","e_rel","e_mobile"].forEach(function(k){need(k);});phone("e_mobile");}}
+ if(n===5){["ed1_school","ed1_from","ed1_to","ed1_qual","h_type","h_status","h_school","h_start","h_end","h_results"].forEach(function(k){need(k);});
+  if(v.disability==="Yes")need("dis_info");}
+ if(n===6){if(!v.decl)e.decl="Please tick to confirm.";var a2=applyAge(v.dob);if(a2!==null&&a2<18){if(!v.decl_g)e.decl_g="Your parent or guardian must tick to agree.";need("decl_g_name");}}
+ return e;
+}
+
+function applySummary(){
+ var v=S.app.v,x=applyProg(),L=[];
+ function sec(t){L.push("","== "+t+" ==");}
+ function row(label,val){val=String(val==null?"":val).trim();if(val)L.push(label+": "+val);}
+ L.push("EDUPLAN APPLICATION");
+ sec("Programme");row("University",x?(x.u.fullName||x.u.name):"");row("Programme",x?x.p.programme:"");row("Level",x?x.p.level:"");row("Academic track",v.track);row("Intake",v.intake);
+ sec("Personal details");row("Name (as on NRIC/passport)",String(v.name_en||"").toUpperCase());row("Chinese name",v.name_zh);row("NRIC / passport no.",v.ic);row("Date of birth",v.dob);
+ row("Gender",v.gender);row("Marital status",v.marital);row("Race",v.race);row("Religion",v.religion);row("Nationality",v.nationality);row("Country of permanent residence",v.residence);
+ sec("Contact details");row("Mobile",v.mobile);row("Email",v.email);row("Home telephone",v.tel);
+ row("Correspondence address",[v.addr,v.postcode+" "+v.town,v.state,v.country].join(", ").replace(/\s*\n\s*/g,", "));
+ row("Permanent address",v.perm_same?"Same as correspondence address":[v.p_addr,v.p_postcode+" "+v.p_town,v.p_state,v.p_country].join(", ").replace(/\s*\n\s*/g,", "));row("Home telephone (permanent)",v.perm_same?"":v.p_tel);
+ sec("Parent / guardian");row("Name",v.g_name);row("Chinese name",v.g_name_zh);row("Relationship",v.g_rel);row("Mobile",v.g_mobile);row("Email",v.g_email);row("Occupation",v.g_job);row("Home telephone",v.g_tel);
+ sec("Emergency contact");if(v.em_same)L.push("Same as parent / guardian");else{row("Name",v.e_name);row("Chinese name",v.e_name_zh);row("Relationship",v.e_rel);row("Mobile",v.e_mobile);row("Home telephone",v.e_tel);}
+ sec("Education background");for(var i=1;i<=S.app.edu;i++){if(v["ed"+i+"_school"])L.push(i+". "+v["ed"+i+"_school"]+" | "+(v["ed"+i+"_from"]||"?")+" to "+(v["ed"+i+"_to"]||"?")+" | "+(v["ed"+i+"_qual"]||"-"));}
+ sec("Highest qualification");row("Qualification",v.h_type);row("Results",v.h_status);row("Institution",v.h_school);row("Started",v.h_start);row("Completed",v.h_end);
+ L.push("Subjects and grades:");String(v.h_results||"").split(/\r?\n/).filter(function(s){return s.trim();}).forEach(function(s){L.push("  "+s.trim());});
+ sec("English language");var any=false;for(var j=1;j<=S.app.eng;j++){if(v["en"+j+"_type"]){any=true;L.push(v["en"+j+"_type"]+" | "+(v["en"+j+"_score"]||"-")+" | "+(v["en"+j+"_date"]||"-"));}}if(!any)L.push("None yet");
+ sec("Others");row("Disability",v.disability==="Yes"?"Yes: "+(v.dis_info||""):"No");
+ sec("Documents ready");L.push([0,1,2,3,4].map(function(k){return (v["doc"+k]?"[x] ":"[ ] ")+["NRIC / passport copy","Certified results","English certificate","Scholarship form","Application fee payment"][k];}).join("\n"));
+ sec("Declaration");L.push("Applicant agreed: Yes");if(v.decl_g)L.push("Parent / guardian agreed: Yes ("+v.decl_g_name+")");
+ return L.join("\n");
+}
+
+V.apply=function(){
+ var a=S.app;
+ if(a.done)return '<section class="stack"><span class="eyebrow">Apply with Eduplan</span><h1>Your application is ready</h1><p class="lead">Send it to Eduplan by WhatsApp or email. A counsellor checks it with you and tells you the next steps, including signatures, documents and the application fee.</p></section>'+
+  '<section class="panel" style="max-width:760px"><pre class="summary" id="apply-summary">'+esc(a.done)+'</pre>'+
+  '<div class="row noprint"><button type="button" class="btn" data-apply="copy">Copy summary</button><button type="button" class="btn ghost" data-apply="print">Print or save as PDF</button><button type="button" class="btn ghost" data-apply="edit">Edit my answers</button></div>'+
+  '<p class="muted noprint" id="apply-copied" aria-live="polite"></p>'+
+  '<p class="muted noprint">Send to: WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL]. This page keeps your answers only until you close the tab.</p>'+
+  '<div class="row noprint"><button type="button" class="btn ghost" data-apply="clear">Start a new application</button></div></section>';
+ return '<section class="stack">'+stepper(APPLY_STEPS,a.step)+'<span class="eyebrow">Apply with Eduplan</span><h1>Application form</h1>'+
+  '<p class="lead">One form for your university application. It takes about 10 minutes. Your answers stay on this device until you close the tab.</p></section>'+
+  '<section class="panel" style="max-width:760px"><form class="fields" id="apply-form" novalidate>'+applyStep(a.step)+
+  '<div class="row">'+(a.step>1?'<button type="button" class="btn ghost" data-apply="back">Back</button>':'')+
+  '<button type="submit" class="btn">'+(a.step<APPLY_STEPS.length?'Next':'Prepare my application')+'</button></div></form></section>';
+};
+S.app=applyLoad();
+
 /* ---------- Router ---------- */
 var app=document.getElementById("app");
 function route(){
@@ -488,7 +633,12 @@ function route(){
   r=f?"faculty/"+f.code+(c?"/"+c.id:""):"faculty";
   if(f)S.fac={field:f,course:c};
  }
- view=r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
+ if(r==="apply"||r.indexOf("apply/")===0){
+  var pid=r.split("/")[1],hit=pid?allProgs().filter(function(x){return String(x.p.id).toLowerCase()===pid.toLowerCase();})[0]:null;
+  if(hit){S.app.v.prog=hit.p.id;S.app.v.track="";S.app.step=1;S.app.done=null;S.app.err={};applySave();r="apply";}
+  else if(!pid||UNIV.length)r="apply";   /* before the sheet data arrives, keep the programme in the link */
+ }
+ view=r.indexOf("apply")===0?"apply":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
  if(!V[view])r=view="home";
  if(r!==h&&h)history.replaceState(null,"","#"+r);
  return view;
@@ -516,12 +666,29 @@ window.addEventListener("hashchange",function(){render(false);app.focus({prevent
 
 /* ---------- Events (delegated) ---------- */
 function readCons(){["cons-name","cons-phone","cons-email","cons-qual","cons-topic","cons-msg"].forEach(function(id){var el=document.getElementById(id);if(el)S.cons[id]=el.value;});store("eduplan-consult",S.cons);}
+/* Application form: answers are saved as they are typed; some choices show or hide fields. */
+function applyField(t){if(!t.name||!t.closest("#apply-form"))return false;S.app.v[t.name]=t.type==="checkbox"?t.checked:t.value;if(t.name==="prog")S.app.v.track="";applySave();
+ /* Clear this field's error as soon as it is answered. */
+ if(S.app.err&&S.app.err[t.name]&&(t.type==="checkbox"?t.checked:String(t.value).trim())){delete S.app.err[t.name];t.removeAttribute("aria-invalid");var m=document.getElementById(t.name+"-err");if(m)m.remove();}
+ return true;}
+app.addEventListener("input",function(ev){applyField(ev.target);});
 app.addEventListener("change",function(ev){
  var t=ev.target,id=t.id;
+ if(applyField(t)){if(t.hasAttribute("data-rerender"))rerender(t.id);return;}
  if(id&&id.indexOf("cons-")===0){readCons();}
 });
 app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
+ if(t.hasAttribute("data-apply")){var act=t.getAttribute("data-apply"),A=S.app;
+  if(act==="back"){A.err={};A.step=Math.max(1,A.step-1);applySave();rerender();window.scrollTo(0,0);}
+  else if(act==="add-edu"){A.edu=Math.min(5,A.edu+1);applySave();rerender("ap-ed"+A.edu+"_school");}
+  else if(act==="add-eng"){A.eng=Math.min(3,A.eng+1);applySave();rerender("ap-en"+A.eng+"_type");}
+  else if(act==="edit"){A.done=null;A.step=1;applySave();rerender();window.scrollTo(0,0);}
+  else if(act==="clear"){try{sessionStorage.removeItem(APPLY_KEY);}catch(e){}S.app=applyLoad();rerender();window.scrollTo(0,0);}
+  else if(act==="print")window.print();
+  else if(act==="copy"){var out=document.getElementById("apply-copied"),fb=function(){var pre=document.getElementById("apply-summary"),rg=document.createRange();rg.selectNodeContents(pre);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(rg);out.textContent="The summary is selected. Press Ctrl+C (or long-press on a phone) to copy it.";};
+   try{navigator.clipboard.writeText(A.done).then(function(){out.textContent="Copied. Paste it into WhatsApp or an email to Eduplan.";},fb);}catch(e){fb();}}
+  return;}
  if(t.hasAttribute("data-jump")){var g=app.querySelector('.facgroup[data-fac="'+t.getAttribute("data-jump")+'"]');if(g){var hd=document.querySelector("header.site"),off=(hd&&getComputedStyle(hd).position==="sticky"?hd.offsetHeight:0)+12;
   window.scrollTo({top:g.getBoundingClientRect().top+window.pageYOffset-off,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});var sm=g.querySelector("summary");if(sm)sm.focus({preventScroll:true});}return;}
  if(t.hasAttribute("data-foldall")){var o=t.getAttribute("data-foldall")==="open";Array.prototype.forEach.call(app.querySelectorAll("details.fold"),function(d){d.open=o;});return;}
@@ -541,6 +708,11 @@ app.addEventListener("click",function(ev){
   return;}
 });
 app.addEventListener("submit",function(ev){
+ if(ev.target.id==="apply-form"){ev.preventDefault();var A=S.app,er=applyErrors(A.step),k=Object.keys(er)[0];A.err=er;
+  if(k){rerender("ap-"+k);return;}
+  if(A.step<APPLY_STEPS.length){A.step++;applySave();rerender();window.scrollTo(0,0);var f=app.querySelector("#apply-form input,#apply-form select,#apply-form textarea");if(f)f.focus({preventScroll:true});}
+  else{A.done=applySummary();rerender();window.scrollTo(0,0);}
+  return;}
  if(ev.target.id!=="cons-form")return;ev.preventDefault();readCons();
  var c=S.cons,e={};
  if(!(c["cons-name"]||"").trim())e["cons-name"]="Enter your full name.";
@@ -568,7 +740,7 @@ function applyApi(d){
   var i=inst[p.institution_id];if(!i)return;
   var prog={inst:p.institution_id,name:i.short_name||i.name,place:[i.city,i.state].filter(Boolean).join(", "),campus:p.campus,programme:p.programme_name,level:p.level,mode:p.study_mode,
    years:p.duration_years,intakes:p.intakes,fee:p.tuition_fee_rm,entry:p.entry_spm,uec:p.entry_uec,olevel:p.entry_olevel,stpm:p.entry_stpm,entry_other:p.entry_other,english:p.english_requirement,
-   deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes,course_id:p.course_id};
+   deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes,course_id:p.course_id,id:p.programme_id};
   var u=univ(p.institution_id);if(u)u.progs.push(prog);
   uniq([p.course_id].concat(p.also_course_ids||[])).forEach(function(id){if(courses[id])courses[id].universities.push(prog);});
  });

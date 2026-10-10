@@ -74,7 +74,7 @@ form.fields,.fields{display:flex;flex-direction:column;gap:18px}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field label,.legend{font-size:14px;font-weight:500}
 .hint{font-size:13px;color:var(--muted)}
-input[type=text],input[type=tel],input[type=email],select,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid #b9c1c9;border-radius:12px;padding:11px 14px;min-height:48px;width:100%}
+input[type=text],input[type=tel],input[type=email],input[type=date],input[type=month],select,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid #b9c1c9;border-radius:12px;padding:11px 14px;min-height:48px;width:100%}
 textarea{min-height:110px;resize:vertical}
 .err{font-size:13px;color:var(--err)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -304,3 +304,21 @@ html.motion .mission.in .journey li{opacity:1;transform:none}
  .chatfab span{display:none}.chatfab{width:56px;height:56px;padding:0;justify-content:center}
 }
 @media (prefers-reduced-motion:reduce){.dots i{animation:none;opacity:.6}}
+
+/* Application form (#apply) */
+.fgroup{border:0;margin:0;padding:0;min-width:0}
+.fgroup legend{font-family:var(--display);font-size:18px;font-weight:500;padding:0;margin-bottom:14px;color:var(--ink)}
+.fgroup+.fgroup,.fgroup+.row{margin-top:8px}
+.fgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}
+.fgrid .field.full{grid-column:1/-1}
+.fgrid input,.fgrid select,.fgrid textarea{width:100%}
+label.check{display:flex;align-items:flex-start;gap:10px;font-weight:400;font-size:15px;line-height:1.5;cursor:pointer}
+label.check input{flex:none;width:20px;height:20px;margin:2px 0 0;accent-color:var(--brand)}
+.rowset{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;padding:16px 16px 16px 48px;border:1px solid var(--line);border-radius:14px;position:relative}
+.rowset .rowno{position:absolute;left:14px;top:16px;width:24px;height:24px;border-radius:50%;background:var(--brand-soft);color:var(--brand);font-size:13px;font-weight:600;display:grid;place-items:center}
+@media (max-width:640px){.fgrid,.rowset{grid-template-columns:1fr}.rowset{padding:14px 14px 14px 44px}}
+@media print{
+ header.site,footer,.chat,.noprint,.banner,.sample{display:none!important}
+ body{background:#fff}
+ pre.summary{border:0;padding:0;font-size:12px}
+}
