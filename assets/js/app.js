@@ -187,12 +187,14 @@ function uniLevelPage(u,lv){
  return uniHead(u,3,"#universities/"+esc(u.id.toLowerCase()))+(hasBanner(u)?'':'<h1>'+esc(u.name)+' · '+L[1]+'</h1><p class="lead">'+esc(L[2].join(" / "))+'</p>')+
  '<div class="chips" role="group" aria-label="Study level">'+LEVELS.map(function(x){return '<a class="chip" href="#universities/'+esc(u.id.toLowerCase())+'/'+x[0]+'"'+(x[0]===lv?' aria-current="page"':'')+'>'+x[1]+'</a>';}).join("")+'</div></section>'+
  uniTour(u,u.name+' · '+L[1],L[2].join(" / "))+
+ (ps.length?'<div class="row foldall"><span class="hint">'+ps.length+' programme'+(ps.length===1?'':'s')+'. Tap a programme to see fees, entry requirements and scholarships.</span>'+
+  '<button type="button" class="btn ghost" data-foldall="open">Expand all</button><button type="button" class="btn ghost" data-foldall="close">Collapse all</button></div>':'')+
  (ps.length?subs.map(function(sl){
   var sp=ps.filter(function(p){return uniLevel(p.level)[1]===sl;});if(!sp.length)return '';
   var byFac={},order=[];sp.forEach(function(p){var f=facOfCourse(p.course_id),k=f?f.code:"--";if(!byFac[k]){byFac[k]={f:f,list:[]};order.push(k);}byFac[k].list.push(p);});
   order.sort();
   return '<section class="section">'+(sl!==L[1]?'<h2>'+esc(sl)+'</h2>':'')+order.map(function(k){var g=byFac[k];
-   return '<div class="stack"><h3 class="fachead">'+(g.f?'Faculty '+esc(g.f.code)+' · '+esc(g.f.name):'Other')+'</h3><div class="progs">'+g.list.map(progCard).join("")+'</div></div>';}).join("")+'</section>';}).join("")
+   return '<div class="stack"><h3 class="fachead">'+(g.f?'Faculty '+esc(g.f.code)+' · '+esc(g.f.name):'Other')+'</h3><div class="progs">'+g.list.map(progFold).join("")+'</div></div>';}).join("")+'</section>';}).join("")
   :'<div class="empty">No '+L[1].toLowerCase()+' programmes listed for '+esc(u.name)+' yet.</div>')+
  '<p class="hint">Information is for reference only. Please confirm with the university’s official website.</p>';
 }
@@ -340,12 +342,14 @@ function progScholarships(u){
  });
 }
 var ENTRY=[["entry","SPM"],["uec","UEC"],["olevel","O-Level"],["stpm","STPM"],["entry_other","Others"]];
-function progCard(u){
+/* fold: the university pages list many programmes, so each card starts closed and opens to show the details. */
+function progCard(u,fold){
  var sch=progScholarships(u),meta=[u.level,u.years!=null?years(u.years):"",u.mode].filter(Boolean);
  /* Postgraduate brochures give a yearly fee, not a whole-programme total: a notes line "Annual fee: ..." is shown as the fee. */
  var annual=lines(u.notes).filter(function(x){return /^Annual fee: /.test(x);}).map(function(x){return x.replace(/^Annual fee: /,"");}),notes=lines(u.notes).filter(function(x){return !/^Annual fee: /.test(x);});
- return '<article class="prog"><div class="stack"><span class="eyebrow">'+esc(u.name)+'</span><h3 class="fname">'+esc(u.programme||u.name)+'</h3>'+
+ return (fold?'<details class="prog fold"><summary>':'<article class="prog">')+'<div class="stack"><span class="eyebrow">'+esc(u.name)+'</span><h3 class="fname">'+esc(u.programme||u.name)+'</h3>'+
   (meta.length?'<div class="meta">'+meta.map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>':'')+'</div>'+
+  (fold?'<span class="foldhint"><span class="closed">Show details</span><span class="opened">Hide details</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span></summary><div class="progbody">':'')+
   '<dl class="facts">'+
    (u.fee==null&&annual.length?'<dt>Tuition fee (per year)</dt><dd>'+annual.map(function(x){return '<span class="line">'+esc(x)+'</span>';}).join("")+'</dd>':
    '<dt>Tuition fee (whole programme)</dt><dd>'+(u.fee!=null?esc(rm(u.fee)):'<span class="hint">To be confirmed</span>')+'</dd>')+
@@ -360,14 +364,15 @@ function progCard(u){
    '<a class="textlink" href="#scholarships-foundation">Other scholarships open to all students '+ARROW+'</a></div>'+
   (notes.length?'<div class="stack"><h4>Notes</h4>'+notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join("")+'</div>':'')+
   '<div class="row">'+(u.url?'<a class="btn ghost" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'')+
-   '<a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(u.programme||u.name)+' ('+esc(u.name)+').">Ask a counsellor about this course</a></div></article>';
+   '<a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(u.programme||u.name)+' ('+esc(u.name)+').">Ask a counsellor about this course</a></div>'+(fold?'</div></details>':'</article>');
 }
+function progFold(u){return progCard(u,true);}
 function facUnis(f,c){
  var list=c.universities||[];
  return '<section class="stack">'+stepper(FAC_STEPS,4)+'<div><a class="btn ghost" href="#faculty/'+esc(f.code)+'">Back</a></div>'+
  '<span class="eyebrow">Faculty '+esc(f.code)+' · '+esc(f.name)+'</span><h1>'+esc(c.name)+'</h1><p class="lead">'+esc(c.desc)+'</p></section>'+
  '<section class="section"><h2>Universities offering this course</h2>'+
- (list.length?'<div class="progs">'+list.map(progCard).join("")+'</div>'
+ (list.length?'<div class="progs">'+list.map(function(u){return progCard(u);}).join("")+'</div>'
   :'<div class="empty">The university list for this course is being prepared. A counsellor can tell you which universities offer it.</div>')+
  '<p class="hint">Information is for reference only. Please confirm with the university’s official website.</p>'+
  '<div class="row"><a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(c.name)+'.">Ask a counsellor about this course</a></div></section>';
@@ -503,6 +508,7 @@ app.addEventListener("change",function(ev){
 });
 app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
+ if(t.hasAttribute("data-foldall")){var o=t.getAttribute("data-foldall")==="open";Array.prototype.forEach.call(app.querySelectorAll("details.fold"),function(d){d.open=o;});return;}
  if(t.hasAttribute("data-schtype")){S.schType=t.getAttribute("data-schtype");location.hash="#scholarships-"+S.schType;return;}
  if(t.hasAttribute("data-schq")||t.hasAttribute("data-schl")){var k=t.hasAttribute("data-schq")?"schQ":"schL";S[k]=t.getAttribute(k==="schQ"?"data-schq":"data-schl");render(true);
   var f=app.querySelector('[data-'+k.toLowerCase()+'="'+S[k]+'"]');if(f)f.focus();return;}

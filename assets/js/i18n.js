@@ -7,6 +7,7 @@
 (function(){
 "use strict";
 var ZH={
+ "Show details":"展开详情","Hide details":"收起详情","Expand all":"全部展开","Collapse all":"全部收起",
  "Tuition fee (per year)":"学费（每年）",
  "Not applicable: postgraduate entry is based on a Bachelor's or Master's degree (see Others).":"不适用：研究生课程以学士或硕士学位入学（见「其他」）。",
  "Not accepted directly for this degree in the XMUM brochure. Enter through Foundation/Matriculation, STPM, A-Level, UEC or a Diploma first.":"XMUM 简章未接受以此资格直接报读此学位，需先完成预科／大学先修班、STPM、A-Level、UEC 或文凭课程。",
@@ -133,6 +134,7 @@ var ZH_PATTERNS=[
  [/^(.+) \u00b7 (\d+)$/,function(m){var z=tr(m[1]);return (z||m[1])+" · "+m[2];}],
  [/^(\d+) programmes?$/,"$1 个课程"],
  [/^RM ([\d,]+) \(Local\); RM ([\d,]+) \(International(, subject to 6% Sales & Service Tax \(SST\))?\)\.( Fees subject to 6% Sales & Service Tax \(SST\)\.)?$/,function(m){return "RM "+m[1]+"（本地生）；RM "+m[2]+"（国际生"+(m[3]?"，另加 6% 销售与服务税":"")+"）。"+(m[4]?"学费另加 6% 销售与服务税。":"");}],
+ [/^(\d+) programmes?\. Tap a programme to see fees, entry requirements and scholarships\.$/,"共 $1 个课程。点选课程查看学费、入学条件和奖学金。"],
  [/^Up to (\d+)% tuition waiver$/,"最高 $1% 学费减免"],
  [/^Faculty (\d\d)$/,"科系 $1"],
  [/^Faculty (\d\d) · (.+)$/,"科系 $1 · $2"],
