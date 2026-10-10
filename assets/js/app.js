@@ -188,15 +188,29 @@ function uniLevelPage(u,lv){
  '<div class="chips" role="group" aria-label="Study level">'+LEVELS.map(function(x){return '<a class="chip" href="#universities/'+esc(u.id.toLowerCase())+'/'+x[0]+'"'+(x[0]===lv?' aria-current="page"':'')+'>'+x[1]+'</a>';}).join("")+'</div></section>'+
  uniTour(u,u.name+' · '+L[1],L[2].join(" / "))+
  (ps.length?'<div class="row foldall"><span class="hint">'+ps.length+' programme'+(ps.length===1?'':'s')+'. Tap a programme to see fees, entry requirements and scholarships.</span>'+
-  '<button type="button" class="btn ghost" data-foldall="open">Expand all</button><button type="button" class="btn ghost" data-foldall="close">Collapse all</button></div>':'')+
+  '<button type="button" class="btn ghost" data-foldall="open">Expand all</button><button type="button" class="btn ghost" data-foldall="close">Collapse all</button></div>'+facNav(ps):'')+
  (ps.length?subs.map(function(sl){
   var sp=ps.filter(function(p){return uniLevel(p.level)[1]===sl;});if(!sp.length)return '';
   var byFac={},order=[];sp.forEach(function(p){var f=facOfCourse(p.course_id),k=f?f.code:"--";if(!byFac[k]){byFac[k]={f:f,list:[]};order.push(k);}byFac[k].list.push(p);});
   order.sort();
   return '<section class="section">'+(sl!==L[1]?'<h2>'+esc(sl)+'</h2>':'')+order.map(function(k){var g=byFac[k];
-   return '<div class="stack"><h3 class="fachead">'+(g.f?'Faculty '+esc(g.f.code)+' · '+esc(g.f.name):'Other')+'</h3><div class="progs">'+g.list.map(progFold).join("")+'</div></div>';}).join("")+'</section>';}).join("")
+   return '<div class="facgroup" data-fac="'+esc(k)+'">'+facBand(g.f,g.list.length,"h3")+'<div class="progs">'+g.list.map(progFold).join("")+'</div></div>';}).join("")+'</section>';}).join("")
   :'<div class="empty">No '+L[1].toLowerCase()+' programmes listed for '+esc(u.name)+' yet.</div>')+
  '<p class="hint">Information is for reference only. Please confirm with the university’s official website.</p>';
+}
+/* Faculty header for a group of programmes: code badge, name, Chinese name and programme count. */
+function facBand(f,n,tag){
+ return '<div class="facband"><span class="faccode" aria-hidden="true">'+esc(f?f.code:"--")+'</span><div class="facname"><'+tag+'>'+(f?'Faculty '+esc(f.code)+' · '+esc(f.name):'Other')+'</'+tag+'>'+(f&&f.zh?'<span class="hint">'+esc(f.zh)+'</span>':'')+'</div>'+
+  '<span class="pill brand">'+n+' programme'+(n===1?'':'s')+'</span></div>';
+}
+/* Faculty overview above a university's programme list: one tile per faculty, tapping it scrolls to that group. */
+function facNav(ps){
+ var c={},order=[];ps.forEach(function(p){var f=facOfCourse(p.course_id),k=f?f.code:"--";if(!c[k]){c[k]={f:f,n:0};order.push(k);}c[k].n++;});
+ if(order.length<2)return '';
+ order.sort();
+ return '<nav class="facnav" aria-label="Faculties">'+order.map(function(k){var g=c[k];
+  return '<button type="button" class="facjump" data-jump="'+esc(k)+'"><span class="faccode" aria-hidden="true">'+esc(k)+'</span><span class="facname"><span class="name">'+(g.f?esc(g.f.name):'Other')+'</span>'+(g.f&&g.f.zh?'<span class="hint">'+esc(g.f.zh)+'</span>':'')+'</span>'+
+   '<span class="count">'+g.n+'</span></button>';}).join("")+'</nav>';
 }
 /* Scholarship-based: Page 1 is the entry button, Page 2 picks the type, Page 3 shows that type.
    Page 3 is only reachable after a type is chosen on Page 2 (see route()). */
@@ -508,6 +522,8 @@ app.addEventListener("change",function(ev){
 });
 app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
+ if(t.hasAttribute("data-jump")){var g=app.querySelector('.facgroup[data-fac="'+t.getAttribute("data-jump")+'"]');if(g){var hd=document.querySelector("header.site"),off=(hd&&getComputedStyle(hd).position==="sticky"?hd.offsetHeight:0)+12;
+  window.scrollTo({top:g.getBoundingClientRect().top+window.pageYOffset-off,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});var sm=g.querySelector("summary");if(sm)sm.focus({preventScroll:true});}return;}
  if(t.hasAttribute("data-foldall")){var o=t.getAttribute("data-foldall")==="open";Array.prototype.forEach.call(app.querySelectorAll("details.fold"),function(d){d.open=o;});return;}
  if(t.hasAttribute("data-schtype")){S.schType=t.getAttribute("data-schtype");location.hash="#scholarships-"+S.schType;return;}
  if(t.hasAttribute("data-schq")||t.hasAttribute("data-schl")){var k=t.hasAttribute("data-schq")?"schQ":"schL";S[k]=t.getAttribute(k==="schQ"?"data-schq":"data-schl");render(true);
