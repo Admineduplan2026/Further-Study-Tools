@@ -703,7 +703,7 @@ function applySend(){
  a.sending=true;a.sendMsg="";rerender();
  var x=applyProg(),v=a.v;
  fetch(url,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"apply",summary:applySummary(),files:files,
-  fields:{name:String(v.name_en||"").toUpperCase(),ic:v.ic,mobile:v.mobile,email:v.email,university:x?x.u.name:"",programme:x?x.p.programme:"",track:v.track||"",intake:v.intake,accommodation:v.acc||""}})})
+  fields:{institution:x?x.u.id:"",name:String(v.name_en||"").toUpperCase(),ic:v.ic,mobile:v.mobile,email:v.email,university:x?x.u.name:"",programme:x?x.p.programme:"",track:v.track||"",intake:v.intake,accommodation:v.acc||""}})})
   .then(function(r){return r.json();})
   .then(function(d){if(!d||!d.ref)throw new Error(d&&d.error||"failed");a.sending=false;a.sent=d.ref;a.files={};applySave();rerender();window.scrollTo(0,0);})
   .catch(function(){fb("Your application could not be sent just now. Please send it yourself below, or try again later.");});

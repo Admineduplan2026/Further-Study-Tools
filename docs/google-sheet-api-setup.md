@@ -1,14 +1,16 @@
 # Eduplan 院校资料表 + API 设定说明
 
-每所院校一份 Google Sheet，全部放在同一个 Google Drive 文件夹。学校填写 → Eduplan 审核（Published = Yes）→ 网站通过 API 自动显示。
+每所院校一个文件夹，里面放该校的 Google Sheet 和一个 `application` 文件夹。学校填写 → Eduplan 审核（Published = Yes）→ 网站通过 API 自动显示；学生在网站报名后，报名 PDF 和文件会自动存进该校的 `application` 文件夹。
 
 ```
 Google Drive 文件夹「Eduplan School Data」
-├── 00 Master（Eduplan 专用，捷径）   Foundation Scholarships、Lists、API 代码
-├── TARUMT                              ┐
-├── UTAR                                ├ 每校一份：Institutions、Programmes、Campus Scholarships
-├── UCSI                                ┘
-└── _Template（新增学校时复制）        名称以 _ 开头的文件不会被读取
+├── Repository/
+│   ├── 00 Master（Eduplan 专用，捷径）  Foundation Scholarships、FAQ、Lists、API 代码
+│   └── _Template（新增学校时复制）       名称以 _ 开头的文件不会被读取
+├── TARUMT/  ┐  每校一个文件夹：
+├── UCSI/    │    <学校> Sheet（Institutions、Programmes、Campus Scholarships）
+├── UTAR/    │    application/  学生报名（每人一个子文件夹：报名 PDF + 上传文件）
+└── XMUM/    ┘
         │
         ▼
 Apps Script API (/exec) ──► 网站（约 1 分钟内更新）
@@ -29,16 +31,16 @@ Apps Script API (/exec) ──► 网站（约 1 分钟内更新）
 ## 一、Google Drive 结构
 
 - 文件夹：**Eduplan School Data**（ID `1YlVGAe04L2BTQo7bzoLzG6wQl3mhaaoS`，写在 `Code.gs` 的 `SCHOOL_FOLDER_ID`）。
-- **每校一份 Sheet，文件名 = institution_id**（例如 `UTAR`）。该文件只能发布这个 institution_id 的资料；
+- **每校一个文件夹和一份 Sheet，文件夹名和文件名 = institution_id**（例如 `UTAR/UTAR`）。API 会读取各校文件夹里的 Sheet（也兼容直接放在主文件夹的 Sheet），略过 `Repository` 和以 `_` 开头的文件夹／文件。该文件只能发布这个 institution_id 的资料；
   在别校文件里填写的资料会被略过，Check data 会显示原因。
 - 每份学校 Sheet 有：`Instructions`、`Institutions`、`Programmes`、`Campus Scholarships`，以及隐藏的 `Lists`（下拉选单用）。
 - **Master Sheet**（Eduplan 专用）：`Foundation Scholarships`、`Lists`，以及 API 代码。课程类别对照以 Master 的 `Lists` 为准。
 - 受保护（只有 Eduplan 帐号能改）：标题行、Published 栏、Faculty (auto) 公式栏、Instructions、Lists。
 
-**新增一所学校：** 在文件夹里右键 `_Template` → **Make a copy** → 改名为该校的 institution_id（例如 `SEGI`），
+**新增一所学校：** 在 Eduplan School Data 新增文件夹，命名为该校的 institution_id（例如 `SEGI`）；在 `Repository` 里右键 `_Template` → **Make a copy** → 把副本移到该文件夹并改名为同一个 institution_id，
 在 Institutions 第 4 行填写 institution_id（与文件名相同）、全名和类型，再以 Editor 身份分享给该校负责人。
 
-**共享：** 每份学校 Sheet 只分享给该校负责人（Editor）。不要使用「Anyone with the link」。
+**共享：** 每份学校 Sheet 只分享给该校负责人（Editor）。**只分享 Sheet，不要分享学校文件夹**，因为文件夹里的 `application` 有学生的个人资料。不要使用「Anyone with the link」。`application` 文件夹会在第一份报名时自动建立（目前四校已建好）。
 
 ## 二、部署 API（约 5 分钟）
 

@@ -1,11 +1,16 @@
 /**
- * Eduplan application form: receives applications from the website (#apply and #stay) and keeps them in
- * Eduplan's own Google Drive. Nothing here is public:
- *   - a private Drive folder "Eduplan Applications (private)" gets one sub-folder per application with
- *     application.txt (the full form) and the uploaded documents;
- *   - a private spreadsheet "Eduplan Applications" in that folder gets one row per application to track it.
- * Both are created on the first application, in the Drive of the account that deploys the web app, and are not
- * shared with anyone. Share them only with Eduplan staff who handle applications.
+ * Eduplan application form: receives applications from the website (#apply and #stay).
+ *
+ * Each application is saved in the chosen school's folder in "Eduplan School Data":
+ *   <SCHOOL>/application/<EDU-YYYYMMDD-XXXX STUDENT NAME>/
+ *       <ref> <NAME> - Application.pdf   the completed form as a PDF, with photos of the documents at the end
+ *       ic-1.jpg, results-1.pdf, ...      the uploaded documents
+ * The school folder is the one named after the programme's institution_id (XMUM, UTAR, ...); its "application"
+ * folder is created if it is missing. If there is no school folder, the application goes to the private folder
+ * "Eduplan Applications (private)/Unassigned".
+ * A private spreadsheet "Eduplan Applications" (in "Eduplan Applications (private)") gets one row per application.
+ * Nothing is shared by this script. Anyone who can open a school's folder can open its applications, so share school
+ * folders only with Eduplan staff (share the school sheet itself, not the folder, with school staff).
  *
  * Script Properties (Project Settings > Script Properties), all optional:
  *   APPLY_NOTIFY_EMAIL  an Eduplan address to email when a new application arrives (name, programme and reference only).
@@ -19,6 +24,8 @@ var APPLY_MAX_FILES = 12;
 var APPLY_MAX_FILE_BYTES = 5 * 1024 * 1024;
 var APPLY_MAX_TOTAL_BYTES = 20 * 1024 * 1024;
 var APPLY_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif', 'application/pdf': 'pdf' };
+var APPLY_DOCS = { ic: 'NRIC or passport', results: 'Results slip', photo: 'Passport-size photo', eng: 'English language certificate',
+  sch: 'Scholarship application form', fee: 'Proof of application fee payment' };
 var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile', 'Email', 'University', 'Programme', 'Track', 'Intake',
   'Accommodation help', 'Documents', 'Folder', 'Status', 'Counsellor', 'Notes'];
 
@@ -28,6 +35,60 @@ function applyFolder_() {
   var folder = DriveApp.createFolder('Eduplan Applications (private)');
   props.setProperty('APPLY_FOLDER_ID', folder.getId());
   return folder;
+}
+
+/* <School folder>/application for the institution, or the private Unassigned folder. */
+function applySchoolFolder_(institutionId) {
+  var id = String(institutionId || '').trim().toUpperCase();
+  if (id) {
+    var dirs = DriveApp.getFolderById(SCHOOL_FOLDER_ID).getFolders();
+    while (dirs.hasNext()) {
+      var d = dirs.next();
+      if (d.getName().trim().toUpperCase() === id && !d.isTrashed()) {
+        var apps = d.getFoldersByName('application');
+        return apps.hasNext() ? apps.next() : d.createFolder('application');
+      }
+    }
+  }
+  var root = applyFolder_(), un = root.getFoldersByName('Unassigned');
+  return un.hasNext() ? un.next() : root.createFolder('Unassigned');
+}
+
+function applyEsc_(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+}
+
+/* The application as a PDF: the form sections from the website summary, signature lines, then photos of the documents. */
+function applyPdf_(ref, received, summary, images, withImages) {
+  var lines = String(summary).split(/\r?\n/), body = '', open = false;
+  function close() { if (open) { body += '</table>'; open = false; } }
+  function row(html) { if (!open) { body += '<table>'; open = true; } body += html; }
+  lines.slice(1).forEach(function (l) {
+    var t = l.trim(), m;
+    if (!t) return;
+    if ((m = t.match(/^== (.+) ==$/))) { close(); body += '<h2>' + applyEsc_(m[1]) + '</h2>'; return; }
+    if (/^\[[x ]\] /.test(t)) { row('<tr><td class="k">' + (t.charAt(1) === 'x' ? '&#9745;' : '&#9744;') + '</td><td>' + applyEsc_(t.slice(4)) + '</td></tr>'); return; }
+    if (/^ {2}\S/.test(l)) { row('<tr><td class="k"></td><td>' + applyEsc_(t) + '</td></tr>'); return; }
+    if ((m = t.match(/^([^:]{1,60}):\s*(.*)$/)) && !/^\d+\. /.test(t)) { row('<tr><td class="k">' + applyEsc_(m[1]) + '</td><td>' + applyEsc_(m[2]) + '</td></tr>'); return; }
+    row('<tr><td colspan="2">' + applyEsc_(t) + '</td></tr>');
+  });
+  close();
+  var sign = '<h2>Signatures</h2><table class="sign"><tr><td>Applicant&#39;s signature</td><td>Date</td></tr>' +
+    '<tr><td>Parent / guardian signature (if the applicant is under 18)</td><td>Date</td></tr></table>';
+  var pics = withImages ? images.map(function (im) {
+    return '<div class="doc"><p class="cap">' + applyEsc_(im.label) + '</p><img src="data:' + im.type + ';base64,' + im.data + '"></div>';
+  }).join('') : '';
+  var html = '<html><head><meta charset="utf-8"><style>' +
+    'body{font-family:Arial,sans-serif;font-size:10.5pt;color:#111;margin:0}' +
+    '.head{border-bottom:2px solid #0a6ea8;padding-bottom:8px;margin-bottom:6px}.brand{font-size:18pt;font-weight:bold;color:#0a6ea8;letter-spacing:1px}' +
+    '.meta{color:#555;font-size:9.5pt}h1{font-size:14pt;margin:6px 0 2px}h2{font-size:11pt;color:#0a6ea8;margin:14px 0 4px;border-bottom:1px solid #d6dde3;padding-bottom:2px}' +
+    'table{width:100%;border-collapse:collapse}td{padding:3px 6px;vertical-align:top;border-bottom:1px solid #eef1f4}td.k{width:34%;color:#444}' +
+    '.sign td{height:48px;vertical-align:bottom;border-bottom:1px solid #111;width:50%}' +
+    '.doc{page-break-before:always}.cap{font-weight:bold;margin:0 0 6px}.doc img{max-width:100%;max-height:900px}' +
+    '</style></head><body><div class="head"><div class="brand">EDUPLAN</div><h1>Application form</h1>' +
+    '<div class="meta">Reference ' + applyEsc_(ref) + ' &middot; Received ' + applyEsc_(received) + ' (Malaysia time) &middot; Submitted online by the applicant</div></div>' +
+    body + sign + pics + '</body></html>';
+  return HtmlService.createHtmlOutput(html).getBlob().getAs(MimeType.PDF);
 }
 
 function applySheet_(folder) {
@@ -64,7 +125,7 @@ function applySubmit_(body) {
   if (files.length > APPLY_MAX_FILES) return { error: 'too_many_files' };
 
   // Check every file before saving anything.
-  var blobs = [], total = 0;
+  var blobs = [], images = [], total = 0;
   for (var i = 0; i < files.length; i++) {
     var file = files[i] || {}, ext = APPLY_TYPES[file.type];
     if (!ext || typeof file.data !== 'string') return { error: 'bad_file' };
@@ -75,6 +136,7 @@ function applySubmit_(body) {
     if (total > APPLY_MAX_TOTAL_BYTES) return { error: 'file_too_large' };
     var doc = applyText_(file.doc, 20).replace(/[^\w-]/g, '') || 'file';
     blobs.push(Utilities.newBlob(bytes, file.type, doc + '-' + (i + 1) + '.' + ext));
+    if (file.type === 'image/jpeg' || file.type === 'image/png') images.push({ label: APPLY_DOCS[doc] || doc, type: file.type, data: file.data });
   }
 
   var lock = LockService.getScriptLock();
@@ -83,13 +145,15 @@ function applySubmit_(body) {
     if (!applyAllowed_()) return { error: 'daily_limit' };
     var now = new Date();
     var ref = 'EDU-' + Utilities.formatDate(now, 'Asia/Kuala_Lumpur', 'yyyyMMdd') + '-' + Utilities.getUuid().slice(0, 4).toUpperCase();
-    var root = applyFolder_();
-    var folder = root.createFolder(ref + ' ' + name);
-    folder.createFile('application.txt', 'Reference: ' + ref + '\nReceived: ' +
-      Utilities.formatDate(now, 'Asia/Kuala_Lumpur', 'yyyy-MM-dd HH:mm') + ' (Malaysia time)\n\n' + summary, MimeType.PLAIN_TEXT);
+    var received = Utilities.formatDate(now, 'Asia/Kuala_Lumpur', 'yyyy-MM-dd HH:mm');
+    var folder = applySchoolFolder_(f.institution).createFolder(ref + ' ' + name);
+    var pdf;
+    try { pdf = applyPdf_(ref, received, summary, images, true); }
+    catch (err) { console.error('PDF with photos failed, saving without: ' + err); pdf = applyPdf_(ref, received, summary, images, false); }
+    folder.createFile(pdf.setName(ref + ' ' + name + ' - Application.pdf'));
     blobs.forEach(function (b) { folder.createFile(b); });
 
-    applySheet_(root).appendRow([ref, now, name, applyText_(f.ic, 40), "'" + mobile, applyText_(f.email, 120),
+    applySheet_(applyFolder_()).appendRow([ref, now, name, applyText_(f.ic, 40), "'" + mobile, applyText_(f.email, 120),
       applyText_(f.university, 120), applyText_(f.programme, 200), applyText_(f.track, 80), applyText_(f.intake, 20),
       applyText_(f.accommodation, 10), blobs.length, folder.getUrl(), 'New', '', '']);
   } finally {
