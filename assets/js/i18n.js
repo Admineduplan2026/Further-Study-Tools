@@ -7,6 +7,17 @@
 (function(){
 "use strict";
 var ZH={
+ "Twelve short questions about what you enjoy. There are no wrong answers.":"十二道关于你兴趣的简单问题，没有错误答案。",
+ "Start the 12 questions":"开始回答 12 道题",
+ "For students who are still unsure. Twelve short questions, then a counsellor walks you through each step.":"适合还不确定方向的学生。回答十二道简单问题，再由升学顾问一步步陪你规划。",
+ "Two areas came out very close.":"有两个领域的结果非常接近。",
+ "If you could only choose one of these and do it for the next 3 years, which would you pick?":"这两样只能选一样，持续做 3 年，你选哪个？",
+ "You answered all twelve questions.":"你已回答全部十二道题。","Faculties that suit your interests":"适合你兴趣的科系",
+ "Best match":"最适合","Also a good fit":"也很适合","Courses in this faculty":"此科系的课程","Also worth considering":"也值得考虑",
+ "Your own choice in the last question was":"你在最后一题自己选的是",
+ ", which is different from your other answers. That is worth talking through with a counsellor.":"，和你其他答案的方向不同，值得与升学顾问好好聊聊。",
+ "Your interests are still open or spread across several areas. A foundation or general programme lets you explore before you choose a degree.":"你的兴趣还很开放，或分散在几个领域。先读预科或通用课程，可以让你在选择学位前多探索。",
+ "This quiz looks at interests only. Ability, budget, physical requirements and family considerations still need to be discussed with a counsellor.":"此问卷只衡量兴趣。能力、预算、身体条件及家庭因素，仍需与升学顾问另外讨论。",
  /* Header, footer, shared */
  "About Us":"关于我们","Faculty":"科系","Universities":"大学","Scholarships":"奖学金","Accommodation":"住宿","Free Consultation":"免费咨询",
  "Sample data. Universities, scholarships, fees and contact details on this site are placeholders until Eduplan replaces them.":"示范资料：本网站的大学、奖学金、学费与联络资料仍是占位内容，Eduplan 将陆续更新。",
@@ -120,10 +131,11 @@ var ZH_PATTERNS=[
  [/^Up to (\d+)% tuition waiver$/,"最高 $1% 学费减免"],
  [/^Faculty (\d\d)$/,"科系 $1"],
  [/^Faculty (\d\d) · (.+)$/,"科系 $1 · $2"],
+ [/^Explore Faculty (\d\d) · (.+)$/,"探索科系 $1 · $2"],
  [/^(.+)\. Choose a course to see which universities offer it\.$/,"$1。选择课程，查看开办该课程的大学。"],
  [/^(.+)\. Tap a scholarship to see its requirements\.$/,function(m){return tr(m[1])+"。点选奖学金查看申请条件。";}],
  [/^(.+)\. Tap a university to see its scholarship details\.$/,function(m){return tr(m[1])+"。点选大学查看奖学金详情。";}],
- [/^Question (\d) of (\d)$/,"第 $1 题，共 $2 题"],
+ [/^Question (\d+) of (\d+)$/,"第 $1 题，共 $2 题"],
  [/^(SPM|O-Level|UEC|STPM|A-Level) result$/,"$1 成绩"],
  [/^(.+) holders start a degree after Foundation, Matriculation or Diploma\. At undergraduate level the scholarship is based on that result\.$/,"$1 考生须先完成预科、大学先修班或文凭课程才能攻读学位，学士阶段的奖学金以该成绩为准。"],
  [/^See Foundation level for (.+)$/,"查看 $1 的预科阶段"],
@@ -135,6 +147,8 @@ var ZH_PATTERNS=[
  [/^Phone \/ WhatsApp: (.*)$/,"电话／WhatsApp：$1"],[/^Email: (.*)$/,"电邮：$1"],[/^Address: (.*)$/,"地址：$1"],
  [/^Send to: WhatsApp (.+) or email (.+)\.$/,"发送至：WhatsApp $1 或电邮 $2。"]
 ];
+/* Quiz questions and options carry their own Chinese in quiz-data.js. */
+if(window.EDUPLAN_QUIZ)(window.EDUPLAN_QUIZ.questions||[]).forEach(function(q){ZH[q.q]=q.zh;q.a.forEach(function(a){ZH[a[0]]=a[1];});});
 function tr(s){
  if(Object.prototype.hasOwnProperty.call(ZH,s))return ZH[s];
  for(var i=0;i<ZH_PATTERNS.length;i++){var m=s.match(ZH_PATTERNS[i][0]);

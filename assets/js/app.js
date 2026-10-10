@@ -1,27 +1,6 @@
 (function(){
 "use strict";
 /* ---------- Data (sample; replace with real partner data) ---------- */
-var FIELDS={med:"Medicine & Health",eng:"Engineering",cs:"Computer Science & IT",biz:"Business & Finance",design:"Design & Creative Arts",law:"Law",edu:"Education",sci:"Science",hosp:"Hospitality & Tourism",comm:"Communication & Media"};
-var COURSES=[
- {name:"Bachelor of Medicine and Surgery (MBBS)",field:"med",level:"Degree",years:5,int:["help","experiments"]},
- {name:"Diploma in Nursing",field:"med",level:"Diploma",years:3,int:["help"]},
- {name:"Bachelor of Pharmacy",field:"med",level:"Degree",years:4,int:["experiments","help"]},
- {name:"Bachelor of Civil Engineering",field:"eng",level:"Degree",years:4,int:["build","numbers"]},
- {name:"Diploma in Mechanical Engineering",field:"eng",level:"Diploma",years:2.5,int:["build"]},
- {name:"Bachelor of Computer Science",field:"cs",level:"Degree",years:3,int:["computers","numbers"]},
- {name:"Diploma in Information Technology",field:"cs",level:"Diploma",years:2,int:["computers"]},
- {name:"Bachelor of Accounting",field:"biz",level:"Degree",years:3,int:["numbers"]},
- {name:"Diploma in Business Administration",field:"biz",level:"Diploma",years:2,int:["lead","numbers"]},
- {name:"Bachelor of Graphic Design",field:"design",level:"Degree",years:3,int:["design"]},
- {name:"Diploma in Interior Design",field:"design",level:"Diploma",years:2.5,int:["design","build"]},
- {name:"Bachelor of Laws (LLB)",field:"law",level:"Degree",years:3,int:["argue","write"]},
- {name:"Bachelor of Education (TESL)",field:"edu",level:"Degree",years:4,int:["teach","write"]},
- {name:"Diploma in Early Childhood Education",field:"edu",level:"Diploma",years:2.5,int:["teach","help"]},
- {name:"Bachelor of Biotechnology",field:"sci",level:"Degree",years:3,int:["experiments"]},
- {name:"Diploma in Hotel Management",field:"hosp",level:"Diploma",years:2,int:["travel","lead"]},
- {name:"Bachelor of Culinary Arts",field:"hosp",level:"Degree",years:3,int:["travel","design"]},
- {name:"Bachelor of Mass Communication",field:"comm",level:"Degree",years:3,int:["write","design"]}
-];
 var UNIS=[
  {id:"a",name:"Sample University A",city:"Kuala Lumpur",fields:["med","sci","biz"],hostel:"On-campus hostel",rent:450},
  {id:"b",name:"Sample University B",city:"Penang",fields:["eng","cs","sci"],hostel:"On-campus hostel",rent:380},
@@ -30,18 +9,8 @@ var UNIS=[
  {id:"e",name:"Sample College E",city:"Kuching",fields:["edu","biz","hosp"],hostel:"On-campus hostel",rent:300},
  {id:"f",name:"Sample University F",city:"Kuala Lumpur",fields:["law","biz","edu"],hostel:"No hostel. Eduplan helps you find a rented room nearby",rent:null}
 ];
-var QUESTIONS=[
- {q:"Which school subjects do you enjoy most?",a:[
-  ["Biology and Chemistry",{med:2,sci:2}],["Maths and Physics",{eng:2,cs:2}],["Accounts and Economics",{biz:3}],["Art and Design",{design:3}],["Languages and History",{law:1,comm:2,edu:1}]]},
- {q:"On a free weekend, what would you rather do?",a:[
-  ["Fix or build something",{eng:3}],["Make a video or a poster",{design:2,comm:2}],["Help out at a clinic or care home",{med:3}],["Run a small stall or sell something",{biz:2,hosp:2}],["Solve puzzles or write code",{cs:3}]]},
- {q:"How do you like to work?",a:[
-  ["With people, face to face",{med:1,edu:2,hosp:2}],["With data and numbers",{biz:2,cs:1,sci:1}],["With my hands and tools",{eng:2,design:1}],["With words and arguments",{law:3,comm:1}]]},
- {q:"What matters most to you in a future job?",a:[
-  ["A stable income",{biz:2,eng:2}],["Helping other people",{med:2,edu:2}],["Being creative",{design:2,comm:2}],["Solving hard problems",{cs:2,sci:2,law:1}]]},
- {q:"How long are you ready to study before you start working?",level:true,a:[
-  ["About 2 years","Diploma"],["3 to 4 years","Degree"],["5 years or more","Long"],["I am not sure yet",null]]}
-];
+/* Interest quiz: questions, options and faculty points are in assets/js/quiz-data.js. */
+var QUIZ=window.EDUPLAN_QUIZ||{questions:[],rules:{}};
 
 /* ---------- Helpers ---------- */
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -50,8 +19,6 @@ var FAC=window.EDUPLAN_FACULTIES||{fields:[]};
 function facField(code){for(var i=0;i<FAC.fields.length;i++){if(FAC.fields[i].code===code)return FAC.fields[i];}return null;}
 function facCourse(f,id){for(var i=0;i<f.courses.length;i++){if(f.courses[i].id===id)return f.courses[i];}return null;}
 function schType(id){for(var i=0;i<SCH.types.length;i++){if(SCH.types[i].id===id)return SCH.types[i];}return null;}
-function uni(id){for(var i=0;i<UNIS.length;i++){if(UNIS[i].id===id)return UNIS[i];}return null;}
-function unisFor(field){return UNIS.filter(function(u){return u.fields.indexOf(field)>-1;});}
 function opts(map,sel,first){var h=first?'<option value="">'+esc(first)+'</option>':"";Object.keys(map).forEach(function(k){h+='<option value="'+esc(k)+'"'+(k===sel?" selected":"")+'>'+esc(map[k])+'</option>';});return h;}
 function rm(n){return 'RM '+Number(n).toLocaleString('en-MY');}
 function years(y){return y+(y===1?" year":" years");}
@@ -59,17 +26,25 @@ var ARROW='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="c
 function store(k,v){try{if(v===undefined){var r=localStorage.getItem(k);return r?JSON.parse(r):null;}localStorage.setItem(k,JSON.stringify(v));}catch(e){}return null;}
 
 /* ---------- Pure logic ---------- */
-function guidedResult(answers){
-  var score={},level=null;
-  answers.forEach(function(ai,qi){var q=QUESTIONS[qi];if(ai==null)return;var v=q.a[ai][1];
-    if(q.level){level=v;return;}
-    Object.keys(v).forEach(function(k){score[k]=(score[k]||0)+v[k];});});
-  var top=Object.keys(score).sort(function(a,b){return score[b]-score[a];}).slice(0,2);
-  var list=COURSES.filter(function(c){return top.indexOf(c.field)>-1;});
-  var pref=list.filter(function(c){return level==="Diploma"?c.level==="Diploma":level==="Degree"?(c.level==="Degree"&&c.years<=4):level==="Long"?c.level==="Degree":true;});
-  return {fields:top,level:level,courses:pref.length?pref:list};
+/* Adds up the faculty points of the chosen options (plus the tie-break bonus) and applies QUIZ.rules:
+   picks = best faculty, plus the 2nd and 3rd when they reach keepRatio of the top score (00 is never ranked);
+   close = top two within closeGap (ask the tie-break question);
+   open = scores low or spread out, or "not sure" chosen in the check question (suggest 00);
+   mismatch = the check question's faculty is not among the picks. */
+function guidedScore(answers,tie){
+ var R=QUIZ.rules,s={},check=null;
+ answers.forEach(function(ai,qi){var q=QUIZ.questions[qi];if(ai==null||!q)return;var pts=q.a[ai][2];
+  Object.keys(pts).forEach(function(k){s[k]=(s[k]||0)+pts[k];});if(q.check)check=Object.keys(pts)[0];});
+ if(tie)s[tie]=(s[tie]||0)+R.tieBonus;
+ var order=Object.keys(s).filter(function(k){return k!=="00";}).sort(function(a,b){return s[b]-s[a]||(a<b?-1:1);});
+ var top=s[order[0]]||0;
+ var picks=order.slice(0,1).concat(order.slice(1,3).filter(function(k){return s[k]>=top*R.keepRatio;}));
+ return {scores:s,order:order,picks:picks,check:check,
+  close:!tie&&order.length>1&&top-s[order[1]]<=R.closeGap,
+  open:check==="00"||top<R.lowTop||top-(s[order[3]]||0)<=R.spreadGap,
+  mismatch:!!check&&check!=="00"&&picks.indexOf(check)<0};
 }
-window.__eduplan={guidedResult:guidedResult};
+window.__eduplan={guidedScore:guidedScore};
 
 /* ---------- State ---------- */
 var S={guide:{step:0,answers:[]},
@@ -83,7 +58,7 @@ V.home=function(){return ''+
  '<section class="section"><div class="tools">'+
   '<a class="tool t1" href="#scholarships"><span class="k">Option 1 · Scholarship based</span><span class="t">Don\'t Let Fees Decide Your Future: Match With a Scholarship</span><span class="go">Find my scholarships '+ARROW+'</span></a>'+
   '<a class="tool t2" href="#faculty"><span class="k">Option 2 · Interest based</span><span class="t">From Interest to Career: Courses Matched to You in any field</span><span class="go">Match my interests '+ARROW+'</span></a>'+
-  '<a class="tool t3" href="#guided"><span class="k">Option 3 · Guidance based</span><span class="t">From "I Don\'t Know" to "I\'m Enrolled", One Step at a Time</span><span class="go">Start the 5 questions '+ARROW+'</span></a>'+
+  '<a class="tool t3" href="#guided"><span class="k">Option 3 · Guidance based</span><span class="t">From "I Don\'t Know" to "I\'m Enrolled", One Step at a Time</span><span class="go">Start the 12 questions '+ARROW+'</span></a>'+
  '</div><div><a class="textlink" href="#faculty">Others: browse all faculties '+ARROW+'</a></div></section>'+
  '<section class="section"><h2>How Eduplan works</h2><div class="threeup">'+
   '<div class="stack"><span class="n">Step 1</span><h3>Tell us where you are</h3><p class="muted">Pick the tool that fits you: you need funding, you know what you like, or you are not sure yet.</p></div>'+
@@ -132,7 +107,7 @@ V.about=function(){return ''+
  '<section class="section"><h2 data-reveal>Three ways we guide you</h2><div class="grid lift">'+
   '<div class="item" data-reveal style="--i:0"><h3>Scholarship based</h3><p>For students who need funding. We match your results and family income with scholarships you can apply for.</p><a class="textlink" href="#scholarships">Open the tool '+ARROW+'</a></div>'+
   '<div class="item" data-reveal style="--i:1"><h3>Interest based</h3><p>For students who know what they enjoy. We turn your interests into courses and universities.</p><a class="textlink" href="#faculty">Open the tool '+ARROW+'</a></div>'+
-  '<div class="item" data-reveal style="--i:2"><h3>Guidance based</h3><p>For students who are still unsure. Five short questions, then a counsellor walks you through each step.</p><a class="textlink" href="#guided">Open the tool '+ARROW+'</a></div>'+
+  '<div class="item" data-reveal style="--i:2"><h3>Guidance based</h3><p>For students who are still unsure. Twelve short questions, then a counsellor walks you through each step.</p><a class="textlink" href="#guided">Open the tool '+ARROW+'</a></div>'+
  '</div></section>'+
  '<section class="panel" data-reveal><h2>Ready to talk?</h2><p class="muted">A counsellor will go through your options with you and your family.</p><div><a class="btn" href="#consultation">Book a free consultation</a></div></section>';
 };
@@ -402,21 +377,45 @@ V.accommodation=function(){return ''+
 };
 
 V.guided=function(){
- var g=S.guide,n=QUESTIONS.length;
- var head='<section class="stack"><span class="eyebrow">Option 3 · Guidance based</span><h1>Not sure yet? Start here</h1><p class="lead">Five short questions. There are no wrong answers.</p></section>';
+ var g=S.guide,Q=QUIZ.questions,n=Q.length;
+ var head='<section class="stack"><span class="eyebrow">Option 3 · Guidance based</span><h1>Not sure yet? Start here</h1><p class="lead">Twelve short questions about what you enjoy. There are no wrong answers.</p></section>';
  if(g.step>=n){
-  var r=guidedResult(g.answers);
-  return head+'<section class="panel"><div class="note">You answered all five questions.</div><h2>Fields that suit your answers</h2><div class="meta">'+r.fields.map(function(f){return '<span class="pill brand" style="font-size:15px;padding:6px 14px">'+esc(FIELDS[f])+'</span>';}).join("")+'</div>'+
-   '<h3>Courses to look at first</h3><div class="grid">'+r.courses.map(function(c){return '<div class="item" style="background:#fff"><h3>'+esc(c.name)+'</h3><div class="meta"><span class="pill">'+c.level+'</span><span class="pill">'+years(c.years)+'</span></div><p>Offered at '+unisFor(c.field).map(function(u){return esc(u.name);}).join(", ")+'.</p></div>';}).join("")+'</div>'+
-   '<p class="muted">This is a starting point, not a final answer. The next step is a conversation with a counsellor.</p>'+
-   '<div class="row"><a class="btn" href="#consultation" data-topic="I am not sure what to study" data-note="Guided questions suggested: '+esc(r.fields.map(function(f){return FIELDS[f];}).join(" and "))+'.">Book my free consultation</a><button type="button" class="btn ghost" id="guide-restart">Start again</button></div></section>';
+  var r=guidedScore(g.answers,g.tie);
+  if(r.close)return head+guideTie(r);
+  return head+guideResult(r);
  }
- var q=QUESTIONS[g.step],cur=g.answers[g.step];
- return head+'<section class="panel" style="max-width:720px"><div class="steps" aria-hidden="true">'+QUESTIONS.map(function(_,k){return '<span class="'+(k<=g.step?"on":"")+'"></span>';}).join("")+'</div>'+
+ var q=Q[g.step],cur=g.answers[g.step];
+ return head+'<section class="panel" style="max-width:720px"><div class="steps" aria-hidden="true">'+Q.map(function(_,k){return '<span class="'+(k<=g.step?"on":"")+'"></span>';}).join("")+'</div>'+
   '<p class="muted">Question '+(g.step+1)+' of '+n+'</p><h2 id="guide-q">'+esc(q.q)+'</h2>'+
   '<div class="opts" role="group" aria-labelledby="guide-q">'+q.a.map(function(a,k){return '<button type="button" class="opt" data-ans="'+k+'" aria-pressed="'+(cur===k)+'">'+esc(a[0])+'</button>';}).join("")+'</div>'+
   '<div class="row"><button type="button" class="btn ghost" id="guide-back"'+(g.step===0?" disabled":"")+'>Back</button><button type="button" class="btn" id="guide-next"'+(cur==null?" disabled":"")+'>'+(g.step===n-1?"See my result":"Next")+'</button></div></section>';
 };
+function facLabel(code){var f=facField(code);return f?'Faculty '+f.code+' · '+f.name:'Faculty '+code;}
+/* Top two faculties are close: one forced choice decides the order. */
+function guideTie(r){
+ var two=r.order.slice(0,2);
+ return '<section class="panel" style="max-width:720px"><div class="note">Two areas came out very close.</div>'+
+  '<h2 id="tie-q">If you could only choose one of these and do it for the next 3 years, which would you pick?</h2>'+
+  '<div class="opts" role="group" aria-labelledby="tie-q">'+two.map(function(c){var f=facField(c);
+   return '<button type="button" class="opt" data-tie="'+esc(c)+'"><strong>'+esc(f?f.name:c)+'</strong>'+(f&&f.zh?'<br><span class="hint">'+esc(f.zh)+'</span>':'')+'</button>';}).join("")+'</div>'+
+  '<div class="row"><button type="button" class="btn ghost" id="guide-back">Back</button></div></section>';
+}
+function guideResult(r){
+ var names=r.picks.map(facLabel);
+ return '<section class="panel"><div class="note">You answered all twelve questions.</div><h2>Faculties that suit your interests</h2>'+
+  '<div class="progs">'+r.picks.map(function(code,i){var f=facField(code);if(!f)return '';
+   return '<article class="prog"><div class="stack"><span class="eyebrow">'+(i===0?'Best match':'Also a good fit')+'</span>'+
+    '<h3 class="fname">'+esc(facLabel(code))+'</h3><p class="muted">'+esc(f.zh)+'</p></div>'+
+    '<div class="stack"><h4>Courses in this faculty</h4><div class="grid">'+f.courses.map(function(c){var k=(c.universities||[]).length;
+     return '<a class="item pick" href="#faculty/'+esc(f.code)+'/'+esc(c.id)+'"><span class="name">'+esc(c.name)+'</span><span class="desc">'+esc(c.desc)+'</span>'+(k?'<span class="meta"><span class="pill brand">'+k+' programme'+(k===1?'':'s')+'</span></span>':'')+'</a>';}).join("")+'</div></div>'+
+    '<div class="row"><a class="btn ghost" href="#faculty/'+esc(f.code)+'">Explore '+esc(facLabel(code))+' '+ARROW+'</a></div></article>';}).join("")+'</div>'+
+  (r.mismatch?'<div class="empty">Your own choice in the last question was <strong>'+esc(facLabel(r.check))+'</strong>, which is different from your other answers. That is worth talking through with a counsellor.</div>':'')+
+  (r.open?'<article class="prog"><div class="stack"><span class="eyebrow">Also worth considering</span><h3 class="fname">'+esc(facLabel("00"))+'</h3>'+
+   '<p class="muted">Your interests are still open or spread across several areas. A foundation or general programme lets you explore before you choose a degree.</p></div>'+
+   '<div class="row"><a class="btn ghost" href="#faculty/00">Explore '+esc(facLabel("00"))+' '+ARROW+'</a></div></article>':'')+
+  '<p class="muted">This quiz looks at interests only. Ability, budget, physical requirements and family considerations still need to be discussed with a counsellor.</p>'+
+  '<div class="row"><a class="btn" href="#consultation" data-topic="I am not sure what to study" data-note="Interest quiz result: '+esc(names.join(", "))+(r.open?' (interests still open)':'')+'.">Book my free consultation</a><button type="button" class="btn ghost" id="guide-restart">Start again</button></div></section>';
+}
 
 V.consultation=function(){
  if(S.consDone){
@@ -506,8 +505,9 @@ app.addEventListener("click",function(ev){
   var f=app.querySelector('[data-'+k.toLowerCase()+'="'+S[k]+'"]');if(f)f.focus();return;}
  if(t.hasAttribute("data-ans")){S.guide.answers[S.guide.step]=Number(t.getAttribute("data-ans"));rerender("guide-next");return;}
  if(t.id==="guide-next"){S.guide.step++;rerender();app.focus({preventScroll:true});return;}
- if(t.id==="guide-back"){S.guide.step=Math.max(0,S.guide.step-1);rerender();return;}
- if(t.id==="guide-restart"){S.guide={step:0,answers:[]};rerender();window.scrollTo(0,0);return;}
+ if(t.hasAttribute("data-tie")){S.guide.tie=t.getAttribute("data-tie");rerender();window.scrollTo(0,0);return;}
+ if(t.id==="guide-back"){S.guide.tie=null;S.guide.step=Math.min(Math.max(0,S.guide.step-1),QUIZ.questions.length-1);rerender();return;}
+ if(t.id==="guide-restart"){S.guide={step:0,answers:[],tie:null};rerender();window.scrollTo(0,0);return;}
  if(t.hasAttribute("data-topic")){S.cons["cons-topic"]=t.getAttribute("data-topic");var n=t.getAttribute("data-note");if(n&&!S.cons["cons-msg"])S.cons["cons-msg"]=n;S.consDone=null;store("eduplan-consult",S.cons);return;}
  if(t.id==="cons-edit"){S.consDone=null;rerender("cons-name");return;}
  if(t.id==="cons-copy"){var txt=S.consDone,out=document.getElementById("cons-copied");
