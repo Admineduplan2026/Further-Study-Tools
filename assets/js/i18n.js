@@ -7,6 +7,8 @@
 (function(){
 "use strict";
 var ZH={
+ "Not accepted directly for this degree in the XMUM brochure. Enter through Foundation/Matriculation, STPM, A-Level, UEC or a Diploma first.":"XMUM 简章未接受以此资格直接报读此学位，需先完成预科／大学先修班、STPM、A-Level、UEC 或文凭课程。",
+ "Not accepted directly for this degree in the XMUM brochure. Enter through Foundation/Matriculation, A-Level or a Diploma first.":"XMUM 简章未接受以此资格直接报读此学位，需先完成预科／大学先修班、A-Level 或文凭课程。",
  "Twelve short questions about what you enjoy. There are no wrong answers.":"十二道关于你兴趣的简单问题，没有错误答案。",
  "Start the 12 questions":"开始回答 12 道题",
  "For students who are still unsure. Twelve short questions, then a counsellor walks you through each step.":"适合还不确定方向的学生。回答十二道简单问题，再由升学顾问一步步陪你规划。",
