@@ -37,7 +37,7 @@ In the master sheet: **Extensions > Apps Script**.
 |---|---|
 | `ANTHROPIC_API_KEY` | the key from step 1 |
 | `CHAT_DAILY_LIMIT` | optional, default `300` answers per day for the whole website |
-| `CHAT_MODEL` | optional, default `claude-opus-5-5` |
+| `CHAT_MODEL` | optional, default `claude-haiku-5-5` (lowest cost) |
 
 ## 4. Test, then deploy a new version
 
@@ -72,7 +72,11 @@ but keeps its facts). Use **Eduplan > Check data** to see how many FAQ answers a
 - `CHAT_DAILY_LIMIT` caps answers per day (Malaysia time). When it is reached, students are asked to try again
   tomorrow or book a consultation.
 - Answers use low effort and at most 2,000 output tokens, which suits short chat replies.
-- To spend less per answer, set `CHAT_MODEL` to `claude-sonnet-5-5` or `claude-haiku-5-5`. Check a few answers after changing it.
+- The default model is Claude Haiku 5.5 (US$0.10 per million input tokens, US$0.50 per million output tokens):
+  roughly US$0.003 (about RM 0.01) per answer, or about RM 10-40 a month at 100 questions a day.
+- If answers need more care (long, multi-step questions), set `CHAT_MODEL` to `claude-sonnet-5-5` (about 20 times the cost)
+  or `claude-opus-5-5` (about 40 times). Check a few answers after changing it.
+- Set a monthly spend limit in the Anthropic console as well, for example US$10.
 
 ## What the assistant will and will not do
 

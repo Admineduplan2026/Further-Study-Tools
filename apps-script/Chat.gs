@@ -7,16 +7,16 @@
  *
  * Script Properties (Project Settings > Script Properties):
  *   ANTHROPIC_API_KEY  required. Create one at https://platform.claude.com (API keys).
- *   CHAT_MODEL         optional, default claude-opus-5-5.
+ *   CHAT_MODEL         optional, default claude-haiku-5-5 (lowest cost). claude-sonnet-5-5 or claude-opus-5-5 give more careful answers at a higher cost.
  *   CHAT_DAILY_LIMIT   optional, default 300. Replies per day for the whole website; protects the API bill.
  * See docs/ai-chatbot-setup.md.
  */
 
-var CHAT_DEFAULT_MODEL = 'claude-opus-5-5';
+var CHAT_DEFAULT_MODEL = 'claude-haiku-5-5';
 var CHAT_DEFAULT_DAILY_LIMIT = 300;
 var CHAT_MAX_TURNS = 12;        // only the latest messages are sent
 var CHAT_MAX_CHARS = 1500;      // per message
-var CHAT_FALLBACK_MODELS = ['claude-opus-5-5', 'claude-opus-5', 'claude-fable-5-1', 'claude-sonnet-5-5'];  // accept fallbacks: "default"
+var CHAT_FALLBACK_MODELS = ['claude-opus-5-5', 'claude-opus-5', 'claude-fable-5-1', 'claude-sonnet-5-5'];  // accept fallbacks: "default" (Haiku does not)
 
 function doPost(e) {
   var body;
