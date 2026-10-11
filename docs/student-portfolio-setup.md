@@ -3,6 +3,20 @@
 Students open **My portfolio** (`#portfolio`) in the menu, type their email and get a 6-digit code by email.
 No password. Once signed in, the website saves their progress automatically and they can continue on any device.
 
+## Sign-in when the website opens
+
+The website opens with a sign-in page (welcome text on the left, sign-in box on the right). The menu and the chat
+bubble appear only after signing in, and the student then lands on the page they opened (a shared link such as
+`#universities/xmum` still works after signing in). A device stays signed in for 30 days, so returning students go
+straight in.
+
+Students are never locked out: if Eduplan's daily email limit is reached, the server is busy or cannot be reached,
+the sign-in box shows **Continue without signing in** (for that browser tab). The Claude artifact preview has no
+sign-in and shows **Continue to the preview**.
+
+Because every new visitor needs one email, watch the daily email limit (see Setup below). With a free Gmail
+account the website can sign in about 80 new students or devices a day.
+
 ## What is saved
 
 | Section | Without signing in | Signed in |
