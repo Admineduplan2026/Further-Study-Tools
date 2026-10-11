@@ -183,7 +183,8 @@ function card(p,why){
 function topbar(){
  var n=S.saved.length,a=applyState(),em=S.session&&S.session.email;
  return '<div class="bar"><a class="logo" href="#home" aria-label="Eduplan Lab home"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan"></a>'+
-  '<div class="modes" role="radiogroup" aria-label="Search mode">'+MODES.map(function(m){return '<button type="button" role="radio" data-mode="'+m[0]+'" aria-checked="'+(L.mode===m[0])+'">'+ICONS[m[0]]+'<span>'+esc(m[1])+'</span></button>';}).join("")+'</div>'+
+  '<div class="modewrap"><span class="mq" id="mode-q">Where does your study journey start?</span>'+
+  '<div class="modes" role="radiogroup" aria-labelledby="mode-q">'+MODES.map(function(m){return '<button type="button" role="radio" data-mode="'+m[0]+'" aria-checked="'+(L.mode===m[0])+'">'+ICONS[m[0]]+'<span>'+esc(m[1])+'</span></button>';}).join("")+'</div></div>'+
   '<nav class="tools" aria-label="Account">'+
    '<span class="cur" title="Fees are shown in Malaysian ringgit" data-notr>MYR</span>'+
    '<a class="tl" href="#saved">'+HEART+'<span class="tlt">Saved</span>'+(n?'<span class="count">'+n+'</span>':'')+'</a>'+

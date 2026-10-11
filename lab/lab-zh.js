@@ -1,7 +1,7 @@
 /* Chinese text for Eduplan Lab (used by assets/js/i18n.js). Add new lab sentences here, exactly as written in lab.js. */
 window.EDUPLAN_ZH_EXTRA={text:{
  "Eduplan Lab: a trial page. The main Eduplan website is unchanged.":"Eduplan Lab：试验页面，原本的 Eduplan 网站保持不变。",
- "Scholarship based":"奖学金导向","Interest based":"兴趣导向","Guidance based":"引导导向",
+ "Where does your study journey start?":"升学从哪里出发？","Scholarship based":"奖学金导向","Interest based":"兴趣导向","Guidance based":"引导导向",
  "Saved":"收藏","My applications":"我的申请","Sign in":"登录",
  "Welcome to Eduplan":"欢迎来到 Eduplan","Welcome back,":"欢迎回来，",
  "Search programmes from our partner universities.":"搜索合作大学的课程。","Find the tuition waivers you can get with your results.":"看看你的成绩能获得哪些学费减免。","Start from what you enjoy.":"从你喜欢的事情开始。",
