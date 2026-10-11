@@ -271,6 +271,8 @@ var ZH_PATTERNS=[
  [/^Phone \/ WhatsApp: (.*)$/,"电话／WhatsApp：$1"],[/^Email: (.*)$/,"电邮：$1"],[/^Address: (.*)$/,"地址：$1"],
  [/^Send to: WhatsApp (.+) or email (.+)\.$/,"发送至：WhatsApp $1 或电邮 $2。"]
 ];
+/* Other pages (lab/lab-zh.js) add their own text: window.EDUPLAN_ZH_EXTRA={text:{...},patterns:[[regex,replacement],...]}. */
+(function(x){if(!x)return;Object.keys(x.text||{}).forEach(function(k){ZH[k]=x.text[k];});(x.patterns||[]).forEach(function(p){ZH_PATTERNS.unshift(p);});})(window.EDUPLAN_ZH_EXTRA);
 /* Quiz questions and options carry their own Chinese in quiz-data.js. */
 if(window.EDUPLAN_QUIZ)(window.EDUPLAN_QUIZ.questions||[]).forEach(function(q){ZH[q.q]=q.zh;q.a.forEach(function(a){ZH[a[0]]=a[1];});});
 function tr(s){

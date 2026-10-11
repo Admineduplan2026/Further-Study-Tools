@@ -1,0 +1,407 @@
+/* Eduplan Lab: a trial home page for signed-in students, laid out like a travel-booking site.
+   One main action per page: search. The mode switch (top left) changes what the search box asks:
+     interest     what to study, where, level, budget, intake  -> programme results
+     scholarship  qualification, study level, university      -> scholarship results
+     guidance     the 12-question interest quiz               -> faculties -> programme results
+   Data: the same published sheet data as the main site (window.EDUPLAN_SHEET_DATA in the artifact, or the
+   Apps Script /exec URL on the website). Nothing is invented: a fee, deadline or rating that the sheets do not
+   have is shown as "to be confirmed" or left out.
+   Shared with the main site (same browser storage keys, same portfolio on the server): saved programmes,
+   quiz answers, application progress and the sign-in session. The lab adds "search" (last search, filled in
+   again next time) and "recent" (recently viewed programmes) to the portfolio. */
+(function(){
+"use strict";
+var FAC=window.EDUPLAN_FACULTIES||{fields:[]},QUIZ=window.EDUPLAN_QUIZ||{questions:[],rules:{}};
+var MAIN=window.EDUPLAN_MAIN_URL||"../index.html",PREVIEW=!!window.EDUPLAN_SHEET_DATA;
+var ARROW='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16M14 6l6 6-6 6"></path></svg>';
+var HEART='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 20s-7-4.4-9.2-9A5 5 0 0 1 12 6a5 5 0 0 1 9.2 5c-2.2 4.6-9.2 9-9.2 9z"></path></svg>';
+var SEARCH='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>';
+var ICONS={
+ scholarship:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="9" r="6"></circle><path d="M8.5 14L7 22l5-3 5 3-1.5-8"></path></svg>',
+ interest:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 7l10-4 10 4-10 4z"></path><path d="M6 9v5c0 1.7 2.7 3 6 3s6-1.3 6-3V9"></path></svg>',
+ guidance:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M15.5 8.5l-2 5-5 2 2-5z"></path></svg>'};
+var MODES=[["scholarship","Scholarship based"],["interest","Interest based"],["guidance","Guidance based"]];
+
+/* ---------- Helpers ---------- */
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+function ls(k,v){try{if(v===undefined){var r=localStorage.getItem(k);return r?JSON.parse(r):null;}if(v===null)localStorage.removeItem(k);else localStorage.setItem(k,JSON.stringify(v));}catch(e){}return null;}
+function ss(k){try{return JSON.parse(sessionStorage.getItem(k));}catch(e){return null;}}
+function uniq(a){return a.filter(function(x,i){return a.indexOf(x)===i;});}
+function rm(n){return "RM "+Number(n).toLocaleString("en-MY");}
+function years(y){return y+(y===1?" year":" years");}
+function pill(t,cls){return '<span class="pill'+(cls?" "+cls:"")+'">'+esc(t)+'</span>';}
+function plural(n,one,many){return n+" "+(n===1?one:many);}
+
+/* ---------- Data ---------- */
+var LEVELS=[["foundation","Foundation"],["diploma","Diploma"],["degree","Degree"],["master","Master's"],["phd","PhD"]];
+var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+var BUDGETS=[["","Any budget"],["0-30000","Up to RM 30,000"],["30000-60000","RM 30,000 – 60,000"],["60000-100000","RM 60,000 – 100,000"],["100000-","Above RM 100,000"]];
+var QUALS=["SPM","UEC","O-Level","STPM","A-Level","Foundation"];
+var CAMPUS_PHOTOS=window.EDUPLAN_CAMPUS_PHOTOS||{XMUM:"../assets/img/campus/xmum.jpg"};
+var D={inst:[],progs:[],sch:[],fnd:[]};
+function levelKey(l){l=l||"";return /pre-?university|foundation/i.test(l)?"foundation":/diploma/i.test(l)?"diploma":/master/i.test(l)?"master":/phd|doctor/i.test(l)?"phd":/bachelor|degree/i.test(l)?"degree":"";}
+function levelName(k){for(var i=0;i<LEVELS.length;i++)if(LEVELS[i][0]===k)return LEVELS[i][1];return "";}
+function intakeMonths(s){s=String(s||"");if(/monthly|every month|throughout/i.test(s))return MONTHS.map(function(_,i){return i;});
+ return MONTHS.map(function(m,i){return new RegExp("\\b"+m+"\\b","i").test(s)?i:-1;}).filter(function(i){return i>=0;});}
+function facOfCourse(cid){for(var i=0;i<FAC.fields.length;i++)for(var j=0;j<FAC.fields[i].courses.length;j++)if(FAC.fields[i].courses[j].id===cid)return {f:FAC.fields[i],c:FAC.fields[i].courses[j]};return null;}
+function facByCode(code){for(var i=0;i<FAC.fields.length;i++)if(FAC.fields[i].code===code)return FAC.fields[i];return null;}
+function useData(d){
+ if(!d||d.version!==1)return false;
+ var by={};
+ D.inst=(d.institutions||[]).map(function(i){var o={id:i.institution_id,name:i.short_name||i.name,full:i.name,type:i.type,city:i.city,state:i.state,website:i.website,progs:0,sch:0};by[o.id]=o;return o;});
+ D.progs=(d.programmes||[]).filter(function(p){return by[p.institution_id];}).map(function(p){
+  var u=by[p.institution_id],fc=facOfCourse(p.course_id),notes=String(p.notes||"");
+  var annual=notes.split(/\n/).filter(function(x){return /^Annual fee: /.test(x);}).map(function(x){return x.replace(/^Annual fee: /,"");});
+  u.progs++;
+  return {id:p.programme_id,inst:u,name:p.programme_name,level:p.level,lk:levelKey(p.level),years:p.duration_years,fee:p.tuition_fee_rm,annual:annual,
+   intakes:p.intakes,months:intakeMonths(p.intakes),campus:p.campus,mqa:p.mqa_reference,url:p.apply_url,deadline:p.application_deadline,
+   fac:fc?fc.f:null,course:fc?fc.c:null,also:p.also_course_ids||[],entry:[["SPM",p.entry_spm],["UEC",p.entry_uec],["O-Level",p.entry_olevel],["STPM",p.entry_stpm],["Others",p.entry_other]],
+   english:p.english_requirement,notes:notes.split(/\n/).filter(function(x){return x.trim()&&!/^Annual fee: /.test(x);})};
+ });
+ D.sch=(d.campus_scholarships||[]).filter(function(s){return by[s.institution_id];}).map(function(s){by[s.institution_id].sch++;
+  return {inst:by[s.institution_id],name:s.scholarship_name||"Scholarship",qual:s.qualification,min:s.minimum_result,waiver:s.waiver_percent,amount:s.fixed_amount_rm,
+   applies:s.applies_to||"",cond:s.other_conditions,deadline:s.deadline,url:s.info_url};});
+ D.fnd=(d.foundation_scholarships||[]).map(function(f){return {name:f.scholarship_name,org:f.organiser,award:f.award_value,deadline:f.deadline,url:f.info_url,
+  req:Array.isArray(f.requirements)?f.requirements:String(f.requirements||"").split(/\n/).filter(Boolean)};});
+ return true;
+}
+function prog(id){id=String(id||"").toLowerCase();for(var i=0;i<D.progs.length;i++)if(String(D.progs[i].id).toLowerCase()===id)return D.progs[i];return null;}
+function schLevel(a){return /^foundation/i.test(a)?"foundation":/^undergraduate/i.test(a)?"undergraduate":/^postgraduate/i.test(a)?"postgraduate":"";}
+/* Best tuition waiver an institution lists for a programme's level. */
+function bestWaiver(p){var lv=p.lk==="foundation"?"foundation":p.lk==="degree"||p.lk==="diploma"?"undergraduate":"postgraduate",best=null;
+ D.sch.forEach(function(s){if(s.inst!==p.inst)return;var l=schLevel(s.applies);if(l&&l!==lv)return;if(s.waiver!=null&&(best==null||s.waiver>best))best=s.waiver;});return best;}
+
+/* ---------- State (browser storage shared with the main site) ---------- */
+var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,sort:"match",quizStep:null,help:false};
+if(!MODES.some(function(m){return m[0]===L.mode;}))L.mode="interest";
+var SEARCH0={what:"",fac:"",where:"",level:"",budget:"",intake:""},SCH0={qual:"SPM",level:"foundation",inst:""};
+var S={search:ls("eduplan-lab-search")||{},sch:ls("eduplan-lab-sch")||{},recent:ls("eduplan-lab-recent")||[],saved:ls("eduplan-saved")||[],
+ quiz:ls("eduplan-quiz")||{step:0,answers:[]},session:ls("eduplan-session"),at:ls("eduplan-at")||{}};
+Object.keys(SEARCH0).forEach(function(k){if(S.search[k]==null)S.search[k]=SEARCH0[k];});
+Object.keys(SCH0).forEach(function(k){if(S.sch[k]==null)S.sch[k]=SCH0[k];});
+if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
+var hadSearch=!!(S.search.what||S.search.where||S.search.level||S.search.budget||S.search.intake);
+function applyState(){var a=ss("eduplan-apply");return a&&a.v&&a.v.prog?a:(S.serverApply||null);}
+
+/* Portfolio sync: the same per-section "newest wins" rule as the main site (apps-script/Account.gs). */
+var API=window.EDUPLAN_API_URL,live=!!(API&&window.fetch&&!PREVIEW),dirty={},timer=null;
+function touch(k){S.at[k]=Date.now();ls("eduplan-at",S.at);if(!S.session||!live)return;dirty[k]=true;clearTimeout(timer);timer=setTimeout(flush,1500);}
+function section(k){var at=S.at[k]||0;
+ if(k==="saved")return {ids:S.saved.slice(),at:at};
+ if(k==="search")return {q:S.search,sch:S.sch,mode:L.mode,at:at};
+ if(k==="recent")return {ids:S.recent.slice(),at:at};
+ if(k==="quiz")return {step:S.quiz.step,answers:S.quiz.answers,tie:S.quiz.tie||null,result:quizResult().map(facLabel).join(", "),at:at};}
+function post(body,keep){return fetch(API,{method:"POST",keepalive:!!keep,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)}).then(function(r){return r.json();});}
+function flush(keep){var ks=Object.keys(dirty);if(!ks.length||!S.session)return;var data={};ks.forEach(function(k){data[k]=section(k);});dirty={};
+ post({action:"account_save",token:S.session.token,data:data},keep).then(function(d){if(d&&d.error==="signed_out"){S.session=null;ls("eduplan-session",null);render();}})
+  .catch(function(){ks.forEach(function(k){dirty[k]=true;});timer=setTimeout(flush,15000);});}
+document.addEventListener("visibilitychange",function(){if(document.visibilityState==="hidden")flush(true);});
+function syncLoad(){
+ if(!S.session||!live)return;
+ post({action:"account_load",token:S.session.token}).then(function(d){
+  if(d&&d.error==="signed_out"){S.session=null;ls("eduplan-session",null);return render();}
+  if(!d||!d.data)return;var x=d.data,ch=false;
+  function newer(k){return x[k]&&(Number(x[k].at)||0)>(S.at[k]||0);}
+  if(newer("saved")){S.saved=x.saved.ids||[];ls("eduplan-saved",S.saved);S.at.saved=x.saved.at;ch=true;}
+  if(newer("recent")){S.recent=x.recent.ids||[];ls("eduplan-lab-recent",S.recent);S.at.recent=x.recent.at;ch=true;}
+  if(newer("quiz")){S.quiz={step:x.quiz.step||0,answers:x.quiz.answers||[],tie:x.quiz.tie||null};ls("eduplan-quiz",S.quiz);S.at.quiz=x.quiz.at;ch=true;}
+  if(newer("search")){S.search=x.search.q||S.search;S.sch=x.search.sch||S.sch;ls("eduplan-lab-search",S.search);ls("eduplan-lab-sch",S.sch);S.at.search=x.search.at;hadSearch=true;ch=true;}
+  if(x.apply&&x.apply.v&&!(ss("eduplan-apply")||{}).v){S.serverApply=x.apply;ch=true;}
+  ls("eduplan-at",S.at);if(ch&&L.view!=="results")render();
+ }).catch(function(){});
+}
+
+/* ---------- Search ---------- */
+function words(s){return String(s||"").toLowerCase().split(/[\s,\/]+/).filter(function(w){return w.length>1;});}
+function hay(p){return [p.name,p.inst.name,p.inst.full,p.fac&&p.fac.name,p.fac&&p.fac.zh,p.course&&p.course.name,p.course&&p.course.desc,p.level].join(" ").toLowerCase();}
+function budgetRange(b){if(!b)return null;var p=b.split("-");return [Number(p[0])||0,p[1]?Number(p[1]):Infinity];}
+function matchWhere(p,w){if(!w)return true;var k=w.split(":");return k[0]==="inst"?p.inst.id===k[1]:k[0]==="state"?(p.inst.state===k[1]||p.inst.city===k[1]):true;}
+function results(q){
+ var ws=words(q.what),br=budgetRange(q.budget),mon=q.intake?Number(q.intake.split("-")[1])-1:null,noFee=0;
+ var list=D.progs.filter(function(p){
+  if(q.fac&&!(p.fac&&p.fac.code===q.fac))return false;
+  if(!q.fac&&ws.length){var h=hay(p);if(!ws.every(function(w){return h.indexOf(w)>=0;}))return false;}
+  if(!matchWhere(p,q.where))return false;
+  if(q.level&&p.lk!==q.level)return false;
+  if(mon!=null&&p.months.length&&p.months.indexOf(mon)<0)return false;
+  if(br){if(p.fee==null){noFee++;return L.showNoFee;}if(p.fee<br[0]||p.fee>br[1])return false;}
+  return true;});
+ var key={match:function(a,b){return (b.inst.progs-a.inst.progs)||(a.name<b.name?-1:1);},fee:function(a,b){return (a.fee==null)-(b.fee==null)||(a.fee||0)-(b.fee||0);},
+  short:function(a,b){return (a.years||99)-(b.years||99);}}[L.sort]||null;
+ if(key)list.sort(key);
+ return {list:list,noFee:noFee};
+}
+function whereOptions(){
+ var states=uniq(D.inst.filter(function(u){return u.progs;}).map(function(u){return u.state;}).filter(Boolean)),
+  unis=D.inst.filter(function(u){return u.progs;});
+ return [["","Anywhere in Malaysia"]].concat(states.map(function(s){return ["state:"+s,s];}),unis.map(function(u){return ["inst:"+u.id,u.name+" · "+[u.city,u.state].filter(Boolean).join(", ")];}));
+}
+function intakeOptions(){var out=[["","Any time"]],d=new Date();for(var i=1;i<=15;i++){var m=(d.getMonth()+i)%12,y=d.getFullYear()+Math.floor((d.getMonth()+i)/12);out.push([y+"-"+("0"+(m+1)).slice(-2),MONTHS[m].slice(0,3)+" "+y]);}return out;}
+function whatList(){var out=[];FAC.fields.forEach(function(f){var n=D.progs.filter(function(p){return p.fac===f;}).length;if(n)out.push(f.name);
+ f.courses.forEach(function(c){if(D.progs.some(function(p){return p.course===c;}))out.push(c.name.split(" / ")[0]);});});return uniq(out);}
+function sel(id,label,opts,val,attrs){return '<label class="sf" for="'+id+'"><span class="sl">'+esc(label)+'</span><select id="'+id+'"'+(attrs||"")+'>'+
+ opts.map(function(o){return '<option value="'+esc(o[0])+'"'+(String(val)===String(o[0])?" selected":"")+'>'+esc(o[1])+'</option>';}).join("")+'</select></label>';}
+function summary(q){var parts=[];if(q.fac){var f=facByCode(q.fac);parts.push(f?f.name:q.fac);}else if(q.what)parts.push(q.what);
+ var w=whereOptions().filter(function(o){return o[0]===q.where;})[0];parts.push(w?w[1].split(" · ")[0]:"Malaysia");
+ if(q.level)parts.push(levelName(q.level));if(q.budget)parts.push(BUDGETS.filter(function(b){return b[0]===q.budget;})[0][1]);
+ if(q.intake)parts.push(intakeOptions().filter(function(o){return o[0]===q.intake;}).concat([[0,q.intake]])[0][1]);return parts;}
+
+/* ---------- Quiz (same questions and scoring as the main site's #guided) ---------- */
+function guidedScore(answers,tie){
+ var R=QUIZ.rules,s={},check=null;
+ answers.forEach(function(ai,qi){var q=QUIZ.questions[qi];if(ai==null||!q)return;var pts=q.a[ai][2];Object.keys(pts).forEach(function(k){s[k]=(s[k]||0)+pts[k];});if(q.check)check=Object.keys(pts)[0];});
+ if(tie)s[tie]=(s[tie]||0)+R.tieBonus;
+ var order=Object.keys(s).filter(function(k){return k!=="00";}).sort(function(a,b){return s[b]-s[a]||(a<b?-1:1);});
+ var top=s[order[0]]||0;
+ return {order:order,picks:order.slice(0,1).concat(order.slice(1,3).filter(function(k){return s[k]>=top*R.keepRatio;})),close:!tie&&order.length>1&&top-s[order[1]]<=R.closeGap};
+}
+function quizResult(){var q=S.quiz,n=QUIZ.questions.length;if(!n||q.step<n)return [];var r=guidedScore(q.answers,q.tie);return r.close?[]:r.picks;}
+function facLabel(code){var f=facByCode(code);return f?f.name:"Faculty "+code;}
+function quizSave(){ls("eduplan-quiz",S.quiz);touch("quiz");}
+
+/* ---------- Pieces ---------- */
+function cover(u,big){var ph=CAMPUS_PHOTOS[u.id];
+ return '<span class="cover'+(big?" big":"")+(ph?"":" art")+'" aria-hidden="true"'+(ph?' style="background-image:url(\''+esc(ph)+'\')"':' style="--h:'+(u.id.charCodeAt(0)*37%360)+'"')+'>'+(ph?"":'<b>'+esc(u.name.slice(0,6))+'</b>')+'</span>';}
+function feeLine(p){
+ if(p.fee!=null)return '<span class="fee"><b>'+esc(rm(p.fee))+'</b><span class="hint">whole programme</span></span>';
+ if(p.annual.length)return '<span class="fee"><b>'+esc(p.annual[0].split(";")[0])+'</b><span class="hint">per year</span></span>';
+ return '<span class="fee tbc">Fee to be confirmed</span>';}
+function heartBtn(id){var on=S.saved.indexOf(id)>=0;return '<button type="button" class="heart" data-save="'+esc(id)+'" aria-pressed="'+on+'" aria-label="'+(on?"Remove from saved":"Save programme")+'">'+HEART+'</button>';}
+function mainLink(hash){return PREVIEW?MAIN:MAIN+hash;}
+function card(p,why){
+ var w=bestWaiver(p);
+ return '<article class="pcard">'+cover(p.inst)+heartBtn(p.id)+
+  '<div class="pbody"><span class="pinst">'+esc(p.inst.name)+(p.inst.city?' · '+esc(p.inst.city):'')+'</span>'+
+  '<h3><button type="button" class="plink" data-detail="'+esc(p.id)+'">'+esc(p.name)+'</button></h3>'+
+  '<div class="pills">'+pill(levelName(p.lk)||p.level)+(p.years!=null?pill(years(p.years)):"")+(p.mqa?pill("MQA registered","ok"):"")+'</div>'+
+  (w!=null?'<span class="perk">Scholarship up to '+w+'% tuition waiver</span>':'')+(why?'<span class="why">'+esc(why)+'</span>':'')+
+  '<div class="pfoot">'+feeLine(p)+'<div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Free consultation</a>'+
+  '<a class="btn sm" href="'+esc(mainLink("#apply/"+p.id))+'">Apply now</a></div></div></div></article>';
+}
+
+/* ---------- Views ---------- */
+function topbar(){
+ var n=S.saved.length,a=applyState(),em=S.session&&S.session.email;
+ return '<div class="bar"><a class="logo" href="#home" aria-label="Eduplan Lab home"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan"></a>'+
+  '<div class="modes" role="radiogroup" aria-label="Search mode">'+MODES.map(function(m){return '<button type="button" role="radio" data-mode="'+m[0]+'" aria-checked="'+(L.mode===m[0])+'">'+ICONS[m[0]]+'<span>'+esc(m[1])+'</span></button>';}).join("")+'</div>'+
+  '<nav class="tools" aria-label="Account">'+
+   '<span class="cur" title="Fees are shown in Malaysian ringgit" data-notr>MYR</span>'+
+   '<a class="tl" href="#saved">'+HEART+'<span class="tlt">Saved</span>'+(n?'<span class="count">'+n+'</span>':'')+'</a>'+
+   '<a class="tl" href="'+esc(mainLink("#apply"))+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 13h7M9 17h5"></path></svg><span class="tlt">My applications</span>'+(a&&!a.sent?'<span class="count dot"></span>':'')+'</a>'+
+   (em?'<a class="avatar" href="'+esc(mainLink("#portfolio"))+'" title="'+esc(em)+'" aria-label="My portfolio" data-notr>'+esc(em.charAt(0).toUpperCase())+'</a>'
+    :'<a class="btn sm" href="'+esc(mainLink("#portfolio"))+'">Sign in</a>')+
+  '</nav></div>';
+}
+function hello(){var em=S.session&&S.session.email;return em?'Welcome back, <span data-notr>'+esc(em.split("@")[0])+'</span>':'Welcome to Eduplan';}
+function searchBox(){
+ if(L.mode==="scholarship"){var q=S.sch,unis=uniq(D.sch.map(function(s){return s.inst;}));
+  return '<form class="sbox" id="sch-form" novalidate><div class="sfields three">'+
+   sel("s-qual","Your qualification",QUALS.map(function(x){return [x,x];}),q.qual)+
+   sel("s-level","Study level",[["foundation","Foundation"],["undergraduate","Undergraduate degree"]],q.level)+
+   sel("s-inst","University",[["","All universities"]].concat(unis.map(function(u){return [u.id,u.name];})),q.inst)+
+   '</div><button type="submit" class="go">'+SEARCH+'<span>Find scholarships</span></button></form>';}
+ if(L.mode==="guidance")return quizBox();
+ var s=S.search;
+ return '<form class="sbox" id="search-form" novalidate><div class="sfields">'+
+  '<label class="sf wide" for="q-what"><span class="sl">What do you want to study?</span><input id="q-what" list="q-what-list" autocomplete="off" placeholder="Business, IT, nursing …" value="'+esc(s.fac?facLabel(s.fac):s.what)+'"'+(s.fac?' data-fac="'+esc(s.fac)+'"':'')+'>'+
+  '<datalist id="q-what-list">'+whatList().map(function(t){return '<option value="'+esc(t)+'">';}).join("")+'</datalist></label>'+
+  sel("q-where","Where",whereOptions(),s.where)+
+  sel("q-level","Study level",[["","Any level"]].concat(LEVELS),s.level)+
+  sel("q-budget","Budget",BUDGETS,s.budget)+
+  sel("q-intake","Start date",intakeOptions(),s.intake)+
+  '</div><button type="submit" class="go">'+SEARCH+'<span>Search</span></button></form>'+
+  (hadSearch?'<p class="memo">Your last search is filled in. <button type="button" class="linkbtn" data-act="clear-search">Clear</button></p>':'');
+}
+function quizBox(){
+ var Q=QUIZ.questions,n=Q.length,q=S.quiz,picks=quizResult();
+ if(L.quizStep==null&&picks.length)return '<div class="sbox quiz"><span class="sl">Faculties that suit your interests</span><div class="chips">'+picks.map(function(c){return '<button type="button" class="chip big" data-fac="'+esc(c)+'">'+esc(facLabel(c))+' '+ARROW+'</button>';}).join("")+'</div>'+
+  '<div class="qrow"><button type="button" class="go" data-fac="'+esc(picks[0])+'">'+SEARCH+'<span>See matching courses</span></button><button type="button" class="linkbtn" data-act="quiz-again">Take the quiz again</button></div></div>';
+ if(L.quizStep==null)return '<div class="sbox quiz"><p class="qlead">Not sure what to study? Answer 12 quick questions about what you enjoy and we suggest faculties and courses.</p>'+
+  '<div class="qrow"><button type="button" class="go" data-act="quiz-start">'+ICONS.guidance+'<span>'+(q.answers.filter(function(v){return v!=null;}).length&&q.step<n?"Continue the quiz":"Start the 12 questions")+'</span></button></div></div>';
+ var i=L.quizStep,cur=q.answers[i],tie=i>=n;
+ if(tie){var r=guidedScore(q.answers,null),two=r.order.slice(0,2);
+  return '<div class="sbox quiz"><span class="sl">One last question</span><h2 class="qq">If you could only choose one of these for the next 3 years, which would you pick?</h2><div class="qopts">'+
+   two.map(function(c){return '<button type="button" class="qopt" data-tie="'+esc(c)+'">'+esc(facLabel(c))+'</button>';}).join("")+'</div></div>';}
+ return '<div class="sbox quiz"><div class="qbar" aria-hidden="true"><i style="width:'+Math.round(i/n*100)+'%"></i></div><span class="sl">Question '+(i+1)+' of '+n+'</span>'+
+  '<h2 class="qq" id="qq">'+esc(Q[i].q)+'</h2><div class="qopts" role="group" aria-labelledby="qq">'+Q[i].a.map(function(a,k){return '<button type="button" class="qopt" data-ans="'+k+'" aria-pressed="'+(cur===k)+'">'+esc(a[0])+'</button>';}).join("")+'</div>'+
+  '<div class="qrow"><button type="button" class="btn ghost sm" data-act="quiz-back"'+(i===0?" disabled":"")+'>Back</button></div></div>';
+}
+function hero(){
+ var lead={interest:"Search programmes from our partner universities.",scholarship:"Find the tuition waivers you can get with your results.",guidance:"Start from what you enjoy."}[L.mode];
+ return '<section class="hero"><div class="hwrap"><h1>'+hello()+'</h1><p class="lead">'+lead+'</p>'+searchBox()+'</div></section>';
+}
+function continueRow(){
+ var items=[],a=applyState(),ap=a&&prog(a.v.prog);
+ if(a&&ap&&!a.sent){var pct=a.complete?100:Math.round(((a.step||1)-1)/6*100);
+  items.push('<a class="ccard app" href="'+esc(mainLink("#apply"))+'"><span class="ck">Unfinished application</span><span class="cn">'+esc(ap.name)+'</span><span class="ci">'+esc(ap.inst.name)+'</span>'+
+   '<span class="meter" aria-hidden="true"><i style="width:'+Math.max(pct,6)+'%"></i></span><span class="cgo">'+pct+'% complete · Continue '+ARROW+'</span></a>');}
+ var seen={};S.recent.concat(S.saved).forEach(function(id){if(seen[id])return;seen[id]=1;var p=prog(id);if(!p)return;var saved=S.saved.indexOf(id)>=0;
+  items.push('<button type="button" class="ccard" data-detail="'+esc(p.id)+'"><span class="ck">'+(saved?"Saved":"Recently viewed")+'</span><span class="cn">'+esc(p.name)+'</span><span class="ci">'+esc(p.inst.name)+(p.years!=null?' · '+esc(years(p.years)):'')+'</span><span class="cgo">View '+ARROW+'</span></button>');});
+ if(!items.length)return '';
+ return '<section class="sec"><div class="sh"><h2>Continue where you left off</h2></div><div class="hscroll">'+items.slice(0,10).join("")+'</div></section>';
+}
+function popular(){
+ var unis=D.inst.filter(function(u){return u.progs||u.sch;}).sort(function(a,b){return b.progs-a.progs;});
+ var facs=FAC.fields.map(function(f){return {f:f,n:D.progs.filter(function(p){return p.fac===f;}).length};}).filter(function(x){return x.n;}).sort(function(a,b){return b.n-a.n;});
+ return '<section class="sec"><div class="sh"><h2>Popular universities</h2><span class="hint">Malaysia</span></div><div class="hscroll">'+unis.map(function(u){
+   return '<button type="button" class="dest" data-where="inst:'+esc(u.id)+'">'+cover(u,true)+'<span class="dn">'+esc(u.name)+'</span><span class="dm">'+esc([u.city,u.state].filter(Boolean).join(", ")||u.type||"")+'</span>'+
+    '<span class="dc"><span>'+(u.progs?plural(u.progs,"programme","programmes"):"Programmes coming soon")+'</span>'+(u.sch?' · <span>'+plural(u.sch,"scholarship tier","scholarship tiers")+'</span>':'')+'</span></button>';}).join("")+'</div></section>'+
+ '<section class="sec"><div class="sh"><h2>Popular fields of study</h2></div><div class="majors">'+facs.map(function(x){var unis=uniq(D.progs.filter(function(p){return p.fac===x.f;}).map(function(p){return p.inst;})).length;
+   return '<button type="button" class="major" data-fac="'+esc(x.f.code)+'" style="--h:'+((Number(x.f.code)*33+190)%360)+'"><span class="mc" aria-hidden="true">'+esc(x.f.code)+'</span><span class="mn">'+esc(x.f.name)+'</span><span class="mz">'+esc(x.f.zh)+'</span>'+
+    '<span class="dc"><span>'+plural(unis,"university","universities")+'</span> · <span>'+plural(x.n,"programme","programmes")+'</span></span></button>';}).join("")+'</div></section>';
+}
+function daysLeft(s){var d=new Date(s);if(!s||isNaN(d))return null;return Math.ceil((d-new Date())/864e5);}
+function offers(){
+ var groups={},order=[];
+ D.sch.forEach(function(s){var k=s.inst.id+"|"+s.name+"|"+s.applies;if(!groups[k]){groups[k]={s:s,best:null,quals:[],deadline:s.deadline};order.push(k);}var g=groups[k];
+  if(s.waiver!=null&&(g.best==null||s.waiver>g.best))g.best=s.waiver;if(s.qual&&g.quals.indexOf(s.qual)<0)g.quals.push(s.qual);});
+ var list=order.map(function(k){return groups[k];}).sort(function(a,b){return (b.best||0)-(a.best||0);}).slice(0,6);
+ var extra=(window.EDUPLAN_OFFERS||[]);  /* early-bird, fee waivers: add real offers in lab/offers.js */
+ if(!list.length&&!extra.length)return '';
+ return '<section class="sec"><div class="sh"><h2>Scholarships and offers</h2><button type="button" class="linkbtn" data-mode="scholarship">See all '+ARROW+'</button></div><div class="hscroll">'+
+  extra.map(function(o){var dl=daysLeft(o.deadline);return '<a class="offer" href="'+esc(o.url||"#home")+'"'+(o.url?' target="_blank" rel="noopener"':'')+'><span class="ok2">'+esc(o.tag||"Offer")+'</span><span class="on">'+esc(o.title)+'</span><span class="oi">'+esc(o.institution||"")+'</span>'+
+   (dl!=null&&dl>=0?'<span class="cd">'+(dl===0?"Closes today":plural(dl,"day","days")+" left")+'</span>':'')+'</a>';}).join("")+
+  list.map(function(g){var dl=daysLeft(g.deadline),lv=schLevel(g.s.applies);
+   return '<button type="button" class="offer" data-schinst="'+esc(g.s.inst.id)+'" data-schlevel="'+esc(lv==="undergraduate"?"undergraduate":"foundation")+'"><span class="ok2">'+esc(g.s.inst.name)+'</span>'+
+    '<span class="on">'+(g.best!=null?'Up to '+g.best+'% tuition waiver':esc(g.s.name))+'</span><span class="oi">'+esc(g.s.name)+(g.s.applies?' · '+esc(g.s.applies.split(" Offered")[0]):'')+'</span>'+
+    '<span class="oq">'+g.quals.slice(0,4).map(function(q){return pill(q);}).join("")+'</span>'+
+    (dl!=null&&dl>=0?'<span class="cd">'+(dl===0?"Closes today":plural(dl,"day","days")+" left")+'</span>':'<span class="hint">Deadline: check with the university</span>')+'</button>';}).join("")+'</div></section>';
+}
+function recommended(){
+ var picks=quizResult(),q=S.search,scored=D.progs.map(function(p){var sc=0,why="";
+   if(p.fac&&picks.indexOf(p.fac.code)>=0){sc+=3-picks.indexOf(p.fac.code)*0.5;why="Matches your quiz: "+p.fac.name;}
+   if(q.level&&p.lk===q.level){sc+=1.5;why=why||"Your study level: "+levelName(q.level);}
+   if(q.fac&&p.fac&&p.fac.code===q.fac){sc+=2;why=why||"Your last search: "+p.fac.name;}
+   S.saved.forEach(function(id){var s=prog(id);if(s&&s!==p&&s.fac&&s.fac===p.fac){sc+=1;why=why||"Like the programmes you saved";}});
+   if(S.saved.indexOf(p.id)>=0)sc-=5;return {p:p,sc:sc,why:why};}).filter(function(x){return x.sc>0;}).sort(function(a,b){return b.sc-a.sc;}).slice(0,6);
+ if(!scored.length)return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div><div class="empty">Take the interest quiz or save a few programmes, and we will recommend courses for you here. '+
+  '<button type="button" class="linkbtn" data-mode="guidance">Start the quiz '+ARROW+'</button></div></section>';
+ return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div><div class="cards">'+scored.map(function(x){return card(x.p,x.why);}).join("")+'</div></section>';
+}
+function trust(){
+ var mqa=D.progs.filter(function(p){return p.mqa;}).length,unis=D.inst.length,sch=D.sch.length+D.fnd.length;
+ return '<section class="sec trust"><div class="sh"><h2>Why students plan with Eduplan</h2></div><div class="stats">'+
+  [[unis,"partner universities and colleges"],[D.progs.length,"programmes listed"],[mqa,"programmes with an MQA reference"],[sch,"scholarship options"]].map(function(s){return '<div class="stat"><b>'+s[0]+'</b><span>'+esc(s[1])+'</span></div>';}).join("")+
+  '<div class="stat"><b>Free</b><span>counselling for students and parents</span></div></div>'+
+  '<div class="logos" aria-label="Partner institutions">'+D.inst.map(function(u){return '<span class="wm" title="'+esc(u.full)+'">'+esc(u.name)+'</span>';}).join("")+'</div>'+
+  '<p class="hint">Programme facts come from each university’s published information. Please confirm details with the university before you apply.</p></section>';
+}
+function home(){return hero()+'<div class="page">'+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
+function resultsView(){
+ var q=S.search,r=results(q);
+ return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+
+  '<div class="chips">'+summary(q).map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
+  '<div class="page"><div class="rtools"><h1 class="rh">'+plural(r.list.length,"programme","programmes")+'</h1>'+
+  sel("r-sort","Sort by",[["match","Best match"],["short","Shortest duration"],["fee","Lowest fee"]],L.sort)+'</div>'+
+  (r.noFee&&!L.showNoFee?'<div class="note">'+plural(r.noFee,"programme has","programmes have")+' no fee listed yet, so the budget filter left '+(r.noFee===1?"it":"them")+' out. <button type="button" class="linkbtn" data-act="show-nofee">Show '+(r.noFee===1?"it":"them")+'</button></div>':'')+
+  (r.list.length?'<div class="cards">'+r.list.map(function(p){return card(p);}).join("")+'</div>'
+   :'<div class="empty">No programmes match all of these. Try another field of study, a different level, or any start date. <button type="button" class="linkbtn" data-act="home">Change search</button></div>')+'</div>';
+}
+function schResults(){
+ var q=S.sch,rows=D.sch.filter(function(s){if(q.inst&&s.inst.id!==q.inst)return false;var l=schLevel(s.applies);return (!l||l===q.level)&&s.qual===q.qual;});
+ var groups={},order=[];rows.forEach(function(s){var k=s.inst.id+"|"+s.name+"|"+s.applies;if(!groups[k]){groups[k]={s:s,tiers:[]};order.push(k);}groups[k].tiers.push(s);});
+ var fnd=q.level==="foundation"||q.level==="undergraduate"?D.fnd:[];
+ return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">Change search</button><div class="chips">'+
+  [q.qual,q.level==="foundation"?"Foundation":"Undergraduate degree",q.inst?(D.inst.filter(function(u){return u.id===q.inst;})[0]||{}).name:"All universities"].map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
+  '<div class="page"><h1 class="rh">'+plural(order.length,"campus scholarship","campus scholarships")+'</h1>'+
+  (order.length?'<div class="cards">'+order.map(function(k){var g=groups[k],u=g.s.inst,best=null;g.tiers.forEach(function(t){if(t.waiver!=null&&(best==null||t.waiver>best))best=t.waiver;});
+   return '<article class="pcard sch">'+cover(u)+'<div class="pbody"><span class="pinst">'+esc(u.name)+'</span><h3>'+esc(g.s.name)+'</h3>'+(g.s.applies?'<span class="hint">'+esc(g.s.applies)+'</span>':'')+
+    '<table class="tiers"><thead><tr><th scope="col">'+esc(q.qual)+' result</th><th scope="col">Award</th></tr></thead><tbody>'+g.tiers.map(function(t){return '<tr><td>'+esc(t.min)+'</td><td><b>'+(t.waiver!=null?t.waiver+'%':t.amount!=null?esc(rm(t.amount)):'-')+'</b></td></tr>';}).join("")+'</tbody></table>'+
+    '<div class="pfoot"><span class="fee">'+(best!=null?'<b>Up to '+best+'%</b><span class="hint">tuition waiver</span>':'')+'</span><div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Free consultation</a>'+
+    (u.progs?'<button type="button" class="btn sm" data-where="inst:'+esc(u.id)+'">See programmes</button>':'')+'</div></div></div></article>';}).join("")+'</div>'
+   :'<div class="empty">No campus scholarship in our data matches '+esc(q.qual)+' at this level yet. A counsellor can check other options with you. <a class="linkbtn" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div>')+
+  (fnd.length?'<h2 class="rh2">Other scholarships open to all students</h2><div class="cards">'+fnd.map(function(f){return '<article class="pcard sch"><div class="pbody"><span class="pinst">'+esc(f.org||"Scholarship")+'</span><h3>'+esc(f.name)+'</h3>'+
+    '<ul class="req">'+f.req.slice(0,5).map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul><div class="pfoot"><span class="fee">'+(f.award?'<b>'+esc(f.award)+'</b>':'')+'</span><div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Ask a counsellor</a></div></div></div></article>';}).join("")+'</div>':'')+'</div>';
+}
+function savedView(){
+ var list=S.saved.map(prog).filter(Boolean);
+ return '<div class="page"><h1 class="rh">Saved programmes</h1>'+(list.length?'<div class="cards">'+list.map(function(p){return card(p);}).join("")+'</div>':'<div class="empty">Tap the heart on any programme to keep it here. <button type="button" class="linkbtn" data-act="home">Start searching</button></div>')+'</div>';
+}
+function detailSheet(){
+ var p=prog(L.detail);if(!p)return '';var w=bestWaiver(p);
+ return '<div class="scrim" data-act="close"></div><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" tabindex="-1">'+
+  '<button type="button" class="x" data-act="close" aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>'+
+  cover(p.inst,true)+'<div class="sbody"><span class="pinst">'+esc(p.inst.full)+'</span><h2 id="sheet-h">'+esc(p.name)+'</h2>'+
+  '<div class="pills">'+pill(levelName(p.lk)||p.level)+(p.years!=null?pill(years(p.years)):"")+(p.mqa?pill("MQA "+p.mqa,"ok"):"")+'</div>'+
+  '<dl class="facts"><dt>Tuition fee</dt><dd>'+(p.fee!=null?esc(rm(p.fee))+' (whole programme)':p.annual.length?p.annual.map(esc).join("<br>")+' (per year)':'To be confirmed')+'</dd>'+
+  (p.intakes?'<dt>Intakes</dt><dd>'+esc(p.intakes)+'</dd>':'')+'<dt>Location</dt><dd>'+esc(p.campus||[p.inst.city,p.inst.state].filter(Boolean).join(", ")||"To be confirmed")+'</dd>'+
+  (p.english?'<dt>English</dt><dd>'+esc(p.english)+'</dd>':'')+(w!=null?'<dt>Scholarship</dt><dd>Up to '+w+'% tuition waiver</dd>':'')+'</dl>'+
+  '<h3>Entry requirements</h3><dl class="facts">'+p.entry.map(function(e){return '<dt>'+esc(e[0])+'</dt><dd>'+(e[1]?esc(e[1]).replace(/\n/g,"<br>"):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>'+
+  (p.notes.length?'<h3>Notes</h3>'+p.notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join(""):'')+
+  '</div><div class="sfoot">'+heartBtn(p.id)+(p.url?'<a class="btn ghost sm" href="'+esc(p.url)+'" target="_blank" rel="noopener">Programme page</a>':'')+
+  '<a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Free consultation</a><a class="btn sm" href="'+esc(mainLink("#apply/"+p.id))+'">Apply now</a></div></section>';
+}
+function help(){
+ var wa=window.EDUPLAN_WHATSAPP||"";
+ return '<div class="help'+(L.help?" open":"")+'"><div class="hmenu" id="help-menu"'+(L.help?"":" hidden")+'>'+
+  '<button type="button" class="hitem" data-act="ai"><b>Ask the AI study assistant</b><span>Answers about courses, fees and scholarships</span></button>'+
+  (wa?'<a class="hitem" href="https://wa.me/'+esc(wa.replace(/\D/g,""))+'" target="_blank" rel="noopener"><b>WhatsApp a counsellor</b><span data-notr>'+esc(wa)+'</span></a>'
+   :'<div class="hitem off"><b>WhatsApp a counsellor</b><span>The WhatsApp number will be added soon.</span></div>')+
+  '<a class="hitem" href="'+esc(mainLink("#consultation"))+'"><b>Book a free consultation</b><span>A counsellor calls you back</span></a></div>'+
+  '<button type="button" class="hfab" data-act="help" aria-expanded="'+L.help+'" aria-controls="help-menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"></path></svg><span>Need help?</span></button></div>';
+}
+
+/* ---------- Render and events ---------- */
+var top=document.getElementById("top"),app=document.getElementById("app"),helpBox=document.getElementById("helpbox"),sheet=document.getElementById("sheet");
+function route(){var h=(location.hash||"#home").slice(1);L.view={results:"results",saved:"saved"}[h]||"home";}
+function render(keep){
+ route();
+ var lang=top.querySelector(".lang");top.innerHTML=topbar();if(lang)top.querySelector(".bar").appendChild(lang);
+ app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():home();
+ helpBox.innerHTML=help();
+ sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
+ if(!keep)window.scrollTo(0,0);
+}
+function go(view){if(location.hash==="#"+view)render();else location.hash="#"+view;}
+window.addEventListener("hashchange",function(){L.detail=null;render();});
+function readSearch(){
+ var w=document.getElementById("q-what");if(!w)return;
+ var txt=w.value.trim(),fac=w.getAttribute("data-fac");
+ /* A faculty name typed or picked from the list searches that faculty exactly. */
+ var f=FAC.fields.filter(function(x){return x.name.toLowerCase()===txt.toLowerCase();})[0];
+ S.search={what:f?"":txt,fac:f?f.code:(fac&&txt===facLabel(fac)?fac:""),where:val("q-where"),level:val("q-level"),budget:val("q-budget"),intake:val("q-intake")};
+ ls("eduplan-lab-search",S.search);hadSearch=true;touch("search");
+}
+function val(id){var e=document.getElementById(id);return e?e.value:"";}
+function setMode(m){L.mode=m;L.quizStep=null;ls("eduplan-lab-mode",m);touch("search");if(L.view!=="home")go("home");else render(true);}
+function openDetail(id){L.detail=id;S.recent=[id].concat(S.recent.filter(function(x){return x!==id;})).slice(0,8);ls("eduplan-lab-recent",S.recent);touch("recent");render(true);
+ var s=sheet.querySelector(".sheet");if(s)s.focus();}
+function toggleSave(id){var i=S.saved.indexOf(id);if(i<0)S.saved.push(id);else S.saved.splice(i,1);ls("eduplan-saved",S.saved);touch("saved");render(true);}
+document.addEventListener("click",function(ev){
+ var t=ev.target.closest("button,a,[data-act]");if(!t)return;
+ /* In the artifact preview the main site is another page: open it in a new tab. */
+ if(t.tagName==="A"&&PREVIEW&&t.getAttribute("href").indexOf(MAIN)===0){t.target="_blank";t.rel="noopener";return;}
+ if(t.hasAttribute("data-mode")){setMode(t.getAttribute("data-mode"));return;}
+ if(t.hasAttribute("data-save")){toggleSave(t.getAttribute("data-save"));return;}
+ if(t.hasAttribute("data-detail")){openDetail(t.getAttribute("data-detail"));return;}
+ if(t.hasAttribute("data-where")){L.mode="interest";ls("eduplan-lab-mode","interest");S.search={what:"",fac:"",where:t.getAttribute("data-where"),level:"",budget:"",intake:""};ls("eduplan-lab-search",S.search);touch("search");L.detail=null;go("results");return;}
+ if(t.hasAttribute("data-fac")){if(L.mode==="scholarship"){L.mode="interest";ls("eduplan-lab-mode","interest");}
+  S.search={what:"",fac:t.getAttribute("data-fac"),where:"",level:"",budget:"",intake:""};ls("eduplan-lab-search",S.search);touch("search");L.detail=null;go("results");return;}
+ if(t.hasAttribute("data-schinst")){L.mode="scholarship";ls("eduplan-lab-mode","scholarship");S.sch.inst=t.getAttribute("data-schinst");S.sch.level=t.getAttribute("data-schlevel");ls("eduplan-lab-sch",S.sch);go("results");return;}
+ if(t.hasAttribute("data-ans")){S.quiz.answers[L.quizStep]=Number(t.getAttribute("data-ans"));var n=QUIZ.questions.length;L.quizStep++;S.quiz.step=L.quizStep;
+  if(L.quizStep>=n){var r=guidedScore(S.quiz.answers,null);S.quiz.tie=null;if(!r.close){L.quizStep=null;S.quiz.step=n;}}quizSave();render(true);return;}
+ if(t.hasAttribute("data-tie")){S.quiz.tie=t.getAttribute("data-tie");S.quiz.step=QUIZ.questions.length;L.quizStep=null;quizSave();render(true);return;}
+ var act=t.getAttribute("data-act");if(!act)return;
+ if(act==="close"){L.detail=null;render(true);}
+ else if(act==="home")go("home");
+ else if(act==="help"){L.help=!L.help;render(true);}
+ else if(act==="ai"){L.help=false;render(true);window.dispatchEvent(new CustomEvent("eduplan:ask",{detail:{text:""}}));}
+ else if(act==="clear-search"){S.search=JSON.parse(JSON.stringify(SEARCH0));ls("eduplan-lab-search",S.search);hadSearch=false;touch("search");render(true);}
+ else if(act==="show-nofee"){L.showNoFee=true;render(true);}
+ else if(act==="quiz-start"){var a=S.quiz.answers.filter(function(v){return v!=null;}).length;L.quizStep=a&&S.quiz.step<QUIZ.questions.length?S.quiz.step:0;if(!L.quizStep){S.quiz={step:0,answers:[],tie:null};}render(true);}
+ else if(act==="quiz-again"){S.quiz={step:0,answers:[],tie:null};L.quizStep=0;quizSave();render(true);}
+ else if(act==="quiz-back"){L.quizStep=Math.max(0,L.quizStep-1);S.quiz.step=L.quizStep;quizSave();render(true);}
+});
+document.addEventListener("submit",function(ev){
+ if(ev.target.id==="search-form"){ev.preventDefault();readSearch();L.showNoFee=false;go("results");}
+ if(ev.target.id==="sch-form"){ev.preventDefault();S.sch={qual:val("s-qual"),level:val("s-level"),inst:val("s-inst")};ls("eduplan-lab-sch",S.sch);touch("search");go("results");}
+});
+document.addEventListener("input",function(ev){if(ev.target.id==="q-what")ev.target.removeAttribute("data-fac");});
+document.addEventListener("change",function(ev){if(ev.target.id==="r-sort"){L.sort=ev.target.value;render(true);}});
+document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.detail){L.detail=null;render(true);}else if(L.help){L.help=false;render(true);}}});
+
+if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);
+render();
+syncLoad();
+if(API&&window.fetch&&!PREVIEW)fetch(API).then(function(r){return r.json();}).then(function(d){if(useData(d))render(true);}).catch(function(){});
+})();
