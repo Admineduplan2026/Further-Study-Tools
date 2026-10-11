@@ -1,0 +1,65 @@
+# Student portfolio (sign-in and autosave): setup
+
+Students open **My portfolio** (`#portfolio`) in the menu, type their email and get a 6-digit code by email.
+No password. Once signed in, the website saves their progress automatically and they can continue on any device.
+
+## What is saved
+
+| Section | Without signing in | Signed in |
+|---|---|---|
+| Saved programmes (the **Save** button on every programme card) | this browser | portfolio |
+| Interest quiz answers and result | this browser | portfolio |
+| Free consultation request | this browser | portfolio |
+| Application form answers and progress | this tab only (cleared when it closes) | portfolio |
+| Uploaded documents | this page only | **never saved**; they are sent only with the application |
+
+- Each section remembers when it was last changed. When two devices differ, the newer section wins.
+- Changes are saved about 1.5 seconds after the student stops typing, and when they leave the page.
+  A small "Saved to your portfolio" note appears at the bottom left.
+- **Sign out** removes the student's details from that browser. **Delete my portfolio** deletes their row.
+  Applications already sent stay in the school's `application` folder.
+- In the Claude artifact preview, sign-in is not available; saved programmes and the quiz stay in the browser.
+
+## Where portfolios are kept
+
+A private spreadsheet **Eduplan Student Portfolios** in **Eduplan Applications (private)** (created by the first
+sign-in), one row per student:
+
+| Column | Meaning |
+|---|---|
+| Email, Created, Last sign-in, Last saved | the account |
+| Name, Mobile | from the application form, or the consultation request |
+| Saved programmes | programme IDs, e.g. `XMUM-FIS, XMUM-BCS` |
+| Interest quiz | the faculties the quiz suggested |
+| Application | e.g. `Part 3 of 6 · XMUM-FIS`, `Ready to send`, or `Sent EDU-20261011-AB12` |
+| Data, Sessions | used by the website. **Do not edit.** |
+
+Counsellors can use the readable columns to follow up students who saved programmes or started an application.
+The sheet contains personal data (NRIC numbers in the application answers): keep it private to Eduplan staff.
+
+Security: sign-in codes expire after 10 minutes and allow 5 tries; one email can ask for 5 codes in 6 hours;
+a device stays signed in for 30 days (up to 5 devices). Codes and session keys are stored only as hashes.
+
+## Setup (together with the Apps Script deployment)
+
+In the master sheet: **Extensions > Apps Script**.
+
+1. Replace `Code.gs` with the latest `apps-script/Code.gs` (it now also routes the `account_...` requests).
+2. Click **+ > Script**, name it `Account`, and paste `apps-script/Account.gs`. Save.
+3. Choose the function `accountTest` and click **Run**. Allow the permissions (Sheets, Drive, and **Send email as you**).
+   The log shows `{"sheet":"https://...","saved":true,...,"deleted":true}` and the sheet **Eduplan Student Portfolios**
+   appears in **Eduplan Applications (private)**. No email is sent by the test.
+4. **Deploy > Manage deployments > Edit > Version: New version > Deploy.** The `/exec` URL stays the same.
+5. On the website, open **My portfolio**, sign in with your own email and check that the code arrives
+   (look in Spam the first time and mark it "Not spam").
+
+Optional Script Property: `ACCOUNT_DAILY_EMAILS` (default 80). A free Gmail account can send about
+100 emails a day from Apps Script, shared with the application notifications (`APPLY_NOTIFY_EMAIL`). If more students
+sign in each day, deploy the script from a Google Workspace account (1,500 emails a day) and raise the limit.
+
+## Before going live
+
+- Add the portfolio to Eduplan's personal data (PDPA) notice: what is kept (above), why (study guidance and
+  applications), who can see it (Eduplan counsellors), how long it is kept, and that students can delete it
+  from **My portfolio**. Then link the notice from the sign-in box.
+- Decide how long inactive portfolios are kept (for example, delete rows not signed in to for 2 years).

@@ -47,7 +47,7 @@ function guidedScore(answers,tie){
 window.__eduplan={guidedScore:guidedScore};
 
 /* ---------- State ---------- */
-var S={guide:{step:0,answers:[]},
+var S={guide:store("eduplan-quiz")||{step:0,answers:[]},
        cons:store("eduplan-consult")||{},consDone:null,
        schType:null};
 
@@ -384,7 +384,7 @@ function progCard(u,fold){
    '<a class="textlink" href="#scholarships-foundation">Other scholarships open to all students '+ARROW+'</a></div>'+
   (notes.length?'<div class="stack"><h4>Notes</h4>'+notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join("")+'</div>':'')+
   '<div class="row">'+(u.url?'<a class="btn ghost" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'')+
-   (u.id?'<a class="btn" href="#next/'+esc(u.id)+'">Choose this programme '+ARROW+'</a>':'<a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(u.programme||u.name)+' ('+esc(u.name)+').">Ask a counsellor about this course</a>')+'</div>'+(fold?'</div></details>':'</article>');
+   (u.id?saveBtn(u.id)+'<a class="btn" href="#next/'+esc(u.id)+'">Choose this programme '+ARROW+'</a>':'<a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(u.programme||u.name)+' ('+esc(u.name)+').">Ask a counsellor about this course</a>')+'</div>'+(fold?'</div></details>':'</article>');
 }
 function progFold(u){return progCard(u,true);}
 function facUnis(f,c){
@@ -491,7 +491,7 @@ var UPLOADS=[["ic","NRIC or passport (front and back)",2,"always"],["results","R
 var FILE_MAX=5*1024*1024,FILES_TOTAL=20*1024*1024;
 function applyLoad(){var a=null;try{a=JSON.parse(sessionStorage.getItem(APPLY_KEY));}catch(e){}
  a=a||{};a.v=a.v||{nationality:"Malaysian",residence:"Malaysia",country:"Malaysia",perm_same:true,em_same:true,disability:"No"};a.step=a.step||1;a.edu=a.edu||2;a.eng=a.eng||1;a.files={};return a;}
-function applySave(){try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng,complete:S.app.complete,sent:S.app.sent}));}catch(e){}}
+function applySave(){try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng,complete:S.app.complete,sent:S.app.sent}));}catch(e){}pfTouch("apply");}
 function allProgs(){var out=[];UNIV.forEach(function(u){u.progs.forEach(function(p){out.push({u:u,p:p});});});return out;}
 function findProg(id){id=String(id||"").toLowerCase();return id?allProgs().filter(function(x){return String(x.p.id).toLowerCase()===id;})[0]||null:null;}
 function applyProg(){return findProg(S.app.v.prog);}
@@ -648,7 +648,7 @@ V.next=function(){
  var x=findProg(S.pick);
  if(!x)return '<section class="stack"><h1>Choose a programme first</h1><p class="lead">Find a programme by faculty, university or scholarship, then come back here.</p><div class="row"><a class="btn" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div></section>';
  var note="Interested in: "+x.p.programme+" ("+x.u.name+").";
- return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x)+
+ return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x)+'<div class="row">'+saveBtn(x.p.id)+'</div>'+
   '<h1>Any questions before you apply?</h1><p class="lead">Ask our AI study assistant, talk to a counsellor for free, or go straight to the application form.</p></section>'+
   '<section class="grid">'+
    '<button type="button" class="item pick" data-ask="'+esc("I am interested in "+x.p.programme+" at "+x.u.name+". ")+'"><span class="name">Ask the AI study assistant</span><span class="desc">Quick answers about fees, entry requirements and scholarships, any time.</span><span class="textlink">Open the chat '+ARROW+'</span></button>'+
@@ -660,7 +660,7 @@ V.next=function(){
 V.apply=function(){
  var a=S.app,n=APPLY_STEPS.length;
  return '<section class="stack">'+flowStep("Apply")+'<span class="eyebrow">Apply with Eduplan</span><h1>Application form</h1>'+
-  '<p class="lead">One form for your university application. It takes about 10 minutes. Your answers stay on this device until you close the tab.</p></section>'+
+  '<p class="lead">One form for your university application. It takes about 10 minutes. '+(PF.s?'Your answers are saved to your portfolio as you type.':'Your answers stay on this device until you close the tab. <a href="#portfolio">Sign in</a> to save them and continue later.')+'</p></section>'+
   '<section class="panel" style="max-width:760px"><div class="formstep"><span>Part '+a.step+' of '+n+': '+esc(APPLY_STEPS[a.step-1])+'</span><span class="bar" aria-hidden="true"><i style="width:'+Math.round(a.step/n*100)+'%"></i></span></div>'+
   '<form class="fields" id="apply-form" novalidate>'+applyStep(a.step)+
   '<div class="row">'+(a.step>1?'<button type="button" class="btn ghost" data-apply="back">Back</button>':'')+
@@ -708,6 +708,220 @@ function applySend(){
   .then(function(d){if(!d||!d.ref)throw new Error(d&&d.error||"failed");a.sending=false;a.sent=d.ref;a.files={};applySave();rerender();window.scrollTo(0,0);})
   .catch(function(){fb("Your application could not be sent just now. Please send it yourself below, or try again later.");});
 }
+
+/* ---------- My portfolio: sign in with an emailed code, and autosave ----------
+   Saved programmes, the interest quiz and the consultation request are kept in this browser (localStorage) and the
+   application in this tab (sessionStorage), signed in or not. Once the student signs in (#portfolio), every change is
+   also saved to their portfolio on Eduplan's server (apps-script/Account.gs), so they can continue on any device.
+   Each section (saved, quiz, consult, apply) has its own "changed at" time; the newer copy wins when devices differ.
+   Uploaded documents are never saved in the portfolio. Signing out removes the student's details from this browser. */
+var PF_KEY="eduplan-session",PF_AT="eduplan-at",PF_SECTIONS=["saved","quiz","consult","apply"];
+var PF={s:store(PF_KEY),at:store(PF_AT)||{},step:"email",email:"",consent:false,msg:"",err:"",busy:false,dirty:false,saving:false,timer:null,loaded:0,del:false};
+if(PF.s&&!(PF.s.token&&PF.s.exp>Date.now()))PF.s=null;
+var SAVED=store("eduplan-saved")||[];
+var PF_ERR={bad_email:"Enter an email like name@example.com.",consent:"Please tick to agree first.",code:"Enter the 6-digit code from the email.",
+ wait:"A code was sent less than a minute ago. Check your inbox and spam folder, or wait a minute and ask again.",
+ too_many:"Too many codes were asked for this email. Please try again in a few hours.",daily_limit:"Sign-in is very busy today. Please try again tomorrow.",
+ bad_code:"That code is not right. Use the latest code Eduplan emailed you.",expired:"This code has expired. Ask for a new code.",
+ busy:"Eduplan is busy right now. Please try again in a moment.",net:"Eduplan could not be reached. Check your connection and try again.",
+ bad_request:"Something went wrong. Please try again."};
+var STAR='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg>';
+
+/* Sign-in needs the live website's Apps Script; the Claude artifact preview keeps everything in the browser. */
+function pfLive(){return !!(window.EDUPLAN_API_URL&&window.fetch&&!window.EDUPLAN_SHEET_DATA);}
+function pfPost(body,keep){
+ return fetch(window.EDUPLAN_API_URL,{method:"POST",keepalive:!!keep,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)})
+  .then(function(r){if(!r.ok)throw new Error("net");return r.json();});
+}
+function pfQuizResult(){var g=S.guide;if(g.step<QUIZ.questions.length)return "";var r=guidedScore(g.answers,g.tie);return r.close?"":r.picks.map(facLabel).join(", ");}
+function pfDoc(){var a=PF.at;return {
+ saved:{ids:SAVED.slice(),at:a.saved||0},
+ quiz:{step:S.guide.step,answers:S.guide.answers,tie:S.guide.tie||null,result:pfQuizResult(),at:a.quiz||0},
+ consult:{f:S.cons,at:a.consult||0},
+ apply:{v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng,complete:!!S.app.complete,sent:S.app.sent||null,at:a.apply||0}};}
+/* Takes the server's sections that are newer than this browser's. union: first sign-in on this device, so the
+   programmes saved before signing in are added to the portfolio's. Returns true when something changed. */
+function pfUse(d,union){
+ d=d||{};var a=PF.at,ch=false;
+ function newer(k){return d[k]&&typeof d[k]==="object"&&(Number(d[k].at)||0)>(a[k]||0);}
+ if(union&&d.saved&&Array.isArray(d.saved.ids)){var u=uniq(SAVED.concat(d.saved.ids));
+  if(u.length!==SAVED.length||u.length!==d.saved.ids.length){SAVED=u;store("eduplan-saved",SAVED);a.saved=Date.now();ch=true;}}
+ else if(newer("saved")){SAVED=(d.saved.ids||[]).slice();store("eduplan-saved",SAVED);a.saved=d.saved.at;ch=true;}
+ if(newer("quiz")){S.guide={step:d.quiz.step||0,answers:d.quiz.answers||[],tie:d.quiz.tie||null};store("eduplan-quiz",S.guide);a.quiz=d.quiz.at;ch=true;}
+ if(newer("consult")){S.cons=d.consult.f||{};S.consDone=null;store("eduplan-consult",S.cons);a.consult=d.consult.at;ch=true;}
+ if(newer("apply")){var x=d.apply,files=S.app.files;
+  try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:x.v,step:x.step,edu:x.edu,eng:x.eng,complete:x.complete,sent:x.sent}));}catch(e){}
+  S.app=applyLoad();S.app.files=files;a.apply=x.at;ch=true;}
+ store(PF_AT,a);
+ /* Sections changed here since the portfolio was last saved are sent up. */
+ PF_SECTIONS.forEach(function(k){if((a[k]||0)>((d[k]&&Number(d[k].at))||0))PF.dirty=true;});
+ return ch;
+}
+/* Called whenever a section changes; saving waits until the student pauses for a moment. */
+function pfTouch(k){
+ PF.at[k]=Date.now();store(PF_AT,PF.at);
+ if(!PF.s||!pfLive())return;
+ PF.dirty=true;clearTimeout(PF.timer);PF.timer=setTimeout(pfFlush,1500);
+}
+function pfFlush(keep){
+ clearTimeout(PF.timer);
+ if(!PF.s||!PF.dirty||!pfLive())return;
+ if(PF.saving){PF.timer=setTimeout(pfFlush,1500);return;}
+ PF.saving=true;PF.dirty=false;pfStatus("Saving…");
+ pfPost({action:"account_save",token:PF.s.token,data:pfDoc()},keep).then(function(d){
+  PF.saving=false;
+  if(d&&d.error==="signed_out")return pfSignedOut();
+  if(d&&d.error==="too_large")return pfStatus("Your portfolio is too large to save. Please contact Eduplan.",true);
+  if(!d||!d.ok)throw new Error("net");
+  if(pfUse(d.data)&&S.view==="portfolio")rerender();
+  if(PF.dirty)PF.timer=setTimeout(pfFlush,1500);else pfStatus("Saved to your portfolio");
+ }).catch(function(){PF.saving=false;PF.dirty=true;pfStatus("Not saved yet. Trying again…",true);PF.timer=setTimeout(pfFlush,15000);});
+}
+var pfBox=null;
+function pfStatus(t,warn){
+ if(!pfBox){pfBox=document.createElement("div");pfBox.className="pfstatus";pfBox.setAttribute("role","status");document.body.appendChild(pfBox);}
+ pfBox.textContent=t;pfBox.classList.toggle("warn",!!warn);pfBox.classList.add("on");
+ clearTimeout(pfBox.hideTimer);if(!warn&&t!=="Saving…")pfBox.hideTimer=setTimeout(function(){pfBox.classList.remove("on");},2500);
+ var el=document.getElementById("pf-sync");if(el)el.textContent=t;
+}
+/* Removes everything personal from this browser (sign out, delete, or a shared computer). */
+function pfForget(){
+ PF.s=null;PF.dirty=false;PF.del=false;clearTimeout(PF.timer);
+ try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
+ PF.at={};SAVED=[];S.guide={step:0,answers:[]};S.cons={};S.consDone=null;S.app=applyLoad();
+}
+/* The session ended on the server (expired, deleted, or signed out on another device): keep the local copy. */
+function pfSignedOut(){
+ PF.s=null;PF.dirty=false;clearTimeout(PF.timer);try{localStorage.removeItem(PF_KEY);}catch(e){}
+ PF.err="You were signed out. Sign in again to keep saving to your portfolio.";
+ pfStatus("Signed out",true);if(S.view==="portfolio")rerender();
+}
+function pfStart(){
+ if(!PF.s||!pfLive())return;
+ PF.loaded=Date.now();
+ pfPost({action:"account_load",token:PF.s.token}).then(function(d){
+  if(d&&d.error==="signed_out")return pfSignedOut();
+  if(!d||!d.data)return;
+  var ch=pfUse(d.data);
+  if(PF.dirty)pfFlush();
+  var f=document.activeElement;
+  if(ch&&!(f&&app.contains(f)&&/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)))rerender();
+ }).catch(function(){});
+}
+document.addEventListener("visibilitychange",function(){
+ if(document.visibilityState==="hidden")pfFlush(true);
+ else if(PF.s&&Date.now()-PF.loaded>60000)pfStart();
+});
+
+function pfSendCode(email,consent){
+ PF.email=String(email||"").trim().toLowerCase();PF.err="";PF.msg="";
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(PF.email)){PF.err=PF_ERR.bad_email;return rerender("pf-email");}
+ PF.consent=!!consent;
+ if(!PF.consent){PF.err=PF_ERR.consent;return rerender("pf-consent");}
+ PF.busy=true;rerender();
+ pfPost({action:"account_code",email:PF.email}).then(function(d){
+  PF.busy=false;
+  if(d&&d.ok){PF.step="code";PF.msg="We emailed a 6-digit code to "+PF.email+". It expires in 10 minutes.";return rerender("pf-code");}
+  if(d&&d.error==="wait")PF.step="code";
+  PF.err=PF_ERR[d&&d.error]||PF_ERR.bad_request;rerender(PF.step==="code"?"pf-code":"pf-email");
+ }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender(PF.step==="code"?"pf-code":"pf-email");});
+}
+function pfVerify(code){
+ code=String(code||"").replace(/\D/g,"");PF.err="";
+ if(code.length!==6){PF.err=PF_ERR.code;return rerender("pf-code");}
+ PF.busy=true;rerender();
+ pfPost({action:"account_verify",email:PF.email,code:code}).then(function(d){
+  PF.busy=false;
+  if(!d||!d.token){PF.err=PF_ERR[d&&d.error]||PF_ERR.bad_request;return rerender("pf-code");}
+  PF.s={token:d.token,email:d.email,exp:Date.now()+(d.days||30)*864e5};store(PF_KEY,PF.s);
+  PF.step="email";PF.msg="";PF.loaded=Date.now();
+  pfUse(d.data,true);
+  if(PF.dirty)PF.timer=setTimeout(pfFlush,300);
+  pfStatus("Signed in. Your progress is saved automatically.");rerender();window.scrollTo(0,0);
+ }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender("pf-code");});
+}
+function pfAction(act){
+ if(act==="again"){pfSendCode(PF.email,true);return;}
+ if(act==="other"){PF.step="email";PF.err="";PF.msg="";rerender("pf-email");return;}
+ if(act==="quiz-restart"){S.guide={step:0,answers:[],tie:null};quizSave();location.hash="#guided";return;}
+ if(act==="delete"){PF.del=true;rerender("pf-del-yes");return;}
+ if(act==="keep"){PF.del=false;rerender();return;}
+ if(act==="logout"){var t=PF.s&&PF.s.token;pfFlush(true);if(t&&pfLive())pfPost({action:"account_logout",token:t}).catch(function(){});
+  pfForget();PF.msg="You have signed out. Your details were removed from this browser and stay in your portfolio for next time.";rerender();window.scrollTo(0,0);return;}
+ if(act==="delete-yes"){if(!PF.s)return;PF.busy=true;rerender();
+  pfPost({action:"account_delete",token:PF.s.token}).then(function(d){PF.busy=false;
+   if(!d||!(d.ok||d.error==="signed_out"))throw new Error("net");
+   pfForget();PF.msg="Your portfolio was deleted. Applications you already sent stay with Eduplan so a counsellor can process them.";rerender();window.scrollTo(0,0);
+  }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender();});}
+}
+function quizSave(){store("eduplan-quiz",S.guide);pfTouch("quiz");}
+
+/* Save / Saved toggle on programme cards. */
+function saveBtn(id){var on=SAVED.indexOf(id)>=0;return '<button type="button" class="btn ghost save" data-save="'+esc(id)+'" aria-pressed="'+on+'">'+STAR+'<span>'+(on?"Saved":"Save")+'</span></button>';}
+function toggleSave(id){
+ var i=SAVED.indexOf(id),on=i<0;if(on)SAVED.push(id);else SAVED.splice(i,1);
+ store("eduplan-saved",SAVED);pfTouch("saved");
+ if(S.view==="portfolio")return rerender();
+ Array.prototype.forEach.call(app.querySelectorAll("[data-save]"),function(b){if(b.getAttribute("data-save")!==id)return;
+  b.setAttribute("aria-pressed",String(on));b.querySelector("span").textContent=on?"Saved":"Save";});
+ if(!PF.s)pfStatus(on?"Saved in this browser. Sign in to keep it on any device.":"Removed from your saved programmes");
+}
+
+function pfLogin(){
+ var err=PF.err?'<span class="err" id="pf-err">'+esc(PF.err)+'</span>':'',inv=PF.err?' aria-invalid="true" aria-describedby="pf-err"':'',dis=PF.busy?' disabled':'';
+ var msg=PF.msg?'<p class="note" role="status">'+esc(PF.msg)+'</p>':'';
+ if(!pfLive())return '<section class="panel pflogin"><h2>Sign in</h2><p class="muted">Sign-in works on the live Eduplan website. In this preview, your saved programmes and quiz result stay in this browser.</p></section>';
+ if(PF.step==="code")return '<section class="panel pflogin"><h2>Enter your code</h2>'+msg+
+  '<form class="fields" id="pf-code-form" novalidate><div class="field"><label for="pf-code">6-digit code</label>'+
+  '<input id="pf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+inv+'>'+err+'<span class="hint">Sent to <span data-notr>'+esc(PF.email)+'</span>. Check your spam folder if it is not in your inbox.</span></div>'+
+  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Checking…':'Sign in')+'</button>'+
+  '<button type="button" class="btn ghost" data-pf="again"'+dis+'>Send a new code</button><button type="button" class="btn ghost" data-pf="other">Use another email</button></div></form></section>';
+ return '<section class="panel pflogin"><h2>Sign in or create your portfolio</h2>'+msg+
+  '<form class="fields" id="pf-email-form" novalidate><div class="field"><label for="pf-email">Email</label>'+
+  '<input id="pf-email" type="email" autocomplete="email" value="'+esc(PF.email)+'"'+(PF.err&&PF.err!==PF_ERR.consent?inv:'')+'>'+(PF.err&&PF.err!==PF_ERR.consent?err:'')+
+  '<span class="hint">No password needed. Each time you sign in, we email you a 6-digit code.</span></div>'+
+  '<div class="field"><label class="check"><input type="checkbox" id="pf-consent"'+(PF.consent?' checked':'')+(PF.err===PF_ERR.consent?inv:'')+'><span>I agree that Eduplan keeps my portfolio (saved programmes, quiz result, consultation request and application details) to guide me with my studies. I can delete it at any time.</span></label>'+(PF.err===PF_ERR.consent?err:'')+'</div>'+
+  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Sending…':'Email me a code')+'</button></div></form></section>';
+}
+function pfCard(title,body){return '<section class="panel pfcard"><h2>'+title+'</h2>'+body+'</section>';}
+V.portfolio=function(){
+ var head='<section class="stack"><span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
+  (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'
+   :'<p class="lead">Keep your saved programmes, quiz result, consultation request and application in one place, and continue on any device.</p>')+'</section>';
+ /* Saved programmes */
+ var saved=pfCard("Saved programmes",SAVED.length?'<div class="pfsaved">'+SAVED.map(function(id){var x=findProg(id);
+   if(!x)return '<div class="item"><span class="name" data-notr>'+esc(id)+'</span><span class="hint">'+(UNIV.length?'This programme is no longer listed.':'Loading…')+'</span><div class="row">'+saveBtn(id)+'</div></div>';
+   return '<div class="item"><span class="eyebrow">'+esc(x.u.name)+'</span><span class="name">'+esc(x.p.programme)+'</span>'+
+    '<span class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):""].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>'+
+    '<div class="row"><a class="btn" href="#next/'+esc(x.p.id)+'">Choose '+ARROW+'</a>'+saveBtn(id)+'</div></div>';}).join("")+'</div>'
+  :'<div class="empty">No saved programmes yet. Tap <strong>Save</strong> on a programme to keep it here.</div><div class="row"><a class="btn ghost" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div>');
+ /* Interest quiz */
+ var g=S.guide,n=QUIZ.questions.length,done=g.answers.filter(function(v){return v!=null;}).length,qr=g.step>=n?guidedScore(g.answers,g.tie):null,quiz;
+ if(qr&&!qr.close)quiz='<p class="muted">Faculties that suit your interests:</p><div class="chips">'+qr.picks.map(function(c){return '<a class="chip" href="#faculty/'+esc(c)+'">'+esc(facLabel(c))+'</a>';}).join("")+'</div>'+
+  '<div class="row"><a class="btn ghost" href="#guided">See my full result</a><button type="button" class="btn ghost" data-pf="quiz-restart">Take the quiz again</button></div>';
+ else if(done)quiz='<p class="muted">'+done+' of '+n+' questions answered.</p><div class="row"><a class="btn" href="#guided">Continue the quiz '+ARROW+'</a></div>';
+ else quiz='<p class="muted">Not taken yet. Twelve short questions about what you enjoy.</p><div class="row"><a class="btn ghost" href="#guided">Start the 12 questions</a></div>';
+ /* Consultation */
+ var c=S.cons,cons=c["cons-name"]?facts([["Name",c["cons-name"]],["Phone",c["cons-phone"]],["Topic",c["cons-topic"]],["Notes",c["cons-msg"]]])+'<div class="row"><a class="btn ghost" href="#consultation">Open my request</a></div>'
+  :'<p class="muted">No request yet.</p><div class="row"><a class="btn ghost" href="#consultation">Book a free consultation</a></div>';
+ /* Application */
+ var a=S.app,x=applyProg(),app2;
+ if(a.sent)app2='<div class="note">Application sent. Your reference number is <strong data-notr>'+esc(a.sent)+'</strong>.</div>';
+ else if(x)app2='<span class="eyebrow">'+esc(x.u.name)+'</span><h3 class="fname">'+esc(x.p.programme)+'</h3>'+
+  '<div class="formstep"><span>'+(a.complete?'Ready to send':'Part '+a.step+' of '+APPLY_STEPS.length+': '+esc(APPLY_STEPS[a.step-1]))+'</span><span class="bar" aria-hidden="true"><i style="width:'+(a.complete?100:Math.round((a.step-1)/APPLY_STEPS.length*100))+'%"></i></span></div>'+
+  '<div class="row"><a class="btn" href="'+(a.complete?'#stay':'#apply')+'">'+(a.complete?'Finish and send':'Continue my application')+' '+ARROW+'</a></div>'+
+  '<p class="hint">Uploaded documents are not kept in your portfolio. Add them again before you send your application.</p>';
+ else app2='<p class="muted">Not started. Choose a programme first, then tap <strong>Choose this programme</strong>.</p>';
+ var acct=PF.s?'<section class="panel pfcard"><h2>Account</h2><p class="muted">Status: <span id="pf-sync">'+(PF.dirty||PF.saving?'Saving…':'Saved to your portfolio')+'</span></p>'+
+  (PF.del?'<div class="empty"><strong>Delete your portfolio?</strong> Your saved programmes, quiz result, consultation request and unsent application will be deleted from Eduplan. Applications you already sent are not affected.</div>'+
+   '<div class="row"><button type="button" class="btn" id="pf-del-yes" data-pf="delete-yes"'+(PF.busy?' disabled':'')+'>Yes, delete my portfolio</button><button type="button" class="btn ghost" data-pf="keep">Keep it</button></div>'
+   :'<div class="row"><button type="button" class="btn ghost" data-pf="logout">Sign out</button><button type="button" class="btn ghost" data-pf="delete">Delete my portfolio</button></div>')+
+  (PF.err?'<span class="err" role="alert">'+esc(PF.err)+'</span>':'')+
+  '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
+ return head+(PF.s?'':pfLogin())+
+  '<div class="pfgrid">'+saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+'</div>'+
+  (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
+};
 
 S.app=applyLoad();
 S.flow=sget("eduplan-flow")||null;
@@ -768,6 +982,7 @@ function render(keepScroll){
  else if(r.indexOf("scholarships")===0)setFlow("scholarships");
  else if(r==="universities"&&S.flow!=="scholarships")setFlow("universities");
  if((r==="faculty"&&S.fac&&S.fac.course)||(r==="universities"&&S.uni&&S.uni.level))sset("eduplan-last",location.hash);
+ S.view=r;
  app.innerHTML=V[r]();
  reveal();
  var navKey={"guided":"","home":""}[r];
@@ -779,7 +994,8 @@ function rerender(focusId){render(true);if(focusId){var el=document.getElementBy
 window.addEventListener("hashchange",function(){render(false);app.focus({preventScroll:true});});
 
 /* ---------- Events (delegated) ---------- */
-function readCons(){["cons-name","cons-phone","cons-email","cons-qual","cons-topic","cons-msg"].forEach(function(id){var el=document.getElementById(id);if(el)S.cons[id]=el.value;});store("eduplan-consult",S.cons);}
+function readCons(){["cons-name","cons-phone","cons-email","cons-qual","cons-topic","cons-msg"].forEach(function(id){var el=document.getElementById(id);if(el)S.cons[id]=el.value;});consSave();}
+function consSave(){store("eduplan-consult",S.cons);pfTouch("consult");}
 /* Application form: answers are saved as they are typed; some choices show or hide fields. */
 function applyField(t){if(!t.name||!t.closest("#apply-form,#stay-form"))return false;S.app.v[t.name]=t.type==="checkbox"?t.checked:t.value;if(t.name==="prog")S.app.v.track="";applySave();
  /* Clear this field's error as soon as it is answered. */
@@ -806,6 +1022,8 @@ app.addEventListener("change",function(ev){
 });
 app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
+ if(t.hasAttribute("data-save")){toggleSave(t.getAttribute("data-save"));return;}
+ if(t.hasAttribute("data-pf")){pfAction(t.getAttribute("data-pf"));return;}
  if(t.hasAttribute("data-ask")){window.dispatchEvent(new CustomEvent("eduplan:ask",{detail:{text:t.getAttribute("data-ask")}}));return;}
  if(t.hasAttribute("data-apply")){var act=t.getAttribute("data-apply"),A=S.app;
   if(act==="back"){A.err={};A.step=Math.max(1,A.step-1);applySave();rerender();window.scrollTo(0,0);}
@@ -814,7 +1032,7 @@ app.addEventListener("click",function(ev){
   else if(act==="edit"){A.fallback=false;A.sendMsg="";location.hash="#apply";}
   else if(act==="rmfile"){var fp=t.getAttribute("data-file").split(":");(A.files[fp[0]]||[]).splice(Number(fp[1]),1);rerender("ap-f_"+fp[0]);}
   else if(act==="share"){navigator.share({title:"Eduplan application",text:applySummary(),files:applyFilesForShare()}).catch(function(){});}
-  else if(act==="clear"){try{sessionStorage.removeItem(APPLY_KEY);}catch(e){}S.app=applyLoad();location.hash="#apply";}
+  else if(act==="clear"){try{sessionStorage.removeItem(APPLY_KEY);}catch(e){}S.app=applyLoad();applySave();location.hash="#apply";}
   else if(act==="print")window.print();
   else if(act==="copy"){var out=document.getElementById("apply-copied"),fb=function(){var pre=document.getElementById("apply-summary"),rg=document.createRange();rg.selectNodeContents(pre);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(rg);out.textContent="The summary is selected. Press Ctrl+C (or long-press on a phone) to copy it.";};
    try{navigator.clipboard.writeText(applySummary()).then(function(){out.textContent="Copied. Paste it into WhatsApp or an email to Eduplan.";},fb);}catch(e){fb();}}
@@ -825,12 +1043,12 @@ app.addEventListener("click",function(ev){
  if(t.hasAttribute("data-schtype")){S.schType=t.getAttribute("data-schtype");location.hash="#scholarships-"+S.schType;return;}
  if(t.hasAttribute("data-schq")||t.hasAttribute("data-schl")){var k=t.hasAttribute("data-schq")?"schQ":"schL";S[k]=t.getAttribute(k==="schQ"?"data-schq":"data-schl");render(true);
   var f=app.querySelector('[data-'+k.toLowerCase()+'="'+S[k]+'"]');if(f)f.focus();return;}
- if(t.hasAttribute("data-ans")){S.guide.answers[S.guide.step]=Number(t.getAttribute("data-ans"));rerender("guide-next");return;}
- if(t.id==="guide-next"){S.guide.step++;rerender();app.focus({preventScroll:true});return;}
- if(t.hasAttribute("data-tie")){S.guide.tie=t.getAttribute("data-tie");rerender();window.scrollTo(0,0);return;}
- if(t.id==="guide-back"){S.guide.tie=null;S.guide.step=Math.min(Math.max(0,S.guide.step-1),QUIZ.questions.length-1);rerender();return;}
- if(t.id==="guide-restart"){S.guide={step:0,answers:[],tie:null};rerender();window.scrollTo(0,0);return;}
- if(t.hasAttribute("data-topic")){S.cons["cons-topic"]=t.getAttribute("data-topic");var n=t.getAttribute("data-note");if(n&&!S.cons["cons-msg"])S.cons["cons-msg"]=n;S.consDone=null;store("eduplan-consult",S.cons);return;}
+ if(t.hasAttribute("data-ans")){S.guide.answers[S.guide.step]=Number(t.getAttribute("data-ans"));quizSave();rerender("guide-next");return;}
+ if(t.id==="guide-next"){S.guide.step++;quizSave();rerender();app.focus({preventScroll:true});return;}
+ if(t.hasAttribute("data-tie")){S.guide.tie=t.getAttribute("data-tie");quizSave();rerender();window.scrollTo(0,0);return;}
+ if(t.id==="guide-back"){S.guide.tie=null;S.guide.step=Math.min(Math.max(0,S.guide.step-1),QUIZ.questions.length-1);quizSave();rerender();return;}
+ if(t.id==="guide-restart"){S.guide={step:0,answers:[],tie:null};quizSave();rerender();window.scrollTo(0,0);return;}
+ if(t.hasAttribute("data-topic")){S.cons["cons-topic"]=t.getAttribute("data-topic");var n=t.getAttribute("data-note");if(n&&!S.cons["cons-msg"])S.cons["cons-msg"]=n;S.consDone=null;consSave();return;}
  if(t.id==="cons-edit"){S.consDone=null;rerender("cons-name");return;}
  if(t.id==="cons-copy"){var txt=S.consDone,out=document.getElementById("cons-copied");
   var fallback=function(){var pre=document.getElementById("cons-summary"),rg=document.createRange();rg.selectNodeContents(pre);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(rg);out.textContent="The summary is selected. Press Ctrl+C (or long-press on a phone) to copy it.";};
@@ -843,6 +1061,8 @@ app.addEventListener("submit",function(ev){
   if(A.step<APPLY_STEPS.length){A.step++;applySave();rerender();window.scrollTo(0,0);var f=app.querySelector("#apply-form input,#apply-form select,#apply-form textarea");if(f)f.focus({preventScroll:true});}
   else{A.complete=true;applySave();location.hash="#stay";}
   return;}
+ if(ev.target.id==="pf-email-form"){ev.preventDefault();var pe=document.getElementById("pf-email"),pc=document.getElementById("pf-consent");pfSendCode(pe?pe.value:"",pc&&pc.checked);return;}
+ if(ev.target.id==="pf-code-form"){ev.preventDefault();var pk=document.getElementById("pf-code");pfVerify(pk?pk.value:"");return;}
  if(ev.target.id==="stay-form"){ev.preventDefault();var B=S.app,es={};
   if(!B.v.acc)es.acc="Please choose one.";if(B.v.acc==="Yes"){if(!B.v.acc_type)es.acc_type="Please choose one.";if(!B.v.acc_room)es.acc_room="Please choose one.";}
   B.err=es;var k2=Object.keys(es)[0];if(k2){rerender("ap-"+k2);return;}
@@ -903,6 +1123,7 @@ function applyApi(d){
 /* A snapshot of the sheet data embedded in the page (used by the Claude artifact, which cannot call the API). */
 if(window.EDUPLAN_SHEET_DATA)applyApi(window.EDUPLAN_SHEET_DATA);
 render(false);
+pfStart();
 if(window.EDUPLAN_API_URL&&window.fetch){
  fetch(window.EDUPLAN_API_URL).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
   .then(function(d){if(applyApi(d))render(true);})
