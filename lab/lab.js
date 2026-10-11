@@ -72,7 +72,7 @@ function bestWaiver(p){var lv=p.lk==="foundation"?"foundation":p.lk==="degree"||
  D.sch.forEach(function(s){if(s.inst!==p.inst)return;var l=schLevel(s.applies);if(l&&l!==lv)return;if(s.waiver!=null&&(best==null||s.waiver>best))best=s.waiver;});return best;}
 
 /* ---------- State (browser storage shared with the main site) ---------- */
-var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,sort:"match",quizStep:null,help:false};
+var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,sort:"match",quizStep:null,help:false,menu:false};
 if(!MODES.some(function(m){return m[0]===L.mode;}))L.mode="interest";
 var SEARCH0={what:"",fac:"",where:"",level:"",budget:"",intake:""},SCH0={qual:"SPM",level:"foundation",inst:""};
 var S={search:ls("eduplan-lab-search")||{},sch:ls("eduplan-lab-sch")||{},recent:ls("eduplan-lab-recent")||[],saved:ls("eduplan-saved")||[],
@@ -191,7 +191,8 @@ function topbar(){
    '<a class="tl" href="'+esc(mainLink("#apply"))+'"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"></path><path d="M14 3v5h5M9 13h7M9 17h5"></path></svg><span class="tlt">My applications</span>'+(a&&!a.sent?'<span class="count dot"></span>':'')+'</a>'+
    (em?'<a class="avatar" href="'+esc(mainLink("#portfolio"))+'" title="'+esc(em)+'" aria-label="My portfolio" data-notr>'+esc(em.charAt(0).toUpperCase())+'</a>'
     :'<a class="btn sm" href="'+esc(mainLink("#portfolio"))+'">Sign in</a>')+
-  '</nav></div>';
+  '</nav><button type="button" class="burger" data-act="menu" aria-expanded="'+L.menu+'" aria-controls="lab-menu" aria-label="Menu">'+
+   '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button></div>';
 }
 function hello(){var em=S.session&&S.session.email;return em?'Welcome back, <span data-notr>'+esc(em.split("@")[0])+'</span>':'Welcome to Eduplan';}
 function searchBox(){
@@ -318,6 +319,55 @@ function savedView(){
  var list=S.saved.map(prog).filter(Boolean);
  return '<div class="page"><h1 class="rh">Saved programmes</h1>'+(list.length?'<div class="cards">'+list.map(function(p){return card(p);}).join("")+'</div>':'<div class="empty">Tap the heart on any programme to keep it here. <button type="button" class="linkbtn" data-act="home">Start searching</button></div>')+'</div>';
 }
+/* Menu (three lines, top right): My portfolio and About us, plus the account links that are icons on phones. */
+function menu(){
+ var em=S.session&&S.session.email,n=S.saved.length;
+ function item(href,label,sub,act){return (act?'<button type="button" class="mitem" data-act="'+act+'">':'<a class="mitem" href="'+esc(href)+'">')+'<b>'+esc(label)+'</b>'+(sub?'<span>'+esc(sub)+'</span>':'')+(act?'</button>':'</a>');}
+ return '<div class="mscrim" data-act="menu"></div><nav class="menu" id="lab-menu" aria-label="Menu">'+
+  '<div class="mhead">'+(em?'<span class="avatar" aria-hidden="true" data-notr>'+esc(em.charAt(0).toUpperCase())+'</span><span class="memail" data-notr>'+esc(em)+'</span>'
+   :'<span class="mguest">You are not signed in.</span><a class="btn sm" href="'+esc(mainLink("#portfolio"))+'">Sign in</a>')+'</div>'+
+  item("#portfolio","My portfolio","Saved programmes, quiz result and application")+
+  item("#about","About us","Who we are and how we guide you")+
+  item("#saved","Saved programmes",n?plural(n,"programme","programmes"):"")+
+  item(mainLink("#apply"),"My applications","")+
+  item(mainLink("#consultation"),"Book a free consultation","")+
+  '</nav>';
+}
+function portfolioView(){
+ var em=S.session&&S.session.email,list=S.saved.map(prog).filter(Boolean),a=applyState(),ap=a&&prog(a.v.prog),picks=quizResult(),cons=ls("eduplan-consult")||{},
+  answered=(S.quiz.answers||[]).filter(function(v){return v!=null;}).length,n=QUIZ.questions.length;
+ var app=a&&a.sent?'<div class="note okn">Application sent. Your reference number is <b data-notr>'+esc(a.sent)+'</b>.</div>'
+  :ap?'<span class="pinst">'+esc(ap.inst.name)+'</span><h3>'+esc(ap.name)+'</h3><div class="meter" aria-hidden="true"><i style="width:'+Math.max(6,a.complete?100:Math.round(((a.step||1)-1)/6*100))+'%"></i></div>'+
+   '<span class="hint">'+(a.complete?'Ready to send':'Part '+(a.step||1)+' of 6')+'</span><div class="pact"><a class="btn sm" href="'+esc(mainLink("#apply"))+'">Continue my application</a></div>'
+  :'<p class="muted">Not started. Choose a programme, then tap Apply now.</p>';
+ var quiz=picks.length?'<div class="chips">'+picks.map(function(c){return '<button type="button" class="chip" data-fac="'+esc(c)+'">'+esc(facLabel(c))+'</button>';}).join("")+'</div>'
+  :'<p class="muted">'+(answered&&S.quiz.step<n?answered+' of '+n+' questions answered.':'Not taken yet.')+'</p><div class="pact"><button type="button" class="btn ghost sm" data-mode="guidance">'+(answered&&S.quiz.step<n?'Continue the quiz':'Start the quiz')+'</button></div>';
+ return '<div class="page"><section class="phead"><span class="pinst">My portfolio</span><h1 class="rh">'+(em?'Your Eduplan portfolio':'Your progress on this device')+'</h1>'+
+  (em?'<p class="muted">Signed in as <b data-notr>'+esc(em)+'</b>. Your progress is saved to your portfolio.</p>'
+   :'<p class="muted">Sign in to keep your saved programmes, quiz result and application on any device.</p><div class="pact"><a class="btn" href="'+esc(mainLink("#portfolio"))+'">Sign in</a></div>')+'</section>'+
+  '<section class="sec"><div class="sh"><h2>Saved programmes</h2></div>'+(list.length?'<div class="cards">'+list.map(function(p){return card(p);}).join("")+'</div>'
+   :'<div class="empty">Tap the heart on any programme to keep it here. <button type="button" class="linkbtn" data-act="home">Start searching</button></div>')+'</section>'+
+  '<div class="pgrid"><section class="box"><h2>Interest quiz</h2>'+quiz+'</section><section class="box"><h2>Application</h2>'+app+'</section>'+
+  '<section class="box"><h2>Free consultation</h2>'+(cons["cons-name"]?'<dl class="facts"><dt>Name</dt><dd>'+esc(cons["cons-name"])+'</dd><dt>Topic</dt><dd>'+esc(cons["cons-topic"]||"")+'</dd></dl>':'<p class="muted">No request yet.</p>')+
+   '<div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">'+(cons["cons-name"]?'Open my request':'Book a free consultation')+'</a></div></section>'+
+  (em?'<section class="box"><h2>Account</h2><p class="muted">Signing out removes your details from this browser. Please sign out on a shared computer.</p><div class="pact"><button type="button" class="btn ghost sm" data-act="signout">Sign out</button>'+
+   '<a class="btn ghost sm" href="'+esc(mainLink("#portfolio"))+'">Manage or delete my portfolio</a></div></section>':'')+'</div></div>';
+}
+function aboutView(){
+ var A=window.EDUPLAN_ABOUT;if(!A)return '<div class="page"><div class="empty">About us is not available.</div></div>';
+ var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
+ var go={"#faculty":'data-mode="interest"',"#universities":'data-mode="interest"',"#scholarships":'data-mode="scholarship"'};
+ function tl(label,rows){return rows&&rows.length?'<div class="tl2"><h3>'+esc(label)+'</h3><ol>'+rows.map(function(r){return '<li><b>'+esc(r.title)+'</b><span>'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';}
+ return '<section class="hero about"><div class="hwrap"><span class="ok3">About us</span><h1>We lead students to the right place to study</h1>'+
+  '<p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></div></section>'+
+  '<div class="page"><div class="pgrid"><section class="box"><span class="pinst">Our vision</span><p class="big">'+esc(A.vision)+'</p><ul class="vp">'+A.points.map(function(v){return '<li><b>'+esc(v[0])+'</b><span>'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
+  '<section class="box"><span class="pinst">Our mission</span><p class="big">'+esc(A.mission)+'</p><ol class="jr">'+A.journey.map(function(j){var g=go[j[2]];
+   return '<li>'+(g?'<button type="button" class="jlink" '+g+'>':'<a class="jlink" href="'+esc(mainLink(j[2]))+'">')+'<b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span>'+(g?'</button>':'</a>')+'</li>';}).join("")+'</ol></section></div>'+
+  '<section class="sec"><div class="sh"><h2>Meet our founder</h2></div><div class="founder">'+(photo?'<img src="'+esc(photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan">':'')+
+   '<div class="fbody"><span class="pinst">'+esc(f.role)+'</span><h3>'+esc(f.name)+'</h3><p class="muted">'+esc(f.bio)+'</p>'+
+   '<div class="pact">'+(f.facebook?'<a class="btn ghost sm" href="'+esc(f.facebook)+'" target="_blank" rel="noopener">Facebook</a>':'')+'<a class="btn sm" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div></div>'+
+   '<div class="fcv">'+tl("Career",f.career)+tl("Education",f.education)+'</div></div></section>'+trust()+'</div>';
+}
 function detailSheet(){
  var p=prog(L.detail);if(!p)return '';var w=bestWaiver(p);
  return '<div class="scrim" data-act="close"></div><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" tabindex="-1">'+
@@ -344,17 +394,17 @@ function help(){
 
 /* ---------- Render and events ---------- */
 var top=document.getElementById("top"),app=document.getElementById("app"),helpBox=document.getElementById("helpbox"),sheet=document.getElementById("sheet");
-function route(){var h=(location.hash||"#home").slice(1);L.view={results:"results",saved:"saved"}[h]||"home";}
+function route(){var h=(location.hash||"#home").slice(1);L.view={results:"results",saved:"saved",portfolio:"portfolio",about:"about"}[h]||"home";}
 function render(keep){
  route();
- var lang=top.querySelector(".lang");top.innerHTML=topbar();if(lang)top.querySelector(".bar").appendChild(lang);
- app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():home();
+ var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"");if(lang)top.querySelector(".bar").appendChild(lang);
+ app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="portfolio"?portfolioView():L.view==="about"?aboutView():home();
  helpBox.innerHTML=help();
  sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
  if(!keep)window.scrollTo(0,0);
 }
 function go(view){if(location.hash==="#"+view)render();else location.hash="#"+view;}
-window.addEventListener("hashchange",function(){L.detail=null;render();});
+window.addEventListener("hashchange",function(){L.detail=null;L.menu=false;render();});
 function readSearch(){
  var w=document.getElementById("q-what");if(!w)return;
  var txt=w.value.trim(),fac=w.getAttribute("data-fac");
@@ -385,7 +435,12 @@ document.addEventListener("click",function(ev){
  var act=t.getAttribute("data-act");if(!act)return;
  if(act==="close"){L.detail=null;render(true);}
  else if(act==="home")go("home");
- else if(act==="help"){L.help=!L.help;render(true);}
+ else if(act==="help"){L.help=!L.help;L.menu=false;render(true);}
+ else if(act==="menu"){L.menu=!L.menu;L.help=false;render(true);var m=document.querySelector(".menu .mitem");if(L.menu&&m)m.focus();else{var bb=top.querySelector(".burger");if(bb)bb.focus();}}
+ else if(act==="signout"){var tk=S.session&&S.session.token;flush(true);if(tk&&live)post({action:"account_logout",token:tk}).catch(function(){});
+  ["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-lab-search","eduplan-lab-sch","eduplan-lab-recent"].forEach(function(k){ls(k,null);});
+  try{sessionStorage.removeItem("eduplan-apply");}catch(e){}
+  S.session=null;S.saved=[];S.recent=[];S.quiz={step:0,answers:[]};S.search=JSON.parse(JSON.stringify(SEARCH0));S.sch=JSON.parse(JSON.stringify(SCH0));S.at={};S.serverApply=null;hadSearch=false;go("home");}
  else if(act==="ai"){L.help=false;render(true);window.dispatchEvent(new CustomEvent("eduplan:ask",{detail:{text:""}}));}
  else if(act==="clear-search"){S.search=JSON.parse(JSON.stringify(SEARCH0));ls("eduplan-lab-search",S.search);hadSearch=false;touch("search");render(true);}
  else if(act==="show-nofee"){L.showNoFee=true;render(true);}
@@ -399,7 +454,7 @@ document.addEventListener("submit",function(ev){
 });
 document.addEventListener("input",function(ev){if(ev.target.id==="q-what")ev.target.removeAttribute("data-fac");});
 document.addEventListener("change",function(ev){if(ev.target.id==="r-sort"){L.sort=ev.target.value;render(true);}});
-document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.detail){L.detail=null;render(true);}else if(L.help){L.help=false;render(true);}}});
+document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.detail){L.detail=null;render(true);}else if(L.menu){L.menu=false;render(true);var bb=top.querySelector(".burger");if(bb)bb.focus();}else if(L.help){L.help=false;render(true);}}});
 
 if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);
 render();

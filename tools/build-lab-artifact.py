@@ -8,9 +8,9 @@ assert open("assets/js/chat-knowledge.js").read()==open("apps-script/ChatKnowled
 css=open("lab/lab.css").read()
 html=open("lab/index.html").read()
 body=html[html.index("<body>")+6:html.index("<script")].strip()
-settings="window.EDUPLAN_MAIN_URL=%r;window.EDUPLAN_LOGO=%r;window.EDUPLAN_CAMPUS_PHOTOS={XMUM:%r};" % (
- MAIN_ARTIFACT,uri("assets/img/logo.png","image/png"),uri("assets/img/campus/xmum.jpg","image/jpeg"))
-files=["assets/js/config.js","lab/lab-config.js","assets/js/faculty-data.js","assets/js/quiz-data.js","lab/lab-zh.js","lab/lab.js","assets/js/chat-knowledge.js","assets/js/chat.js","assets/js/i18n.js"]
+settings="window.EDUPLAN_MAIN_URL=%r;window.EDUPLAN_LOGO=%r;window.EDUPLAN_CAMPUS_PHOTOS={XMUM:%r};window.EDUPLAN_FOUNDER_PHOTO=%r;" % (
+ MAIN_ARTIFACT,uri("assets/img/logo.png","image/png"),uri("assets/img/campus/xmum.jpg","image/jpeg"),uri("assets/img/founder.jpg","image/jpeg"))
+files=["assets/js/config.js","lab/lab-config.js","lab/lab-about.js","assets/js/faculty-data.js","assets/js/quiz-data.js","lab/lab-zh.js","lab/lab.js","assets/js/chat-knowledge.js","assets/js/chat.js","assets/js/i18n.js"]
 js=settings+"\n"+"\n".join(open(f).read() for f in files)
 assert "EDUPLAN_SHEET_DATA=" not in js
 out=('<title>Eduplan Lab</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap">\n'
