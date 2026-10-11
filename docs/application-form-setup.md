@@ -71,6 +71,8 @@ In the master sheet: **Extensions > Apps Script**.
 5. Choose the function `applyTest` and click **Run**. Allow the permissions (Drive, Sheets, PDF conversion, and Mail if you set
    `APPLY_NOTIFY_EMAIL`). The log shows `{"ok":true,"ref":"EDU-..."}`; the test PDF appears in
    **Eduplan Applications (private)/Unassigned** (the test has no school) and the sheet in **Eduplan Applications (private)**.
+   Open the test PDF: its last page should show a blue-and-white striped picture captioned "NRIC or passport" (the test
+   document photo). If the stripes are missing, check **Executions** for "PDF with photos failed".
    Delete the TEST row and folder.
 6. **Deploy > Manage deployments > Edit > Version: New version > Deploy.** The `/exec` URL stays the same.
 

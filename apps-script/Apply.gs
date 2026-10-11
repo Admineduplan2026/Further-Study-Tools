@@ -173,11 +173,14 @@ function applySubmit_(body) {
 }
 
 /* Run from the Apps Script editor (select applyTest, Run) to create the folder and sheet and store one test application.
-   Delete the TEST row and folder afterwards. */
+   The test includes a blue-and-white striped picture as the "NRIC or passport" photo: open the test PDF and check that
+   the stripes appear on the last page. Delete the TEST row and folder afterwards. */
+var APPLY_TEST_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAPAAAAB4CAIAAABD1OhwAAACOklEQVR42u3dwQnDQBAEwXk7WMXlLO0cJARHU8v+CyaB3uf63v7fg+Ny33BnZW7JnZW5JXdW5pbcWZlbcmdlbsmdlbkld1bmltxZmVtyZ2VuyZ2VuSV3VuaW3FmZW3JnZW7JnZW5JXdW5pbcWZlbcmdlbsmdlbkld1bmltxZmVtyZ2VuyZ2VuSV3VuaW3FmZW3JnZW7JnZW5JXdW5pbcWZlbcmdlbsmdlbkld1bmltxZmVtyZ2VuyZ2VuSV3VuaW3FmZW3JnZW7JnZW5JXdW5pbcWZlbcnUKuSlXp5CbcnUKuSlXp5CbcnUKuSlXp5CbcnUKuSlXp5CrU2hl7qmuTiE35eoUclOuTiE35eoUclOuTiE35eoUclOuTiE35eoUclOuTiE35eoUclOuTiE35eoUclOuTiE35eoUclOuTiE35eoUclOuTiE35eoUclOuTiFXp9DK3FNdnUJuytUp5KZcnUJuytUp5KZcnUJuytUp5KZcnUJuytUp5KZcnUJuytUp5KZcnUJuytUp5KZcnUJuytUp5KZcnUJuytUp5KZcnUJuytUp5KZcnUKuTqGVuae6OoXclKtTyE25OoXclKtTyE25OoXclKtTyE25OoXclKtTyE25OoXclKtTyE25OoXclKtTyE25OoXclKtTyE25OoXclKtTyE25OoXclKtTyE25OoVcnUIrc091dQq5KVenkJtydQq5KVenkJtydQq5KVenkJtydQq5KVenkJtydQq5KVenkJty/8uzbMoSUlp+AAAAAElFTkSuQmCC';
 function applyTest() {
   console.log(JSON.stringify(applySubmit_({
     summary: 'EDUPLAN APPLICATION\n(test from the Apps Script editor)',
     fields: { name: 'TEST APPLICANT', mobile: '000', programme: 'Test programme', university: 'TEST' },
-    files: [{ doc: 'test', type: 'application/pdf', data: Utilities.base64Encode('%PDF-1.4\n%%EOF') }]
+    files: [{ doc: 'ic', type: 'image/png', data: APPLY_TEST_PNG },
+      { doc: 'test', type: 'application/pdf', data: Utilities.base64Encode('%PDF-1.4\n%%EOF') }]
   })));
 }
