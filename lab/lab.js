@@ -85,7 +85,7 @@ function applyState(){var a=ss("eduplan-apply");return a&&a.v&&a.v.prog?a:(S.ser
 
 /* Portfolio sync: the same per-section "newest wins" rule as the main site (apps-script/Account.gs). */
 var API=window.EDUPLAN_API_URL,live=!!(API&&window.fetch&&!PREVIEW),dirty={},timer=null;
-function touch(k){S.at[k]=Date.now();ls("eduplan-at",S.at);if(!S.session||!live)return;dirty[k]=true;clearTimeout(timer);timer=setTimeout(flush,1500);}
+function touch(k){S.at=ls("eduplan-at")||S.at;S.at[k]=Date.now();ls("eduplan-at",S.at);if(!S.session||!live)return;dirty[k]=true;clearTimeout(timer);timer=setTimeout(flush,1500);}
 function section(k){var at=S.at[k]||0;
  if(k==="saved")return {ids:S.saved.slice(),at:at};
  if(k==="search")return {q:S.search,sch:S.sch,mode:L.mode,at:at};
@@ -161,30 +161,34 @@ function quizSave(){ls("eduplan-quiz",S.quiz);touch("quiz");}
 
 /* ---------- Pieces ---------- */
 function cover(u,big){var ph=CAMPUS_PHOTOS[u.id];
- return '<span class="cover'+(big?" big":"")+(ph?"":" art")+'" aria-hidden="true"'+(ph?' style="background-image:url(\''+esc(ph)+'\')"':' style="--h:'+(u.id.charCodeAt(0)*37%360)+'"')+'>'+(ph?"":'<b>'+esc(u.name.slice(0,6))+'</b>')+'</span>';}
+ return '<span class="cover'+(big?" lg":"")+(ph?"":" art")+'" aria-hidden="true"'+(ph?' style="background-image:url(\''+esc(ph)+'\')"':' style="--h:'+(u.id.charCodeAt(0)*37%360)+'"')+'>'+(ph?"":'<b>'+esc(u.name.slice(0,6))+'</b>')+'</span>';}
 function feeLine(p){
  if(p.fee!=null)return '<span class="fee"><b>'+esc(rm(p.fee))+'</b><span class="hint">whole programme</span></span>';
  if(p.annual.length)return '<span class="fee"><b>'+esc(p.annual[0].split(";")[0])+'</b><span class="hint">per year</span></span>';
  return '<span class="fee tbc">Fee to be confirmed</span>';}
-function heartBtn(id){var on=S.saved.indexOf(id)>=0;return '<button type="button" class="heart" data-save="'+esc(id)+'" aria-pressed="'+on+'" aria-label="'+(on?"Remove from saved":"Save programme")+'">'+HEART+'</button>';}
-function mainLink(hash){return PREVIEW?MAIN:MAIN+hash;}
+function heartBtn(id){var on=S.saved.indexOf(id)>=0;return '<button type="button" class="heart" data-lsave="'+esc(id)+'" aria-pressed="'+on+'" aria-label="'+(on?"Remove from saved":"Save programme")+'">'+HEART+'</button>';}
+function mainLink(hash){return hash;}   /* the main app runs in this page */
+function cardFlow(){return /^inst:/.test(S.search.where||"")?"universities":"faculty";}
 function card(p,why){
- var w=bestWaiver(p);
+ var w=bestWaiver(p),note=esc("Interested in: "+p.name+" ("+p.inst.name+").");
  return '<article class="pcard">'+cover(p.inst)+heartBtn(p.id)+
   '<div class="pbody"><span class="pinst">'+esc(p.inst.name)+(p.inst.city?' · '+esc(p.inst.city):'')+'</span>'+
   '<h3><button type="button" class="plink" data-detail="'+esc(p.id)+'">'+esc(p.name)+'</button></h3>'+
   '<div class="pills">'+pill(levelName(p.lk)||p.level)+(p.years!=null?pill(years(p.years)):"")+(p.mqa?pill("MQA registered","ok"):"")+'</div>'+
   (w!=null?'<span class="perk">Scholarship up to '+w+'% tuition waiver</span>':'')+(why?'<span class="why">'+esc(why)+'</span>':'')+
-  '<div class="pfoot">'+feeLine(p)+'<div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Free consultation</a>'+
-  '<a class="btn sm" href="'+esc(mainLink("#apply/"+p.id))+'">Apply now</a></div></div></div></article>';
+  '<div class="pfoot">'+feeLine(p)+'<div class="pact"><a class="btn ghost sm" href="#consultation" data-topic="Choosing a university" data-note="'+note+'">Free consultation</a>'+
+  '<a class="btn sm" href="#next/'+esc(p.id)+'" data-lflow="'+cardFlow()+'">Apply now</a></div></div></div></article>';
 }
 
 /* ---------- Views ---------- */
+/* On the main app's pages the switch shows the route being followed (scholarship pages: Scholarship based). */
+function shownMode(){if(L.view!=="app")return L.mode;var f="";try{f=sessionStorage.getItem("eduplan-flow")||"";}catch(e){}
+ return f==="scholarships"?"scholarship":/^#guided/.test(location.hash)?"guidance":f?"interest":L.mode;}
 function topbar(){
  var n=S.saved.length,a=applyState(),em=S.session&&S.session.email;
  return '<div class="bar"><a class="logo" href="#home" aria-label="Eduplan Lab home"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan"></a>'+
   '<div class="modewrap"><span class="mq" id="mode-q">Where does your study journey start?</span>'+
-  '<div class="modes" role="radiogroup" aria-labelledby="mode-q">'+MODES.map(function(m){return '<button type="button" role="radio" data-mode="'+m[0]+'" aria-checked="'+(L.mode===m[0])+'">'+ICONS[m[0]]+'<span>'+esc(m[1])+'</span></button>';}).join("")+'</div></div>'+
+  '<div class="modes" role="radiogroup" aria-labelledby="mode-q">'+MODES.map(function(m){return '<button type="button" role="radio" data-mode="'+m[0]+'" aria-checked="'+(shownMode()===m[0])+'">'+ICONS[m[0]]+'<span>'+esc(m[1])+'</span></button>';}).join("")+'</div></div>'+
   '<nav class="tools" aria-label="Account">'+
    '<span class="cur" title="Fees are shown in Malaysian ringgit" data-notr>MYR</span>'+
    '<a class="tl" href="#saved">'+HEART+'<span class="tlt">Saved</span>'+(n?'<span class="count">'+n+'</span>':'')+'</a>'+
@@ -205,7 +209,7 @@ function searchBox(){
  if(L.mode==="guidance")return quizBox();
  var s=S.search;
  return '<form class="sbox" id="search-form" novalidate><div class="sfields">'+
-  '<label class="sf wide" for="q-what"><span class="sl">What do you want to study?</span><input id="q-what" list="q-what-list" autocomplete="off" placeholder="Business, IT, nursing …" value="'+esc(s.fac?facLabel(s.fac):s.what)+'"'+(s.fac?' data-fac="'+esc(s.fac)+'"':'')+'>'+
+  '<label class="sf wide" for="q-what"><span class="sl">What do you want to study?</span><input id="q-what" list="q-what-list" autocomplete="off" placeholder="Business, IT, nursing …" value="'+esc(s.fac?facLabel(s.fac):s.what)+'"'+(s.fac?' data-lfac="'+esc(s.fac)+'"':'')+'>'+
   '<datalist id="q-what-list">'+whatList().map(function(t){return '<option value="'+esc(t)+'">';}).join("")+'</datalist></label>'+
   sel("q-where","Where",whereOptions(),s.where)+
   sel("q-level","Study level",[["","Any level"]].concat(LEVELS),s.level)+
@@ -216,16 +220,16 @@ function searchBox(){
 }
 function quizBox(){
  var Q=QUIZ.questions,n=Q.length,q=S.quiz,picks=quizResult();
- if(L.quizStep==null&&picks.length)return '<div class="sbox quiz"><span class="sl">Faculties that suit your interests</span><div class="chips">'+picks.map(function(c){return '<button type="button" class="chip big" data-fac="'+esc(c)+'">'+esc(facLabel(c))+' '+ARROW+'</button>';}).join("")+'</div>'+
-  '<div class="qrow"><button type="button" class="go" data-fac="'+esc(picks[0])+'">'+SEARCH+'<span>See matching courses</span></button><button type="button" class="linkbtn" data-act="quiz-again">Take the quiz again</button></div></div>';
+ if(L.quizStep==null&&picks.length)return '<div class="sbox quiz"><span class="sl">Faculties that suit your interests</span><div class="lchips">'+picks.map(function(c){return '<button type="button" class="lchip big" data-lfac="'+esc(c)+'">'+esc(facLabel(c))+' '+ARROW+'</button>';}).join("")+'</div>'+
+  '<div class="qrow"><button type="button" class="go" data-lfac="'+esc(picks[0])+'">'+SEARCH+'<span>See matching courses</span></button><button type="button" class="linkbtn" data-act="quiz-again">Take the quiz again</button></div></div>';
  if(L.quizStep==null)return '<div class="sbox quiz"><p class="qlead">Not sure what to study? Answer 12 quick questions about what you enjoy and we suggest faculties and courses.</p>'+
   '<div class="qrow"><button type="button" class="go" data-act="quiz-start">'+ICONS.guidance+'<span>'+(q.answers.filter(function(v){return v!=null;}).length&&q.step<n?"Continue the quiz":"Start the 12 questions")+'</span></button></div></div>';
  var i=L.quizStep,cur=q.answers[i],tie=i>=n;
  if(tie){var r=guidedScore(q.answers,null),two=r.order.slice(0,2);
   return '<div class="sbox quiz"><span class="sl">One last question</span><h2 class="qq">If you could only choose one of these for the next 3 years, which would you pick?</h2><div class="qopts">'+
-   two.map(function(c){return '<button type="button" class="qopt" data-tie="'+esc(c)+'">'+esc(facLabel(c))+'</button>';}).join("")+'</div></div>';}
+   two.map(function(c){return '<button type="button" class="qopt" data-ltie="'+esc(c)+'">'+esc(facLabel(c))+'</button>';}).join("")+'</div></div>';}
  return '<div class="sbox quiz"><div class="qbar" aria-hidden="true"><i style="width:'+Math.round(i/n*100)+'%"></i></div><span class="sl">Question '+(i+1)+' of '+n+'</span>'+
-  '<h2 class="qq" id="qq">'+esc(Q[i].q)+'</h2><div class="qopts" role="group" aria-labelledby="qq">'+Q[i].a.map(function(a,k){return '<button type="button" class="qopt" data-ans="'+k+'" aria-pressed="'+(cur===k)+'">'+esc(a[0])+'</button>';}).join("")+'</div>'+
+  '<h2 class="qq" id="qq">'+esc(Q[i].q)+'</h2><div class="qopts" role="group" aria-labelledby="qq">'+Q[i].a.map(function(a,k){return '<button type="button" class="qopt" data-lans="'+k+'" aria-pressed="'+(cur===k)+'">'+esc(a[0])+'</button>';}).join("")+'</div>'+
   '<div class="qrow"><button type="button" class="btn ghost sm" data-act="quiz-back"'+(i===0?" disabled":"")+'>Back</button></div></div>';
 }
 function hero(){
@@ -246,11 +250,11 @@ function popular(){
  var unis=D.inst.filter(function(u){return u.progs||u.sch;}).sort(function(a,b){return b.progs-a.progs;});
  var facs=FAC.fields.map(function(f){return {f:f,n:D.progs.filter(function(p){return p.fac===f;}).length};}).filter(function(x){return x.n;}).sort(function(a,b){return b.n-a.n;});
  return '<section class="sec"><div class="sh"><h2>Popular universities</h2><span class="hint">Malaysia</span></div><div class="hscroll">'+unis.map(function(u){
-   return '<button type="button" class="dest" data-where="inst:'+esc(u.id)+'">'+cover(u,true)+'<span class="dn">'+esc(u.name)+'</span><span class="dm">'+esc([u.city,u.state].filter(Boolean).join(", ")||u.type||"")+'</span>'+
-    '<span class="dc"><span>'+(u.progs?plural(u.progs,"programme","programmes"):"Programmes coming soon")+'</span>'+(u.sch?' · <span>'+plural(u.sch,"scholarship tier","scholarship tiers")+'</span>':'')+'</span></button>';}).join("")+'</div></section>'+
+   return '<a class="dest" href="#universities/'+esc(u.id.toLowerCase())+'" data-lflow="universities">'+cover(u,true)+'<span class="dn">'+esc(u.name)+'</span><span class="dm">'+esc([u.city,u.state].filter(Boolean).join(", ")||u.type||"")+'</span>'+
+    '<span class="dc"><span>'+(u.progs?plural(u.progs,"programme","programmes"):"Programmes coming soon")+'</span>'+(u.sch?' · <span>'+plural(u.sch,"scholarship tier","scholarship tiers")+'</span>':'')+'</span></a>';}).join("")+'</div></section>'+
  '<section class="sec"><div class="sh"><h2>Popular fields of study</h2></div><div class="majors">'+facs.map(function(x){var unis=uniq(D.progs.filter(function(p){return p.fac===x.f;}).map(function(p){return p.inst;})).length;
-   return '<button type="button" class="major" data-fac="'+esc(x.f.code)+'" style="--h:'+((Number(x.f.code)*33+190)%360)+'"><span class="mc" aria-hidden="true">'+esc(x.f.code)+'</span><span class="mn">'+esc(x.f.name)+'</span><span class="mz">'+esc(x.f.zh)+'</span>'+
-    '<span class="dc"><span>'+plural(unis,"university","universities")+'</span> · <span>'+plural(x.n,"programme","programmes")+'</span></span></button>';}).join("")+'</div></section>';
+   return '<a class="major" href="#faculty/'+esc(x.f.code)+'" data-lflow="faculty" style="--h:'+((Number(x.f.code)*33+190)%360)+'"><span class="mc" aria-hidden="true">'+esc(x.f.code)+'</span><span class="mn">'+esc(x.f.name)+'</span><span class="mz">'+esc(x.f.zh)+'</span>'+
+    '<span class="dc"><span>'+plural(unis,"university","universities")+'</span> · <span>'+plural(x.n,"programme","programmes")+'</span></span></a>';}).join("")+'</div></section>';
 }
 function daysLeft(s){var d=new Date(s);if(!s||isNaN(d))return null;return Math.ceil((d-new Date())/864e5);}
 function offers(){
@@ -264,10 +268,10 @@ function offers(){
   extra.map(function(o){var dl=daysLeft(o.deadline);return '<a class="offer" href="'+esc(o.url||"#home")+'"'+(o.url?' target="_blank" rel="noopener"':'')+'><span class="ok2">'+esc(o.tag||"Offer")+'</span><span class="on">'+esc(o.title)+'</span><span class="oi">'+esc(o.institution||"")+'</span>'+
    (dl!=null&&dl>=0?'<span class="cd">'+(dl===0?"Closes today":plural(dl,"day","days")+" left")+'</span>':'')+'</a>';}).join("")+
   list.map(function(g){var dl=daysLeft(g.deadline),lv=schLevel(g.s.applies);
-   return '<button type="button" class="offer" data-schinst="'+esc(g.s.inst.id)+'" data-schlevel="'+esc(lv==="undergraduate"?"undergraduate":"foundation")+'"><span class="ok2">'+esc(g.s.inst.name)+'</span>'+
+   return '<a class="offer" href="#scholarships-campus/'+esc(g.s.inst.id.toLowerCase())+'"><span class="ok2">'+esc(g.s.inst.name)+'</span>'+
     '<span class="on">'+(g.best!=null?'Up to '+g.best+'% tuition waiver':esc(g.s.name))+'</span><span class="oi">'+esc(g.s.name)+(g.s.applies?' · '+esc(g.s.applies.split(" Offered")[0]):'')+'</span>'+
     '<span class="oq">'+g.quals.slice(0,4).map(function(q){return pill(q);}).join("")+'</span>'+
-    (dl!=null&&dl>=0?'<span class="cd">'+(dl===0?"Closes today":plural(dl,"day","days")+" left")+'</span>':'<span class="hint">Deadline: check with the university</span>')+'</button>';}).join("")+'</div></section>';
+    (dl!=null&&dl>=0?'<span class="cd">'+(dl===0?"Closes today":plural(dl,"day","days")+" left")+'</span>':'<span class="hint">Deadline: check with the university</span>')+'</a>';}).join("")+'</div></section>';
 }
 function recommended(){
  var picks=quizResult(),q=S.search,scored=D.progs.map(function(p){var sc=0,why="";
@@ -292,10 +296,10 @@ function home(){return hero()+'<div class="page">'+continueRow()+(L.mode==="guid
 function resultsView(){
  var q=S.search,r=results(q);
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+
-  '<div class="chips">'+summary(q).map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
+  '<div class="lchips">'+summary(q).map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
   '<div class="page"><div class="rtools"><h1 class="rh">'+plural(r.list.length,"programme","programmes")+'</h1>'+
   sel("r-sort","Sort by",[["match","Best match"],["short","Shortest duration"],["fee","Lowest fee"]],L.sort)+'</div>'+
-  (r.noFee&&!L.showNoFee?'<div class="note">'+plural(r.noFee,"programme has","programmes have")+' no fee listed yet, so the budget filter left '+(r.noFee===1?"it":"them")+' out. <button type="button" class="linkbtn" data-act="show-nofee">Show '+(r.noFee===1?"it":"them")+'</button></div>':'')+
+  (r.noFee&&!L.showNoFee?'<div class="lnote">'+plural(r.noFee,"programme has","programmes have")+' no fee listed yet, so the budget filter left '+(r.noFee===1?"it":"them")+' out. <button type="button" class="linkbtn" data-act="show-nofee">Show '+(r.noFee===1?"it":"them")+'</button></div>':'')+
   (r.list.length?'<div class="cards">'+r.list.map(function(p){return card(p);}).join("")+'</div>'
    :'<div class="empty">No programmes match all of these. Try another field of study, a different level, or any start date. <button type="button" class="linkbtn" data-act="home">Change search</button></div>')+'</div>';
 }
@@ -303,14 +307,14 @@ function schResults(){
  var q=S.sch,rows=D.sch.filter(function(s){if(q.inst&&s.inst.id!==q.inst)return false;var l=schLevel(s.applies);return (!l||l===q.level)&&s.qual===q.qual;});
  var groups={},order=[];rows.forEach(function(s){var k=s.inst.id+"|"+s.name+"|"+s.applies;if(!groups[k]){groups[k]={s:s,tiers:[]};order.push(k);}groups[k].tiers.push(s);});
  var fnd=q.level==="foundation"||q.level==="undergraduate"?D.fnd:[];
- return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">Change search</button><div class="chips">'+
-  [q.qual,q.level==="foundation"?"Foundation":"Undergraduate degree",q.inst?(D.inst.filter(function(u){return u.id===q.inst;})[0]||{}).name:"All universities"].map(function(t){return '<span class="chip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
+ return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">Change search</button><div class="lchips">'+
+  [q.qual,q.level==="foundation"?"Foundation":"Undergraduate degree",q.inst?(D.inst.filter(function(u){return u.id===q.inst;})[0]||{}).name:"All universities"].map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
   '<div class="page"><h1 class="rh">'+plural(order.length,"campus scholarship","campus scholarships")+'</h1>'+
   (order.length?'<div class="cards">'+order.map(function(k){var g=groups[k],u=g.s.inst,best=null;g.tiers.forEach(function(t){if(t.waiver!=null&&(best==null||t.waiver>best))best=t.waiver;});
    return '<article class="pcard sch">'+cover(u)+'<div class="pbody"><span class="pinst">'+esc(u.name)+'</span><h3>'+esc(g.s.name)+'</h3>'+(g.s.applies?'<span class="hint">'+esc(g.s.applies)+'</span>':'')+
     '<table class="tiers"><thead><tr><th scope="col">'+esc(q.qual)+' result</th><th scope="col">Award</th></tr></thead><tbody>'+g.tiers.map(function(t){return '<tr><td>'+esc(t.min)+'</td><td><b>'+(t.waiver!=null?t.waiver+'%':t.amount!=null?esc(rm(t.amount)):'-')+'</b></td></tr>';}).join("")+'</tbody></table>'+
     '<div class="pfoot"><span class="fee">'+(best!=null?'<b>Up to '+best+'%</b><span class="hint">tuition waiver</span>':'')+'</span><div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Free consultation</a>'+
-    (u.progs?'<button type="button" class="btn sm" data-where="inst:'+esc(u.id)+'">See programmes</button>':'')+'</div></div></div></article>';}).join("")+'</div>'
+    (u.progs?'<a class="btn sm" href="#universities/'+esc(u.id.toLowerCase())+'" data-flow="scholarships">See programmes</a>':'')+'</div></div></div></article>';}).join("")+'</div>'
    :'<div class="empty">No campus scholarship in our data matches '+esc(q.qual)+' at this level yet. A counsellor can check other options with you. <a class="linkbtn" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div>')+
   (fnd.length?'<h2 class="rh2">Other scholarships open to all students</h2><div class="cards">'+fnd.map(function(f){return '<article class="pcard sch"><div class="pbody"><span class="pinst">'+esc(f.org||"Scholarship")+'</span><h3>'+esc(f.name)+'</h3>'+
     '<ul class="req">'+f.req.slice(0,5).map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul><div class="pfoot"><span class="fee">'+(f.award?'<b>'+esc(f.award)+'</b>':'')+'</span><div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Ask a counsellor</a></div></div></div></article>';}).join("")+'</div>':'')+'</div>';
@@ -328,30 +332,16 @@ function menu(){
    :'<span class="mguest">You are not signed in.</span><a class="btn sm" href="'+esc(mainLink("#portfolio"))+'">Sign in</a>')+'</div>'+
   item("#portfolio","My portfolio","Saved programmes, quiz result and application")+
   item("#about","About us","Who we are and how we guide you")+
+  '<span class="mlabel">Explore</span>'+
+  item("#faculty","Faculties","Choose a faculty, then a course")+
+  item("#universities","Universities","Programmes by university and level")+
+  item("#scholarships","Scholarships","Scholarship types and requirements")+
+  item("#accommodation","Accommodation","")+
+  '<span class="mlabel">My plan</span>'+
   item("#saved","Saved programmes",n?plural(n,"programme","programmes"):"")+
-  item(mainLink("#apply"),"My applications","")+
-  item(mainLink("#consultation"),"Book a free consultation","")+
+  item("#apply","My applications","")+
+  item("#consultation","Book a free consultation","")+
   '</nav>';
-}
-function portfolioView(){
- var em=S.session&&S.session.email,list=S.saved.map(prog).filter(Boolean),a=applyState(),ap=a&&prog(a.v.prog),picks=quizResult(),cons=ls("eduplan-consult")||{},
-  answered=(S.quiz.answers||[]).filter(function(v){return v!=null;}).length,n=QUIZ.questions.length;
- var app=a&&a.sent?'<div class="note okn">Application sent. Your reference number is <b data-notr>'+esc(a.sent)+'</b>.</div>'
-  :ap?'<span class="pinst">'+esc(ap.inst.name)+'</span><h3>'+esc(ap.name)+'</h3><div class="meter" aria-hidden="true"><i style="width:'+Math.max(6,a.complete?100:Math.round(((a.step||1)-1)/6*100))+'%"></i></div>'+
-   '<span class="hint">'+(a.complete?'Ready to send':'Part '+(a.step||1)+' of 6')+'</span><div class="pact"><a class="btn sm" href="'+esc(mainLink("#apply"))+'">Continue my application</a></div>'
-  :'<p class="muted">Not started. Choose a programme, then tap Apply now.</p>';
- var quiz=picks.length?'<div class="chips">'+picks.map(function(c){return '<button type="button" class="chip" data-fac="'+esc(c)+'">'+esc(facLabel(c))+'</button>';}).join("")+'</div>'
-  :'<p class="muted">'+(answered&&S.quiz.step<n?answered+' of '+n+' questions answered.':'Not taken yet.')+'</p><div class="pact"><button type="button" class="btn ghost sm" data-mode="guidance">'+(answered&&S.quiz.step<n?'Continue the quiz':'Start the quiz')+'</button></div>';
- return '<div class="page"><section class="phead"><span class="pinst">My portfolio</span><h1 class="rh">'+(em?'Your Eduplan portfolio':'Your progress on this device')+'</h1>'+
-  (em?'<p class="muted">Signed in as <b data-notr>'+esc(em)+'</b>. Your progress is saved to your portfolio.</p>'
-   :'<p class="muted">Sign in to keep your saved programmes, quiz result and application on any device.</p><div class="pact"><a class="btn" href="'+esc(mainLink("#portfolio"))+'">Sign in</a></div>')+'</section>'+
-  '<section class="sec"><div class="sh"><h2>Saved programmes</h2></div>'+(list.length?'<div class="cards">'+list.map(function(p){return card(p);}).join("")+'</div>'
-   :'<div class="empty">Tap the heart on any programme to keep it here. <button type="button" class="linkbtn" data-act="home">Start searching</button></div>')+'</section>'+
-  '<div class="pgrid"><section class="box"><h2>Interest quiz</h2>'+quiz+'</section><section class="box"><h2>Application</h2>'+app+'</section>'+
-  '<section class="box"><h2>Free consultation</h2>'+(cons["cons-name"]?'<dl class="facts"><dt>Name</dt><dd>'+esc(cons["cons-name"])+'</dd><dt>Topic</dt><dd>'+esc(cons["cons-topic"]||"")+'</dd></dl>':'<p class="muted">No request yet.</p>')+
-   '<div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">'+(cons["cons-name"]?'Open my request':'Book a free consultation')+'</a></div></section>'+
-  (em?'<section class="box"><h2>Account</h2><p class="muted">Signing out removes your details from this browser. Please sign out on a shared computer.</p><div class="pact"><button type="button" class="btn ghost sm" data-act="signout">Sign out</button>'+
-   '<a class="btn ghost sm" href="'+esc(mainLink("#portfolio"))+'">Manage or delete my portfolio</a></div></section>':'')+'</div></div>';
 }
 function aboutView(){
  var A=window.EDUPLAN_ABOUT;if(!A)return '<div class="page"><div class="empty">About us is not available.</div></div>';
@@ -360,10 +350,10 @@ function aboutView(){
  function tl(label,rows){return rows&&rows.length?'<div class="tl2"><h3>'+esc(label)+'</h3><ol>'+rows.map(function(r){return '<li><b>'+esc(r.title)+'</b><span>'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';}
  return '<section class="hero about"><div class="hwrap"><span class="ok3">About us</span><h1>We lead students to the right place to study</h1>'+
   '<p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></div></section>'+
-  '<div class="page"><div class="pgrid"><section class="box"><span class="pinst">Our vision</span><p class="big">'+esc(A.vision)+'</p><ul class="vp">'+A.points.map(function(v){return '<li><b>'+esc(v[0])+'</b><span>'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
-  '<section class="box"><span class="pinst">Our mission</span><p class="big">'+esc(A.mission)+'</p><ol class="jr">'+A.journey.map(function(j){var g=go[j[2]];
+  '<div class="page"><div class="pgrid"><section class="box"><span class="pinst">Our vision</span><p class="lbig">'+esc(A.vision)+'</p><ul class="vp">'+A.points.map(function(v){return '<li><b>'+esc(v[0])+'</b><span>'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
+  '<section class="box"><span class="pinst">Our mission</span><p class="lbig">'+esc(A.mission)+'</p><ol class="jr">'+A.journey.map(function(j){var g=go[j[2]];
    return '<li>'+(g?'<button type="button" class="jlink" '+g+'>':'<a class="jlink" href="'+esc(mainLink(j[2]))+'">')+'<b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span>'+(g?'</button>':'</a>')+'</li>';}).join("")+'</ol></section></div>'+
-  '<section class="sec"><div class="sh"><h2>Meet our founder</h2></div><div class="founder">'+(photo?'<img src="'+esc(photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan">':'')+
+  '<section class="sec"><div class="sh"><h2>Meet our founder</h2></div><div class="lfounder">'+(photo?'<img src="'+esc(photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan">':'')+
    '<div class="fbody"><span class="pinst">'+esc(f.role)+'</span><h3>'+esc(f.name)+'</h3><p class="muted">'+esc(f.bio)+'</p>'+
    '<div class="pact">'+(f.facebook?'<a class="btn ghost sm" href="'+esc(f.facebook)+'" target="_blank" rel="noopener">Facebook</a>':'')+'<a class="btn sm" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div></div>'+
    '<div class="fcv">'+tl("Career",f.career)+tl("Education",f.education)+'</div></div></section>'+trust()+'</div>';
@@ -374,13 +364,13 @@ function detailSheet(){
   '<button type="button" class="x" data-act="close" aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>'+
   cover(p.inst,true)+'<div class="sbody"><span class="pinst">'+esc(p.inst.full)+'</span><h2 id="sheet-h">'+esc(p.name)+'</h2>'+
   '<div class="pills">'+pill(levelName(p.lk)||p.level)+(p.years!=null?pill(years(p.years)):"")+(p.mqa?pill("MQA "+p.mqa,"ok"):"")+'</div>'+
-  '<dl class="facts"><dt>Tuition fee</dt><dd>'+(p.fee!=null?esc(rm(p.fee))+' (whole programme)':p.annual.length?p.annual.map(esc).join("<br>")+' (per year)':'To be confirmed')+'</dd>'+
+  '<dl class="lfacts"><dt>Tuition fee</dt><dd>'+(p.fee!=null?esc(rm(p.fee))+' (whole programme)':p.annual.length?p.annual.map(esc).join("<br>")+' (per year)':'To be confirmed')+'</dd>'+
   (p.intakes?'<dt>Intakes</dt><dd>'+esc(p.intakes)+'</dd>':'')+'<dt>Location</dt><dd>'+esc(p.campus||[p.inst.city,p.inst.state].filter(Boolean).join(", ")||"To be confirmed")+'</dd>'+
   (p.english?'<dt>English</dt><dd>'+esc(p.english)+'</dd>':'')+(w!=null?'<dt>Scholarship</dt><dd>Up to '+w+'% tuition waiver</dd>':'')+'</dl>'+
-  '<h3>Entry requirements</h3><dl class="facts">'+p.entry.map(function(e){return '<dt>'+esc(e[0])+'</dt><dd>'+(e[1]?esc(e[1]).replace(/\n/g,"<br>"):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>'+
+  '<h3>Entry requirements</h3><dl class="lfacts">'+p.entry.map(function(e){return '<dt>'+esc(e[0])+'</dt><dd>'+(e[1]?esc(e[1]).replace(/\n/g,"<br>"):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>'+
   (p.notes.length?'<h3>Notes</h3>'+p.notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join(""):'')+
   '</div><div class="sfoot">'+heartBtn(p.id)+(p.url?'<a class="btn ghost sm" href="'+esc(p.url)+'" target="_blank" rel="noopener">Programme page</a>':'')+
-  '<a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Free consultation</a><a class="btn sm" href="'+esc(mainLink("#apply/"+p.id))+'">Apply now</a></div></section>';
+  '<a class="btn ghost sm" href="#consultation" data-topic="Choosing a university" data-note="'+esc("Interested in: "+p.name+" ("+p.inst.name+").")+'">Free consultation</a><a class="btn sm" href="#next/'+esc(p.id)+'" data-lflow="'+cardFlow()+'">Apply now</a></div></section>';
 }
 function help(){
  var wa=window.EDUPLAN_WHATSAPP||"";
@@ -394,12 +384,18 @@ function help(){
 
 /* ---------- Render and events ---------- */
 var top=document.getElementById("top"),app=document.getElementById("app"),helpBox=document.getElementById("helpbox"),sheet=document.getElementById("sheet");
-function route(){var h=(location.hash||"#home").slice(1);L.view={results:"results",saved:"saved",portfolio:"portfolio",about:"about"}[h]||"home";}
-function render(keep){
- route();
+function route(){var h=(location.hash||"#home").slice(1);L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about"}[h]||"home");}
+function chrome(){
+ S.saved=ls("eduplan-saved")||[];S.quiz=ls("eduplan-quiz")||S.quiz;S.session=ls("eduplan-session");if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
  var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"");if(lang)top.querySelector(".bar").appendChild(lang);
- app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="portfolio"?portfolioView():L.view==="about"?aboutView():home();
  helpBox.innerHTML=help();
+}
+if(window.EDUPLAN_HOST)window.EDUPLAN_HOST.rendered=function(){route();chrome();};
+function render(keep){
+ route();chrome();
+ document.body.classList.toggle("lab-own",L.view!=="app");
+ if(L.view==="app"){sheet.innerHTML="";document.body.classList.remove("locked");return;}   /* the main app draws this page */
+ app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():home();
  sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
  if(!keep)window.scrollTo(0,0);
 }
@@ -407,7 +403,7 @@ function go(view){if(location.hash==="#"+view)render();else location.hash="#"+vi
 window.addEventListener("hashchange",function(){L.detail=null;L.menu=false;render();});
 function readSearch(){
  var w=document.getElementById("q-what");if(!w)return;
- var txt=w.value.trim(),fac=w.getAttribute("data-fac");
+ var txt=w.value.trim(),fac=w.getAttribute("data-lfac");
  /* A faculty name typed or picked from the list searches that faculty exactly. */
  var f=FAC.fields.filter(function(x){return x.name.toLowerCase()===txt.toLowerCase();})[0];
  S.search={what:f?"":txt,fac:f?f.code:(fac&&txt===facLabel(fac)?fac:""),where:val("q-where"),level:val("q-level"),budget:val("q-budget"),intake:val("q-intake")};
@@ -417,21 +413,22 @@ function val(id){var e=document.getElementById(id);return e?e.value:"";}
 function setMode(m){L.mode=m;L.quizStep=null;ls("eduplan-lab-mode",m);touch("search");if(L.view!=="home")go("home");else render(true);}
 function openDetail(id){L.detail=id;S.recent=[id].concat(S.recent.filter(function(x){return x!==id;})).slice(0,8);ls("eduplan-lab-recent",S.recent);touch("recent");render(true);
  var s=sheet.querySelector(".sheet");if(s)s.focus();}
-function toggleSave(id){var i=S.saved.indexOf(id);if(i<0)S.saved.push(id);else S.saved.splice(i,1);ls("eduplan-saved",S.saved);touch("saved");render(true);}
+function toggleSave(id){S.saved=ls("eduplan-saved")||[];var i=S.saved.indexOf(id);if(i<0)S.saved.push(id);else S.saved.splice(i,1);ls("eduplan-saved",S.saved);touch("saved");render(true);}
 document.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a,[data-act]");if(!t)return;
- /* In the artifact preview the main site is another page: open it in a new tab. */
- if(t.tagName==="A"&&PREVIEW&&t.getAttribute("href").indexOf(MAIN)===0){t.target="_blank";t.rel="noopener";return;}
+
+ /* Links into the main app's journey remember which route the student is on (its progress bar and Back button). */
+ if(t.hasAttribute("data-lflow")){try{sessionStorage.setItem("eduplan-flow",t.getAttribute("data-lflow"));sessionStorage.setItem("eduplan-last",location.hash||"#home");}catch(e){}return;}
  if(t.hasAttribute("data-mode")){setMode(t.getAttribute("data-mode"));return;}
- if(t.hasAttribute("data-save")){toggleSave(t.getAttribute("data-save"));return;}
+ if(t.hasAttribute("data-lsave")){toggleSave(t.getAttribute("data-lsave"));return;}
  if(t.hasAttribute("data-detail")){openDetail(t.getAttribute("data-detail"));return;}
  if(t.hasAttribute("data-where")){L.mode="interest";ls("eduplan-lab-mode","interest");S.search={what:"",fac:"",where:t.getAttribute("data-where"),level:"",budget:"",intake:""};ls("eduplan-lab-search",S.search);touch("search");L.detail=null;go("results");return;}
- if(t.hasAttribute("data-fac")){if(L.mode==="scholarship"){L.mode="interest";ls("eduplan-lab-mode","interest");}
-  S.search={what:"",fac:t.getAttribute("data-fac"),where:"",level:"",budget:"",intake:""};ls("eduplan-lab-search",S.search);touch("search");L.detail=null;go("results");return;}
+ if(t.hasAttribute("data-lfac")){if(L.mode==="scholarship"){L.mode="interest";ls("eduplan-lab-mode","interest");}
+  S.search={what:"",fac:t.getAttribute("data-lfac"),where:"",level:"",budget:"",intake:""};ls("eduplan-lab-search",S.search);touch("search");L.detail=null;go("results");return;}
  if(t.hasAttribute("data-schinst")){L.mode="scholarship";ls("eduplan-lab-mode","scholarship");S.sch.inst=t.getAttribute("data-schinst");S.sch.level=t.getAttribute("data-schlevel");ls("eduplan-lab-sch",S.sch);go("results");return;}
- if(t.hasAttribute("data-ans")){S.quiz.answers[L.quizStep]=Number(t.getAttribute("data-ans"));var n=QUIZ.questions.length;L.quizStep++;S.quiz.step=L.quizStep;
+ if(t.hasAttribute("data-lans")){S.quiz.answers[L.quizStep]=Number(t.getAttribute("data-lans"));var n=QUIZ.questions.length;L.quizStep++;S.quiz.step=L.quizStep;
   if(L.quizStep>=n){var r=guidedScore(S.quiz.answers,null);S.quiz.tie=null;if(!r.close){L.quizStep=null;S.quiz.step=n;}}quizSave();render(true);return;}
- if(t.hasAttribute("data-tie")){S.quiz.tie=t.getAttribute("data-tie");S.quiz.step=QUIZ.questions.length;L.quizStep=null;quizSave();render(true);return;}
+ if(t.hasAttribute("data-ltie")){S.quiz.tie=t.getAttribute("data-ltie");S.quiz.step=QUIZ.questions.length;L.quizStep=null;quizSave();render(true);return;}
  var act=t.getAttribute("data-act");if(!act)return;
  if(act==="close"){L.detail=null;render(true);}
  else if(act==="home")go("home");

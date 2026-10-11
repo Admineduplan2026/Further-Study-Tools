@@ -11,6 +11,9 @@ var UNIS=[
 ];
 /* Interest quiz: questions, options and faculty points are in assets/js/quiz-data.js. */
 var QUIZ=window.EDUPLAN_QUIZ||{questions:[],rules:{}};
+/* Another page layout can host this app (lab/lab-host.js): it draws its own pages for the routes it owns,
+   and both share the browser storage. Without a host (the main website) nothing below changes. */
+var HOST=window.EDUPLAN_HOST||null;
 
 /* ---------- Helpers ---------- */
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -82,7 +85,7 @@ function timeline(label,rows){
   return '<li data-reveal style="--i:'+k+'"><span class="tl-title">'+esc(r.title)+'</span><span class="tl-org">'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';
 }
 function founderCard(f){
- return '<div class="founder"><div class="avatar">'+(f.photo?'<img src="'+esc(f.photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan">'
+ return '<div class="founder"><div class="avatar">'+(f.photo?'<img src="'+esc(asset(f.photo))+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan">'
    :'<svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="currentColor"/></svg>')+'</div>'+
   '<div class="stack"><span class="eyebrow">'+esc(f.role)+'</span><h3 class="fname">'+esc(f.name)+'</h3>'+
   (f.honours&&f.honours.length?'<div class="meta">'+f.honours.map(function(h){return '<span class="pill brand">'+esc(h)+'</span>';}).join("")+'</div>':'')+
@@ -161,7 +164,8 @@ function uniMeta(u){return '<div class="meta">'+[u.type,u.place].filter(Boolean)
    background, plus a button for its 3D virtual tour (Institutions "virtual_tour_url"). Tour sites usually refuse
    to be embedded in other pages, so the tour opens in a new tab. */
 var CAMPUS_PHOTOS={xmum:"assets/img/campus/xmum.jpg"};
-function uniPhoto(u){return CAMPUS_PHOTOS[String(u.id).toLowerCase()]||"";}
+function asset(p){return p&&HOST&&HOST.assetBase&&!/^(data:|https?:)/.test(p)?HOST.assetBase+p:p;}
+function uniPhoto(u){return asset(CAMPUS_PHOTOS[String(u.id).toLowerCase()]||"");}
 function hasBanner(u){return !!(u.tour||uniPhoto(u));}
 function uniTour(u,title,lead,meta){
  if(!hasBanner(u))return '';
@@ -731,7 +735,7 @@ var PF_ERR={bad_email:"Enter an email like name@example.com.",consent:"Please ti
 var STAR='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg>';
 
 /* Sign-in needs the live website's Apps Script; the Claude artifact preview keeps everything in the browser. */
-function pfGate(){return !PF.s&&!PF.guest;}
+function pfGate(){return !PF.s&&!PF.guest&&!(HOST&&HOST.noGate);}
 function pfLive(){return !!(window.EDUPLAN_API_URL&&window.fetch&&!window.EDUPLAN_SHEET_DATA);}
 function pfPost(body,keep){
  return fetch(window.EDUPLAN_API_URL,{method:"POST",keepalive:!!keep,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(body)})
@@ -763,6 +767,7 @@ function pfUse(d,union){
 }
 /* Called whenever a section changes; saving waits until the student pauses for a moment. */
 function pfTouch(k){
+ PF.at=store(PF_AT)||PF.at;   /* another page may have changed it */
  PF.at[k]=Date.now();store(PF_AT,PF.at);
  if(!PF.s||!pfLive())return;
  PF.dirty=true;clearTimeout(PF.timer);PF.timer=setTimeout(pfFlush,1500);
@@ -993,6 +998,12 @@ function reveal(){
  Array.prototype.forEach.call(app.querySelectorAll("[data-reveal]"),function(el){revealObs.observe(el);});
 }
 function render(keepScroll){
+ if(HOST){
+  if(HOST.owns(location.hash))return;
+  /* The host page may have changed the shared state since this app last drew. */
+  SAVED=store("eduplan-saved")||[];PF.s=store(PF_KEY);if(PF.s&&!(PF.s.token&&PF.s.exp>Date.now()))PF.s=null;
+  S.guide=store("eduplan-quiz")||S.guide;S.cons=store("eduplan-consult")||S.cons;S.flow=sget("eduplan-flow")||S.flow;S.pick=sget("eduplan-pick")||S.pick;
+ }
  var r=route();
  if(r==="faculty")setFlow("faculty");
  else if(r.indexOf("scholarships")===0)setFlow("scholarships");
@@ -1007,6 +1018,7 @@ function render(keepScroll){
  if(navKey===undefined)navKey=r.indexOf("scholarships-")===0?"scholarships":r;
  Array.prototype.forEach.call(document.querySelectorAll("nav.main a"),function(a){if(a.getAttribute("data-nav")===navKey)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
  if(!keepScroll){window.scrollTo(0,0);}
+ if(HOST&&HOST.rendered)HOST.rendered(r);
 }
 function rerender(focusId){render(true);if(focusId){var el=document.getElementById(focusId);if(el)el.focus();}}
 window.addEventListener("hashchange",function(){render(false);app.focus({preventScroll:true});});
