@@ -38,12 +38,15 @@ The student picks an **exam type** and enters their result; the page shows the t
 The previews cannot call the Apps Script, so they carry a snapshot of the sheet data. The daily sync routine
 (05:47 Malaysia time) reads the sheets and refreshes both previews:
 
-- Eduplan: https://claude.ai/artifact/Hwe6DFvyriBQ6sWEVLNQ6J
-- Eduplan Lab: https://claude.ai/artifact/9kZqcodLMZEX6Hzn41o33j
+- Eduplan (official): https://claude.ai/artifact/Hwe6DFvyriBQ6sWEVLNQ6J. Since 12 October 2026 it uses this new layout,
+  built with `--official` (title "Eduplan" and the main site's notice bar). The older layout stays in its version history.
+- Eduplan Lab (trial copy for new ideas): https://claude.ai/artifact/9kZqcodLMZEX6Hzn41o33j
 
-To rebuild the Lab preview after a code change:
+To rebuild both previews after a code change:
 
 ```
+python3 tools/build-lab-artifact.py <scratch>/official-base.html --official
+node tools/sync-artifact.js <sheet-values.json> <scratch>/official-base.html <scratch>/eduplan-official.html
 python3 tools/build-lab-artifact.py <scratch>/lab-base.html
 node tools/sync-artifact.js <sheet-values.json> <scratch>/lab-base.html <scratch>/eduplan-lab.html
 ```

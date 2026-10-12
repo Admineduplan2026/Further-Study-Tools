@@ -208,7 +208,7 @@ function modeInfo(){
 }
 function topbar(){
  var n=S.saved.length,a=applyState(),em=S.session&&S.session.email;
- return '<div class="bar"><a class="logo" href="#home" aria-label="Eduplan Lab home"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan"></a>'+
+ return '<div class="bar"><a class="logo" href="#home" aria-label="Eduplan home"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan"></a>'+
   '<div class="modewrap"><span class="mqrow"><span class="mq" id="mode-q">Where does your study journey start?</span>'+
    '<button type="button" class="info" data-act="info" aria-expanded="'+L.info+'" aria-controls="mode-info" aria-label="How to use this website">!</button></span>'+
   '<div class="modes" role="radiogroup" aria-labelledby="mode-q">'+MODES.map(function(m){return '<button type="button" role="radio" data-mode="'+m[0]+'" aria-checked="'+(shownMode()===m[0])+'">'+ICONS[m[0]]+'<span>'+esc(m[1])+'</span></button>';}).join("")+'</div></div>'+
