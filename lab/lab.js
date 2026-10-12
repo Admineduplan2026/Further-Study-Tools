@@ -203,7 +203,7 @@ function searchBox(){
  if(L.mode==="scholarship"){var q=S.sch,unis=uniq(D.sch.map(function(s){return s.inst;}));
   return '<form class="sbox" id="sch-form" novalidate><div class="sfields three">'+
    sel("s-qual","Your qualification",QUALS.map(function(x){return [x,x];}),q.qual)+
-   sel("s-level","Study level",[["foundation","Foundation"],["undergraduate","Undergraduate degree"]],q.level)+
+   sel("s-level","Study level",[["foundation","Foundation"],["undergraduate","Undergraduate degree"],["others","Others (grants, sports, financial aid)"]],q.level)+
    sel("s-inst","University",[["","All universities"]].concat(unis.map(function(u){return [u.id,u.name];})),q.inst)+
    '</div><button type="submit" class="go">'+SEARCH+'<span>Find scholarships</span></button></form>';}
  if(L.mode==="guidance")return quizBox();
@@ -304,11 +304,12 @@ function resultsView(){
    :'<div class="empty">No programmes match all of these. Try another field of study, a different level, or any start date. <button type="button" class="linkbtn" data-act="home">Change search</button></div>')+'</div>';
 }
 function schResults(){
- var q=S.sch,rows=D.sch.filter(function(s){if(q.inst&&s.inst.id!==q.inst)return false;var l=schLevel(s.applies);return (!l||l===q.level)&&(s.qual===q.qual||(s.qual==="Other"&&!l));});   /* "Other": open to every qualification */
+ var q=S.sch,rows=D.sch.filter(function(s){if(q.inst&&s.inst.id!==q.inst)return false;var l=schLevel(s.applies);if(q.level==="others")return !l&&s.qual==="Other";   /* not tied to a study level or a result */
+  return (l===q.level||(!l&&s.qual!=="Other"))&&s.qual===q.qual;});
  var groups={},order=[];rows.forEach(function(s){var k=s.inst.id+"|"+s.name+"|"+s.applies;if(!groups[k]){groups[k]={s:s,tiers:[]};order.push(k);}groups[k].tiers.push(s);});
  var fnd=q.level==="foundation"||q.level==="undergraduate"?D.fnd:[];
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">Change search</button><div class="lchips">'+
-  [q.qual,q.level==="foundation"?"Foundation":"Undergraduate degree",q.inst?(D.inst.filter(function(u){return u.id===q.inst;})[0]||{}).name:"All universities"].map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
+  [q.level==="others"?"":q.qual,q.level==="foundation"?"Foundation":q.level==="others"?"Others":"Undergraduate degree",q.inst?(D.inst.filter(function(u){return u.id===q.inst;})[0]||{}).name:"All universities"].filter(Boolean).map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
   '<div class="page"><h1 class="rh">'+plural(order.length,"campus scholarship","campus scholarships")+'</h1>'+
   (order.length?'<div class="cards">'+order.map(function(k){var g=groups[k],u=g.s.inst,best=null;g.tiers.forEach(function(t){if(t.waiver!=null&&(best==null||t.waiver>best))best=t.waiver;});
    return '<article class="pcard sch">'+cover(u)+'<div class="pbody"><span class="pinst">'+esc(u.name)+'</span><h3>'+esc(g.s.name)+'</h3>'+(g.s.applies?'<span class="hint">'+esc(g.s.applies)+'</span>':'')+

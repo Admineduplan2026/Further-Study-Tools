@@ -16,7 +16,7 @@ window.EDUPLAN_ZH_EXTRA={text:{
  "What do you want to study?":"想读什么？","Business, IT, nursing …":"商业、IT、护理……","Where":"在哪里读","Study level":"学历层次","Budget":"预算","Start date":"入学时间",
  "Anywhere in Malaysia":"马来西亚各地","Any level":"任何层次","Foundation":"预科","Diploma":"文凭","Degree":"学士学位","Master's":"硕士","PhD":"博士",
  "Any budget":"不限预算","Up to RM 30,000":"RM 30,000 以内","RM 30,000 – 60,000":"RM 30,000 – 60,000","RM 60,000 – 100,000":"RM 60,000 – 100,000","Above RM 100,000":"RM 100,000 以上","Any time":"任何时间",
- "Search":"搜索","Find scholarships":"查找奖学金","Your qualification":"你的学历","University":"大学","All universities":"所有大学","Undergraduate degree":"学士课程",
+ "Search":"搜索","Find scholarships":"查找奖学金","Your qualification":"你的学历","University":"大学","All universities":"所有大学","Undergraduate degree":"学士课程","Others (grants, sports, financial aid)":"其他（助学金、运动、经济援助）","Others":"其他","Eligibility":"申请资格",
  "Your last search is filled in.":"已帮你填入上次的搜索。","Clear":"清除",
  "Not sure what to study? Answer 12 quick questions about what you enjoy and we suggest faculties and courses.":"不知道读什么？回答 12 道关于兴趣的小问题，我们为你推荐科系和课程。",
  "Start the 12 questions":"开始 12 道问题","Continue the quiz":"继续测验","Faculties that suit your interests":"适合你兴趣的科系","See matching courses":"查看相关课程","Take the quiz again":"重新测验",

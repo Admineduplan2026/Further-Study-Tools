@@ -245,6 +245,7 @@ var ZH_PATTERNS=[
  [/^RM ([\d,]+) \(Local\); RM ([\d,]+) \(International(, subject to 6% Sales & Service Tax \(SST\))?\)\.( Fees subject to 6% Sales & Service Tax \(SST\)\.)?$/,function(m){return "RM "+m[1]+"（本地生）；RM "+m[2]+"（国际生"+(m[3]?"，另加 6% 销售与服务税":"")+"）。"+(m[4]?"学费另加 6% 销售与服务税。":"");}],
  [/^(\d+) programmes?\. Tap a programme to see fees, entry requirements and scholarships\.$/,"共 $1 个课程。点选课程查看学费、入学条件和奖学金。"],
  [/^Intakes: (.+)$/,"开课月份：$1"],
+ [/^Other scholarships, grants and financial aid at (.+)\.$/,"$1 的其他奖学金、助学金与经济援助。"],
  [/^We emailed a 6-digit code to (.+)\. It expires in 10 minutes\.$/,"验证码已发送到 $1，10 分钟内有效。"],
  [/^(\d+) of (\d+) questions answered\.$/,"已回答 $1／$2 题。"],
  [/^Part (\d+) of (\d+): (.+)$/,function(m){return "第 "+m[1]+" 部分，共 "+m[2]+" 部分："+(tr(m[3])||m[3]);}],
