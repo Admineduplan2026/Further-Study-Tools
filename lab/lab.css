@@ -51,7 +51,7 @@ header.site{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;backgrou
 .lang button[aria-pressed="true"]{background:var(--ink);color:#fff}
 
 /* Buttons and small parts */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:999px;border:1px solid var(--brand);background:var(--brand);color:#fff;font-weight:500;text-decoration:none;cursor:pointer;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:46px;padding:0 22px;border-radius:999px;border:1px solid var(--brand);background:var(--brand);color:#fff;font-weight:500;text-decoration:none;cursor:pointer;max-width:100%;text-align:center}
 .btn:hover{background:var(--brand-ink);border-color:var(--brand-ink)}
 .btn.ghost{background:var(--card);color:var(--ink);border-color:var(--line)}
 .btn.ghost:hover{border-color:var(--ink)}
