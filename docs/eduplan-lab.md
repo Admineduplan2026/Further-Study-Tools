@@ -13,6 +13,26 @@ set-up as the main site, so nothing extra is needed in Drive:
 Edits to a school sheet show on both layouts within about a minute once the Apps Script is deployed
 (docs/google-sheet-api-setup.md). A student who signs in on one layout sees the same portfolio on the other.
 
+## Scholarship matching (Scholarship based)
+
+The student picks an **exam type** and enters their result; the page shows the tier they reach in each campus scholarship.
+
+| Exam type | Result entered | What counts as an A |
+|---|---|---|
+| SPM | number of As (0–12) | A+, A, A- |
+| IGCSE | number of As (0–14) | A*, A |
+| O-Level | number of As (0–12) | A*, A |
+| UEC (Senior Middle 3) | number of As (0–12) | A1, A2 |
+| STPM | number of As (0–5) | A, A- |
+| A-Level | number of As (0–5) | A*, A |
+| Foundation, Matriculation, Diploma | CGPA (0–4) | – |
+
+- A tier is matched only when its `qualification` in the sheet is the same exam type (IGCSE and O-Level are kept apart).
+  A CGPA tier filed under `Foundation` also counts for Matriculation or Diploma when its `minimum_result` names them,
+  e.g. `Foundation/Matriculation/Diploma: CGPA 3.80 and above`.
+- `minimum_result` is read as a number of As (`7As`) or a CGPA (`CGPA 3.70 and above`, `≥CGPA 3.90`, `CGPA 3.80-3.89`).
+  Tiers that count only A+ (`8A+`, `8As (A+ and A only)`) are shown as conditions, never awarded automatically.
+
 ## The Claude artifact previews
 
 The previews cannot call the Apps Script, so they carry a snapshot of the sheet data. The daily sync routine

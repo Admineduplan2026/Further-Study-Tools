@@ -36,7 +36,19 @@ function plural(n,one,many){return n+" "+(n===1?one:many);}
 var LEVELS=[["foundation","Foundation"],["diploma","Diploma"],["degree","Degree"],["master","Master's"],["phd","PhD"]];
 var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 var BUDGETS=[["","Any budget"],["0-30000","Up to RM 30,000"],["30000-60000","RM 30,000 – 60,000"],["60000-100000","RM 60,000 – 100,000"],["100000-","Above RM 100,000"]];
-var QUALS=["SPM","UEC","O-Level","STPM","A-Level","Foundation"];
+/* Exams a student can match scholarships with. kind "as" = counted by the number of A grades (up to max);
+   kind "cgpa" = a CGPA out of 4. "a" lists the grades that count as an A in that exam; lv = the usual next study level. */
+var EXAMS=[
+ {id:"SPM",grp:"Secondary school",kind:"as",max:12,a:"A+, A, A-",lv:"foundation"},
+ {id:"IGCSE",grp:"Secondary school",kind:"as",max:14,a:"A*, A",lv:"foundation"},
+ {id:"O-Level",grp:"Secondary school",kind:"as",max:12,a:"A*, A",lv:"foundation"},
+ {id:"UEC",label:"UEC (Senior Middle 3)",grp:"Secondary school",kind:"as",max:12,a:"A1, A2",lv:"undergraduate"},
+ {id:"STPM",grp:"Pre-university",kind:"as",max:5,a:"A, A-",lv:"undergraduate"},
+ {id:"A-Level",grp:"Pre-university",kind:"as",max:5,a:"A*, A",lv:"undergraduate"},
+ {id:"Foundation",grp:"Foundation, matriculation or diploma (CGPA)",kind:"cgpa",lv:"undergraduate"},
+ {id:"Matriculation",grp:"Foundation, matriculation or diploma (CGPA)",kind:"cgpa",lv:"undergraduate"},
+ {id:"Diploma",grp:"Foundation, matriculation or diploma (CGPA)",kind:"cgpa",lv:"undergraduate"}];
+function exam(id){for(var i=0;i<EXAMS.length;i++)if(EXAMS[i].id===id)return EXAMS[i];return EXAMS[0];}
 var CAMPUS_PHOTOS=window.EDUPLAN_CAMPUS_PHOTOS||{XMUM:"../assets/img/campus/xmum.jpg"};
 var D={inst:[],progs:[],sch:[],fnd:[]};
 function levelKey(l){l=l||"";return /pre-?university|foundation/i.test(l)?"foundation":/diploma/i.test(l)?"diploma":/master/i.test(l)?"master":/phd|doctor/i.test(l)?"phd":/bachelor|degree/i.test(l)?"degree":"";}
@@ -79,6 +91,7 @@ var S={search:ls("eduplan-lab-search")||{},sch:ls("eduplan-lab-sch")||{},recent:
  quiz:ls("eduplan-quiz")||{step:0,answers:[]},session:ls("eduplan-session"),at:ls("eduplan-at")||{}};
 Object.keys(SEARCH0).forEach(function(k){if(S.search[k]==null)S.search[k]=SEARCH0[k];});
 Object.keys(SCH0).forEach(function(k){if(S.sch[k]==null)S.sch[k]=SCH0[k];});
+if(exam(S.sch.qual).id!==S.sch.qual)S.sch.qual="SPM";
 if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
 var hadSearch=!!(S.search.what||S.search.where||S.search.level||S.search.budget||S.search.intake);
 function applyState(){var a=ss("eduplan-apply");return a&&a.v&&a.v.prog?a:(S.serverApply||null);}
@@ -212,7 +225,7 @@ function hello(){var em=S.session&&S.session.email;return em?'Welcome back, <spa
 function searchBox(){
  if(L.mode==="scholarship"){var q=S.sch,unis=uniq(D.sch.map(function(s){return s.inst;}));
   return '<form class="sbox" id="sch-form" novalidate><div class="sfields four">'+
-   sel("s-qual","Your qualification",QUALS.map(function(x){return [x,x==="Foundation"?"Foundation / Matriculation / Diploma":x];}),q.qual,' data-requal')+resultField(q)+
+   examSelect(q.qual)+resultField(q)+
    sel("s-level","Study level",[["foundation","Foundation"],["undergraduate","Undergraduate degree"],["others","Others (grants, sports, financial aid)"]],q.level)+
    sel("s-inst","University",[["","All universities"]].concat(unis.map(function(u){return [u.id,u.name];})),q.inst)+
    '</div><button type="submit" class="go">'+SEARCH+'<span>Find scholarships</span></button></form>';}
@@ -317,11 +330,18 @@ function resultsView(){
    A tier's "minimum_result" in the sheet is read as either a number of A grades ("8As", "4As/average ...") or a
    CGPA ("CGPA 3.75 and above", "≥CGPA 3.9000", "CGPA 3.8000-3.8999"). Anything else cannot be checked automatically
    and is listed with its condition so the student can read it. */
-function isCgpa(q){return q==="Foundation";}
+function isCgpa(q){return exam(q).kind==="cgpa";}
+function examSelect(v){var grps=[];EXAMS.forEach(function(e){if(grps.indexOf(e.grp)<0)grps.push(e.grp);});
+ return '<label class="sf" for="s-qual"><span class="sl">Exam type</span><select id="s-qual">'+grps.map(function(g){
+  return '<optgroup label="'+esc(g)+'">'+EXAMS.filter(function(e){return e.grp===g;}).map(function(e){return '<option value="'+esc(e.id)+'"'+(e.id===v?" selected":"")+'>'+esc(e.label||e.id)+'</option>';}).join("")+'</optgroup>';}).join("")+'</select></label>';}
+/* A tier belongs to the student's exam when its qualification is that exam. A CGPA tier filed under "Foundation" also
+   counts for matriculation or diploma when its condition names them ("Foundation/Matriculation/Diploma: CGPA ..."). */
+function examMatch(s,id){if(s.qual===id)return true;var e=exam(id);
+ return e.kind==="cgpa"&&exam(s.qual).kind==="cgpa"&&s.qual===exam(s.qual).id&&new RegExp("\\b"+id+"\\b","i").test(s.min||"");}
 function resultField(q){
  if(isCgpa(q.qual))return '<label class="sf" for="s-res"><span class="sl">Your CGPA</span><input id="s-res" type="number" inputmode="decimal" min="0" max="4" step="0.01" placeholder="e.g. 3.85" value="'+esc(q.res==null?"":q.res)+'"></label>';
- var o=[["","Not out yet"]];for(var i=0;i<=12;i++)o.push([String(i),i+" A"+(i===1?"":"s")]);
- return sel("s-res","Number of A grades",o,q.res==null?"":q.res);
+ var e=exam(q.qual),o=[["","Not out yet"]];for(var i=0;i<=e.max;i++)o.push([String(i),i+" A"+(i===1?"":"s")]);
+ return sel("s-res","Number of A grades",o,q.res==null||+q.res>e.max?"":q.res).replace('</label>','<span class="hint">Counts as A: '+esc(e.a)+'</span></label>');
 }
 function tierNeed(min){
  var m=String(min||"");
@@ -339,7 +359,7 @@ function resText(q){return q.res==null||q.res===""?"":isCgpa(q.qual)?"CGPA "+q.r
 function schResults(){
  var q=S.sch,hasRes=q.level!=="others"&&q.res!=null&&q.res!=="";
  var rows=D.sch.filter(function(s){if(q.inst&&s.inst.id!==q.inst)return false;var l=schLevel(s.applies);if(q.level==="others")return !l&&s.qual==="Other";   /* not tied to a study level or a result */
-  return (l===q.level||(!l&&s.qual!=="Other"))&&s.qual===q.qual;});
+  return (l===q.level||(!l&&s.qual!=="Other"))&&examMatch(s,q.qual);});
  var groups={},order=[];rows.forEach(function(s){var k=s.inst.id+"|"+s.name+"|"+s.applies;if(!groups[k]){groups[k]={s:s,tiers:[]};order.push(k);}groups[k].tiers.push(s);});
  var list=order.map(function(k){var g=groups[k];g.best=null;g.hit=null;g.next=null;g.check=false;
   g.tiers.forEach(function(t){if(t.waiver!=null&&(g.best==null||t.waiver>g.best))g.best=t.waiver;var n=tierNeed(t.min);if(!n)g.check=true;t.need=n;
@@ -350,7 +370,7 @@ function schResults(){
    if(!g.next||gapOf(t)<gapOf(g.next)||(gapOf(t)===gapOf(g.next)&&awardVal(t)>awardVal(g.next)))g.next=t;});
   return g;});
  var yes=hasRes?list.filter(function(g){return g.hit;}).sort(function(a,b){return awardVal(b.hit)-awardVal(a.hit);}):list,no=hasRes?list.filter(function(g){return !g.hit;}):[];
- function gap(t){if(!t.need)return '';if(t.need.cgpa)return 'Needs CGPA '+t.need.lo.toFixed(2)+(t.need.hi!=null?' – '+t.need.hi.toFixed(2):' or above');
+ function gap(t){if(!t.need)return '';if(t.need.cgpa)return 'Needs CGPA '+t.need.lo.toFixed(2)+(t.need.hi!=null?' – '+(Math.floor(t.need.hi*100+1e-6)/100).toFixed(2):' or above');
   var d=t.need.as-(+q.res);
   if(t.need.plusOnly)return hasRes&&d<=0?awardText(t)+' if all '+t.need.as+' are A+':'Needs '+t.need.as+' A+ for '+awardText(t);
   if(t.need.aplus)return hasRes&&d<=0?awardText(t)+' if your As are A+ or A only':'Needs '+t.need.as+' As (A+ or A only) for '+awardText(t);
@@ -511,8 +531,8 @@ document.addEventListener("submit",function(ev){
 });
 document.addEventListener("input",function(ev){if(ev.target.id==="q-what")ev.target.removeAttribute("data-fac");});
 document.addEventListener("change",function(ev){if(ev.target.id==="r-sort"){L.sort=ev.target.value;render(true);}
- if(ev.target.id==="s-qual"){var q1=ev.target.value,was=isCgpa(S.sch.qual);S.sch.qual=q1;S.sch.level=/^(SPM|O-Level)$/.test(q1)?"foundation":"undergraduate";S.sch.inst=val("s-inst");
-  if(isCgpa(q1)!==was)S.sch.res="";else S.sch.res=val("s-res");render(true);var f=document.getElementById("s-res");if(f)f.focus();}});
+ if(ev.target.id==="s-qual"){var q1=ev.target.value,was=isCgpa(S.sch.qual);S.sch.qual=q1;S.sch.level=exam(q1).lv;S.sch.inst=val("s-inst");
+  S.sch.res=isCgpa(q1)!==was?"":val("s-res");if(!isCgpa(q1)&&+S.sch.res>exam(q1).max)S.sch.res="";render(true);var f=document.getElementById("s-res");if(f)f.focus();}});
 document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.detail){L.detail=null;render(true);}else if(L.info){L.info=false;render(true);var ib=top.querySelector(".info");if(ib)ib.focus();}else if(L.menu){L.menu=false;render(true);var bb=top.querySelector(".burger");if(bb)bb.focus();}else if(L.help){L.help=false;render(true);}}});
 
 if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);

@@ -284,7 +284,7 @@ function tr(s){
 }
 
 var lang="en";try{if(localStorage.getItem("eduplan-lang")==="zh")lang="zh";}catch(e){}
-var EN=new WeakMap(),OUT=new WeakMap(),ATTR=["placeholder","aria-label","alt","title"],SKIP="script,style,pre,[data-notr]";
+var EN=new WeakMap(),OUT=new WeakMap(),ATTR=["placeholder","aria-label","alt","title","label"],SKIP="script,style,pre,[data-notr]";
 function text(n){
  var p=n.parentElement;if(!p||p.closest(SKIP))return;
  var v=n.nodeValue,src=OUT.has(n)&&OUT.get(n)===v?EN.get(n):v;   /* unchanged since we set it: start from the English */

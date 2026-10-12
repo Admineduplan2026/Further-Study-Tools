@@ -107,8 +107,9 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 - Institutions 的 `virtual_tour_url`（选填）：院校的 3D 校园导览网址（必须以 https:// 开头），Universities 页面该校会出现导览横幅，按钮在新分页打开导览（导览网站通常不允许嵌入其他网页）。
 - 一个课程可同时列在多个课程类别：在 `also_in_courses` 栏填写其他类别（与下拉选单完全相同，每行一个）。例如 XMUM 的 Foundation in Science 同时列在 00 预科和 09 传统医学。
 - 课程页面会**自动**列出同一院校、同一阶段可申请的 Campus Scholarships（依 `level` 对应 `applies_to` 的 Foundation / Undergraduate / Postgraduate；`applies_to` 留空的奖学金适用所有阶段）。
-- Campus Scholarships 的 `applies_to` 以 `Foundation Programmes` 或 `Undergraduate Programmes` 开头时，网站第 4 页会出现「考试（SPM / O-Level / UEC / STPM / A-Level）」和「Foundation / Undergraduate」按钮来筛选。
-  Foundation / Matriculation / Diploma 的 CGPA 条件，`qualification` 选 `Foundation`；SPM / O-Level 学生选 Undergraduate 时会显示这些条件。
+- Campus Scholarships 的 `applies_to` 以 `Foundation Programmes` 或 `Undergraduate Programmes` 开头时，网站第 4 页会出现「考试（SPM / IGCSE / O-Level / UEC / STPM / A-Level）」和「Foundation / Undergraduate」按钮来筛选。
+  Foundation / Matriculation / Diploma 的 CGPA 条件，`qualification` 选 `Foundation`、`Matriculation` 或 `Diploma`；SPM / IGCSE / O-Level 学生选 Undergraduate 时会显示这些条件。
+- `qualification` 下拉选项（Lists 表 F 栏）：SPM、IGCSE、O-Level、UEC、STPM、A-Level、Matriculation、Foundation、Diploma、Other。`minimum_result` 写 A 的数量（例如 `7As`）或 CGPA（例如 `CGPA 3.70 and above`）。Eduplan Lab 的奖学金导向按「考试种类 + A 的数量（或 CGPA）」自动配对：只配对同一考试种类，IGCSE 与 O-Level 分开计算。
 
 ## 七、以后修改 API 代码
 

@@ -281,7 +281,7 @@ function schUniList(t){
 }
 /* Campus Page 4. When tiers say which study level they apply to (applies starting "Foundation" or "Undergraduate"),
    the page shows qualification and level buttons and only the matching tiers. */
-var SCH_QUALS=["SPM","O-Level","UEC","STPM","A-Level"],SCH_PREU=["Foundation","Matriculation","Diploma"],SCH_SECONDARY=["SPM","O-Level"],
+var SCH_QUALS=["SPM","IGCSE","O-Level","UEC","STPM","A-Level"],SCH_PREU=["Foundation","Matriculation","Diploma"],SCH_SECONDARY=["SPM","IGCSE","O-Level"],
  SCH_LEVELS=[["foundation","Foundation"],["undergraduate","Undergraduate"]];
 function schLevel(r){var a=r.applies||"";return /^foundation/i.test(a)?"foundation":/^undergraduate/i.test(a)?"undergraduate":/^postgraduate/i.test(a)?"postgraduate":"";}
 function schPanel(g,opt){

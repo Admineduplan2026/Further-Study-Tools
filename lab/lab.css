@@ -24,7 +24,7 @@ button{font:inherit}
 .hint{font-size:13px;color:var(--muted)}
 .muted{color:var(--muted);margin:0}
 .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-.page{max-width:1200px;margin:0 auto;padding-inline:20px;display:flex;flex-direction:column;gap:40px;padding-block:32px 96px}
+.page{width:100%;box-sizing:border-box;max-width:1200px;margin:0 auto;padding-inline:20px;display:flex;flex-direction:column;gap:40px;padding-block:32px 96px}
 .sample{background:var(--warn-soft);color:#6b4a00;font-size:13px;text-align:center;padding:6px 16px}
 
 /* 1. Account bar */
