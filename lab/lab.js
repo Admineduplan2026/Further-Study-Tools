@@ -72,7 +72,7 @@ function bestWaiver(p){var lv=p.lk==="foundation"?"foundation":p.lk==="degree"||
  D.sch.forEach(function(s){if(s.inst!==p.inst)return;var l=schLevel(s.applies);if(l&&l!==lv)return;if(s.waiver!=null&&(best==null||s.waiver>best))best=s.waiver;});return best;}
 
 /* ---------- State (browser storage shared with the main site) ---------- */
-var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,sort:"match",quizStep:null,help:false,menu:false};
+var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,sort:"match",quizStep:null,help:false,menu:false,info:false};
 if(!MODES.some(function(m){return m[0]===L.mode;}))L.mode="interest";
 var SEARCH0={what:"",fac:"",where:"",level:"",budget:"",intake:""},SCH0={qual:"SPM",level:"foundation",inst:""};
 var S={search:ls("eduplan-lab-search")||{},sch:ls("eduplan-lab-sch")||{},recent:ls("eduplan-lab-recent")||[],saved:ls("eduplan-saved")||[],
@@ -184,10 +184,20 @@ function card(p,why){
 /* On the main app's pages the switch shows the route being followed (scholarship pages: Scholarship based). */
 function shownMode(){if(L.view!=="app")return L.mode;var f="";try{f=sessionStorage.getItem("eduplan-flow")||"";}catch(e){}
  return f==="scholarships"?"scholarship":/^#guided/.test(location.hash)?"guidance":f?"interest":L.mode;}
+/* The "!" next to the mode switch: how the three modes help students find their study path. */
+var MODE_INFO=[["scholarship","Scholarship based","Built around scholarships: a reward to work for gives students more motivation to study."],
+ ["interest","Interest based","Built around what students enjoy, so their study path has a clear direction."],
+ ["guidance","Guidance based","12 reviewed key questions guide students to a clear direction for their studies."]];
+function modeInfo(){
+ return '<div class="mscrim" data-act="info"></div><section class="infopop" id="mode-info" role="dialog" aria-labelledby="mode-info-h">'+
+  '<h2 id="mode-info-h">How to use Eduplan</h2><p class="muted">This website looks at your study path in three ways. Choose the one that fits you; you can switch at any time.</p>'+
+  '<ol class="infolist">'+MODE_INFO.map(function(m){return '<li><button type="button" class="infoitem" data-mode="'+m[0]+'">'+ICONS[m[0]]+'<span><b>'+esc(m[1])+'</b><span>'+esc(m[2])+'</span></span></button></li>';}).join("")+'</ol></section>';
+}
 function topbar(){
  var n=S.saved.length,a=applyState(),em=S.session&&S.session.email;
  return '<div class="bar"><a class="logo" href="#home" aria-label="Eduplan Lab home"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan"></a>'+
-  '<div class="modewrap"><span class="mq" id="mode-q">Where does your study journey start?</span>'+
+  '<div class="modewrap"><span class="mqrow"><span class="mq" id="mode-q">Where does your study journey start?</span>'+
+   '<button type="button" class="info" data-act="info" aria-expanded="'+L.info+'" aria-controls="mode-info" aria-label="How to use this website">!</button></span>'+
   '<div class="modes" role="radiogroup" aria-labelledby="mode-q">'+MODES.map(function(m){return '<button type="button" role="radio" data-mode="'+m[0]+'" aria-checked="'+(shownMode()===m[0])+'">'+ICONS[m[0]]+'<span>'+esc(m[1])+'</span></button>';}).join("")+'</div></div>'+
   '<nav class="tools" aria-label="Account">'+
    '<span class="cur" title="Fees are shown in Malaysian ringgit" data-notr>MYR</span>'+
@@ -388,7 +398,7 @@ var top=document.getElementById("top"),app=document.getElementById("app"),helpBo
 function route(){var h=(location.hash||"#home").slice(1);L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about"}[h]||"home");}
 function chrome(){
  S.saved=ls("eduplan-saved")||[];S.quiz=ls("eduplan-quiz")||S.quiz;S.session=ls("eduplan-session");if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
- var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"");if(lang)top.querySelector(".bar").appendChild(lang);
+ var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"")+(L.info?modeInfo():"");if(lang)top.querySelector(".bar").appendChild(lang);
  helpBox.innerHTML=help();
 }
 if(window.EDUPLAN_HOST)window.EDUPLAN_HOST.rendered=function(){route();chrome();};
@@ -411,7 +421,7 @@ function readSearch(){
  ls("eduplan-lab-search",S.search);hadSearch=true;touch("search");
 }
 function val(id){var e=document.getElementById(id);return e?e.value:"";}
-function setMode(m){L.mode=m;L.quizStep=null;ls("eduplan-lab-mode",m);touch("search");if(L.view!=="home")go("home");else render(true);}
+function setMode(m){L.info=false;L.mode=m;L.quizStep=null;ls("eduplan-lab-mode",m);touch("search");if(L.view!=="home")go("home");else render(true);}
 function openDetail(id){L.detail=id;S.recent=[id].concat(S.recent.filter(function(x){return x!==id;})).slice(0,8);ls("eduplan-lab-recent",S.recent);touch("recent");render(true);
  var s=sheet.querySelector(".sheet");if(s)s.focus();}
 function toggleSave(id){S.saved=ls("eduplan-saved")||[];var i=S.saved.indexOf(id);if(i<0)S.saved.push(id);else S.saved.splice(i,1);ls("eduplan-saved",S.saved);touch("saved");render(true);}
@@ -434,7 +444,8 @@ document.addEventListener("click",function(ev){
  if(act==="close"){L.detail=null;render(true);}
  else if(act==="home")go("home");
  else if(act==="help"){L.help=!L.help;L.menu=false;render(true);}
- else if(act==="menu"){L.menu=!L.menu;L.help=false;render(true);var m=document.querySelector(".menu .mitem");if(L.menu&&m)m.focus();else{var bb=top.querySelector(".burger");if(bb)bb.focus();}}
+ else if(act==="info"){L.info=!L.info;L.menu=false;L.help=false;render(true);var f=document.querySelector(L.info?".infoitem":".info");if(f)f.focus();}
+ else if(act==="menu"){L.menu=!L.menu;L.help=false;L.info=false;render(true);var m=document.querySelector(".menu .mitem");if(L.menu&&m)m.focus();else{var bb=top.querySelector(".burger");if(bb)bb.focus();}}
  else if(act==="signout"){var tk=S.session&&S.session.token;flush(true);if(tk&&live)post({action:"account_logout",token:tk}).catch(function(){});
   ["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-lab-search","eduplan-lab-sch","eduplan-lab-recent"].forEach(function(k){ls(k,null);});
   try{sessionStorage.removeItem("eduplan-apply");}catch(e){}
@@ -452,7 +463,7 @@ document.addEventListener("submit",function(ev){
 });
 document.addEventListener("input",function(ev){if(ev.target.id==="q-what")ev.target.removeAttribute("data-fac");});
 document.addEventListener("change",function(ev){if(ev.target.id==="r-sort"){L.sort=ev.target.value;render(true);}});
-document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.detail){L.detail=null;render(true);}else if(L.menu){L.menu=false;render(true);var bb=top.querySelector(".burger");if(bb)bb.focus();}else if(L.help){L.help=false;render(true);}}});
+document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.detail){L.detail=null;render(true);}else if(L.info){L.info=false;render(true);var ib=top.querySelector(".info");if(ib)ib.focus();}else if(L.menu){L.menu=false;render(true);var bb=top.querySelector(".burger");if(bb)bb.focus();}else if(L.help){L.help=false;render(true);}}});
 
 if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);
 render();

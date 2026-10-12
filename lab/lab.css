@@ -299,3 +299,18 @@ body:has(.chat.open) .help{display:none}
 .mlabel{font-size:11.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:12px 14px 2px}
 .menu{max-height:calc(100vh - 120px);overflow:auto}
 a.dest,a.major,a.offer{text-decoration:none}
+
+/* "!" beside the mode question, and its explanation */
+.mqrow{display:inline-flex;align-items:center;gap:6px}
+.info{width:22px;height:22px;border-radius:50%;border:0;background:var(--sun);color:#3d2600;font-weight:700;font-size:14px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.info:hover,.info[aria-expanded="true"]{background:var(--band);color:#fff}
+.infopop{position:absolute;z-index:45;top:calc(100% + 8px);left:max(16px,calc((100vw - 1200px)/2 + 20px));width:min(420px,calc(100vw - 32px));
+ background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:var(--shadow);padding:18px;display:flex;flex-direction:column;gap:10px}
+.infopop h2{font-size:20px}
+.infolist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.infoitem{width:100%;display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--ink);cursor:pointer}
+.infoitem:hover{border-color:var(--brand);background:var(--brand-soft)}
+.infoitem svg{flex:none;margin-top:2px;color:var(--brand)}
+.infoitem>span{display:flex;flex-direction:column;gap:2px}
+.infoitem>span>span{font-size:14px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.infopop{animation:rise .2s ease-out both}}

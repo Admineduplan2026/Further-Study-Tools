@@ -1,7 +1,11 @@
 /* Chinese text for Eduplan Lab (used by assets/js/i18n.js). Add new lab sentences here, exactly as written in lab.js. */
 window.EDUPLAN_ZH_EXTRA={text:{
  "Eduplan Lab: a trial page. The main Eduplan website is unchanged.":"Eduplan Lab：试验页面，原本的 Eduplan 网站保持不变。",
- "Where does your study journey start?":"升学从哪里出发？","Menu":"菜单","You are not signed in.":"你尚未登录。","My portfolio":"我的档案","Saved programmes, quiz result and application":"收藏的课程、测验结果和申请","About us":"关于我们","Who we are and how we guide you":"我们是谁，以及我们如何引导你",
+ "Where does your study journey start?":"升学从哪里出发？","How to use this website":"如何使用此网站","How to use Eduplan":"如何使用 Eduplan",
+ "This website looks at your study path in three ways. Choose the one that fits you; you can switch at any time.":"此网站运用了三种不同的面向，协助你了解自身的升学途径。选择适合你的一种，随时可以切换。",
+ "Built around scholarships: a reward to work for gives students more motivation to study.":"以奖学金为核心，利用物质奖励的心理学，吸引学生在学习上更有动力。",
+ "Built around what students enjoy, so their study path has a clear direction.":"以学生的兴趣为导向，吸引学生们在学习途径上更有方向。",
+ "12 reviewed key questions guide students to a clear direction for their studies.":"以 12 个审核过的关键问题，引导学生们在学习途径上找到明确方向。","Menu":"菜单","You are not signed in.":"你尚未登录。","My portfolio":"我的档案","Saved programmes, quiz result and application":"收藏的课程、测验结果和申请","About us":"关于我们","Who we are and how we guide you":"我们是谁，以及我们如何引导你",
  "Book a free consultation":"预约免费咨询","Your Eduplan portfolio":"你的 Eduplan 档案","Your progress on this device":"你在这部装置上的进度","Signed in as":"已登录：",". Your progress is saved to your portfolio.":"。你的进度会保存到档案。",
  "Sign in to keep your saved programmes, quiz result and application on any device.":"登录后，收藏的课程、测验结果和申请在任何装置都能看到。","Interest quiz":"兴趣测验","Application":"申请",
  "Application sent. Your reference number is":"申请已送出。你的编号是","Ready to send":"可以送出","Continue my application":"继续填写申请","Not started. Choose a programme, then tap Apply now.":"还没开始。选择课程后点「立即申请」。",
