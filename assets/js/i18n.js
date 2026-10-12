@@ -31,7 +31,7 @@ var ZH={
  "Send it yourself":"自行发送","Share with documents":"连同文件分享","Continue to the application form":"继续填写报名表格",
  "This preview cannot send files. Please send your application yourself below.":"此预览版无法发送文件，请用下方方式自行发送。",
  "Your application could not be sent just now. Please send it yourself below, or try again later.":"报名资料暂时无法送出，请用下方方式自行发送，或稍后再试。",
- "Apply":"报名","Apply with Eduplan":"通过 Eduplan 报名","Application form":"报名表格",
+ "Apply":"报名","Apply with Eduplan":"通过 Eduplan 报名","Application form":"报名表格","See official information":"请看官方资料",
  "One form for your university application. It takes about 10 minutes. Your answers stay on this device until you close the tab.":"一份表格完成大学报名，约需 10 分钟。你的资料只保存在这个装置，关闭分页后即清除。",
  "One form for your university application. It takes about 10 minutes. Your answers are saved to your portfolio as you type.":"一份表格完成大学报名，约需 10 分钟。你填写的资料会自动保存到你的档案。",
  "to save them and continue later.":"，即可保存资料，下次继续填写。",

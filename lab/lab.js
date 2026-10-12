@@ -304,7 +304,7 @@ function resultsView(){
    :'<div class="empty">No programmes match all of these. Try another field of study, a different level, or any start date. <button type="button" class="linkbtn" data-act="home">Change search</button></div>')+'</div>';
 }
 function schResults(){
- var q=S.sch,rows=D.sch.filter(function(s){if(q.inst&&s.inst.id!==q.inst)return false;var l=schLevel(s.applies);return (!l||l===q.level)&&s.qual===q.qual;});
+ var q=S.sch,rows=D.sch.filter(function(s){if(q.inst&&s.inst.id!==q.inst)return false;var l=schLevel(s.applies);return (!l||l===q.level)&&(s.qual===q.qual||(s.qual==="Other"&&!l));});   /* "Other": open to every qualification */
  var groups={},order=[];rows.forEach(function(s){var k=s.inst.id+"|"+s.name+"|"+s.applies;if(!groups[k]){groups[k]={s:s,tiers:[]};order.push(k);}groups[k].tiers.push(s);});
  var fnd=q.level==="foundation"||q.level==="undergraduate"?D.fnd:[];
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">Change search</button><div class="lchips">'+
@@ -312,7 +312,7 @@ function schResults(){
   '<div class="page"><h1 class="rh">'+plural(order.length,"campus scholarship","campus scholarships")+'</h1>'+
   (order.length?'<div class="cards">'+order.map(function(k){var g=groups[k],u=g.s.inst,best=null;g.tiers.forEach(function(t){if(t.waiver!=null&&(best==null||t.waiver>best))best=t.waiver;});
    return '<article class="pcard sch">'+cover(u)+'<div class="pbody"><span class="pinst">'+esc(u.name)+'</span><h3>'+esc(g.s.name)+'</h3>'+(g.s.applies?'<span class="hint">'+esc(g.s.applies)+'</span>':'')+
-    '<table class="tiers"><thead><tr><th scope="col">'+esc(q.qual)+' result</th><th scope="col">Award</th></tr></thead><tbody>'+g.tiers.map(function(t){return '<tr><td>'+esc(t.min)+'</td><td><b>'+(t.waiver!=null?t.waiver+'%':t.amount!=null?esc(rm(t.amount)):'-')+'</b></td></tr>';}).join("")+'</tbody></table>'+
+    '<table class="tiers"><thead><tr><th scope="col">'+(g.s.qual==="Other"?'Eligibility':esc(q.qual)+' result')+'</th><th scope="col">Award</th></tr></thead><tbody>'+g.tiers.map(function(t){return '<tr><td>'+esc(t.min)+'</td><td><b>'+(t.waiver!=null?t.waiver+'%':t.amount!=null?esc(rm(t.amount)):'See official information')+'</b></td></tr>';}).join("")+'</tbody></table>'+
     '<div class="pfoot"><span class="fee">'+(best!=null?'<b>Up to '+best+'%</b><span class="hint">tuition waiver</span>':'')+'</span><div class="pact"><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Free consultation</a>'+
     (u.progs?'<a class="btn sm" href="#universities/'+esc(u.id.toLowerCase())+'" data-flow="scholarships">See programmes</a>':'')+'</div></div></div></article>';}).join("")+'</div>'
    :'<div class="empty">No campus scholarship in our data matches '+esc(q.qual)+' at this level yet. A counsellor can check other options with you. <a class="linkbtn" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div>')+

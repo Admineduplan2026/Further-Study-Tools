@@ -232,7 +232,7 @@ function stepper(names,step){
 function schStepper(step){return stepper(FLOWS.scholarships,Math.min(step,3));}
 function schUni(t,id){if(!t||!t.universities||!id)return null;id=String(id).toLowerCase();for(var i=0;i<t.universities.length;i++){if(String(t.universities[i].id).toLowerCase()===id)return t.universities[i];}return null;}
 function schItem(t,id){if(!t||!t.items||!id)return null;id=String(id).toLowerCase();for(var i=0;i<t.items.length;i++){if(t.items[i].name&&String(t.items[i].id).toLowerCase()===id)return t.items[i];}return null;}
-function schTierCell(r){return r.waiver!=null?r.waiver+'%':rm(r.amount);}
+function schTierCell(r){return r.waiver!=null?r.waiver+'%':r.amount!=null?rm(r.amount):'See official information';}
 function schBest(u){var w=u.tiers.filter(function(r){return r.waiver!=null;}).map(function(r){return r.waiver;});return w.length?Math.max.apply(null,w):null;}
 /* Tiers grouped by scholarship name, in sheet order; tiers without a name share one group. */
 function schGroups(u){var g={},order=[];u.tiers.forEach(function(r){var k=r.scheme||"";if(!g[k]){g[k]=[];order.push(k);}g[k].push(r);});return order.map(function(k){return {name:k,tiers:g[k]};});}

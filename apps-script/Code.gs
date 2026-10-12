@@ -290,8 +290,9 @@ function buildEduplanData(values, formatDate, generatedAt) {
       skipped.push({ sheet: p._sheet, row: p._row, reason: 'course "' + p.course + '" is not in the Lists sheet' });
     });
     mine(read('campus', school.campus, label)).forEach(function (c) {
-      if (c.waiver_percent !== null || c.fixed_amount_rm !== null) { campus.push(c); return; }
-      skipped.push({ sheet: c._sheet, row: c._row, reason: 'fill in waiver_percent or fixed_amount_rm' });
+      // A scholarship whose award the university does not publish is shown with its official link instead.
+      if (c.waiver_percent !== null || c.fixed_amount_rm !== null || c.info_url) { campus.push(c); return; }
+      skipped.push({ sheet: c._sheet, row: c._row, reason: 'fill in waiver_percent or fixed_amount_rm (or info_url when the award is not published)' });
     });
   });
 
