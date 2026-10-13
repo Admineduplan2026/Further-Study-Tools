@@ -86,7 +86,7 @@ var ZH={
  "Highest qualification":"最高学历","Results":"成绩","Actual results":"正式成绩","Forecast / not out yet":"预测成绩／尚未公布","Institution":"院校","Year started":"开始年月","Year completed":"完成年月",
  "Subjects and grades":"科目与成绩",
  /* My results (assets/js/results.js) */
- "My results":"我的成绩","Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.":"成绩只需填写一次。Eduplan 会一直保存，直到你自己更改，并用来显示你符合哪些课程和奖学金。",
+ "My results":"我的成绩","Scholarships for my results":"我的成绩可获得的奖学金","Add your exam results above. Eduplan then lists the campus scholarships your results qualify for.":"在上方填写你的考试成绩，Eduplan 就会列出你的成绩符合的校内奖学金。","See this scholarship":"查看这项奖学金","Almost there":"还差一点","No campus scholarship in our data matches your results yet.":"我们的资料中暂时没有符合你成绩的校内奖学金。","Which campus scholarships can I get with my results?":"以我的成绩可以获得哪些校内奖学金？","Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.":"成绩只需填写一次。Eduplan 会一直保存，直到你自己更改，并用来显示你符合哪些课程和奖学金。",
  "Saved to My results, and used to match programmes and scholarships for you.":"会保存到「我的成绩」，并用来为你配对课程和奖学金。","Your CGPA (out of 4.00)":"你的 CGPA（满分 4.00）","Your CGPA":"你的 CGPA",
  "+ Add subject":"+ 添加科目","Other subject…":"其他科目…","Subject name":"科目名称","Add":"添加","Add at least one subject and its grade.":"请至少添加一个科目及其成绩。","Enter your CGPA.":"请填写你的 CGPA。",
  "Add your results":"填写你的成绩"," to see if you meet these requirements.":"，查看你是否符合这些条件。","These requirements cannot be checked against your results automatically. Ask a counsellor.":"这些条件无法自动对照你的成绩，请咨询顾问。",
@@ -244,7 +244,12 @@ var ZH={
 };
 var LEVEL={Foundation:"预科",Undergraduate:"本科",Postgraduate:"研究生"};
 var ZH_PATTERNS=[
- /* My results: summaries and entry-requirement matches (assets/js/results.js) */
+ [/^Your results qualify for (\d+) campus scholarships?\. Each one checks other conditions too, so read its details before you apply\.$/,"你的成绩符合 $1 项校内奖学金。每项奖学金还有其他条件，申请前请先查看详情。"],
+ [/^With your (.+) results$/,"以你的 $1 成绩"],
+ [/^(Next: )?(\d+) more As? for (\d+)% tuition waiver$/,function(m){return (m[1]?"下一级：":"")+"再多 "+m[2]+" 个 A 可获 "+m[3]+"% 学费减免";}],
+ [/^(Next: )?Needs CGPA ([\d.]+) for (\d+)% tuition waiver$/,function(m){return (m[1]?"下一级：":"")+"需要 CGPA "+m[2]+"，可获 "+m[3]+"% 学费减免";}],
+ [/^(Next: )?Needs (\d+) (\S+?)(?: or (\S+))? for (\d+)% tuition waiver \(you have (\d+)\)$/,function(m){return (m[1]?"下一级：":"")+"需要 "+m[2]+" 个 "+m[3]+(m[4]?" 或 "+m[4]:"")+"，可获 "+m[5]+"% 学费减免（你有 "+m[6]+" 个）";}],
+ [/^(\d+)% tuition waiver$/,"$1% 学费减免"], /* My results: summaries and entry-requirement matches (assets/js/results.js) */
  [/^For each grade, add the subjects you got that grade in\. Counts as A in (.+?): (.+)\.$/,"在每个等级加入你考获该等级的科目。$1 中算作 A 的等级：$2。"],
  [/^Remove my (.+) results$/,"删除我的 $1 成绩"],[/^(\d+) As?$/,"$1 个 A"],
  [/^You meet the entry requirements \((.+)\)$/,"✓ 你的 $1 成绩符合入学条件"],[/^Your (.+?) grades meet the requirements$/,"✓ 你的 $1 成绩符合要求"],

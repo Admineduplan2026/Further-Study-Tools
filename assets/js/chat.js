@@ -61,7 +61,12 @@ function askServer(history){
   .then(function(r){if(!r.ok)throw new Error("busy");return r.json();},function(){throw new Error("offline");})
   .then(function(d){if(d&&d.reply)return d.reply;throw new Error(d&&ERR[d.error]?d.error:"busy");});
 }
+/* The student's saved results (My results, assets/js/results.js) go with the latest message, so the assistant can
+   find the scholarships they qualify for. */
+function withResults(history){var X=window.EDUPLAN_RESULTS,t=X&&X.taken().length?X.forChat():"";if(!t||!history.length)return history;
+ var h=history.slice(),i=h.length-1;h[i]={role:h[i].role,content:"(My saved exam results: "+t+")\n"+h[i].content};return h;}
 function ask(history,onText){
+ history=withResults(history);
  return getSampler().then(function(s){return s&&typeof eduplanKnowledge==="function"?askArtifact(s,history,onText):askServer(history);});
 }
 
@@ -100,7 +105,8 @@ function render(){
   w.innerHTML="<p>Hi! I can help you find courses, compare universities and check scholarships. What would you like to know?</p>";
   log.appendChild(w);
   var s=document.createElement("div");s.className="chatsuggest";
-  s.innerHTML=SUGGEST.map(function(q){return '<button type="button" class="chip" data-chat="ask">'+esc(q)+'</button>';}).join("");
+  var X=window.EDUPLAN_RESULTS,sug=(X&&X.taken().length?["Which campus scholarships can I get with my results?"]:[]).concat(SUGGEST);
+  s.innerHTML=sug.map(function(q){return '<button type="button" class="chip" data-chat="ask">'+esc(q)+'</button>';}).join("");
   log.appendChild(s);
  }
  msgs.forEach(function(m){log.appendChild(bubble(m));});

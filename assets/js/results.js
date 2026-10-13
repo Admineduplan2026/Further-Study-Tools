@@ -187,6 +187,48 @@ document.addEventListener("change",function(ev){
 document.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&ev.target.id==="rx-other"){ev.preventDefault();var b=document.querySelector("[data-rx-otherok]");if(b)b.click();}
  if(ev.key==="Escape"&&ev.target.id==="rx-other"){UI.other=null;save();}});
 
-window.EDUPLAN_RESULTS={EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
+/* ---------- Campus scholarships for the student's results ----------
+   A tier's minimum_result is read as a number of A grades ("5As", "8A+", "8As (A+ and A only)") or a CGPA
+   ("CGPA 3.75 and above", "≥CGPA 3.9000", "CGPA 3.8000-3.8999"). A tier counts for an exam when its qualification is
+   that exam; a CGPA tier filed under Foundation also counts for Matriculation or Diploma when its text names them. */
+function tierNeed(min){var m=String(min||""),r;
+ if((r=m.match(/CGPA\s*([\d.]+)\s*[-–]\s*([\d.]+)/i)))return {cgpa:true,lo:+r[1],hi:+r[2]};
+ if((r=m.match(/(?:≥|>=)\s*CGPA\s*([\d.]+)/i)||m.match(/CGPA\s*([\d.]+)\s*(?:and above|or above|\+|or higher)/i)||m.match(/CGPA\s*(?:of\s*)?([\d.]+)/i)))return {cgpa:true,lo:+r[1],hi:null};
+ if((r=m.match(/(\d+)\s*A(\+?)/)))return {as:+r[1],top:r[2]==="+"?1:/A\+\s*and\s*A\s*only/i.test(m)?2:0};
+ return null;}
+function tierFor(qual,min,eid){if(qual===eid)return true;var e=exam(eid),q=exam(qual);
+ return !!(e&&e.cgpa&&q&&q.cgpa&&new RegExp("\\b"+eid+"\\b","i").test(min||""));}
+/* How many As (or top grades) the student has towards a tier, and whether it is reached. */
+function tierHave(need,eid){var e=exam(eid);if(!need||!has(eid))return null;
+ if(need.cgpa){var c=cgpa(eid);return c==null?null:{have:c,ok:c>=need.lo&&(need.hi==null||c<=need.hi)};}
+ if(e.cgpa)return null;
+ var n=need.top?countIn(eid,e.grades.slice(0,need.top)):aCount(eid);return {have:n,ok:n>=need.as};}
+function award(t){return t.waiver!=null?t.waiver:t.amount!=null?t.amount/1000:-1;}
+/* rows: [{inst, instName, name, applies, qual, min, waiver, amount}]. Returns one entry per scholarship the student
+   can match: hit = best tier reached (or null), next = the closest better tier, exam = the exam used. */
+function scholarships(rows){
+ var out=[];
+ taken().forEach(function(eid){
+  var g={},order=[];
+  rows.forEach(function(r){if(!tierFor(r.qual,r.min,eid))return;var k=r.inst+"|"+r.name+"|"+(r.applies||"");if(!g[k]){g[k]={exam:eid,inst:r.inst,instName:r.instName,name:r.name,applies:r.applies,tiers:[]};order.push(k);}g[k].tiers.push(r);});
+  order.forEach(function(k){var s=g[k];s.hit=null;s.next=null;
+   s.tiers.forEach(function(t){var h=tierHave(tierNeed(t.min),eid);if(h&&h.ok&&(!s.hit||award(t)>award(s.hit)))s.hit=t;});
+   s.tiers.forEach(function(t){var nd=tierNeed(t.min),h=tierHave(nd,eid);if(!h||h.ok||(s.hit&&award(t)<=award(s.hit)))return;
+    var gap=nd.cgpa?nd.lo-h.have:nd.as-h.have;if(gap<=0)return;   /* e.g. a CGPA band the student is above */
+    if(!s.next||gap<s.next.gap||(gap===s.next.gap&&award(t)>award(s.next.t)))s.next={t:t,gap:gap,need:nd,have:h.have};});
+   if(s.hit||s.next)out.push(s);});
+ });
+ return out.sort(function(a,b){return (b.hit?award(b.hit):-2)-(a.hit?award(a.hit):-2);});
+}
+function awardText(t){return t.waiver!=null?t.waiver+"% tuition waiver":t.amount!=null?"RM "+Number(t.amount).toLocaleString("en-MY"):"See official information";}
+/* "1 more A for 50% tuition waiver" / "Needs 8 A+ for 100% tuition waiver (you have 7)" / "Needs CGPA 3.90 for …". */
+function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
+ if(n.need.cgpa)return "Needs CGPA "+n.need.lo.toFixed(2)+" for "+awardText(n.t);
+ if(n.need.top)return "Needs "+n.need.as+" "+e.grades.slice(0,n.need.top).join(" or ")+" for "+awardText(n.t)+" (you have "+n.have+")";
+ return n.gap+" more A"+(n.gap===1?"":"s")+" for "+awardText(n.t);}
+/* One line about the student's results, for the AI study assistant. */
+function forChat(){return taken().map(function(id){var e=exam(id);return id+": "+(e.cgpa?summary(id):summary(id)+" ("+aCount(id)+" A grades; "+text(id).replace(/\n/g,", ")+")");}).join("; ");}
+
+window.EDUPLAN_RESULTS={scholarships:scholarships,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
  summary:summary,text:text,editor:editor,groupsFor:groupsFor,checkExam:checkExam,match:match,badge:badge,current:function(){return UI.cur;},setCurrent:function(id){UI.cur=id;}};
 })();

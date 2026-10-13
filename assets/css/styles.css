@@ -389,3 +389,5 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .ematch.no{background:var(--soft);color:var(--muted)}
 .facts .line.lhead{font-weight:500;margin-top:6px}
 .facts .line.lhead:first-child{margin-top:0}
+.pfgrid .pfcard.wide{grid-column:1/-1}
+.pfsaved .item .pill{align-self:flex-start}

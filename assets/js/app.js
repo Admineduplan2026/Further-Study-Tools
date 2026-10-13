@@ -935,7 +935,21 @@ V.gate=function(){
   '<ul class="gatelist">'+["Courses, fees and entry requirements from partner universities","Scholarships you can apply for","An AI study assistant and free counsellors","One application form for your chosen university"]
    .map(function(t,k){return '<li style="--i:'+k+'">'+esc(t)+'</li>';}).join("")+'</ul></div>'+pfLogin(true)+'</section>';
 };
-function pfCard(title,body){return '<section class="panel pfcard"><h2>'+title+'</h2>'+body+'</section>';}
+function pfCard(title,body,cls){return '<section class="panel pfcard'+(cls?' '+cls:'')+'"><h2>'+title+'</h2>'+body+'</section>';}
+/* Campus scholarships the student's saved results reach (or nearly reach), from the school sheets. */
+function pfScholarships(){
+ var t=schType("campus"),rows=[];
+ ((t&&t.universities)||[]).forEach(function(u){u.tiers.forEach(function(r){if(r.qual&&r.qual!=="Other")rows.push({inst:u.id,instName:u.name,name:r.scheme||"Scholarship",applies:r.applies,qual:r.qual,min:r.min,waiver:r.waiver,amount:r.amount});});});
+ if(!RX.taken().length)return '<p class="muted">Add your exam results above. Eduplan then lists the campus scholarships your results qualify for.</p>';
+ var list=RX.scholarships(rows),yes=list.filter(function(s){return s.hit;}),near=list.filter(function(s){return !s.hit;});
+ function item(s){return '<div class="item"><span class="eyebrow">'+esc(s.instName)+'</span><span class="name">'+esc(s.name)+'</span>'+(s.applies?'<span class="hint">'+esc(s.applies)+'</span>':'')+
+   (s.hit?'<span class="pill ok">'+esc(RX.awardText(s.hit))+'</span><span class="hint">With your '+esc(s.exam)+' results</span>':'')+
+   (s.next?'<span class="hint">'+esc((s.hit?'Next: ':'')+RX.nextText(s))+'</span>':'')+
+   '<div class="row"><a class="btn ghost" href="#scholarships-campus/'+esc(String(s.inst).toLowerCase())+'">See this scholarship '+ARROW+'</a></div></div>';}
+ return (yes.length?'<p class="muted">Your results qualify for '+yes.length+' campus scholarship'+(yes.length===1?'':'s')+'. Each one checks other conditions too, so read its details before you apply.</p><div class="pfsaved">'+yes.map(item).join("")+'</div>'
+   :'<div class="empty">No campus scholarship in our data matches your results yet.</div>')+
+  (near.length?'<h3>Almost there</h3><div class="pfsaved">'+near.map(item).join("")+'</div>':'');
+}
 V.portfolio=function(){
  var head='<section class="stack"><span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
   (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'
@@ -972,7 +986,7 @@ V.portfolio=function(){
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
  return head+(PF.s?'':pfLogin())+
   '<div class="pfgrid">'+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor())+
-   saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+'</div>'+
+   pfCard("Scholarships for my results",pfScholarships(),"wide")+saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+'</div>'+
   (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
 };
 

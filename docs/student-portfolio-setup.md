@@ -22,6 +22,12 @@ account the website can sign in about 80 new students or devices a day.
 | Section | Without signing in | Signed in |
 |---|---|---|
 | My results (exam, subjects and grades, or CGPA; kept until the student changes them) | this browser | portfolio |
+
+**My results** also lists, under **Scholarships for my results**, every campus scholarship tier the student's results reach
+(for example 5 A grades reach every "5As" tier), the next tier and what is missing, and the ones that are almost reached.
+The AI study assistant receives the saved results with each question, so a student can ask
+"Which campus scholarships can I get with my results?". For the live website, paste the latest
+`apps-script/ChatKnowledge.gs` into Apps Script and deploy a new version.
 | Saved programmes (the **Save** button on every programme card) | this browser | portfolio |
 | Interest quiz answers and result | this browser | portfolio |
 | Free consultation request | this browser | portfolio |
