@@ -120,7 +120,7 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 - 课程页面会**自动**列出同一院校、同一阶段可申请的 Campus Scholarships（依 `level` 对应 `applies_to` 的 Foundation / Undergraduate / Postgraduate；`applies_to` 留空的奖学金适用所有阶段）。
 - Campus Scholarships 的 `applies_to` 以 `Foundation Programmes` 或 `Undergraduate Programmes` 开头时，网站第 4 页会出现「考试（SPM / IGCSE / O-Level / UEC / STPM / A-Level）」和「Foundation / Undergraduate」按钮来筛选。
   Foundation / Matriculation / Diploma 的 CGPA 条件，`qualification` 选 `Foundation`、`Matriculation` 或 `Diploma`；SPM / IGCSE / O-Level 学生选 Undergraduate 时会显示这些条件。
-- `qualification` 下拉选项（Lists 表 F 栏）：SPM、IGCSE、O-Level、UEC、STPM、A-Level、Matriculation、Foundation、Diploma、Other。`minimum_result` 写 A 的数量（例如 `7As`）或 CGPA（例如 `CGPA 3.70 and above`）。Eduplan Lab 的奖学金导向按「考试种类 + A 的数量（或 CGPA）」自动配对：只配对同一考试种类，IGCSE 与 O-Level 分开计算。
+- `qualification` 下拉选项（Lists 表 F 栏）：SPM、IGCSE、O-Level、UEC、STPM、A-Level、Matriculation、Foundation、Diploma、Other。`minimum_result` 写 A 的数量（例如 `7As`）或 CGPA（例如 `CGPA 3.70 and above`）。只算某些 A 时写出成绩：`8A+`（只算 A+）、`8A+/A`（只算 A+ 和 A）、`8A-` 或 `8As`（A+、A、A- 都算）。Eduplan Lab 的奖学金导向按「考试种类 + A 的数量（或 CGPA）」自动配对：只配对同一考试种类，IGCSE 与 O-Level 分开计算。
 
 ## 七、以后修改 API 代码
 

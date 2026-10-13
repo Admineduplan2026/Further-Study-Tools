@@ -350,13 +350,8 @@ function resultField(q){
  var e=exam(q.qual),o=[["","Not out yet"]];for(var i=0;i<=e.max;i++)o.push([String(i),i+" A"+(i===1?"":"s")]);
  return sel("s-res","Number of A grades",o,q.res==null||+q.res>e.max?"":q.res).replace('</label>','<span class="hint">Counts as A: '+esc(e.a.join(", "))+'. <a href="'+esc(mainLink("#portfolio"))+'">Save your results</a></span></label>');
 }
-function tierNeed(min){
- var m=String(min||"");
- var r=m.match(/CGPA\s*([\d.]+)\s*[-–]\s*([\d.]+)/i);if(r)return {cgpa:true,lo:+r[1],hi:+r[2]};
- r=m.match(/(?:≥|>=)\s*CGPA\s*([\d.]+)/i)||m.match(/CGPA\s*([\d.]+)\s*(?:and above|or above|\+|or higher)/i)||m.match(/CGPA\s*(?:of\s*)?([\d.]+)/i);if(r)return {cgpa:true,lo:+r[1],hi:null};
- r=m.match(/(\d+)\s*A(\+?)/);if(r)return {as:+r[1],aplus:/A\+\s*and\s*A\s*only/i.test(m),plusOnly:r[2]==="+"};
- return null;
-}
+/* The same reading as My results (results.js): top 1 = A+ only, top 2 = A+ and A only, 0 = any A grade. */
+function tierNeed(min){var n=RX.tierNeed(min);if(n&&!n.cgpa){n.plusOnly=n.top===1;n.aplus=n.top===2;}return n;}
 /* Tiers that count only A+ (or only A+ and A) need the grades in My results; with only a total of As they are shown as conditions. */
 function restricted(need){return !!(need&&(need.aplus||need.plusOnly));}
 function topCount(need,qual){var e=exam(qual);return RX.has(qual)&&!e.cgpa?RX.countIn(qual,e.grades.slice(0,need.plusOnly?1:2)):null;}

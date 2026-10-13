@@ -194,7 +194,13 @@ document.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&ev.target.
 function tierNeed(min){var m=String(min||""),r;
  if((r=m.match(/CGPA\s*([\d.]+)\s*[-–]\s*([\d.]+)/i)))return {cgpa:true,lo:+r[1],hi:+r[2]};
  if((r=m.match(/(?:≥|>=)\s*CGPA\s*([\d.]+)/i)||m.match(/CGPA\s*([\d.]+)\s*(?:and above|or above|\+|or higher)/i)||m.match(/CGPA\s*(?:of\s*)?([\d.]+)/i)))return {cgpa:true,lo:+r[1],hi:null};
- if((r=m.match(/(\d+)\s*A(\+?)/)))return {as:+r[1],top:r[2]==="+"?1:/A\+\s*and\s*A\s*only/i.test(m)?2:0};
+ if((r=m.match(/(\d+)\s*(A[+\-*]?(?:\s*(?:\/|,|&|and|or)\s*A[+\-*]?)*)/i))){
+  /* The grades named after the number: "8A+" = A+ only; "8A+/A" or "8As (A+ and A only)" = A+ and A;
+     "8A-", "8A+/A/A-", "8A" or "8As" = any A grade. */
+  var g=r[2].split(/\s*(?:\/|,|&|and|or)\s*/i),plus=g.some(function(x){return /^A[+*]$/.test(x);}),
+   minus=g.some(function(x){return x==="A-";}),plain=g.some(function(x){return /^A$/i.test(x);});
+  if(/A\+\s*and\s*A\s*only/i.test(m))return {as:+r[1],top:2};
+  return {as:+r[1],top:minus||!plus?0:plain?2:1};}
  return null;}
 function tierFor(qual,min,eid){if(qual===eid)return true;var e=exam(eid),q=exam(qual);
  return !!(e&&e.cgpa&&q&&q.cgpa&&new RegExp("\\b"+eid+"\\b","i").test(min||""));}
