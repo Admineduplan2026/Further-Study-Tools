@@ -21,6 +21,7 @@ account the website can sign in about 80 new students or devices a day.
 
 | Section | Without signing in | Signed in |
 |---|---|---|
+| My results (exam, subjects and grades, or CGPA; kept until the student changes them) | this browser | portfolio |
 | Saved programmes (the **Save** button on every programme card) | this browser | portfolio |
 | Interest quiz answers and result | this browser | portfolio |
 | Free consultation request | this browser | portfolio |
@@ -59,7 +60,7 @@ a device stays signed in for 30 days (up to 5 devices). Codes and session keys a
 In the master sheet: **Extensions > Apps Script**.
 
 1. Replace `Code.gs` with the latest `apps-script/Code.gs` (it now also routes the `account_...` requests).
-2. Click **+ > Script**, name it `Account`, and paste `apps-script/Account.gs`. Save.
+2. Click **+ > Script**, name it `Account`, and paste `apps-script/Account.gs`. Save. (Already done? Paste the latest `Account.gs` again: it now also keeps **My results**.)
 3. Choose the function `accountTest` and click **Run**. Allow the permissions (Sheets, Drive, and **Send email as you**).
    The log shows `{"sheet":"https://...","saved":true,...,"deleted":true}` and the sheet **Eduplan Student Portfolios**
    appears in **Eduplan Applications (private)**. No email is sent by the test.

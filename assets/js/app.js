@@ -14,6 +14,8 @@ var QUIZ=window.EDUPLAN_QUIZ||{questions:[],rules:{}};
 /* Another page layout can host this app (lab/lab-host.js): it draws its own pages for the routes it owns,
    and both share the browser storage. Without a host (the main website) nothing below changes. */
 var HOST=window.EDUPLAN_HOST||null;
+/* The student's exam results ("My results") and the entry-requirement matching: assets/js/results.js. */
+var RX=window.EDUPLAN_RESULTS;
 
 /* ---------- Helpers ---------- */
 function esc(s){return String(s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
@@ -370,7 +372,15 @@ function progScholarships(u){
   return {name:g.name||"Scholarship",applies:g.tiers[0].applies,best:w.length?Math.max.apply(null,w):null,href:"#scholarships-campus/"+String(uni.id).toLowerCase()};
  });
 }
-var ENTRY=[["entry","SPM"],["uec","UEC"],["olevel","O-Level"],["stpm","STPM"],["entry_other","Others"]];
+var ENTRY=[["entry","SPM"],["uec","UEC"],["olevel","O-Level / IGCSE"],["stpm","STPM"],["entry_other","Others"]];
+/* Entry requirements are written one rule per line; a line ending in ":" heads a group (an exam or a track). */
+function entryLine(x){var h=/[:：]$/.test(x);return '<span class="line'+(h?' lhead':'')+'">'+(h?'':'• ')+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</span>';}
+/* The student's results (My results) against this programme's entry requirements. */
+function entryMatch(u){
+ if(!RX.taken().length)return '<p class="hint"><a href="#portfolio">Add your results</a> to see if you meet these requirements.</p>';
+ var b=RX.badge(RX.match({spm:u.entry,uec:u.uec,olevel:u.olevel,stpm:u.stpm,other:u.entry_other}));
+ return b?'<p class="ematch '+b[0]+'">'+esc(b[1])+'</p>':'<p class="hint">These requirements cannot be checked against your results automatically. Ask a counsellor.</p>';
+}
 /* fold: the university pages list many programmes, so each card starts closed and opens to show the details. */
 function progCard(u,fold){
  var sch=progScholarships(u),meta=[u.level,u.years!=null?years(u.years):"",u.mode].filter(Boolean);
@@ -384,9 +394,9 @@ function progCard(u,fold){
    '<dt>Tuition fee (whole programme)</dt><dd>'+(u.fee!=null?esc(rm(u.fee)):'<span class="hint">To be confirmed</span>')+'</dd>')+
    '<dt>Location</dt><dd>'+(u.campus||u.place?esc(u.campus||u.place):'<span class="hint">To be confirmed</span>')+'</dd>'+
    (u.intakes?'<dt>Intakes</dt><dd>'+esc(u.intakes)+'</dd>':'')+(u.deadline?'<dt>Application deadline</dt><dd>'+esc(u.deadline)+'</dd>':'')+
-   (u.english?'<dt>English</dt><dd>'+esc(u.english)+'</dd>':'')+(u.mqa?'<dt>MQA</dt><dd>'+esc(u.mqa)+'</dd>':'')+'</dl>'+
-  '<div class="stack"><h4>Entry requirements</h4><dl class="facts entry">'+ENTRY.map(function(e){var l=lines(u[e[0]]);
-   return '<dt>'+esc(e[1])+'</dt><dd>'+(l.length?l.map(function(x){return '<span class="line">'+esc(x)+'</span>';}).join(""):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl></div>'+
+   (u.english?'<dt>English requirement</dt><dd>'+esc(u.english)+'</dd>':'')+(u.mqa?'<dt>MQA</dt><dd>'+esc(u.mqa)+'</dd>':'')+'</dl>'+
+  '<div class="stack"><h4>Entry requirements</h4>'+entryMatch(u)+'<dl class="facts entry">'+ENTRY.map(function(e){var l=lines(u[e[0]]);
+   return '<dt>'+esc(e[1])+'</dt><dd>'+(l.length?l.map(entryLine).join(""):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl></div>'+
   '<div class="stack"><h4>Scholarships you can apply for</h4>'+
    (sch.length?'<ul class="schlinks">'+sch.map(function(g){return '<li><a href="'+esc(g.href)+'"><span class="name">'+esc(g.name)+'</span>'+(g.best!=null?'<span class="pill brand">Up to '+g.best+'% tuition waiver</span>':'')+'</a></li>';}).join("")+'</ul>'
     :'<p class="hint">No campus scholarship listed for this level yet.</p>')+
@@ -492,7 +502,9 @@ function sget(k){try{return sessionStorage.getItem(k)||"";}catch(e){return "";}}
 function sset(k,v){try{sessionStorage.setItem(k,v||"");}catch(e){}}
 
 var APPLY_STEPS=["Programme","About you","Contact","Family","Education","Documents"];
-var APPLY_KEY="eduplan-apply",QUALS=["SPM","UEC","O-Level","STPM","A-Level","Foundation / Matriculation","Diploma","Bachelor's degree","Other"];
+var APPLY_KEY="eduplan-apply",QUALS=["SPM","IGCSE","O-Level","UEC","STPM","A-Level","Foundation","Matriculation","Diploma","Bachelor's degree","Other"];
+/* The application's "Highest qualification" as an exam in My results ("Foundation / Matriculation" was one choice before). */
+function applyExam(){var q=S.app.v.h_type;if(q==="Foundation / Matriculation")q="Foundation";return RX.exam(q)?q:null;}
 var MY_STATES=["Johor","Kedah","Kelantan","Melaka","Negeri Sembilan","Pahang","Perak","Perlis","Pulau Pinang","Sabah","Sarawak","Selangor","Terengganu","Kuala Lumpur","Labuan","Putrajaya"];
 /* Documents to upload: [id, label, how many files, required when]. Photos are made smaller before sending. */
 var UPLOADS=[["ic","NRIC or passport (front and back)",2,"always"],["results","Results slip (SPM / UEC / O-Level or equivalent)",3,"actual"],
@@ -568,9 +580,12 @@ function applyStep(n){
   var eng="";for(var j=1;j<=S.app.eng;j++)eng+='<div class="rowset"><span class="rowno">'+j+'</span>'+af("en"+j+"_type","Test",{opt:true,hint:"MUET, IELTS, TOEFL, SPM English …"})+af("en"+j+"_score","Score / band",{opt:true})+af("en"+j+"_date","Date taken or to be taken",{type:"month",opt:true})+'</div>';
   return agroup("Education background",'<div class="field full"><span class="hint">Start with your most recent school. Add every school from secondary school onwards.</span></div>'+rows+
     (S.app.edu<5?'<div class="field full"><button type="button" class="btn ghost" data-apply="add-edu">Add another school</button></div>':''))+
-   agroup("Highest qualification",af("h_type","Qualification",{opts:QUALS,first:"Choose"})+af("h_status","Results",{opts:[["Actual","Actual results"],["Forecast","Forecast / not out yet"]],first:"Choose"})+
+   agroup("Highest qualification",af("h_type","Qualification",{opts:QUALS,first:"Choose",rerender:true})+af("h_status","Results",{opts:[["Actual","Actual results"],["Forecast","Forecast / not out yet"]],first:"Choose"})+
     af("h_school","Institution",{full:true})+af("h_start","Year started",{type:"month"})+af("h_end","Year completed",{type:"month"})+
-    af("h_results","Subjects and grades",{area:true,rows:5,full:true,hint:"One subject per line, for example: Mathematics A+"}))+
+    (applyExam()?'<div class="field full"><span class="legend">'+(RX.exam(applyExam()).cgpa?'Your CGPA':'Subjects and grades')+'</span>'+
+      '<span class="hint">Saved to My results, and used to match programmes and scholarships for you.</span>'+RX.editor(applyExam())+
+      ((S.app.err||{}).h_results?'<span class="err" id="h_results-err">'+esc(S.app.err.h_results)+'</span>':'')+'</div>'
+     :af("h_results","Subjects and grades",{area:true,rows:5,full:true,hint:"One subject per line, for example: Mathematics A+"})))+
    agroup("English language",'<div class="field full"><span class="hint">Any English test you have taken or will take.</span></div>'+eng+
     (S.app.eng<3?'<div class="field full"><button type="button" class="btn ghost" data-apply="add-eng">Add another test</button></div>':''))+
    agroup("Others",af("disability","Do you have a disability?",{opts:["No","Yes"],rerender:true})+(v.disability==="Yes"?af("dis_info","Please give details",{area:true,rows:2,full:true}):''));
@@ -597,7 +612,9 @@ function applyErrors(n){
   phone("mobile");phone("tel");phone("p_tel");mail("email");}
  if(n===4){["g_name","g_rel","g_mobile"].forEach(function(k){need(k);});phone("g_mobile");phone("g_tel");mail("g_email");
   if(!v.em_same){["e_name","e_rel","e_mobile"].forEach(function(k){need(k);});phone("e_mobile");}}
- if(n===5){["ed1_school","ed1_from","ed1_to","ed1_qual","h_type","h_status","h_school","h_start","h_end","h_results"].forEach(function(k){need(k);});
+ if(n===5){var hx=applyExam();if(hx)v.h_results=RX.text(hx);
+  ["ed1_school","ed1_from","ed1_to","ed1_qual","h_type","h_status","h_school","h_start","h_end"].forEach(function(k){need(k);});
+  need("h_results",hx?(RX.exam(hx).cgpa?"Enter your CGPA.":"Add at least one subject and its grade."):null);
   if(v.disability==="Yes")need("dis_info");}
  if(n===6){UPLOADS.forEach(function(u){if(needFile(u)&&!(S.app.files[u[0]]||[]).length)e["f_"+u[0]]="Please add this document.";});
   if(!v.decl)e.decl="Please tick to confirm.";var a2=applyAge(v.dob);if(a2!==null&&a2<18){if(!v.decl_g)e.decl_g="Your parent or guardian must tick to agree.";need("decl_g_name");}}
@@ -724,7 +741,7 @@ function applySend(){
    also saved to their portfolio on Eduplan's server (apps-script/Account.gs), so they can continue on any device.
    Each section (saved, quiz, consult, apply) has its own "changed at" time; the newer copy wins when devices differ.
    Uploaded documents are never saved in the portfolio. Signing out removes the student's details from this browser. */
-var PF_KEY="eduplan-session",PF_AT="eduplan-at",PF_SECTIONS=["saved","quiz","consult","apply"];
+var PF_KEY="eduplan-session",PF_AT="eduplan-at",PF_SECTIONS=["saved","quiz","consult","apply","results"];
 var PF={s:store(PF_KEY),at:store(PF_AT)||{},step:"email",email:"",consent:false,msg:"",err:"",busy:false,dirty:false,saving:false,timer:null,loaded:0,del:false};
 if(PF.s&&!(PF.s.token&&PF.s.exp>Date.now()))PF.s=null;
 /* The website opens with the sign-in page (pfGate). Guests are let in only when sign-in cannot work: the artifact
@@ -751,7 +768,8 @@ function pfDoc(){var a=PF.at;return {
  saved:{ids:SAVED.slice(),at:a.saved||0},
  quiz:{step:S.guide.step,answers:S.guide.answers,tie:S.guide.tie||null,result:pfQuizResult(),at:a.quiz||0},
  consult:{f:S.cons,at:a.consult||0},
- apply:{v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng,complete:!!S.app.complete,sent:S.app.sent||null,at:a.apply||0}};}
+ apply:{v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng,complete:!!S.app.complete,sent:S.app.sent||null,at:a.apply||0},
+ results:{exams:RX.get().exams,at:a.results||0}};}
 /* Takes the server's sections that are newer than this browser's. union: first sign-in on this device, so the
    programmes saved before signing in are added to the portfolio's. Returns true when something changed. */
 function pfUse(d,union){
@@ -761,6 +779,7 @@ function pfUse(d,union){
   if(u.length!==SAVED.length||u.length!==d.saved.ids.length){SAVED=u;store("eduplan-saved",SAVED);a.saved=Date.now();ch=true;}}
  else if(newer("saved")){SAVED=(d.saved.ids||[]).slice();store("eduplan-saved",SAVED);a.saved=d.saved.at;ch=true;}
  if(newer("quiz")){S.guide={step:d.quiz.step||0,answers:d.quiz.answers||[],tie:d.quiz.tie||null};store("eduplan-quiz",S.guide);a.quiz=d.quiz.at;ch=true;}
+ if(newer("results")){RX.use({exams:d.results.exams||{}});a.results=d.results.at;ch=true;}
  if(newer("consult")){S.cons=d.consult.f||{};S.consDone=null;store("eduplan-consult",S.cons);a.consult=d.consult.at;ch=true;}
  if(newer("apply")){var x=d.apply,files=S.app.files;
   try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:x.v,step:x.step,edu:x.edu,eng:x.eng,complete:x.complete,sent:x.sent}));}catch(e){}
@@ -801,7 +820,8 @@ function pfStatus(t,warn){
 /* Removes everything personal from this browser (sign out, delete, or a shared computer). */
 function pfForget(){
  PF.s=null;PF.dirty=false;PF.del=false;clearTimeout(PF.timer);
- try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
+ try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-results"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
+ RX.use({});
  PF.at={};SAVED=[];S.guide={step:0,answers:[]};S.cons={};S.consDone=null;S.app=applyLoad();
 }
 /* The session ended on the server (expired, deleted, or signed out on another device): keep the local copy. */
@@ -822,6 +842,12 @@ function pfStart(){
   if(ch&&!(f&&app.contains(f)&&/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)))rerender();
  }).catch(function(){});
 }
+/* My results changed (assets/js/results.js): save it to the portfolio, fill the application's results, redraw. */
+window.addEventListener("eduplan:results",function(){
+ pfTouch("results");
+ var hx=applyExam();if(hx){S.app.v.h_results=RX.text(hx);if(S.app.err)delete S.app.err.h_results;applySave();}
+ if(app.querySelector("#rx,.prog"))render(true);
+});
 document.addEventListener("visibilitychange",function(){
  if(document.visibilityState==="hidden")pfFlush(true);
  else if(PF.s&&Date.now()-PF.loaded>60000)pfStart();
@@ -945,7 +971,8 @@ V.portfolio=function(){
   (PF.err?'<span class="err" role="alert">'+esc(PF.err)+'</span>':'')+
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
  return head+(PF.s?'':pfLogin())+
-  '<div class="pfgrid">'+saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+'</div>'+
+  '<div class="pfgrid">'+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor())+
+   saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+'</div>'+
   (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
 };
 

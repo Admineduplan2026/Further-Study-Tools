@@ -36,18 +36,8 @@ function plural(n,one,many){return n+" "+(n===1?one:many);}
 var LEVELS=[["foundation","Foundation"],["diploma","Diploma"],["degree","Degree"],["master","Master's"],["phd","PhD"]];
 var MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
 var BUDGETS=[["","Any budget"],["0-30000","Up to RM 30,000"],["30000-60000","RM 30,000 – 60,000"],["60000-100000","RM 60,000 – 100,000"],["100000-","Above RM 100,000"]];
-/* Exams a student can match scholarships with. kind "as" = counted by the number of A grades (up to max);
-   kind "cgpa" = a CGPA out of 4. "a" lists the grades that count as an A in that exam; lv = the usual next study level. */
-var EXAMS=[
- {id:"SPM",grp:"Secondary school",kind:"as",max:12,a:"A+, A, A-",lv:"foundation"},
- {id:"IGCSE",grp:"Secondary school",kind:"as",max:14,a:"A*, A",lv:"foundation"},
- {id:"O-Level",grp:"Secondary school",kind:"as",max:12,a:"A*, A",lv:"foundation"},
- {id:"UEC",label:"UEC (Senior Middle 3)",grp:"Secondary school",kind:"as",max:12,a:"A1, A2",lv:"undergraduate"},
- {id:"STPM",grp:"Pre-university",kind:"as",max:5,a:"A, A-",lv:"undergraduate"},
- {id:"A-Level",grp:"Pre-university",kind:"as",max:5,a:"A*, A",lv:"undergraduate"},
- {id:"Foundation",grp:"Foundation, matriculation or diploma (CGPA)",kind:"cgpa",lv:"undergraduate"},
- {id:"Matriculation",grp:"Foundation, matriculation or diploma (CGPA)",kind:"cgpa",lv:"undergraduate"},
- {id:"Diploma",grp:"Foundation, matriculation or diploma (CGPA)",kind:"cgpa",lv:"undergraduate"}];
+/* Exams, grades and the student's saved results ("My results"): assets/js/results.js. */
+var RX=window.EDUPLAN_RESULTS,EXAMS=RX.EXAMS;
 function exam(id){for(var i=0;i<EXAMS.length;i++)if(EXAMS[i].id===id)return EXAMS[i];return EXAMS[0];}
 var CAMPUS_PHOTOS=window.EDUPLAN_CAMPUS_PHOTOS||{XMUM:"../assets/img/campus/xmum.jpg"};
 var D={inst:[],progs:[],sch:[],fnd:[]};
@@ -67,7 +57,7 @@ function useData(d){
   u.progs++;
   return {id:p.programme_id,inst:u,name:p.programme_name,level:p.level,lk:levelKey(p.level),years:p.duration_years,fee:p.tuition_fee_rm,annual:annual,
    intakes:p.intakes,months:intakeMonths(p.intakes),campus:p.campus,mqa:p.mqa_reference,url:p.apply_url,deadline:p.application_deadline,
-   fac:fc?fc.f:null,course:fc?fc.c:null,also:p.also_course_ids||[],entry:[["SPM",p.entry_spm],["UEC",p.entry_uec],["O-Level",p.entry_olevel],["STPM",p.entry_stpm],["Others",p.entry_other]],
+   fac:fc?fc.f:null,course:fc?fc.c:null,also:p.also_course_ids||[],entry:[["SPM",p.entry_spm],["UEC",p.entry_uec],["O-Level / IGCSE",p.entry_olevel],["STPM",p.entry_stpm],["Others",p.entry_other]],
    english:p.english_requirement,notes:notes.split(/\n/).filter(function(x){return x.trim()&&!/^Annual fee: /.test(x);})};
  });
  D.sch=(d.campus_scholarships||[]).filter(function(s){return by[s.institution_id];}).map(function(s){by[s.institution_id].sch++;
@@ -84,7 +74,7 @@ function bestWaiver(p){var lv=p.lk==="foundation"?"foundation":p.lk==="degree"||
  D.sch.forEach(function(s){if(s.inst!==p.inst)return;var l=schLevel(s.applies);if(l&&l!==lv)return;if(s.waiver!=null&&(best==null||s.waiver>best))best=s.waiver;});return best;}
 
 /* ---------- State (browser storage shared with the main site) ---------- */
-var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,sort:"match",quizStep:null,help:false,menu:false,info:false};
+var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,mine:false,sort:"match",quizStep:null,help:false,menu:false,info:false};
 if(!MODES.some(function(m){return m[0]===L.mode;}))L.mode="interest";
 var SEARCH0={what:"",fac:"",where:"",level:"",budget:"",intake:""},SCH0={qual:"SPM",res:"",level:"foundation",inst:""};
 var S={search:ls("eduplan-lab-search")||{},sch:ls("eduplan-lab-sch")||{},recent:ls("eduplan-lab-recent")||[],saved:ls("eduplan-saved")||[],
@@ -139,8 +129,12 @@ function results(q){
   if(mon!=null&&p.months.length&&p.months.indexOf(mon)<0)return false;
   if(br){if(p.fee==null){noFee++;return L.showNoFee;}if(p.fee<br[0]||p.fee>br[1])return false;}
   return true;});
+ if(L.mine&&RX.taken().length)list=list.filter(function(p){var m=entryState(p);return m&&(m.state==="meets"||m.state==="check");});
  var key={match:function(a,b){return (b.inst.progs-a.inst.progs)||(a.name<b.name?-1:1);},fee:function(a,b){return (a.fee==null)-(b.fee==null)||(a.fee||0)-(b.fee||0);},
   short:function(a,b){return (a.years||99)-(b.years||99);}}[L.sort]||null;
+ /* With My results, "Best match" puts the programmes the student qualifies for first. */
+ if(L.sort==="match"&&RX.taken().length){var rk={meets:0,check:0,missing:1,none:2,no:3},st={};list.forEach(function(p){var m=entryState(p);st[p.id]=m?rk[m.state]:2;});
+  var base=key;key=function(a,b){return (st[a.id]-st[b.id])||base(a,b);};}
  if(key)list.sort(key);
  return {list:list,noFee:noFee};
 }
@@ -182,13 +176,20 @@ function feeLine(p){
 function heartBtn(id){var on=S.saved.indexOf(id)>=0;return '<button type="button" class="heart" data-lsave="'+esc(id)+'" aria-pressed="'+on+'" aria-label="'+(on?"Remove from saved":"Save programme")+'">'+HEART+'</button>';}
 function mainLink(hash){return hash;}   /* the main app runs in this page */
 function cardFlow(){return /^inst:/.test(S.search.where||"")?"universities":"faculty";}
+/* The student's results (My results) against the programme's entry requirements. */
+function entryCols(p){var c={};p.entry.forEach(function(e,i){c[["spm","uec","olevel","stpm","other"][i]]=e[1];});return c;}
+function entryState(p){return RX.taken().length?RX.match(entryCols(p)):null;}
+function entryBadge(p,full){var m=entryState(p);if(!m||m.state==="none")return '';
+ var t=m.state==="meets"?'You meet the entry requirements ('+m.exam+')':m.state==="check"?'Your '+m.exam+' grades meet the requirements':
+  m.state==="missing"?'Needs '+m.need[0]+(m.need.length>1?' and '+(m.need.length-1)+' more':''):m.exam+' not accepted directly';
+ return '<span class="ematch '+(m.state==="meets"||m.state==="check"?"ok":m.state==="missing"?"miss":"no")+'">'+esc(full?RX.badge(m)[1]:t)+'</span>';}
 function card(p,why){
  var w=bestWaiver(p),note=esc("Interested in: "+p.name+" ("+p.inst.name+").");
  return '<article class="pcard">'+cover(p.inst)+heartBtn(p.id)+
   '<div class="pbody"><span class="pinst">'+esc(p.inst.name)+(p.inst.city?' · '+esc(p.inst.city):'')+'</span>'+
   '<h3><button type="button" class="plink" data-detail="'+esc(p.id)+'">'+esc(p.name)+'</button></h3>'+
   '<div class="pills">'+pill(levelName(p.lk)||p.level)+(p.years!=null?pill(years(p.years)):"")+(p.mqa?pill("MQA registered","ok"):"")+'</div>'+
-  (w!=null?'<span class="perk">Scholarship up to '+w+'% tuition waiver</span>':'')+(why?'<span class="why">'+esc(why)+'</span>':'')+
+  (w!=null?'<span class="perk">Scholarship up to '+w+'% tuition waiver</span>':'')+(why?'<span class="why">'+esc(why)+'</span>':'')+entryBadge(p)+
   '<div class="pfoot">'+feeLine(p)+'<div class="pact"><a class="btn ghost sm" href="#consultation" data-topic="Choosing a university" data-note="'+note+'">Free consultation</a>'+
   '<a class="btn sm" href="#next/'+esc(p.id)+'" data-lflow="'+cardFlow()+'">Apply now</a></div></div></div></article>';
 }
@@ -322,6 +323,8 @@ function resultsView(){
   '<div class="lchips">'+summary(q).map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
   '<div class="page"><div class="rtools"><h1 class="rh">'+plural(r.list.length,"programme","programmes")+'</h1>'+
   sel("r-sort","Sort by",[["match","Best match"],["short","Shortest duration"],["fee","Lowest fee"]],L.sort)+'</div>'+
+  (RX.taken().length?'<label class="mine"><input type="checkbox" id="r-mine"'+(L.mine?' checked':'')+'> Only programmes my results qualify for</label>'
+   :'<div class="lnote"><a href="'+esc(mainLink("#portfolio"))+'">Add your exam results</a> to see which programmes you qualify for.</div>')+
   (r.noFee&&!L.showNoFee?'<div class="lnote">'+plural(r.noFee,"programme has","programmes have")+' no fee listed yet, so the budget filter left '+(r.noFee===1?"it":"them")+' out. <button type="button" class="linkbtn" data-act="show-nofee">Show '+(r.noFee===1?"it":"them")+'</button></div>':'')+
   (r.list.length?'<div class="cards">'+r.list.map(function(p){return card(p);}).join("")+'</div>'
    :'<div class="empty">No programmes match all of these. Try another field of study, a different level, or any start date. <button type="button" class="linkbtn" data-act="home">Change search</button></div>')+'</div>';
@@ -330,18 +333,22 @@ function resultsView(){
    A tier's "minimum_result" in the sheet is read as either a number of A grades ("8As", "4As/average ...") or a
    CGPA ("CGPA 3.75 and above", "≥CGPA 3.9000", "CGPA 3.8000-3.8999"). Anything else cannot be checked automatically
    and is listed with its condition so the student can read it. */
-function isCgpa(q){return exam(q).kind==="cgpa";}
+function isCgpa(q){return !!exam(q).cgpa;}
 function examSelect(v){var grps=[];EXAMS.forEach(function(e){if(grps.indexOf(e.grp)<0)grps.push(e.grp);});
  return '<label class="sf" for="s-qual"><span class="sl">Exam type</span><select id="s-qual">'+grps.map(function(g){
   return '<optgroup label="'+esc(g)+'">'+EXAMS.filter(function(e){return e.grp===g;}).map(function(e){return '<option value="'+esc(e.id)+'"'+(e.id===v?" selected":"")+'>'+esc(e.label||e.id)+'</option>';}).join("")+'</optgroup>';}).join("")+'</select></label>';}
 /* A tier belongs to the student's exam when its qualification is that exam. A CGPA tier filed under "Foundation" also
    counts for matriculation or diploma when its condition names them ("Foundation/Matriculation/Diploma: CGPA ..."). */
 function examMatch(s,id){if(s.qual===id)return true;var e=exam(id);
- return e.kind==="cgpa"&&exam(s.qual).kind==="cgpa"&&s.qual===exam(s.qual).id&&new RegExp("\\b"+id+"\\b","i").test(s.min||"");}
+ return e.cgpa&&exam(s.qual).cgpa&&s.qual===exam(s.qual).id&&new RegExp("\\b"+id+"\\b","i").test(s.min||"");}
+/* With the exam in My results, the search uses those results (kept until the student changes them there). */
+function myRes(q){return RX.has(q.qual)?String(isCgpa(q.qual)?RX.cgpa(q.qual):RX.aCount(q.qual)):q.res;}
 function resultField(q){
+ if(RX.has(q.qual))return '<div class="sf mine"><span class="sl">From My results</span><span class="mres">'+esc(RX.summary(q.qual))+(isCgpa(q.qual)?'':' → <span>'+esc(resText({qual:q.qual,res:RX.aCount(q.qual)}))+'</span>')+'</span>'+
+  '<a class="hint" href="'+esc(mainLink("#portfolio"))+'">Change in My results</a></div>';
  if(isCgpa(q.qual))return '<label class="sf" for="s-res"><span class="sl">Your CGPA</span><input id="s-res" type="number" inputmode="decimal" min="0" max="4" step="0.01" placeholder="e.g. 3.85" value="'+esc(q.res==null?"":q.res)+'"></label>';
  var e=exam(q.qual),o=[["","Not out yet"]];for(var i=0;i<=e.max;i++)o.push([String(i),i+" A"+(i===1?"":"s")]);
- return sel("s-res","Number of A grades",o,q.res==null||+q.res>e.max?"":q.res).replace('</label>','<span class="hint">Counts as A: '+esc(e.a)+'</span></label>');
+ return sel("s-res","Number of A grades",o,q.res==null||+q.res>e.max?"":q.res).replace('</label>','<span class="hint">Counts as A: '+esc(e.a.join(", "))+'. <a href="'+esc(mainLink("#portfolio"))+'">Save your results</a></span></label>');
 }
 function tierNeed(min){
  var m=String(min||"");
@@ -350,28 +357,33 @@ function tierNeed(min){
  r=m.match(/(\d+)\s*A(\+?)/);if(r)return {as:+r[1],aplus:/A\+\s*and\s*A\s*only/i.test(m),plusOnly:r[2]==="+"};
  return null;
 }
-/* Tiers that count only A+ (or only A+ and A) are never awarded automatically: the student enters one total of As. */
+/* Tiers that count only A+ (or only A+ and A) need the grades in My results; with only a total of As they are shown as conditions. */
 function restricted(need){return !!(need&&(need.aplus||need.plusOnly));}
-function meets(res,need){if(res==null||res===""||!need||restricted(need))return false;res=+res;return need.cgpa?res>=need.lo&&(need.hi==null||res<=need.hi):res>=need.as;}
+function topCount(need,qual){var e=exam(qual);return RX.has(qual)&&!e.cgpa?RX.countIn(qual,e.grades.slice(0,need.plusOnly?1:2)):null;}
+function meets(res,need,qual){if(res==null||res===""||!need)return false;
+ if(restricted(need)){var c=topCount(need,qual);return c!=null&&c>=need.as;}
+ res=+res;return need.cgpa?res>=need.lo&&(need.hi==null||res<=need.hi):res>=need.as;}
 function awardVal(t){return t.waiver!=null?t.waiver:t.amount!=null?t.amount/1000:-1;}   /* compare tiers within one scholarship */
 function awardText(t){return t.waiver!=null?t.waiver+'% tuition waiver':t.amount!=null?rm(t.amount):'See official information';}
 function resText(q){return q.res==null||q.res===""?"":isCgpa(q.qual)?"CGPA "+q.res:q.res+" A"+(+q.res===1?"":"s");}
 function schResults(){
- var q=S.sch,hasRes=q.level!=="others"&&q.res!=null&&q.res!=="";
+ var q={qual:S.sch.qual,res:myRes(S.sch),level:S.sch.level,inst:S.sch.inst},hasRes=q.level!=="others"&&q.res!=null&&q.res!=="";
  var rows=D.sch.filter(function(s){if(q.inst&&s.inst.id!==q.inst)return false;var l=schLevel(s.applies);if(q.level==="others")return !l&&s.qual==="Other";   /* not tied to a study level or a result */
   return (l===q.level||(!l&&s.qual!=="Other"))&&examMatch(s,q.qual);});
  var groups={},order=[];rows.forEach(function(s){var k=s.inst.id+"|"+s.name+"|"+s.applies;if(!groups[k]){groups[k]={s:s,tiers:[]};order.push(k);}groups[k].tiers.push(s);});
  var list=order.map(function(k){var g=groups[k];g.best=null;g.hit=null;g.next=null;g.check=false;
   g.tiers.forEach(function(t){if(t.waiver!=null&&(g.best==null||t.waiver>g.best))g.best=t.waiver;var n=tierNeed(t.min);if(!n)g.check=true;t.need=n;
-   if(hasRes&&meets(q.res,n)&&(!g.hit||awardVal(t)>awardVal(g.hit)))g.hit=t;});
+   if(hasRes&&meets(q.res,n,q.qual)&&(!g.hit||awardVal(t)>awardVal(g.hit)))g.hit=t;});
   /* Next step: the closest tier not reached yet that pays more than the current one (ties: the bigger award). */
-  function gapOf(t){var d=t.need.cgpa?t.need.lo-(+q.res):t.need.as-(+q.res);return restricted(t.need)?Math.max(d,0):d;}
-  if(hasRes)g.tiers.forEach(function(t){if(!t.need||meets(q.res,t.need)||(gapOf(t)<=0&&!restricted(t.need))||(g.hit&&awardVal(t)<=awardVal(g.hit)))return;
+  function gapOf(t){var c=restricted(t.need)?topCount(t.need,q.qual):null,d=t.need.cgpa?t.need.lo-(+q.res):t.need.as-(c!=null?c:+q.res);return restricted(t.need)&&c==null?Math.max(d,0):d;}
+  if(hasRes)g.tiers.forEach(function(t){if(!t.need||meets(q.res,t.need,q.qual)||(gapOf(t)<=0&&!restricted(t.need))||(g.hit&&awardVal(t)<=awardVal(g.hit)))return;
    if(!g.next||gapOf(t)<gapOf(g.next)||(gapOf(t)===gapOf(g.next)&&awardVal(t)>awardVal(g.next)))g.next=t;});
   return g;});
  var yes=hasRes?list.filter(function(g){return g.hit;}).sort(function(a,b){return awardVal(b.hit)-awardVal(a.hit);}):list,no=hasRes?list.filter(function(g){return !g.hit;}):[];
  function gap(t){if(!t.need)return '';if(t.need.cgpa)return 'Needs CGPA '+t.need.lo.toFixed(2)+(t.need.hi!=null?' – '+(Math.floor(t.need.hi*100+1e-6)/100).toFixed(2):' or above');
   var d=t.need.as-(+q.res);
+  var c=restricted(t.need)?topCount(t.need,q.qual):null,top=exam(q.qual).grades||[];
+  if(c!=null)return 'Needs '+t.need.as+' '+(t.need.plusOnly?top[0]:top.slice(0,2).join(" or "))+' for '+awardText(t)+' (you have '+c+')';
   if(t.need.plusOnly)return hasRes&&d<=0?awardText(t)+' if all '+t.need.as+' are A+':'Needs '+t.need.as+' A+ for '+awardText(t);
   if(t.need.aplus)return hasRes&&d<=0?awardText(t)+' if your As are A+ or A only':'Needs '+t.need.as+' As (A+ or A only) for '+awardText(t);
   return hasRes&&d>0?d+' more A'+(d===1?'':'s')+' for '+awardText(t):'Needs '+t.need.as+' As';}
@@ -443,8 +455,9 @@ function detailSheet(){
   '<div class="pills">'+pill(levelName(p.lk)||p.level)+(p.years!=null?pill(years(p.years)):"")+(p.mqa?pill("MQA "+p.mqa,"ok"):"")+'</div>'+
   '<dl class="lfacts"><dt>Tuition fee</dt><dd>'+(p.fee!=null?esc(rm(p.fee))+' (whole programme)':p.annual.length?p.annual.map(esc).join("<br>")+' (per year)':'To be confirmed')+'</dd>'+
   (p.intakes?'<dt>Intakes</dt><dd>'+esc(p.intakes)+'</dd>':'')+'<dt>Location</dt><dd>'+esc(p.campus||[p.inst.city,p.inst.state].filter(Boolean).join(", ")||"To be confirmed")+'</dd>'+
-  (p.english?'<dt>English</dt><dd>'+esc(p.english)+'</dd>':'')+(w!=null?'<dt>Scholarship</dt><dd>Up to '+w+'% tuition waiver</dd>':'')+'</dl>'+
-  '<h3>Entry requirements</h3><dl class="lfacts">'+p.entry.map(function(e){return '<dt>'+esc(e[0])+'</dt><dd>'+(e[1]?esc(e[1]).replace(/\n/g,"<br>"):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>'+
+  (p.english?'<dt>English requirement</dt><dd>'+esc(p.english)+'</dd>':'')+(w!=null?'<dt>Scholarship</dt><dd>Up to '+w+'% tuition waiver</dd>':'')+'</dl>'+
+  '<h3>Entry requirements</h3>'+entryBadge(p,true)+'<dl class="lfacts">'+p.entry.map(function(e){return '<dt>'+esc(e[0])+'</dt><dd>'+(e[1]?String(e[1]).split(/\n/).filter(function(x){return x.trim();}).map(function(x){x=x.trim();var h=/[:：]$/.test(x);
+   return h?'<b>'+esc(x)+'</b>':'• '+esc(x.replace(/^[•·*▪◦–-]\s*/,""));}).join("<br>"):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>'+
   (p.notes.length?'<h3>Notes</h3>'+p.notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join(""):'')+
   '</div><div class="sfoot">'+heartBtn(p.id)+(p.url?'<a class="btn ghost sm" href="'+esc(p.url)+'" target="_blank" rel="noopener">Programme page</a>':'')+
   '<a class="btn ghost sm" href="#consultation" data-topic="Choosing a university" data-note="'+esc("Interested in: "+p.name+" ("+p.inst.name+").")+'">Free consultation</a><a class="btn sm" href="#next/'+esc(p.id)+'" data-lflow="'+cardFlow()+'">Apply now</a></div></section>';
@@ -529,8 +542,11 @@ document.addEventListener("submit",function(ev){
   if(rv!==""&&isCgpa(q0)){var n=parseFloat(rv);rv=isNaN(n)?"":String(Math.max(0,Math.min(4,n)));}
   S.sch={qual:q0,res:rv,level:val("s-level"),inst:val("s-inst")};ls("eduplan-lab-sch",S.sch);touch("search");go("results");}
 });
+/* My results changed (on the portfolio page or the application form): redraw the lab's own pages. */
+window.addEventListener("eduplan:results",function(){if(L.view!=="app")render(true);});
 document.addEventListener("input",function(ev){if(ev.target.id==="q-what")ev.target.removeAttribute("data-fac");});
 document.addEventListener("change",function(ev){if(ev.target.id==="r-sort"){L.sort=ev.target.value;render(true);}
+ if(ev.target.id==="r-mine"){L.mine=ev.target.checked;render(true);var mi=document.getElementById("r-mine");if(mi)mi.focus();}
  if(ev.target.id==="s-qual"){var q1=ev.target.value,was=isCgpa(S.sch.qual);S.sch.qual=q1;S.sch.level=exam(q1).lv;S.sch.inst=val("s-inst");
   S.sch.res=isCgpa(q1)!==was?"":val("s-res");if(!isCgpa(q1)&&+S.sch.res>exam(q1).max)S.sch.res="";render(true);var f=document.getElementById("s-res");if(f)f.focus();}});
 document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.detail){L.detail=null;render(true);}else if(L.info){L.info=false;render(true);var ib=top.querySelector(".info");if(ib)ib.focus();}else if(L.menu){L.menu=false;render(true);var bb=top.querySelector(".burger");if(bb)bb.focus();}else if(L.help){L.help=false;render(true);}}});

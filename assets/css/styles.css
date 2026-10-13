@@ -368,3 +368,24 @@ body.gated nav.main,body.gated .chat{display:none}
 @keyframes gatein{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
 @media (max-width:820px){.gate{grid-template-columns:minmax(0,1fr);gap:28px;min-height:0}}
 @media (prefers-reduced-motion:reduce){.gatecopy,.gate .pflogin,.gatelist li{animation:none}}
+
+/* My results (assets/js/results.js): exam tabs, one row per grade with its subjects, and the entry-requirement match. */
+.rx{display:flex;flex-direction:column;gap:12px;min-width:0}
+.rxtabs{display:flex;flex-wrap:wrap;gap:6px}
+.rxtabs .chip{min-height:38px;font-size:13px;padding:0 12px}
+.rxgrid{display:flex;flex-direction:column;gap:6px}
+.rxrow{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:12px;background:#fff}
+.rxrow.on{border-color:var(--brand-soft);background:var(--brand-soft)}
+.rxg{font-weight:600;font-size:15px;text-align:center;color:var(--brand)}
+.rxchips{display:flex;flex-wrap:wrap;gap:6px;align-items:center;min-width:0}
+.rxchip{font:inherit;font-size:13px;min-height:32px;padding:0 10px;border-radius:999px;border:1px solid var(--brand);background:#fff;color:var(--ink);cursor:pointer}
+.rxchip:hover{background:var(--soft)}
+select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-width:100%;border-radius:999px;color:var(--muted)}
+.rxother{display:flex;gap:6px;flex-wrap:wrap}.rxother input{min-height:36px;padding:4px 10px;width:auto;flex:1 1 140px}
+.rxsum{margin:0;font-size:15px}
+.ematch{margin:0;padding:10px 14px;border-radius:12px;font-size:14px}
+.ematch.ok{background:var(--ok-soft);color:var(--ok)}
+.ematch.miss{background:var(--warn-soft);color:var(--warn)}
+.ematch.no{background:var(--soft);color:var(--muted)}
+.facts .line.lhead{font-weight:500;margin-top:6px}
+.facts .line.lhead:first-child{margin-top:0}

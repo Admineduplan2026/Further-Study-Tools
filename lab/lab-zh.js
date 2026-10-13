@@ -20,7 +20,7 @@ window.EDUPLAN_ZH_EXTRA={text:{
  "What do you want to study?":"想读什么？","Business, IT, nursing …":"商业、IT、护理……","Where":"在哪里读","Study level":"学历层次","Budget":"预算","Start date":"入学时间",
  "Anywhere in Malaysia":"马来西亚各地","Any level":"任何层次","Foundation":"预科","Diploma":"文凭","Degree":"学士学位","Master's":"硕士","PhD":"博士",
  "Any budget":"不限预算","Up to RM 30,000":"RM 30,000 以内","RM 30,000 – 60,000":"RM 30,000 – 60,000","RM 60,000 – 100,000":"RM 60,000 – 100,000","Above RM 100,000":"RM 100,000 以上","Any time":"任何时间",
- "Search":"搜索","Find scholarships":"查找奖学金","Your CGPA":"你的 CGPA","Number of A grades":"A 的数量","Not out yet":"成绩未出","Foundation / Matriculation / Diploma":"预科／大学先修班／文凭","Exam type":"考试种类","Secondary school":"中学","Pre-university":"大学先修","Foundation, matriculation or diploma (CGPA)":"预科／大学先修班／文凭（CGPA）","UEC (Senior Middle 3)":"独中统考 UEC（高三）","Matriculation":"大学先修班",
+ "Search":"搜索","Find scholarships":"查找奖学金","Your CGPA":"你的 CGPA","Number of A grades":"A 的数量","Not out yet":"成绩未出","Foundation / Matriculation / Diploma":"预科／大学先修班／文凭","Exam type":"考试种类","From My results":"来自「我的成绩」","Change in My results":"在「我的成绩」更改","Save your results":"保存你的成绩","Only programmes my results qualify for":"只显示我的成绩符合的课程","Add your exam results":"填写你的考试成绩"," to see which programmes you qualify for.":"，查看你符合哪些课程。","Secondary school":"中学","Pre-university":"大学先修","Foundation, matriculation or diploma (CGPA)":"预科／大学先修班／文凭（CGPA）","UEC (Senior Middle 3)":"独中统考 UEC（高三）","Matriculation":"大学先修班",
  "You qualify":"你符合资格","Almost there":"还差一点","What these scholarships need":"这些奖学金的要求","No scholarship matches this result yet":"暂时没有奖学金符合这个成绩",
  "Add your result in the search to see which tier you reach.":"在搜索栏填入你的成绩，就能看到你可获得哪一级。","CGPA":"CGPA",
  "A+ and A only":"只计 A+ 和 A","A+ grades only":"只计 A+",
@@ -43,7 +43,7 @@ window.EDUPLAN_ZH_EXTRA={text:{
  "Free consultation":"免费咨询","Apply now":"立即申请","Ask a counsellor":"咨询顾问","See programmes":"查看课程","Award":"奖励",
  "Other scholarships open to all students":"其他公开申请的奖学金",
  "Saved programmes":"收藏的课程","Tap the heart on any programme to keep it here.":"点击课程上的爱心，就会保存在这里。","Start searching":"开始搜索",
- "Tuition fee":"学费","Intakes":"开课月份","Location":"地点","English":"英语要求","Scholarship":"奖学金","Entry requirements":"入学条件","Notes":"备注","Not listed by the institution":"院校未列出","Programme page":"课程网页","To be confirmed":"待确认",
+ "Tuition fee":"学费","Intakes":"开课月份","Location":"地点","English requirement":"英语要求","Scholarship":"奖学金","Entry requirements":"入学条件","Notes":"备注","Not listed by the institution":"院校未列出","Programme page":"课程网页","To be confirmed":"待确认",
  "Need help?":"需要帮助？","Ask the AI study assistant":"问 AI 升学助手","Answers about courses, fees and scholarships":"解答课程、学费和奖学金问题","WhatsApp a counsellor":"WhatsApp 联系顾问",
  "The WhatsApp number will be added soon.":"WhatsApp 号码即将公布。","A counsellor calls you back":"顾问会回电给你",
  "Save programme":"收藏课程","Remove from saved":"取消收藏","Close":"关闭","Search mode":"搜索模式","Fees are shown in Malaysian ringgit":"学费以马币显示"
@@ -66,7 +66,7 @@ window.EDUPLAN_ZH_EXTRA={text:{
  [/^(Next: )?Needs (\d+) As \(A\+ or A only\) for (\d+)% tuition waiver$/,function(m){return (m[1]?"下一级：":"")+"需要 "+m[2]+" 个 A（只计 A+ 和 A），可获 "+m[3]+"% 学费减免";}],
  [/^Matches your quiz: (.+)$/,function(m){return "符合你的测验结果："+(window.EDUPLAN_ZH_EXTRA.text[m[1]]||m[1]);}],[/^Your study level: (.+)$/,function(m){return "你的学历层次："+(window.EDUPLAN_ZH_EXTRA.text[m[1]]||m[1]);}],[/^Your last search: (.+)$/,function(m){return "你上次的搜索："+(window.EDUPLAN_ZH_EXTRA.text[m[1]]||m[1]);}],
  [/^(\d+) programmes? (has|have) no fee listed yet, so the budget filter left (it|them) out\.$/,"$1 个课程还没有列出学费，所以预算筛选没有包含它们。"],[/^Show (it|them)$/,"显示"],
- [/^(.+) result$/,"$1 成绩"],[/^Counts as A: (.+)$/,"算作 A 的等级：$1"],
+ [/^(.+) result$/,"$1 成绩"],[/^Counts as A: (.+)$/,"算作 A 的等级：$1"],[/^(Next: )?Needs (\d+) (\S+?)(?: or (\S+))? for (\d+)% tuition waiver \(you have (\d+)\)$/,function(m){return (m[1]?"下一级：":"")+"需要 "+m[2]+" 个 "+m[3]+(m[4]?" 或 "+m[4]:"")+"，可获 "+m[5]+"% 学费减免（你有 "+m[6]+" 个）";}],
  [/^No campus scholarship in our data matches (.+) at this level yet\. A counsellor can check other options with you\.$/,"我们的资料中暂时没有符合 $1 及此层次的校内奖学金，顾问可以帮你查看其他选择。"]
 ]};
 /* Faculty names carry their own Chinese in faculty-data.js; start-date options read "Nov 2026". */

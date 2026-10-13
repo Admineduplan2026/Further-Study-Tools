@@ -33,6 +33,12 @@ The student picks an **exam type** and enters their result; the page shows the t
 - `minimum_result` is read as a number of As (`7As`) or a CGPA (`CGPA 3.70 and above`, `≥CGPA 3.90`, `CGPA 3.80-3.89`).
   Tiers that count only A+ (`8A+`, `8As (A+ and A only)`) are shown as conditions, never awarded automatically.
 
+## My results and entry requirements
+
+Students save their results once in **My portfolio > My results** (or in step 5 of the application form). The
+scholarship search uses them automatically, and every programme card shows whether the student meets its entry
+requirements. How to write entry requirements in the sheets: docs/entry-requirements.md.
+
 ## The Claude artifact previews
 
 The previews cannot call the Apps Script, so they carry a snapshot of the sheet data. The daily sync routine

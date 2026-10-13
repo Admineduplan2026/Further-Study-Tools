@@ -1,0 +1,192 @@
+/* Eduplan "My results": the student's exam results, kept until they change them, and the matching that uses them.
+   - Stored in this browser as "eduplan-results" and in the student's portfolio as the section "results".
+   - Scholarships use the number of A grades (and A+ / A* for tiers that count only those).
+   - Programmes use the entry requirements in the school sheets, written one rule per line (docs/entry-requirements.md).
+   Used by assets/js/app.js (My portfolio, application form, programme pages) and lab/lab.js (search results). */
+(function(){
+"use strict";
+function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];});}
+
+/* grades: best first. a: grades that count as an A. credit / pass: the lowest grade that is a credit / a pass.
+   letter: what a plain letter in a rule means (UEC "B" = B6 or better). col: the school sheet column with its rules. */
+var SEC_SUBJ=["English","Mathematics","Additional Mathematics","Physics","Chemistry","Biology","Combined Science","Economics","Business Studies","Accounting",
+ "Computer Science","Geography","History","Chinese","Malay","Literature in English","Art and Design"];
+var EXAMS=[
+ {id:"SPM",grp:"Secondary school",grades:["A+","A","A-","B+","B","C+","C","D","E","G"],a:["A+","A","A-"],credit:"C",pass:"E",col:"spm",max:12,lv:"foundation",
+  subjects:["Bahasa Melayu","English","Mathematics","Additional Mathematics","History (Sejarah)","Science","Physics","Chemistry","Biology","Islamic Education",
+   "Moral Education","Principles of Accounting","Economics","Business","Geography","Chinese Language","Tamil Language","Literature in English","Computer Science","Visual Arts"]},
+ {id:"IGCSE",grp:"Secondary school",grades:["A*","A","B","C","D","E","F","G","U"],a:["A*","A"],credit:"C",pass:"G",col:"olevel",max:14,lv:"foundation",subjects:SEC_SUBJ},
+ {id:"O-Level",grp:"Secondary school",grades:["A*","A","B","C","D","E","U"],a:["A*","A"],credit:"C",pass:"E",col:"olevel",max:12,lv:"foundation",subjects:SEC_SUBJ},
+ {id:"UEC",label:"UEC (Senior Middle 3)",grp:"Secondary school",grades:["A1","A2","B3","B4","B5","B6","C7","C8","F9"],a:["A1","A2"],credit:"B6",pass:"C8",
+  letter:{A:"A2",B:"B6",C:"C8"},col:"uec",max:12,lv:"undergraduate",
+  subjects:["Chinese","Malay","English","Mathematics","Advanced Mathematics","Physics","Chemistry","Biology","History","Geography",
+   "Bookkeeping and Accounting","Commerce","Economics","Computing and Information Technology","Art"]},
+ {id:"STPM",grp:"Pre-university",grades:["A","A-","B+","B","B-","C+","C","C-","D+","D","F"],a:["A","A-"],credit:"C",pass:"C",col:"stpm",max:5,lv:"undergraduate",
+  subjects:["General Studies (Pengajian Am)","Mathematics (T)","Mathematics (M)","Physics","Chemistry","Biology","Economics","Accounting","Business Studies",
+   "Geography","History","Chinese Literature","Malay Literature","Literature in English","ICT"]},
+ {id:"A-Level",grp:"Pre-university",grades:["A*","A","B","C","D","E","U"],a:["A*","A"],credit:"C",pass:"E",col:"other",max:5,lv:"undergraduate",
+  subjects:["Mathematics","Further Mathematics","Physics","Chemistry","Biology","Economics","Accounting","Business","Computer Science","Psychology",
+   "Literature in English","History","Geography","Chinese","Law","Sociology"]},
+ {id:"Foundation",grp:"Foundation, matriculation or diploma (CGPA)",cgpa:true,col:"other",lv:"undergraduate"},
+ {id:"Matriculation",grp:"Foundation, matriculation or diploma (CGPA)",cgpa:true,col:"other",lv:"undergraduate"},
+ {id:"Diploma",grp:"Foundation, matriculation or diploma (CGPA)",cgpa:true,col:"other",lv:"undergraduate"}];
+function exam(id){for(var i=0;i<EXAMS.length;i++)if(EXAMS[i].id===id)return EXAMS[i];return null;}
+/* Exam names as they appear in a sheet's group heading ("A-Level:", "Foundation / Matriculation:"). */
+var HEADS=[[/\bA[\s-]?Levels?\b/i,"A-Level"],[/\bFoundation\b/i,"Foundation"],[/\bMatric/i,"Matriculation"],[/\bDiploma\b/i,"Diploma"],[/\bSTPM\b/i,"STPM"],
+ [/\bUEC\b/i,"UEC"],[/\bSPM\b/i,"SPM"],[/\bIGCSE\b/i,"IGCSE"],[/\bO[\s-]?Levels?\b/i,"O-Level"]];
+
+/* ---------- The student's results ---------- */
+var KEY="eduplan-results";
+function load(){var r=null;try{r=JSON.parse(localStorage.getItem(KEY));}catch(e){}r=r&&typeof r==="object"?r:{};r.exams=r.exams&&typeof r.exams==="object"?r.exams:{};return r;}
+var R=load(),UI={cur:null,other:null};
+function save(){try{localStorage.setItem(KEY,JSON.stringify(R));}catch(e){}window.dispatchEvent(new CustomEvent("eduplan:results"));}
+function has(id){var x=R.exams[id];return !!(x&&((x.g&&x.g.length)||(x.cgpa!==""&&x.cgpa!=null)));}
+function taken(){return EXAMS.filter(function(e){return has(e.id);}).map(function(e){return e.id;});}
+function grades(id){var x=R.exams[id];return x&&x.g?x.g:[];}
+function cgpa(id){var x=R.exams[id];return x&&x.cgpa!==""&&x.cgpa!=null?Number(x.cgpa):null;}
+/* How many subjects have one of these grades. */
+function countIn(id,list){return grades(id).filter(function(s){return list.indexOf(s[1])>=0;}).length;}
+function aCount(id){var e=exam(id);return e&&!e.cgpa&&has(id)?countIn(id,e.a):null;}
+/* Short summary: "8 A+ · 1 A · 1 B" or "CGPA 3.50". */
+function summary(id){var e=exam(id);if(!e||!has(id))return "";if(e.cgpa)return "CGPA "+R.exams[id].cgpa;
+ return e.grades.map(function(g){var n=countIn(id,[g]);return n?n+" "+g:"";}).filter(Boolean).join(" · ");}
+/* Plain text for the application: one subject per line. */
+function text(id){var e=exam(id);if(!e||!has(id))return "";if(e.cgpa)return "CGPA "+R.exams[id].cgpa;
+ return grades(id).slice().sort(function(a,b){return e.grades.indexOf(a[1])-e.grades.indexOf(b[1]);}).map(function(s){return s[0]+" "+s[1];}).join("\n");}
+function setGrade(id,subj,g){subj=String(subj||"").trim();if(!subj)return;var x=R.exams[id]=R.exams[id]||{g:[]};x.g=(x.g||[]).filter(function(s){return norm(s[0])!==norm(subj);});
+ if(g)x.g.push([subj,g]);save();}
+function setCgpa(id,v){var n=parseFloat(v);R.exams[id]={cgpa:isNaN(n)?"":String(Math.max(0,Math.min(4,n)))};save();}
+function removeExam(id){delete R.exams[id];if(UI.cur===id)UI.cur=null;save();}
+/* Another device's newer copy (portfolio sync). */
+function use(d){R=d&&typeof d==="object"?d:{};R.exams=R.exams||{};try{localStorage.setItem(KEY,JSON.stringify(R));}catch(e){}}
+
+/* ---------- Entry requirement rules ----------
+   One rule per line. A line ending in ":" starts a group: an exam ("A-Level:") or a track ("Physical Science track:").
+   Groups are alternatives: meeting any one of them is enough. Lines that are not rules are shown as conditions to check. */
+function norm(s){var t=String(s||"").toLowerCase().replace(/\([^)]*\)/g," ").replace(/[^a-z0-9+ ]+/g," ").replace(/\s+/g," ").trim();
+ return {"english language":"english","bahasa inggeris":"english","malay language":"bahasa melayu","malay":"bahasa melayu","bm":"bahasa melayu","sejarah":"history",
+  "maths":"mathematics","math":"mathematics","modern mathematics":"mathematics","add maths":"additional mathematics","chinese language":"chinese"}[t]||t;}
+function gradeOf(e,tok){tok=String(tok||"").trim();if(/^credit$/i.test(tok))return e.credit;if(/^pass$/i.test(tok))return e.pass;
+ var up=tok.toUpperCase();if(e.grades.indexOf(up)>=0)return up;if(e.letter&&e.letter[up])return e.letter[up];return null;}
+function atLeast(e,g,min){var a=e.grades.indexOf(g),b=e.grades.indexOf(min);return a>=0&&b>=0&&a<=b;}
+function gradeWord(e,g){return g===e.credit&&e.credit!==e.pass?"credit ("+g+")":g===e.pass?"pass ("+g+")":g;}
+var EXAM_RE="(SPM|UEC|IGCSE|O-Level|STPM|A-Level)";
+function parseLine(l,eid){
+ var e=exam(eid),m;
+ if(/^not (?:accepted|applicable)\b/i.test(l))return {t:"no",text:l};
+ /* Other routes and footnotes: shown, but not a condition. */
+ if(/^(?:or\b|other (?:relevant |equivalent )|for other equivalent|note\b|\*)/i.test(l))return {t:"info",text:l};
+ if((m=l.match(/^(?:min(?:imum)?\s+)?CGPA\s*[:：]?\s*(\d(?:\.\d+)?)\s*(?:or (?:above|higher|better))?$/i)))return {t:"cgpa",min:+m[1],text:l};
+ if(!e||e.cgpa)return {t:"note",text:l};
+ if((m=l.match(/^(\d+)\s*credits?$/i)||l.match(/^credits?\s*[:：]\s*(\d+)$/i)))return {t:"count",n:+m[1],g:e.credit,text:l};
+ if((m=l.match(/^(\d+)\s*principals?(?:\s+passes)?$/i)))return {t:"count",n:+m[1],g:e.credit,text:l};
+ if((m=l.match(/^(\d+)\s*pass(?:es)?$/i)))return {t:"count",n:+m[1],g:e.pass,text:l};
+ if((m=l.match(/^(\d+)\s*subjects?\s*[:：]\s*(?:grade\s*)?(\S+?)(?:\s*or (?:better|above))?$/i))){var g=gradeOf(e,m[2]);if(g)return {t:"count",n:+m[1],g:g,text:l};}
+ if((m=l.match(new RegExp("^(?:"+EXAM_RE+"\\s+)?(.+?)\\s*[:：]\\s*(?:grade\\s*)?(credit|pass|[A-G][1-9]?[+*-]?)(?:\\s*or (?:better|above))?$","i")))){
+  var ex=m[1]?exam({spm:"SPM",uec:"UEC",igcse:"IGCSE","o-level":"O-Level",stpm:"STPM","a-level":"A-Level"}[m[1].toLowerCase()]):e;
+  if(ex&&!ex.cgpa){var g2=gradeOf(ex,m[3]);
+   if(g2)return {t:"subj",ex:ex.id,all:m[2].split(/\s*(?:,|\band\b|&)\s*/i).filter(Boolean).map(function(p){return p.split(/\s*(?:\/|\bor\b)\s*/i).filter(Boolean);}),g:g2,text:l};}}
+ return {t:"note",text:l};
+}
+function groupsFor(cols,eid){
+ var e=exam(eid);if(!e)return [];
+ var raw=String(cols[e.col]||"").replace(/\r/g,"");if(!raw.trim())return [];
+ var gs=[],cur={head:null,ex:null,lines:[]};gs.push(cur);
+ raw.split("\n").forEach(function(l){l=l.replace(/^[\s•·*▪◦–-]+/,"").trim();if(!l)return;
+  if(/[:：]$/.test(l)&&l.length<90){var h=l.replace(/[:：]$/,""),ex=HEADS.filter(function(x){return x[0].test(h);}).map(function(x){return x[1];});
+   cur={head:h,ex:ex.length?ex:null,lines:[]};gs.push(cur);return;}
+  cur.lines.push(l);});
+ /* In the "Others" column only groups named after this exam count; elsewhere a group without an exam name is a track. */
+ /* A group headed "Also required" adds its lines to every other group in the column. */
+ var also=[];gs.forEach(function(g){if(g.head&&/^also\b/i.test(g.head)){also=also.concat(g.lines);g.lines=[];}});
+ return gs.filter(function(g){if(!g.lines.length)return false;if(g.ex)return g.ex.indexOf(eid)>=0;return e.col!=="other";})
+  .map(function(g){return {head:g.head,ex:g.ex,rules:g.lines.concat(also).map(function(l){return parseLine(l,eid);})};});
+}
+/* One rule against the student's results: ok / fail (with what is missing) / note (cannot be checked). */
+function checkRule(r,eid){
+ var e=exam(eid);
+ if(r.t==="info")return {s:"info"};
+ if(r.t==="note")return {s:"note",text:r.text};
+ if(r.t==="no")return {s:"no",text:r.text};
+ if(r.t==="cgpa"){var c=cgpa(eid);if(c==null)return {s:"note",text:r.text};return c>=r.min?{s:"ok"}:{s:"fail",need:"CGPA "+r.min.toFixed(2)+" (you have "+c.toFixed(2)+")"};}
+ if(r.t==="count"){var n=grades(eid).filter(function(s){return atLeast(e,s[1],r.g);}).length;
+  return n>=r.n?{s:"ok"}:{s:"fail",need:r.n+" subjects at "+gradeWord(e,r.g)+" or better (you have "+n+")"};}
+ if(r.t==="subj"){var ex=exam(r.ex),miss=[];
+  if(!has(r.ex))return {s:"fail",need:(r.ex!==eid?r.ex+" ":"")+r.all.map(function(a){return a.join(" or ");}).join(" and ")+" at "+gradeWord(ex,r.g)+" (add your "+r.ex+" results)"};
+  r.all.forEach(function(alts){var ok=alts.some(function(name){return grades(r.ex).some(function(s){return norm(s[0])===norm(name)&&atLeast(ex,s[1],r.g);});});if(!ok)miss.push(alts.join(" or "));});
+  return miss.length?{s:"fail",need:(r.ex!==eid?r.ex+" ":"")+miss.join(", ")+" at "+gradeWord(ex,r.g)+" or better"}:{s:"ok"};}
+ return {s:"note",text:r.text};
+}
+/* A programme's entry requirements against one exam.
+   state: meets (every rule met) · check (grades met, other conditions to check) · missing · no (not accepted) · none (no rules). */
+var RANK={meets:4,check:3,missing:2,no:1,none:0};
+function checkExam(cols,eid){
+ var gs=groupsFor(cols,eid);if(!gs.length)return {exam:eid,state:"none"};
+ var best=null;
+ gs.forEach(function(g){var res=g.rules.map(function(r){return checkRule(r,eid);}),st;
+  if(res.some(function(x){return x.s==="no";}))st="no";
+  else if(res.some(function(x){return x.s==="fail";}))st="missing";
+  else if(res.some(function(x){return x.s==="note";}))st="check";
+  else st="meets";
+  var o={exam:eid,state:st,track:g.head&&!g.ex?g.head:"",need:res.filter(function(x){return x.s==="fail";}).map(function(x){return x.need;}),
+   notes:res.filter(function(x){return x.s==="note"||x.s==="no";}).map(function(x){return x.text;}),
+   checked:res.filter(function(x){return x.s==="ok"||x.s==="fail";}).length};
+  if(!best||RANK[st]>RANK[best.state]||(st===best.state&&o.need.length<best.need.length))best=o;});
+ return best;
+}
+/* The best result over every exam the student has. cols = {spm, uec, olevel, stpm, other}. */
+function match(cols){
+ var out=null;taken().forEach(function(id){var r=checkExam(cols,id);if(r.state!=="none"&&(!out||RANK[r.state]>RANK[out.state]))out=r;});
+ return out;
+}
+/* One line for a card: [state, text]. */
+function badge(m){if(!m)return null;
+ if(m.state==="meets")return ["ok","Your "+m.exam+" results meet the entry requirements"+(m.track?" ("+m.track+")":"")];
+ if(m.state==="check")return ["ok","Your "+m.exam+" grades meet the requirements. Also check: "+m.notes.join("; ")];
+ if(m.state==="missing")return ["miss","Not yet with your "+m.exam+" results: needs "+m.need.join("; ")];
+ if(m.state==="no")return ["no",m.exam+" is not accepted directly for this programme"];
+ return null;}
+
+/* ---------- Editor (My portfolio and the application form) ----------
+   fixed: show one exam only (the application form's "Highest qualification"). */
+function editor(fixed){
+ var list=taken(),id=fixed||UI.cur||(list[0]||"SPM"),e=exam(id);if(!e)return "";
+ UI.cur=id;
+ var tabs=fixed?'':'<div class="rxtabs" role="group" aria-label="Exam">'+EXAMS.map(function(x){return '<button type="button" class="chip" data-rx-exam="'+esc(x.id)+'" aria-pressed="'+(x.id===id)+'">'+esc(x.label||x.id)+(has(x.id)?' ✓':'')+'</button>';}).join("")+'</div>';
+ var body;
+ if(e.cgpa){var c=R.exams[id]&&R.exams[id].cgpa;
+  body='<div class="field"><label for="rx-cgpa">Your CGPA (out of 4.00)</label><input id="rx-cgpa" type="number" inputmode="decimal" min="0" max="4" step="0.01" value="'+esc(c==null?"":c)+'" placeholder="e.g. 3.50" data-rx-cgpa="'+esc(id)+'"></div>';}
+ else{var mine=grades(id),usedN=mine.map(function(s){return norm(s[0]);}),free=e.subjects.filter(function(s){return usedN.indexOf(norm(s))<0;});
+  body='<p class="hint">For each grade, add the subjects you got that grade in. Counts as A in '+esc(e.id)+': '+esc(e.a.join(", "))+'.</p><div class="rxgrid">'+e.grades.map(function(g){
+   var subs=mine.filter(function(s){return s[1]===g;});
+   return '<div class="rxrow'+(subs.length?' on':'')+'"><span class="rxg" data-notr>'+esc(g)+'</span><div class="rxchips">'+subs.map(function(s){
+     return '<button type="button" class="rxchip" data-rx-del="'+esc(s[0])+'" aria-label="Remove '+esc(s[0])+' ('+esc(g)+')">'+esc(s[0])+' <span aria-hidden="true">×</span></button>';}).join("")+
+    (UI.other===g?'<span class="rxother"><input id="rx-other" type="text" placeholder="Subject name" aria-label="Other subject with grade '+esc(g)+'"><button type="button" class="btn sm" data-rx-otherok="'+esc(g)+'">Add</button></span>':
+     '<select class="rxadd" data-rx-add="'+esc(g)+'" aria-label="Add a subject with grade '+esc(g)+'"><option value="">+ Add subject</option>'+free.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join("")+
+     '<option value="__other">Other subject…</option></select>')+'</div></div>';}).join("")+'</div>';}
+ var sum=has(id)?'<p class="rxsum"><strong>'+esc(e.id)+':</strong> '+esc(summary(id))+(e.cgpa?'':' · <strong>'+aCount(id)+' A'+(aCount(id)===1?'':'s')+'</strong>')+'</p>':'';
+ return '<div class="rx" id="rx">'+tabs+body+sum+
+  (has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';
+}
+function refocus(sel){var el=document.querySelector(sel);if(el)el.focus();}
+document.addEventListener("click",function(ev){
+ var t=ev.target.closest&&ev.target.closest("[data-rx-exam],[data-rx-del],[data-rx-remove],[data-rx-otherok]");if(!t)return;
+ if(t.hasAttribute("data-rx-exam")){UI.cur=t.getAttribute("data-rx-exam");UI.other=null;save();refocus('[data-rx-exam="'+UI.cur+'"]');}
+ else if(t.hasAttribute("data-rx-del")){setGrade(UI.cur,t.getAttribute("data-rx-del"),null);refocus("#rx select");}
+ else if(t.hasAttribute("data-rx-remove")){removeExam(t.getAttribute("data-rx-remove"));refocus("#rx button");}
+ else if(t.hasAttribute("data-rx-otherok")){var g=t.getAttribute("data-rx-otherok"),inp=document.getElementById("rx-other");UI.other=null;
+  if(inp&&inp.value.trim())setGrade(UI.cur,inp.value,g);else save();refocus('[data-rx-add="'+g+'"]');}
+});
+document.addEventListener("change",function(ev){
+ var t=ev.target;
+ if(t.hasAttribute&&t.hasAttribute("data-rx-add")){var g=t.getAttribute("data-rx-add");
+  if(t.value==="__other"){UI.other=g;save();refocus("#rx-other");return;}
+  if(t.value){setGrade(UI.cur,t.value,g);refocus('[data-rx-add="'+g+'"]');}}
+ if(t.hasAttribute&&t.hasAttribute("data-rx-cgpa"))setCgpa(t.getAttribute("data-rx-cgpa"),t.value);
+});
+document.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&ev.target.id==="rx-other"){ev.preventDefault();var b=document.querySelector("[data-rx-otherok]");if(b)b.click();}
+ if(ev.key==="Escape"&&ev.target.id==="rx-other"){UI.other=null;save();}});
+
+window.EDUPLAN_RESULTS={EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
+ summary:summary,text:text,editor:editor,groupsFor:groupsFor,checkExam:checkExam,match:match,badge:badge,current:function(){return UI.cur;},setCurrent:function(id){UI.cur=id;}};
+})();

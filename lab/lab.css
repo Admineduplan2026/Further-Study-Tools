@@ -322,3 +322,11 @@ a.dest,a.major,a.offer{text-decoration:none}
 .win span{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
 .win b{font-size:20px;font-weight:600;color:#0c5a48}
 .tiers tr.hit td{background:var(--ok-soft);font-weight:600}
+/* My results in the scholarship search and the programme results */
+.sf.mine{cursor:default;gap:4px}
+.mres{font-size:15px;font-weight:500;color:var(--ink)}
+.sf.mine a.hint{color:var(--brand)}
+label.mine{display:inline-flex;align-items:center;gap:8px;font-size:14px;min-height:40px;cursor:pointer}
+label.mine input{width:18px;height:18px;accent-color:var(--brand)}
+.pcard .ematch{font-size:13px;padding:6px 10px;border-radius:10px;align-self:flex-start}
+.sheet .ematch{margin-bottom:8px}

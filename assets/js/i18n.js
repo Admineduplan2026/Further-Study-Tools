@@ -84,7 +84,19 @@ var ZH={
  "Education background":"教育背景","Start with your most recent school. Add every school from secondary school onwards.":"从最近就读的学校开始，填写中学起的所有学校。",
  "School / institution and location":"学校／院校名称与地点","From":"从","To":"至","Add another school":"再加一所学校",
  "Highest qualification":"最高学历","Results":"成绩","Actual results":"正式成绩","Forecast / not out yet":"预测成绩／尚未公布","Institution":"院校","Year started":"开始年月","Year completed":"完成年月",
- "Subjects and grades":"科目与成绩","One subject per line, for example: Mathematics A+":"每行一科，例如：Mathematics A+",
+ "Subjects and grades":"科目与成绩",
+ /* My results (assets/js/results.js) */
+ "My results":"我的成绩","Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.":"成绩只需填写一次。Eduplan 会一直保存，直到你自己更改，并用来显示你符合哪些课程和奖学金。",
+ "Saved to My results, and used to match programmes and scholarships for you.":"会保存到「我的成绩」，并用来为你配对课程和奖学金。","Your CGPA (out of 4.00)":"你的 CGPA（满分 4.00）","Your CGPA":"你的 CGPA",
+ "+ Add subject":"+ 添加科目","Other subject…":"其他科目…","Subject name":"科目名称","Add":"添加","Add at least one subject and its grade.":"请至少添加一个科目及其成绩。","Enter your CGPA.":"请填写你的 CGPA。",
+ "Add your results":"填写你的成绩"," to see if you meet these requirements.":"，查看你是否符合这些条件。","These requirements cannot be checked against your results automatically. Ask a counsellor.":"这些条件无法自动对照你的成绩，请咨询顾问。",
+ "O-Level / IGCSE":"O-Level / IGCSE","Matriculation":"大学先修班","UEC (Senior Middle 3)":"独中统考 UEC（高三）","Secondary school":"中学","Pre-university":"大学先修","Foundation, matriculation or diploma (CGPA)":"预科／大学先修班／文凭（CGPA）",
+ "Bahasa Melayu":"马来文","English":"英文","Mathematics":"数学","Additional Mathematics":"高级数学","History (Sejarah)":"历史","Science":"科学","Physics":"物理","Chemistry":"化学","Biology":"生物",
+ "Islamic Education":"伊斯兰教育","Moral Education":"道德教育","Principles of Accounting":"会计原理","Economics":"经济","Business":"商业","Geography":"地理","Chinese Language":"华文","Tamil Language":"淡米尔文",
+ "Literature in English":"英国文学","Computer Science":"电脑科学","Visual Arts":"美术","Combined Science":"综合科学","Business Studies":"商业学","Accounting":"会计","Chinese":"华文","Malay":"国文","Art and Design":"艺术与设计",
+ "Advanced Mathematics":"高级数学","Bookkeeping and Accounting":"簿记与会计","Commerce":"商业学","Computing and Information Technology":"电脑与资讯工艺","Art":"美术","History":"历史",
+ "General Studies (Pengajian Am)":"通识（Pengajian Am）","Mathematics (T)":"数学（T）","Mathematics (M)":"数学（M）","Chinese Literature":"华文文学","Malay Literature":"马来文学","ICT":"资讯与通信工艺",
+ "Further Mathematics":"进阶数学","Psychology":"心理学","Law":"法律","Sociology":"社会学","One subject per line, for example: Mathematics A+":"每行一科，例如：Mathematics A+",
  "English language":"英语资格","Any English test you have taken or will take.":"已考或将考的英语考试。","Test":"考试","MUET, IELTS, TOEFL, SPM English …":"MUET、IELTS、TOEFL、SPM 英文…",
  "Score / band":"分数／等级","Date taken or to be taken":"考试日期（已考或将考）","Add another test":"再加一项考试",
  "Do you have a disability?":"你是否有身体障碍？","No":"否","Yes":"是","Please give details":"请说明详情",
@@ -185,7 +197,7 @@ var ZH={
  /* Faculty flow */
  "Choose a faculty":"选择科系","Pick the field you are interested in to see its courses.":"选择你感兴趣的领域，查看相关课程。","See universities":"查看大学",
  "Universities offering this course":"开办此课程的大学","The university list for this course is being prepared. A counsellor can tell you which universities offer it.":"此课程的大学名单正在整理中，升学顾问可以告诉你哪些大学开办这个课程。",
- "Programme page":"课程网页","Tuition fee (whole programme)":"学费（整个课程）","Intakes":"开课月份","Entry (SPM)":"入学条件（SPM）","Entry (other)":"入学条件（其他）","English":"英文要求","Application deadline":"截止日期","Notes":"备注",
+ "Programme page":"课程网页","Tuition fee (whole programme)":"学费（整个课程）","Intakes":"开课月份","Entry (SPM)":"入学条件（SPM）","Entry (other)":"入学条件（其他）","English requirement":"英文要求","Application deadline":"截止日期","Notes":"备注",
  "Interest-based":"兴趣导向","Courses":"课程",
  "Choose a university to see its programmes by level: foundation, undergraduate and postgraduate.":"选择大学，按阶段查看课程：预科、本科与研究生。",
  "View university":"查看大学","The university list is being prepared.":"大学名单正在整理中。","Website":"官网","Admissions email":"招生电邮","Admissions phone":"招生电话",
@@ -232,7 +244,15 @@ var ZH={
 };
 var LEVEL={Foundation:"预科",Undergraduate:"本科",Postgraduate:"研究生"};
 var ZH_PATTERNS=[
- [/^Page (\d): (.+)$/,function(m){return "第 "+m[1]+" 页："+tr(m[2]);}],
+ /* My results: summaries and entry-requirement matches (assets/js/results.js) */
+ [/^For each grade, add the subjects you got that grade in\. Counts as A in (.+?): (.+)\.$/,"在每个等级加入你考获该等级的科目。$1 中算作 A 的等级：$2。"],
+ [/^Remove my (.+) results$/,"删除我的 $1 成绩"],[/^(\d+) As?$/,"$1 个 A"],
+ [/^You meet the entry requirements \((.+)\)$/,"✓ 你的 $1 成绩符合入学条件"],[/^Your (.+?) grades meet the requirements$/,"✓ 你的 $1 成绩符合要求"],
+ [/^(.+) not accepted directly$/,"$1 不能直接报读"],[/^(.+) is not accepted directly for this programme$/,"此课程不接受直接以 $1 报读"],
+ [/^Your (.+?) results meet the entry requirements(?: \((.+)\))?$/,function(m){return "✓ 你的 "+m[1]+" 成绩符合入学条件"+(m[2]?"（"+m[2]+"）":"");}],
+ [/^Your (.+?) grades meet the requirements\. Also check: (.+)$/,"✓ 你的 $1 成绩符合要求。另请留意：$2"],
+ [/^Needs (.+?)(?: and (\d+) more)?$/,function(m){return "还需要："+needZh(m[1])+(m[2]?"，另有 "+m[2]+" 项":"");}],
+ [/^Not yet with your (.+?) results: needs (.+)$/,function(m){return "你的 "+m[1]+" 成绩暂未符合，还需要："+m[2].split("; ").map(needZh).join("；");}], [/^Page (\d): (.+)$/,function(m){return "第 "+m[1]+" 页："+tr(m[2]);}],
  [/^(\d+) courses?$/,"$1 门课程"],
  [/^(\d+) scholarships?$/,"$1 项奖学金"],
  [/^(\d+) universit(?:y|ies)$/,"$1 所大学"],
@@ -272,6 +292,15 @@ var ZH_PATTERNS=[
  [/^Phone \/ WhatsApp: (.*)$/,"电话／WhatsApp：$1"],[/^Email: (.*)$/,"电邮：$1"],[/^Address: (.*)$/,"地址：$1"],
  [/^Send to: WhatsApp (.+) or email (.+)\.$/,"发送至：WhatsApp $1 或电邮 $2。"]
 ];
+/* "5 subjects at credit (C) or better (you have 3)" and similar parts of an entry-requirement match. */
+function needZh(t){var m;
+ if((m=t.match(/^(\d+) subjects at (.+?) or better \(you have (\d+)\)$/)))return m[1]+" 科 "+gradeZh(m[2])+" 或以上（你有 "+m[3]+" 科）";
+ if((m=t.match(/^CGPA ([\d.]+) \(you have ([\d.]+)\)$/)))return "CGPA "+m[1]+"（你的是 "+m[2]+"）";
+ if((m=t.match(/^(.+?) at (.+?) \(add your (.+) results\)$/)))return subjZh(m[1])+" 达到 "+gradeZh(m[2])+"（请填写你的 "+m[3]+" 成绩）";
+ if((m=t.match(/^(.+?) at (.+?) or better$/)))return subjZh(m[1])+" 达到 "+gradeZh(m[2])+" 或以上";
+ return t;}
+function gradeZh(g){return g.replace(/^credit \((.+)\)$/,"优等（$1）").replace(/^pass \((.+)\)$/,"及格（$1）");}
+function subjZh(s){return s.split(/(, | and | or )/).map(function(x){return x===", "?"、":x===" and "?" 和 ":x===" or "?" 或 ":(ZH[x]||x);}).join("");}
 /* Other pages (lab/lab-zh.js) add their own text: window.EDUPLAN_ZH_EXTRA={text:{...},patterns:[[regex,replacement],...]}. */
 (function(x){if(!x)return;Object.keys(x.text||{}).forEach(function(k){ZH[k]=x.text[k];});(x.patterns||[]).forEach(function(p){ZH_PATTERNS.unshift(p);});})(window.EDUPLAN_ZH_EXTRA);
 /* Quiz questions and options carry their own Chinese in quiz-data.js. */
