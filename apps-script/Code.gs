@@ -19,6 +19,7 @@
  * POST <url> {"action":"chat",...}  -> AI study assistant reply (Chat.gs, docs/ai-chatbot-setup.md)
  * POST <url> {"action":"apply",...} -> stores an application in Eduplan's private Drive (Apply.gs, docs/application-form-setup.md)
  * POST <url> {"action":"account_...",...} -> student sign-in and portfolio autosave (Account.gs, docs/student-portfolio-setup.md)
+ * Menu Eduplan > Check school documents with AI -> compares each school sheet with its "documents" folder (Verify.gs, docs/document-check.md)
  * Edits show up within about a minute: each request compares the folder's last-edit times
  * (checked at most every FRESH_SECONDS) with the cached copy.
  *
@@ -120,6 +121,8 @@ function onOpen() {
   SpreadsheetApp.getUi().createMenu('Eduplan')
     .addItem('Check data (what the website will show)', 'showCheck')
     .addItem('Refresh website data now', 'clearCache')
+    .addSeparator()
+    .addItem('Check school documents with AI', 'verifyStart')   // Verify.gs
     .addToUi();
 }
 

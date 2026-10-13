@@ -9,7 +9,8 @@ Google Drive 文件夹「Eduplan School Data」
 │   └── _Template（新增学校时复制）       名称以 _ 开头的文件不会被读取
 ├── TARUMT/  ┐  每校一个文件夹：
 ├── UCSI/    │    <学校> Sheet（Institutions、Programmes、Campus Scholarships）
-├── UTAR/    │    application/  学生报名（每人一个子文件夹：报名 PDF + 上传文件）
+├── UTAR/    │    documents (school uploads 学校资料)/  学校上传的简章、学费表、奖学金资料，AI 用来核对 Sheet（docs/document-check.md）
+│            │    application/  学生报名（每人一个子文件夹：报名 PDF + 上传文件）
 └── XMUM/    ┘
         │
         ▼
@@ -40,7 +41,7 @@ Apps Script API (/exec) ──► 网站（约 1 分钟内更新）
 **新增一所学校：** 在 Eduplan School Data 新增文件夹，命名为该校的 institution_id（例如 `SEGI`）；在 `Repository` 里右键 `_Template` → **Make a copy** → 把副本移到该文件夹并改名为同一个 institution_id，
 在 Institutions 第 4 行填写 institution_id（与文件名相同）、全名和类型，再以 Editor 身份分享给该校负责人。
 
-**共享：** 每份学校 Sheet 只分享给该校负责人（Editor）。**只分享 Sheet，不要分享学校文件夹**，因为文件夹里的 `application` 有学生的个人资料。不要使用「Anyone with the link」。`application` 文件夹会在第一份报名时自动建立（目前四校已建好）。
+**共享：** 每份学校 Sheet 和该校的 `documents` 文件夹分享给该校负责人（Editor）。**只分享 Sheet，不要分享学校文件夹**，因为文件夹里的 `application` 有学生的个人资料。不要使用「Anyone with the link」。`application` 文件夹会在第一份报名时自动建立（目前四校已建好）。
 
 ## 二、部署 API（约 5 分钟）
 
