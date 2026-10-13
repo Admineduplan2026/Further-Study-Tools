@@ -76,7 +76,14 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
    - 每个分页的第 1–3 行（标题、API 代码、格式说明）
    - 每个分页的 **Published** 栏
    - `Foundation Scholarships` 和 `Lists` 整个分页
-3. 请学校先阅读 `Instructions` 分页。
+3. 请学校先阅读 `Instructions` 分页（中英对照：填写步骤、颜色说明、日期／金额／开课月份格式、入学条件和奖学金的写法、规则）。
+4. 每个分页最后一栏 **Check (auto) 检查** 会自动显示每行缺少什么（例如「Missing 缺少: Level」），补齐后显示
+   「✓ Complete 已完成 · waiting for Eduplan review 待审核」，发布后显示「✓ On the website 已上线」。这一栏受保护，学校不能输入。
+5. 可直接复制下面的讯息发给学校负责人：
+
+> 您好，这是贵校在 Eduplan 网站的资料表：<Sheet 链接>。请先看第一页「Instructions」，再依序填写 Institutions、Programmes、Campus Scholarships 三个分页的黄色格子。每页最后的「Check 检查」栏会提示缺少的资料。完成后请回复我们，Eduplan 审核后就会显示在网站上。谢谢！
+>
+> Hello, this is your institution's sheet for the Eduplan website: <link>. Please read the Instructions tab first, then fill in the yellow cells on the Institutions, Programmes and Campus Scholarships tabs. The Check column at the end of each tab shows anything still missing. Let us know when you have finished; Eduplan will review it and put it on the website. Thank you!
 
 ## 五、审核与发布流程
 
@@ -106,6 +113,9 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
   没有列出的资格请留空，网站会显示 "Not listed by the institution"。学费留空时显示 "To be confirmed"。
 - Institutions 的 `virtual_tour_url`（选填）：院校的 3D 校园导览网址（必须以 https:// 开头），Universities 页面该校会出现导览横幅，按钮在新分页打开导览（导览网站通常不允许嵌入其他网页）。
 - 一个课程可同时列在多个课程类别：在 `also_in_courses` 栏填写其他类别（与下拉选单完全相同，每行一个）。例如 XMUM 的 Foundation in Science 同时列在 00 预科和 09 传统医学。
+- Campus Scholarships 的 `applies_to` 有下拉选单（Foundation Programmes / Undergraduate Programmes / Postgraduate Programmes），也可在后面加说明；留空代表适用所有阶段。
+- `intakes` 用英文月份，例如 `January / May / September`（网站也接受 `Jan, May, Sep`），或 `Monthly intake`。
+- `notes` 的两种特别写法：`Annual fee: RM 12,000 (Local)`（显示每年学费）和 `Academic tracks: A, B`（申请表可选择学科方向）。
 - 课程页面会**自动**列出同一院校、同一阶段可申请的 Campus Scholarships（依 `level` 对应 `applies_to` 的 Foundation / Undergraduate / Postgraduate；`applies_to` 留空的奖学金适用所有阶段）。
 - Campus Scholarships 的 `applies_to` 以 `Foundation Programmes` 或 `Undergraduate Programmes` 开头时，网站第 4 页会出现「考试（SPM / IGCSE / O-Level / UEC / STPM / A-Level）」和「Foundation / Undergraduate」按钮来筛选。
   Foundation / Matriculation / Diploma 的 CGPA 条件，`qualification` 选 `Foundation`、`Matriculation` 或 `Diploma`；SPM / IGCSE / O-Level 学生选 Undergraduate 时会显示这些条件。

@@ -44,7 +44,7 @@ var D={inst:[],progs:[],sch:[],fnd:[]};
 function levelKey(l){l=l||"";return /pre-?university|foundation/i.test(l)?"foundation":/diploma/i.test(l)?"diploma":/master/i.test(l)?"master":/phd|doctor/i.test(l)?"phd":/bachelor|degree/i.test(l)?"degree":"";}
 function levelName(k){for(var i=0;i<LEVELS.length;i++)if(LEVELS[i][0]===k)return LEVELS[i][1];return "";}
 function intakeMonths(s){s=String(s||"");if(/monthly|every month|throughout/i.test(s))return MONTHS.map(function(_,i){return i;});
- return MONTHS.map(function(m,i){return new RegExp("\\b"+m+"\\b","i").test(s)?i:-1;}).filter(function(i){return i>=0;});}
+ return MONTHS.map(function(m,i){return new RegExp("\\b"+m.slice(0,3)+"(?:"+m.slice(3)+"|t)?\\b","i").test(s)?i:-1;})   /* "September", "Sep" or "Sept" */.filter(function(i){return i>=0;});}
 function facOfCourse(cid){for(var i=0;i<FAC.fields.length;i++)for(var j=0;j<FAC.fields[i].courses.length;j++)if(FAC.fields[i].courses[j].id===cid)return {f:FAC.fields[i],c:FAC.fields[i].courses[j]};return null;}
 function facByCode(code){for(var i=0;i<FAC.fields.length;i++)if(FAC.fields[i].code===code)return FAC.fields[i];return null;}
 function useData(d){
