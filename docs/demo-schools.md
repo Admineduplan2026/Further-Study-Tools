@@ -29,5 +29,5 @@ Either of these hides a demo school from the website and the daily preview sync:
 - rename its folder **and** its sheet in Eduplan School Data to start with an underscore, e.g. `_DEMOLRU`; or
 - set **Published** to `No` on its rows (Institutions, Programmes and Campus Scholarships).
 
-Applications sent to a demo school are saved in its `application` folder like a real school's; delete those test
-applications together with the demo folders.
+Applications sent to a demo school are saved in Eduplan Applications (private)/DEMO… like a real school's; delete those
+test application folders together with the demo folders.

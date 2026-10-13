@@ -1,16 +1,14 @@
 /**
  * Eduplan application form: receives applications from the website (#apply and #stay).
  *
- * Each application is saved in the chosen school's folder in "Eduplan School Data":
- *   <SCHOOL>/application/<EDU-YYYYMMDD-XXXX STUDENT NAME>/
+ * Every application is saved in one private folder in My Drive, sorted by school:
+ *   Eduplan Applications (private)/<SCHOOL>/<EDU-YYYYMMDD-XXXX STUDENT NAME>/
  *       <ref> <NAME> - Application.pdf   the completed form as a PDF, with photos of the documents at the end
  *       ic-1.jpg, results-1.pdf, ...      the uploaded documents
- * The school folder is the one named after the programme's institution_id (XMUM, UTAR, ...); its "application"
- * folder is created if it is missing. If there is no school folder, the application goes to the private folder
- * "Eduplan Applications (private)/Unassigned".
+ * <SCHOOL> is the programme's institution_id (XMUM, UTAR, ...); the folder is created if it is missing. An application
+ * without an institution goes to "Unassigned". The school folders in "Eduplan School Data" hold no student data.
  * A private spreadsheet "Eduplan Applications" (in "Eduplan Applications (private)") gets one row per application.
- * Nothing is shared by this script. Anyone who can open a school's folder can open its applications, so share school
- * folders only with Eduplan staff (share the school sheet itself, not the folder, with school staff).
+ * Nothing is shared by this script. Share "Eduplan Applications (private)" only with Eduplan staff.
  *
  * Script Properties (Project Settings > Script Properties), all optional:
  *   APPLY_NOTIFY_EMAIL  an Eduplan address to email when a new application arrives (name, programme and reference only).
@@ -33,26 +31,17 @@ var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile
 function applyFolder_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_FOLDER_ID');
   if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted or no access: make a new one */ } }
-  var folder = DriveApp.createFolder('Eduplan Applications (private)');
+  var found = DriveApp.getRootFolder().getFoldersByName('Eduplan Applications (private)');
+  var folder = found.hasNext() ? found.next() : DriveApp.createFolder('Eduplan Applications (private)');
   props.setProperty('APPLY_FOLDER_ID', folder.getId());
   return folder;
 }
 
-/* <School folder>/application for the institution, or the private Unassigned folder. */
+/* Eduplan Applications (private)/<INSTITUTION ID>, or .../Unassigned. */
 function applySchoolFolder_(institutionId) {
-  var id = String(institutionId || '').trim().toUpperCase();
-  if (id) {
-    var dirs = DriveApp.getFolderById(SCHOOL_FOLDER_ID).getFolders();
-    while (dirs.hasNext()) {
-      var d = dirs.next();
-      if (d.getName().trim().toUpperCase() === id && !d.isTrashed()) {
-        var apps = d.getFoldersByName('application');
-        return apps.hasNext() ? apps.next() : d.createFolder('application');
-      }
-    }
-  }
-  var root = applyFolder_(), un = root.getFoldersByName('Unassigned');
-  return un.hasNext() ? un.next() : root.createFolder('Unassigned');
+  var name = String(institutionId || '').trim().toUpperCase().replace(/[^\w-]/g, '') || 'Unassigned';
+  var root = applyFolder_(), dirs = root.getFoldersByName(name);
+  return dirs.hasNext() ? dirs.next() : root.createFolder(name);
 }
 
 function applyEsc_(s) {

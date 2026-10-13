@@ -2,7 +2,7 @@
  * Eduplan school data API (Google Apps Script).
  *
  * Data lives in one Google Drive folder ("Eduplan School Data", SCHOOL_FOLDER_ID below):
- *   - one folder per school (TARUMT, UTAR, UCSI, ...) holding the school's Google Sheet and an "application" folder
+ *   - one folder per school (TARUMT, UTAR, UCSI, ...) holding the school's Google Sheet and its "documents" folder
  *     where Apply.gs saves each student's application PDF and documents; the sheet has the tabs
  *     Institutions, Programmes and Campus Scholarships (+ a hidden Lists tab for the dropdowns);
  *   - this master sheet (the one this script is bound to), Eduplan only, with
@@ -149,8 +149,8 @@ function clearCache() {
   SpreadsheetApp.getUi().alert('Done. The website shows the latest published data on its next load.');
 }
 
-/** School sheets in the folder, sorted by name. Each school has its own folder (e.g. XMUM/ with the XMUM sheet and an
-    "application" folder); sheets placed directly in the main folder are read too. Names starting with "_" are skipped,
+/** School sheets in the folder, sorted by name. Each school has its own folder (e.g. XMUM/ with the XMUM sheet and its
+    "documents" folder); sheets placed directly in the main folder are read too. Names starting with "_" are skipped,
     and so is the "Repository" folder (template and master shortcut). */
 var SKIP_FOLDERS = ['repository'];
 function schoolFiles_() {

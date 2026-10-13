@@ -26,34 +26,34 @@ Every route ends with the same three pages once the student chooses a programme 
 ## Where applications go
 
 When the student presses **Send my application to Eduplan**, the website posts the form and the files to the same
-Apps Script `/exec` URL. `apps-script/Apply.gs` saves them in the chosen school's folder in **Eduplan School Data**:
+Apps Script `/exec` URL. `apps-script/Apply.gs` saves them in one private folder in My Drive, sorted by school
+(never in the school folders of **Eduplan School Data**, which school staff may see):
 
 ```
-Eduplan School Data/
+Eduplan Applications (private)/      (My Drive, shared with nobody)
+  Eduplan Applications               (spreadsheet: one row per application)
   XMUM/
-    XMUM                      (the school's Google Sheet)
-    application/
-      EDU-20261011-AB12 TAN WEI MING/
-        EDU-20261011-AB12 TAN WEI MING - Application.pdf
-        ic-1.jpg, results-2.pdf, ...
+    EDU-20261011-AB12 TAN WEI MING/
+      EDU-20261011-AB12 TAN WEI MING - Application.pdf
+      ic-1.jpg, results-official-1.pdf, ...
   UTAR/ ...
-  Repository/                 (_Template and the master sheet shortcut)
+  Unassigned/                        (no institution on the application)
 ```
 
 - The **PDF** is the completed form laid out like a university application form (programme, personal and contact
   details, family, education, English, documents checklist, accommodation, declaration), with lines for the applicant's
   and parent's signatures and the photos of the documents on the following pages. PDF uploads are saved next to it.
-- The school folder is found by the programme's `institution_id` (XMUM, UTAR, ...). Its `application` folder is
-  created if it is missing. If a school has no folder yet, the application goes to
-  **Eduplan Applications (private)/Unassigned** in the deploying account's Drive.
+- The school's folder is named after the programme's `institution_id` (XMUM, UTAR, ...) and is created with its first
+  application. An application without an institution goes to **Unassigned**.
 - A private spreadsheet **Eduplan Applications** (in **Eduplan Applications (private)**) gets one row per application,
   with a link to its folder and Status, Counsellor and Notes columns for the team.
 
-**Who can see applications:** anyone who can open a school's folder can open its `application` folder. Share school
-folders only with Eduplan staff. To let a school's staff fill in their data, share the school's **sheet**, not the folder.
+**Who can see applications:** only people who can open **Eduplan Applications (private)**: share it with Eduplan staff
+only, never with a school. The school folders in Eduplan School Data hold no student data, so a school's sheet and
+documents folder can be shared with its staff.
 
 **New school:** in Eduplan School Data, create a folder named the school's `institution_id` (e.g. `SEGI`), copy
-`Repository/_Template` into it and rename the copy to the same ID. The `application` folder is created with the first application.
+`Repository/_Template` into it and rename the copy to the same ID. Its applications folder is created with the first application.
 
 The student sees the reference number on screen.
 

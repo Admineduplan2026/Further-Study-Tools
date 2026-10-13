@@ -7,7 +7,7 @@ set-up as the main site, so nothing extra is needed in Drive:
 |---|---|
 | Universities, programmes, campus scholarships | each school's Google Sheet in **Eduplan School Data/&lt;SCHOOL&gt;/**, through the Apps Script `/exec` URL in `assets/js/config.js` |
 | Foundation scholarships, FAQ (AI assistant) | the master sheet **Eduplan School Data** |
-| Applications (form + uploaded documents) | **Eduplan School Data/&lt;SCHOOL&gt;/application/** as a PDF plus the files (apps-script/Apply.gs) |
+| Applications (form + uploaded documents) | **Eduplan Applications (private)/&lt;SCHOOL&gt;/** (My Drive, not shared) as a PDF plus the files (apps-script/Apply.gs) |
 | Student portfolios (sign-in, saved programmes, last search) | **Eduplan Applications (private)/Eduplan Student Portfolios** (apps-script/Account.gs) |
 
 Edits to a school sheet show on both layouts within about a minute once the Apps Script is deployed

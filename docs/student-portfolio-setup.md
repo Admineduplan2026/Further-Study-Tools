@@ -38,7 +38,7 @@ The AI study assistant receives the saved results with each question, so a stude
 - Changes are saved about 1.5 seconds after the student stops typing, and when they leave the page.
   A small "Saved to your portfolio" note appears at the bottom left.
 - **Sign out** removes the student's details from that browser. **Delete my portfolio** deletes their row.
-  Applications already sent stay in the school's `application` folder.
+  Applications already sent stay in Eduplan Applications (private).
 - In the Claude artifact preview, sign-in is not available; saved programmes and the quiz stay in the browser.
 
 ## Where portfolios are kept

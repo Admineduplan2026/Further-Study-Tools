@@ -8,8 +8,7 @@ compares them with the school's Google Sheet, so the website shows what the scho
 Eduplan School Data/
 └── UTAR/
     ├── UTAR                                  the school sheet (shared with the school)
-    ├── documents (school uploads 学校资料)/   brochures, fees, scholarships (shared with the school)
-    └── application/                          student applications (never shared)
+    └── documents (school uploads 学校资料)/   brochures, fees, scholarships (shared with the school)
 ```
 
 ## What the school does
@@ -22,7 +21,7 @@ Eduplan School Data/
 ## What Eduplan does
 
 1. **Share the documents folder with the school** (right-click > Share > the school contact as Editor), in the same way
-   as the sheet. Never share the school's main folder: `application/` holds students' personal data.
+   as the sheet. Student applications are kept apart, in Eduplan Applications (private) in My Drive.
 2. In the master sheet: **Eduplan > Check school documents with AI**. It sends every school whose sheet or documents
    changed since its last check. (To check every school again, run `verifyAll` in the Apps Script editor.)
 3. The results arrive within about an hour (usually minutes) in:
