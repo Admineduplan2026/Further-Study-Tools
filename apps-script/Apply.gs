@@ -24,7 +24,8 @@ var APPLY_MAX_FILES = 12;
 var APPLY_MAX_FILE_BYTES = 5 * 1024 * 1024;
 var APPLY_MAX_TOTAL_BYTES = 20 * 1024 * 1024;
 var APPLY_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp', 'image/heic': 'heic', 'image/heif': 'heif', 'application/pdf': 'pdf' };
-var APPLY_DOCS = { ic: 'NRIC or passport', results: 'Results slip', photo: 'Passport-size photo', eng: 'English language certificate',
+var APPLY_DOCS = { ic: 'NRIC or passport', results: 'Results slip', 'results-official': 'Official results slip',
+  'results-trial': 'Trial exam results slip', photo: 'Passport-size photo', eng: 'English language certificate',
   sch: 'Scholarship application form', fee: 'Proof of application fee payment' };
 var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile', 'Email', 'University', 'Programme', 'Track', 'Intake',
   'Accommodation help', 'Documents', 'Folder', 'Status', 'Counsellor', 'Notes'];

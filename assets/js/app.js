@@ -507,11 +507,13 @@ var APPLY_KEY="eduplan-apply",QUALS=["SPM","IGCSE","O-Level","UEC","STPM","A-Lev
 function applyExam(){var q=S.app.v.h_type;if(q==="Foundation / Matriculation")q="Foundation";return RX.exam(q)?q:null;}
 var MY_STATES=["Johor","Kedah","Kelantan","Melaka","Negeri Sembilan","Pahang","Perak","Perlis","Pulau Pinang","Sabah","Sarawak","Selangor","Terengganu","Kuala Lumpur","Labuan","Putrajaya"];
 /* Documents to upload: [id, label, how many files, required when]. Photos are made smaller before sending. */
-var UPLOADS=[["ic","NRIC or passport (front and back)",2,"always"],["results","Results slip (SPM / UEC / O-Level or equivalent)",3,"actual"],
+var UPLOADS=[["ic","NRIC or passport (front and back)",2,"always"],["results","Exam results slip",3,"always"],
  ["photo","Passport-size photo",1,""],["eng","English language certificate",2,""],["sch","Scholarship application form",2,""],["fee","Proof of application fee payment",1,""]];
 var FILE_MAX=5*1024*1024,FILES_TOTAL=20*1024*1024;
 function applyLoad(){var a=null;try{a=JSON.parse(sessionStorage.getItem(APPLY_KEY));}catch(e){}
- a=a||{};a.v=a.v||{nationality:"Malaysian",residence:"Malaysia",country:"Malaysia",perm_same:true,em_same:true,disability:"No"};a.step=a.step||1;a.edu=a.edu||2;a.eng=a.eng||1;a.files={};return a;}
+ a=a||{};a.v=a.v||{nationality:"Malaysian",residence:"Malaysia",country:"Malaysia",perm_same:true,em_same:true,disability:"No"};
+ /* "Results" was Actual / Forecast before: it is now the kind of results slip. */
+ if(a.v.h_status==="Actual")a.v.h_status="Official";if(a.v.h_status==="Forecast")a.v.h_status="Trial";a.step=a.step||1;a.edu=a.edu||2;a.eng=a.eng||1;a.files={};return a;}
 function applySave(){try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng,complete:S.app.complete,sent:S.app.sent}));}catch(e){}pfTouch("apply");}
 function allProgs(){var out=[];UNIV.forEach(function(u){u.progs.forEach(function(p){out.push({u:u,p:p});});});return out;}
 function findProg(id){id=String(id||"").toLowerCase();return id?allProgs().filter(function(x){return String(x.p.id).toLowerCase()===id;})[0]||null:null;}
@@ -519,7 +521,12 @@ function applyProg(){return findProg(S.app.v.prog);}
 /* Academic tracks come from the programme's notes line "Academic tracks: A, B, C." in the school sheet. */
 function progTracks(p){var m=String(p&&p.notes||"").match(/Academic tracks?:\s*([^\n]+?)\.?\s*(?:\n|$)/i);return m?m[1].split(/\s*,\s*/).filter(Boolean):[];}
 function applyAge(dob){var d=new Date(dob);if(!dob||isNaN(d))return null;var n=new Date(),a=n.getFullYear()-d.getFullYear();if(n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))a--;return a;}
-function needFile(u){return u[3]==="always"||(u[3]==="actual"&&S.app.v.h_status==="Actual");}
+function needFile(u){return u[3]==="always";}
+/* The results slip is official (SPM, UEC ... results) or trial (school trial exam, while the official results are not out). */
+var SLIPS=[["Official","Official results slip"],["Trial","Trial exam results slip"]];
+function slipName(){var k=SLIPS.filter(function(x){return x[0]===S.app.v.h_status;})[0];return k?k[1]:"";}
+/* The highest exam in My results, to fill "Highest qualification" when it is empty. */
+function rxHighest(){var t=RX.taken();return t.length?t[t.length-1]:"";}
 
 function af(id,label,o){
  o=o||{};var v=S.app.v[id],e=(S.app.err||{})[id],req=!o.opt,inv=e?' aria-invalid="true" aria-describedby="'+id+'-err"':'';
@@ -535,8 +542,9 @@ function acheck(id,label,o){o=o||{};var e=(S.app.err||{})[id];
 function agroup(title,body){return '<fieldset class="fgroup"><legend>'+title+'</legend><div class="fgrid">'+body+'</div></fieldset>';}
 function kb(n){return n>1048576?(n/1048576).toFixed(1)+" MB":Math.max(1,Math.round(n/1024))+" KB";}
 function uploadBox(u){
- var list=S.app.files[u[0]]||[],e=(S.app.err||{})["f_"+u[0]],req=needFile(u);
- return '<div class="field full upload"><label for="ap-f_'+u[0]+'">'+esc(u[1])+(req?'':' <span class="hint">(optional)</span>')+'</label>'+
+ var list=S.app.files[u[0]]||[],e=(S.app.err||{})["f_"+u[0]],req=needFile(u),slip=u[0]==="results";
+ return (slip?af("h_status","Which results slip are you sending?",{opts:SLIPS,first:"Choose",rerender:true,full:true,hint:"Trial: your school’s trial exam, while the official results are not out yet. Send the official slip when it comes out."}):'')+
+  '<div class="field full upload"><label for="ap-f_'+u[0]+'">'+esc(slip&&slipName()?slipName()+(S.app.v.h_type?" ("+S.app.v.h_type+")":""):u[1])+(req?'':' <span class="hint">(optional)</span>')+'</label>'+
   (list.length?'<ul class="files">'+list.map(function(f,k){return '<li><span class="fname">'+esc(f.name)+'</span><span class="hint">'+kb(f.size)+'</span><button type="button" class="chip" data-apply="rmfile" data-file="'+u[0]+':'+k+'" aria-label="Remove '+esc(f.name)+'">Remove</button></li>';}).join("")+'</ul>':'')+
   (list.length<u[2]?'<input type="file" id="ap-f_'+u[0]+'" data-upload="'+u[0]+'" accept="image/*,application/pdf"'+(u[2]-list.length>1?' multiple':'')+(e?' aria-invalid="true" aria-describedby="f_'+u[0]+'-err"':'')+'>'+
    '<span class="hint">Photo or PDF'+(u[2]>1?', up to '+u[2]+' files':'')+'.</span>':'')+
@@ -575,16 +583,15 @@ function applyStep(n){
   agroup("Emergency contact",acheck("em_same","Same as parent / guardian",{rerender:true})+
    (v.em_same?'':af("e_name","Full name",{full:true})+af("e_name_zh","Chinese name",{opt:true})+af("e_rel","Relationship")+af("e_mobile","Mobile",{type:"tel"})+af("e_tel","Home telephone",{type:"tel",opt:true})));
  if(n===5){
+  if(!v.h_type&&rxHighest()){v.h_type=rxHighest();applySave();}
   var rows="";for(var i=1;i<=S.app.edu;i++)rows+='<div class="rowset"><span class="rowno">'+i+'</span>'+af("ed"+i+"_school","School / institution and location",{full:true,opt:i>1})+
    af("ed"+i+"_from","From",{type:"month",opt:i>1})+af("ed"+i+"_to","To",{type:"month",opt:i>1})+af("ed"+i+"_qual","Qualification",{opts:QUALS,first:"Choose",opt:i>1,full:true})+'</div>';
   var eng="";for(var j=1;j<=S.app.eng;j++)eng+='<div class="rowset"><span class="rowno">'+j+'</span>'+af("en"+j+"_type","Test",{opt:true,hint:"MUET, IELTS, TOEFL, SPM English …"})+af("en"+j+"_score","Score / band",{opt:true})+af("en"+j+"_date","Date taken or to be taken",{type:"month",opt:true})+'</div>';
   return agroup("Education background",'<div class="field full"><span class="hint">Start with your most recent school. Add every school from secondary school onwards.</span></div>'+rows+
     (S.app.edu<5?'<div class="field full"><button type="button" class="btn ghost" data-apply="add-edu">Add another school</button></div>':''))+
-   agroup("Highest qualification",af("h_type","Qualification",{opts:QUALS,first:"Choose",rerender:true})+af("h_status","Results",{opts:[["Actual","Actual results"],["Forecast","Forecast / not out yet"]],first:"Choose"})+
+   agroup("Highest qualification",af("h_type","Qualification",{opts:QUALS,first:"Choose",rerender:true})+af("h_status","Results",{opts:[["Official","Official results"],["Trial","Trial results"]],first:"Choose"})+
     af("h_school","Institution",{full:true})+af("h_start","Year started",{type:"month"})+af("h_end","Year completed",{type:"month"})+
-    (applyExam()?'<div class="field full"><span class="legend">'+(RX.exam(applyExam()).cgpa?'Your CGPA':'Subjects and grades')+'</span>'+
-      '<span class="hint">Saved to My results, and used to match programmes and scholarships for you.</span>'+RX.editor(applyExam())+
-      ((S.app.err||{}).h_results?'<span class="err" id="h_results-err">'+esc(S.app.err.h_results)+'</span>':'')+'</div>'
+    (applyExam()?applyResults(applyExam())
      :af("h_results","Subjects and grades",{area:true,rows:5,full:true,hint:"One subject per line, for example: Mathematics A+"})))+
    agroup("English language",'<div class="field full"><span class="hint">Any English test you have taken or will take.</span></div>'+eng+
     (S.app.eng<3?'<div class="field full"><button type="button" class="btn ghost" data-apply="add-eng">Add another test</button></div>':''))+
@@ -597,6 +604,20 @@ function applyStep(n){
    (age!==null&&age<18?'<div class="field full"><span class="hint">You are under 18, so your parent or legal guardian must also agree.</span></div>'+
     acheck("decl_g","I am the applicant’s parent or legal guardian. I consent to this application and understand that the university’s fees and charges are payable by the dates it sets.")+
     af("decl_g_name","Parent / guardian name",{full:true}):''));
+}
+
+/* Subjects and grades come from My results (the portfolio): shown read-only, with a button to change them here.
+   With nothing saved yet for this exam, the editor is shown, and what the student enters is saved to My results. */
+function applyResults(hx){
+ var cg=RX.exam(hx).cgpa,e=(S.app.err||{}).h_results,saved=RX.has(hx),body;
+ if(!saved)S.app.rxEdit=true;   /* stay in the editor while the first grades are being entered */
+ if(saved&&!S.app.rxEdit)body='<span class="hint">Filled in from My results in your portfolio. You do not need to enter them again.</span>'+
+   '<ul class="rxfill">'+RX.text(hx).split("\n").map(function(l){var m=l.match(/^(.*) (\S+)$/);return '<li>'+(m&&!cg?'<span>'+esc(m[1])+'</span><b>'+esc(m[2])+'</b>':'<b>'+esc(l)+'</b>')+'</li>';}).join("")+'</ul>'+
+   (cg?'':'<span class="hint">'+esc(RX.summary(hx))+'</span>')+
+   '<div class="row"><button type="button" class="btn ghost" data-apply="rx-edit">Change my results</button></div>';
+ else body='<span class="hint">'+(saved?'Changes are saved to My results in your portfolio.':'Enter them once: they are saved to My results in your portfolio and filled in for you next time.')+'</span>'+RX.editor(hx)+
+   (saved?'<div class="row"><button type="button" class="btn ghost" data-apply="rx-done">Done</button></div>':'');
+ return '<div class="field full"><span class="legend">'+(cg?'Your CGPA':'Subjects and grades')+'</span>'+body+(e?'<span class="err" id="h_results-err">'+esc(e)+'</span>':'')+'</div>';
 }
 
 function applyErrors(n){
@@ -616,7 +637,7 @@ function applyErrors(n){
   ["ed1_school","ed1_from","ed1_to","ed1_qual","h_type","h_status","h_school","h_start","h_end"].forEach(function(k){need(k);});
   need("h_results",hx?(RX.exam(hx).cgpa?"Enter your CGPA.":"Add at least one subject and its grade."):null);
   if(v.disability==="Yes")need("dis_info");}
- if(n===6){UPLOADS.forEach(function(u){if(needFile(u)&&!(S.app.files[u[0]]||[]).length)e["f_"+u[0]]="Please add this document.";});
+ if(n===6){need("h_status","Choose official or trial.");UPLOADS.forEach(function(u){if(needFile(u)&&!(S.app.files[u[0]]||[]).length)e["f_"+u[0]]="Please add this document.";});
   if(!v.decl)e.decl="Please tick to confirm.";var a2=applyAge(v.dob);if(a2!==null&&a2<18){if(!v.decl_g)e.decl_g="Your parent or guardian must tick to agree.";need("decl_g_name");}}
  return e;
 }
@@ -635,11 +656,11 @@ function applySummary(){
  sec("Parent / guardian");row("Name",v.g_name);row("Chinese name",v.g_name_zh);row("Relationship",v.g_rel);row("Mobile",v.g_mobile);row("Email",v.g_email);row("Occupation",v.g_job);row("Home telephone",v.g_tel);
  sec("Emergency contact");if(v.em_same)L.push("Same as parent / guardian");else{row("Name",v.e_name);row("Chinese name",v.e_name_zh);row("Relationship",v.e_rel);row("Mobile",v.e_mobile);row("Home telephone",v.e_tel);}
  sec("Education background");for(var i=1;i<=S.app.edu;i++){if(v["ed"+i+"_school"])L.push(i+". "+v["ed"+i+"_school"]+" | "+(v["ed"+i+"_from"]||"?")+" to "+(v["ed"+i+"_to"]||"?")+" | "+(v["ed"+i+"_qual"]||"-"));}
- sec("Highest qualification");row("Qualification",v.h_type);row("Results",v.h_status);row("Institution",v.h_school);row("Started",v.h_start);row("Completed",v.h_end);
+ sec("Highest qualification");row("Qualification",v.h_type);row("Results",v.h_status?v.h_status+" results":"");row("Institution",v.h_school);row("Started",v.h_start);row("Completed",v.h_end);
  L.push("Subjects and grades:");String(v.h_results||"").split(/\r?\n/).filter(function(s){return s.trim();}).forEach(function(s){L.push("  "+s.trim());});
  sec("English language");var any=false;for(var j=1;j<=S.app.eng;j++){if(v["en"+j+"_type"]){any=true;L.push(v["en"+j+"_type"]+" | "+(v["en"+j+"_score"]||"-")+" | "+(v["en"+j+"_date"]||"-"));}}if(!any)L.push("None yet");
  sec("Others");row("Disability",v.disability==="Yes"?"Yes: "+(v.dis_info||""):"No");
- sec("Documents");UPLOADS.forEach(function(u){var l=S.app.files[u[0]]||[];L.push((l.length?"[x] ":"[ ] ")+u[1]+(l.length?" ("+l.length+" file"+(l.length===1?"":"s")+")":""));});
+ sec("Documents");UPLOADS.forEach(function(u){var l=S.app.files[u[0]]||[];L.push((l.length?"[x] ":"[ ] ")+(u[0]==="results"&&slipName()?slipName():u[1])+(l.length?" ("+l.length+" file"+(l.length===1?"":"s")+")":""));});
  sec("Accommodation");if(v.acc==="Yes"){L.push("Needs help: Yes");row("Type",v.acc_type);row("Room",v.acc_room);row("Budget per month (RM)",v.acc_budget);row("Move-in",v.acc_move);row("Notes",v.acc_notes);}else L.push("Needs help: "+(v.acc||"Not answered"));
  sec("Declaration");L.push("Applicant agreed: Yes");if(v.decl_g)L.push("Parent / guardian agreed: Yes ("+v.decl_g_name+")");
  return L.join("\n");
@@ -723,7 +744,7 @@ function applyFilesForShare(){var out=[];Object.keys(S.app.files).forEach(functi
 /* Sends to the Apps Script (apps-script/Apply.gs), which stores the application in Eduplan's private Google Drive. */
 function applySend(){
  var a=S.app,url=window.EDUPLAN_API_URL,files=[];
- Object.keys(a.files).forEach(function(k){a.files[k].forEach(function(f){files.push({doc:k,name:f.name,type:f.type,data:f.data});});});
+ Object.keys(a.files).forEach(function(k){a.files[k].forEach(function(f){files.push({doc:k==="results"&&a.v.h_status?"results-"+a.v.h_status.toLowerCase():k,name:f.name,type:f.type,data:f.data});});});
  var fb=function(msg){a.sending=false;a.fallback=true;a.sendMsg=msg;rerender("stay-msg");};
  if(!url||!window.fetch||window.EDUPLAN_SHEET_DATA)return fb("This preview cannot send files. Please send your application yourself below.");
  a.sending=true;a.sendMsg="";rerender();
@@ -1103,6 +1124,7 @@ app.addEventListener("click",function(ev){
  if(t.hasAttribute("data-ask")){window.dispatchEvent(new CustomEvent("eduplan:ask",{detail:{text:t.getAttribute("data-ask")}}));return;}
  if(t.hasAttribute("data-apply")){var act=t.getAttribute("data-apply"),A=S.app;
   if(act==="back"){A.err={};A.step=Math.max(1,A.step-1);applySave();rerender();window.scrollTo(0,0);}
+  else if(act==="rx-edit"||act==="rx-done"){A.rxEdit=act==="rx-edit";rerender();}
   else if(act==="add-edu"){A.edu=Math.min(5,A.edu+1);applySave();rerender("ap-ed"+A.edu+"_school");}
   else if(act==="add-eng"){A.eng=Math.min(3,A.eng+1);applySave();rerender("ap-en"+A.eng+"_type");}
   else if(act==="edit"){A.fallback=false;A.sendMsg="";location.hash="#apply";}

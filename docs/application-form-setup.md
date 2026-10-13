@@ -15,8 +15,11 @@ Every route ends with the same three pages once the student chooses a programme 
 - **Apply** (`#apply`): six short parts (programme, about you, contact, family, education, documents and declaration).
   It covers every item on the XMUM Foundation application form. Students upload photos or PDFs of their NRIC/passport,
   results slip, passport photo, English certificate, scholarship form and fee receipt (5 MB each, 20 MB in total;
-  photos are made smaller in the browser before sending). NRIC/passport is required, and the results slip when the
-  student has actual results.
+  photos are made smaller in the browser before sending). NRIC/passport and an exam results slip are required: the
+  student says whether the slip is the **official** results or the school's **trial** exam (saved as
+  `results-official-1.pdf` or `results-trial-1.jpg`).
+  The subjects and grades are filled in from **My results** in the student's portfolio; a student with nothing saved
+  enters them once in the form, and they are saved to My results.
 - **Accommodation** (`#stay`): the student says whether they need help (type, room, budget, move-in month), then sends
   the application.
 
