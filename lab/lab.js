@@ -39,7 +39,7 @@ var BUDGETS=[["","Any budget"],["0-30000","Up to RM 30,000"],["30000-60000","RM 
 /* Exams, grades and the student's saved results ("My results"): assets/js/results.js. */
 var RX=window.EDUPLAN_RESULTS,EXAMS=RX.EXAMS;
 function exam(id){for(var i=0;i<EXAMS.length;i++)if(EXAMS[i].id===id)return EXAMS[i];return EXAMS[0];}
-var CAMPUS_PHOTOS=window.EDUPLAN_CAMPUS_PHOTOS||{XMUM:"../assets/img/campus/xmum.jpg",UTAR:"../assets/img/campus/utar.jpg"};
+var CAMPUS_PHOTOS=window.EDUPLAN_CAMPUS_PHOTOS||{XMUM:"../assets/img/campus/xmum.jpg",UTAR:"../assets/img/campus/utar.jpg",APU:"../assets/img/campus/apu.jpg"};
 var D={inst:[],progs:[],sch:[],fnd:[]};
 function levelKey(l){l=l||"";return /pre-?university|foundation/i.test(l)?"foundation":/diploma/i.test(l)?"diploma":/master/i.test(l)?"master":/phd|doctor/i.test(l)?"phd":/bachelor|degree/i.test(l)?"degree":"";}
 function levelName(k){for(var i=0;i<LEVELS.length;i++)if(LEVELS[i][0]===k)return LEVELS[i][1];return "";}
