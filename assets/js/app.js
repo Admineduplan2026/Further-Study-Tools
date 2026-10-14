@@ -165,7 +165,7 @@ function uniMeta(u){return '<div class="meta">'+[u.type,u.place].filter(Boolean)
 /* Campus banner: the institution's campus photo (CAMPUS_PHOTOS, files in assets/img/campus) or an animated
    background, plus a button for its 3D virtual tour (Institutions "virtual_tour_url"). Tour sites usually refuse
    to be embedded in other pages, so the tour opens in a new tab. */
-var CAMPUS_PHOTOS={xmum:"assets/img/campus/xmum.jpg"};
+var CAMPUS_PHOTOS={xmum:"assets/img/campus/xmum.jpg",utar:"assets/img/campus/utar.jpg"};
 function asset(p){return p&&HOST&&HOST.assetBase&&!/^(data:|https?:)/.test(p)?HOST.assetBase+p:p;}
 function uniPhoto(u){return asset(CAMPUS_PHOTOS[String(u.id).toLowerCase()]||"");}
 function hasBanner(u){return !!(u.tour||uniPhoto(u));}
