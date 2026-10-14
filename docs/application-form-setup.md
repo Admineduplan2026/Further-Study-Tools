@@ -85,3 +85,15 @@ In the master sheet: **Extensions > Apps Script**.
 - The declaration says Eduplan keeps the application and documents and shares them with the university.
   Have it checked against Eduplan's own personal data (PDPA) notice and link that notice on the website.
 - Decide how long applications are kept and who may open the folder.
+
+## Schools with their own application form
+
+`assets/js/school-forms.js` lists schools whose own form Eduplan fills in. When a student applies to one of them, the
+apply page asks that school's extra questions, and `Apply.gs` saves a second PDF in the school's own layout next to the
+Eduplan PDF (`<ref> <NAME> - UTAR Application Form.pdf`), ready for the applicant to sign.
+
+- **UTAR** (Foundation in Arts / Foundation in Science): previously applied to UTAR and UTAR ID, 5 preferred degree
+  programmes in order (only the degrees listed for that foundation), preferred campus (Sungai Long or Kampar; degrees
+  whose foundation runs at one campus only must match it) and the health declaration. The lists come from the UTAR
+  Student Application Form for the January / June / October 2024 intakes (copy in UTAR's documents folder).
+  Update the lists in `school-forms.js` when UTAR publishes a newer form.

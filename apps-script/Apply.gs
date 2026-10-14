@@ -4,6 +4,8 @@
  * Every application is saved in one private folder in My Drive, sorted by school:
  *   Eduplan Applications (private)/<SCHOOL>/<EDU-YYYYMMDD-XXXX STUDENT NAME>/
  *       <ref> <NAME> - Application.pdf   the completed form as a PDF, with photos of the documents at the end
+ *       <ref> <NAME> - UTAR Application Form.pdf   for schools with their own form (assets/js/school-forms.js): the
+ *                                                  school's form, filled in from the application
  *       ic-1.jpg, results-1.pdf, ...      the uploaded documents
  * <SCHOOL> is the programme's institution_id (XMUM, UTAR, ...); the folder is created if it is missing. An application
  * without an institution goes to "Unassigned". The school folders in "Eduplan School Data" hold no student data.
@@ -81,6 +83,71 @@ function applyPdf_(ref, received, summary, images, withImages) {
   return HtmlService.createHtmlOutput(html).getBlob().getAs(MimeType.PDF);
 }
 
+/* Schools' own application forms, filled in from the website's application (body.form, from applyFormData in app.js). */
+var APPLY_FORMS = { UTAR: applyUtarPdf_ };
+
+/* UTAR "Student Application Form (Foundation Programmes leading to Bachelor Honours Degree Programmes)", form
+   FM-DACE-003, in its own order: Section A, I Personal information, II Parent/guardian, III Declaration, IV Checklist.
+   Signature and date are left blank for the applicant to sign. */
+function applyUtarPdf_(ref, received, f) {
+  var t = function (v, max) { return applyEsc_(applyText_(v, max || 200)); };
+  var box = function (on) { return on ? '&#9745;' : '&#9744;'; };
+  var line = function (label, value) { return '<tr><td class="k">' + label + '</td><td class="v">' + (value || '&nbsp;') + '</td></tr>'; };
+  var choose = function (opts, value, other) {
+    var hit = opts.indexOf(String(value || '')) >= 0;
+    return opts.map(function (o) { return box(o === value) + ' ' + o; }).join('&nbsp;&nbsp; ') +
+      (other ? '&nbsp;&nbsp; ' + box(value && !hit) + ' Others: ' + (value && !hit ? t(value, 60) : '______') : '');
+  };
+  var month = '', m = String(f.intake || '').match(/^(\d{4})-(\d{2})/);
+  if (m) month = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][Number(m[2]) - 1] + ' ' + m[1];
+  var dob = String(f.dob || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1');
+  var prefs = (f.prefs || []).slice(0, 5), rows = '';
+  for (var i = 0; i < 5; i++) rows += '<tr><td class="n">' + (i + 1) + '.</td><td class="v">' + (t(prefs[i], 160) || '&nbsp;') + '</td></tr>';
+  var html = '<html><head><meta charset="utf-8"><style>' +
+    'body{font-family:Arial,sans-serif;font-size:10.5pt;color:#111;margin:0}h1{font-size:14pt;text-align:center;margin:0}' +
+    '.sub{text-align:center;font-size:9pt;margin:2px 0 10px}.title{text-align:center;font-weight:bold;margin:4px 0}' +
+    'h2{font-size:11pt;margin:14px 0 6px;border-bottom:1px solid #111}table{width:100%;border-collapse:collapse}' +
+    'td{padding:4px 6px;vertical-align:top}td.k{width:36%}td.v{border-bottom:1px solid #999}td.n{width:24px}' +
+    '.note{font-size:9pt;color:#333}.sign td{height:44px;vertical-align:bottom;border-bottom:1px solid #111;width:33%}' +
+    '.foot{margin-top:18px;font-size:8.5pt;color:#555;border-top:1px solid #ccc;padding-top:4px}' +
+    '</style></head><body>' +
+    '<h1>UNIVERSITI TUNKU ABDUL RAHMAN</h1><div class="sub">Wholly owned by UTAR Education Foundation (Co. No. 578227 &ndash; M)</div>' +
+    '<div class="title">Student Application Form<br>(Foundation Programmes leading to Bachelor Honours Degree Programmes)</div>' +
+    '<p>Intake: <b>' + (t(month) || '&nbsp;') + '</b> &nbsp;&middot;&nbsp; Foundation: <b>' + t(f.route, 60) + '</b></p>' +
+    '<h2>Section A: To be completed by applicant</h2><table>' +
+    line('Have you previously applied to UTAR?', choose(['Yes', 'No'], f.previous)) +
+    line('If Yes, UTAR ID No.', t(f.schoolId, 40)) + '</table>' +
+    '<p>Choose 5 degree programmes you would like to study after completion of the foundation programme and list them in order of preference.<br>' +
+    '<span class="note">Note: UTAR reserves the right to offer the programme available or alternative programme within the relevant study discipline.</span></p>' +
+    '<table>' + rows + '</table>' +
+    '<p>For Foundation programme, preferred campus: ' + choose(['Sungai Long Campus', 'Kampar Campus'], f.campus) + '<br><span class="note">Note: UTAR reserves the right to assign you to another campus.</span></p>' +
+    '<p class="note">You will be offered a degree programme with the condition that you enrol and pass the UTAR Foundation Programme.</p>' +
+    '<h2>I. Personal information</h2><table>' +
+    line('1. Name (as in NRIC)', t(f.name, 120)) + line('2. NRIC No.', t(f.ic, 40)) + line('3. Nationality', t(f.nationality, 60)) +
+    line('4. Date of Birth (Day/Month/Year)', t(dob, 20)) + line('5. Gender', choose(['Male', 'Female'], f.gender)) +
+    line('6. Address', t(f.address, 300)) + line('&nbsp;&nbsp;&nbsp;Postcode / State', t(f.postcode, 10) + ' &nbsp;/&nbsp; ' + t(f.state, 60)) +
+    line('7. Contact No. (Parents/Guardian)', t(f.guardianMobile, 30)) + line('&nbsp;&nbsp;&nbsp;Contact No. (H/P personal)', t(f.mobile, 30)) +
+    line('8. E-mail address', t(f.email, 120)) +
+    line('9. Race', choose(['Malay', 'Chinese', 'Indian'], f.race, true)) +
+    line('10. Religion', choose(['Islam', 'Buddhism', 'Hinduism', 'Christianity'], f.religion, true)) +
+    line('11. Good Physical and Mental Health', choose(['Yes', 'No'], f.health) + (f.health === 'No' ? '<br>' + t(f.healthInfo, 300) : '')) + '</table>' +
+    '<h2>II. Particulars of parent/guardian</h2><table>' +
+    line('1. Name of Parent/Guardian', t(f.guardian, 120)) + line('2. Relationship / (H/P)', t(f.relation, 40) + ' &nbsp;/&nbsp; ' + t(f.guardianMobile, 30)) +
+    line('3. E-mail address', t(f.guardianEmail, 120)) + '</table>' +
+    '<h2>III. Declaration by applicant</h2>' +
+    '<p class="note">Personal data protection statement: https://www.utar.edu.my/PersonalDataProtectionStatementAdmission.jsp</p>' +
+    '<p>I understand and agree to the University using and processing my personal data as contained in this form. I have read, understood and agreed to the Personal Data Protection Statement of the University. ' +
+    'I declare that the information provided by me in connection with this application is true and correct. I understand that Universiti Tunku Abdul Rahman reserves the right to withdraw the offer of admission or ask me to leave the University at any time if such information is found to be false or incorrect.</p>' +
+    '<table class="sign"><tr><td>' + t(f.name, 120) + '</td><td></td><td></td></tr></table>' +
+    '<table><tr><td class="note">Name of Applicant</td><td class="note">Signature of Applicant</td><td class="note">Date</td></tr></table>' +
+    '<h2>IV. Application checklist</h2><p class="note">Certified true copies (by School Principal / Justice of Peace / State Assemblyman / Member of Parliament) of: SPM or other equivalent results; ' +
+    'STPM / A-Level / UEC / SAM / CPU or other equivalent results; School Leaving Certificate and Identity Card.</p>' +
+    '<div class="foot">Prepared by Eduplan from the applicant&#39;s online application ' + applyEsc_(ref) + ' (received ' + applyEsc_(received) + ', Malaysia time). ' +
+    'The applicant signs and dates Section III before the form is submitted to UTAR.</div>' +
+    '</body></html>';
+  return HtmlService.createHtmlOutput(html).getBlob().getAs(MimeType.PDF);
+}
+
 function applySheet_(folder) {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_SHEET_ID');
   if (id) { try { return SpreadsheetApp.openById(id).getSheets()[0]; } catch (err) { /* make a new one */ } }
@@ -141,6 +208,11 @@ function applySubmit_(body) {
     try { pdf = applyPdf_(ref, received, summary, images, true); }
     catch (err) { console.error('PDF with photos failed, saving without: ' + err); pdf = applyPdf_(ref, received, summary, images, false); }
     folder.createFile(pdf.setName(ref + ' ' + name + ' - Application.pdf'));
+    var form = body.form && APPLY_FORMS[body.form.school];
+    if (form) {
+      try { folder.createFile(form(ref, received, body.form).setName(ref + ' ' + name + ' - ' + body.form.school + ' Application Form.pdf')); }
+      catch (err) { console.error('School form failed: ' + err); }
+    }
     blobs.forEach(function (b) { folder.createFile(b); });
 
     applySheet_(applyFolder_()).appendRow([ref, now, name, applyText_(f.ic, 40), "'" + mobile, applyText_(f.email, 120),

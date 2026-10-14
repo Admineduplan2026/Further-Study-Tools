@@ -85,6 +85,7 @@ var ZH={
  "School / institution and location":"学校／院校名称与地点","From":"从","To":"至","Add another school":"再加一所学校",
  "Highest qualification":"最高学历","Results":"成绩","Actual results":"正式成绩","Forecast / not out yet":"预测成绩／尚未公布","Institution":"院校","Year started":"开始年月","Year completed":"完成年月",
  "Subjects and grades":"科目与成绩",
+ "Choose a degree programme":"选择学位课程","None":"无","Preferred campus for the foundation programme":"预科课程首选校区","Are you in good physical and mental health?":"你的身心健康状况良好吗？","Sungai Long Campus":"双溪龙校区","Kampar Campus":"金宝校区","The university may assign you to another campus.":"大学可能会安排你到其他校区。",
  "Exam results slip":"考试成绩单","Official results slip":"正式成绩单","Trial exam results slip":"模拟考（Trial）成绩单","Which results slip are you sending?":"你要提交哪一种成绩单？","Official results":"正式成绩","Trial results":"模拟考成绩","Trial: your school’s trial exam, while the official results are not out yet. Send the official slip when it comes out.":"Trial：学校的模拟考成绩，适用于正式成绩还没公布的时候。正式成绩出来后，请再提交正式成绩单。","Choose official or trial.":"请选择正式成绩或模拟考成绩。","Filled in from My results in your portfolio. You do not need to enter them again.":"已从档案里的「我的成绩」自动填入，不需要再填写一次。","Change my results":"修改我的成绩","Done":"完成","Changes are saved to My results in your portfolio.":"修改会保存到档案里的「我的成绩」。","Enter them once: they are saved to My results in your portfolio and filled in for you next time.":"只需填写一次：会保存到档案里的「我的成绩」，下次自动帮你填好。",
  /* My results (assets/js/results.js) */
  "My results":"我的成绩","Scholarships for my results":"我的成绩可获得的奖学金","Add your exam results above. Eduplan then lists the campus scholarships your results qualify for.":"在上方填写你的考试成绩，Eduplan 就会列出你的成绩符合的校内奖学金。","See this scholarship":"查看这项奖学金","Almost there":"还差一点","No campus scholarship in our data matches your results yet.":"我们的资料中暂时没有符合你成绩的校内奖学金。","Which campus scholarships can I get with my results?":"以我的成绩可以获得哪些校内奖学金？","Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.":"成绩只需填写一次。Eduplan 会一直保存，直到你自己更改，并用来显示你符合哪些课程和奖学金。",
@@ -245,6 +246,8 @@ var ZH={
 };
 var LEVEL={Foundation:"预科",Undergraduate:"本科",Postgraduate:"研究生"};
 var ZH_PATTERNS=[
+ [/^Choice (\d)$/,"第 $1 志愿"],[/^Have you applied to (\S+) before\?$/,"你以前申请过 $1 吗？"],[/^(\S+) ID no\.$/,"$1 学号"],[/^(\S+) application form$/,"$1 报名表"],[/^Your choices need (.+)\.$/,"你选择的课程需要在 $1 就读。"],
+ [/^Choose up to 5 degree programmes you would like to study after the (.+), in order of preference\. You are offered a degree on condition that you enrol in and pass the foundation programme\.$/,"请按志愿顺序选择预科（$1）毕业后想读的学位课程，最多 5 个。你需要报读并通过预科课程，才能获得学位课程的录取。"],
  [/^(Official results slip|Trial exam results slip) \((.+)\)$/,function(m){return (m[1]==="Official results slip"?"正式成绩单":"模拟考（Trial）成绩单")+"（"+m[2]+"）";}],
  [/^Your results qualify for (\d+) campus scholarships?\. Each one checks other conditions too, so read its details before you apply\.$/,"你的成绩符合 $1 项校内奖学金。每项奖学金还有其他条件，申请前请先查看详情。"],
  [/^With your (.+) results$/,"以你的 $1 成绩"],
