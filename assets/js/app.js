@@ -389,13 +389,9 @@ function progStructure(u){
  return '<div class="pstruct">'+groups.map(function(g){return '<div class="psb">'+(g.h?'<b>'+esc(g.h)+'</b>':'')+(g.items.length?'<ul>'+g.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>':'')+'</div>';}).join("")+'</div>';
 }
 /* fold: the university pages list many programmes, so each card starts closed and opens to show the details. */
-function progCard(u,fold){
- var sch=progScholarships(u),meta=[u.level,u.years!=null?years(u.years):"",u.mode].filter(Boolean);
- /* Postgraduate brochures give a yearly fee, not a whole-programme total: a notes line "Annual fee: ..." is shown as the fee. */
- var annual=lines(u.notes).filter(function(x){return /^Annual fee: /.test(x);}).map(function(x){return x.replace(/^Annual fee: /,"");}),notes=lines(u.notes).filter(function(x){return !/^Annual fee: /.test(x);});
- return (fold?'<details class="prog fold"><summary>':'<article class="prog">')+'<div class="stack"><span class="eyebrow">'+esc(u.name)+'</span><h3 class="fname">'+esc(u.programme||u.name)+'</h3>'+
-  (meta.length?'<div class="meta">'+meta.map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>':'')+'</div>'+
-  (fold?'<span class="foldhint"><span class="closed">Show details</span><span class="opened">Hide details</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span></summary><div class="progbody">':'')+
+/* The programme's own details (overview, key facts, entry requirements, structure, careers): shared by the programme cards and the Ask more page. */
+function progInfo(u,annual){
+ return ''+
   (u.overview?'<p>'+esc(u.overview)+'</p>':'')+
   '<dl class="facts">'+
    (u.fee==null&&annual.length?'<dt>Tuition fee (per year)</dt><dd>'+annual.map(function(x){return '<span class="line">'+esc(x)+'</span>';}).join("")+'</dd>':
@@ -406,7 +402,16 @@ function progCard(u,fold){
   '<div class="stack"><h4>Entry requirements</h4>'+entryMatch(u)+'<dl class="facts entry">'+ENTRY.map(function(e){var l=lines(u[e[0]]);
    return '<dt>'+esc(e[1])+'</dt><dd>'+(l.length?l.map(entryLine).join(""):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl></div>'+
   '<div class="stack"><h4>Programme structure</h4>'+progStructure(u)+'</div>'+
-  (lines(u.careers).length?'<div class="stack"><h4>Career prospects</h4><ul class="pcareer">'+lines(u.careers).map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul></div>':'')+
+  (lines(u.careers).length?'<div class="stack"><h4>Career prospects</h4><ul class="pcareer">'+lines(u.careers).map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul></div>':'');
+}
+function progCard(u,fold){
+ var sch=progScholarships(u),meta=[u.level,u.years!=null?years(u.years):"",u.mode].filter(Boolean);
+ /* Postgraduate brochures give a yearly fee, not a whole-programme total: a notes line "Annual fee: ..." is shown as the fee. */
+ var annual=lines(u.notes).filter(function(x){return /^Annual fee: /.test(x);}).map(function(x){return x.replace(/^Annual fee: /,"");}),notes=lines(u.notes).filter(function(x){return !/^Annual fee: /.test(x);});
+ return (fold?'<details class="prog fold"><summary>':'<article class="prog">')+'<div class="stack"><span class="eyebrow">'+esc(u.name)+'</span><h3 class="fname">'+esc(u.programme||u.name)+'</h3>'+
+  (meta.length?'<div class="meta">'+meta.map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>':'')+'</div>'+
+  (fold?'<span class="foldhint"><span class="closed">Show details</span><span class="opened">Hide details</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span></summary><div class="progbody">':'')+
+  progInfo(u,annual)+
   '<div class="stack"><h4>Scholarships you can apply for</h4>'+
    (sch.length?'<ul class="schlinks">'+sch.map(function(g){return '<li><a href="'+esc(g.href)+'"><span class="name">'+esc(g.name)+'</span>'+(g.best!=null?'<span class="pill brand">Up to '+g.best+'% tuition waiver</span>':'')+'</a></li>';}).join("")+'</ul>'
     :'<p class="hint">No campus scholarship listed for this level yet.</p>')+
@@ -726,16 +731,20 @@ function readUpload(file){
 }
 function filesTotal(){var t=0;Object.keys(S.app.files).forEach(function(k){S.app.files[k].forEach(function(f){t+=f.size;});});return t;}
 
-function progSummary(x){
+/* details: the Ask more page also shows the programme's details inside the card. */
+function progSummary(x,details){
+ var u=x.p,annual=lines(u.notes).filter(function(l){return /^Annual fee: /.test(l);}).map(function(l){return l.replace(/^Annual fee: /,"");}),notes=lines(u.notes).filter(function(l){return !/^Annual fee: /.test(l);});
  return '<div class="pickcard"><span class="eyebrow">'+esc(x.u.fullName||x.u.name)+'</span><h2>'+esc(x.p.programme)+'</h2>'+
-  '<div class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):"",x.p.campus||x.u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div></div>';
+  '<div class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):"",x.p.campus||x.u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>'+
+  (details?'<div class="pinfo">'+progInfo(u,annual)+(notes.length?'<div class="stack"><h4>Notes</h4>'+notes.map(function(l){return '<p class="muted">'+esc(l)+'</p>';}).join("")+'</div>':'')+
+   (u.url?'<a class="textlink" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'')+'</div>':'')+'</div>';
 }
 /* Ask more (#next/<id>): the step between choosing a programme and applying. */
 V.next=function(){
  var x=findProg(S.pick);
  if(!x)return '<section class="stack"><h1>Choose a programme first</h1><p class="lead">Find a programme by faculty, university or scholarship, then come back here.</p><div class="row"><a class="btn" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div></section>';
  var note="Interested in: "+x.p.programme+" ("+x.u.name+").";
- return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x)+'<div class="row">'+saveBtn(x.p.id)+'</div>'+
+ return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x,true)+'<div class="row">'+saveBtn(x.p.id)+'</div>'+
   '<h1>Any questions before you apply?</h1><p class="lead">Ask our AI study assistant, talk to a counsellor for free, or go straight to the application form.</p></section>'+
   '<section class="grid">'+
    '<button type="button" class="item pick" data-ask="'+esc("I am interested in "+x.p.programme+" at "+x.u.name+". ")+'"><span class="name">Ask the AI study assistant</span><span class="desc">Quick answers about fees, entry requirements and scholarships, any time.</span><span class="textlink">Open the chat '+ARROW+'</span></button>'+
