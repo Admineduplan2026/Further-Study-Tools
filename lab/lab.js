@@ -58,7 +58,7 @@ function useData(d){
   return {id:p.programme_id,inst:u,name:p.programme_name,level:p.level,lk:levelKey(p.level),years:p.duration_years,fee:p.tuition_fee_rm,annual:annual,
    intakes:p.intakes,months:intakeMonths(p.intakes),campus:p.campus,mqa:p.mqa_reference,url:p.apply_url,deadline:p.application_deadline,
    fac:fc?fc.f:null,course:fc?fc.c:null,also:p.also_course_ids||[],entry:[["SPM",p.entry_spm],["UEC",p.entry_uec],["O-Level / IGCSE",p.entry_olevel],["STPM",p.entry_stpm],["Others",p.entry_other]],
-   english:p.english_requirement,notes:notes.split(/\n/).filter(function(x){return x.trim()&&!/^Annual fee: /.test(x);})};
+   english:p.english_requirement,overview:p.overview||"",structure:p.programme_structure||"",careers:p.career_prospects||"",notes:notes.split(/\n/).filter(function(x){return x.trim()&&!/^Annual fee: /.test(x);})};
  });
  D.sch=(d.campus_scholarships||[]).filter(function(s){return by[s.institution_id];}).map(function(s){by[s.institution_id].sch++;
   return {inst:by[s.institution_id],name:s.scholarship_name||"Scholarship",qual:s.qualification,min:s.minimum_result,waiver:s.waiver_percent,amount:s.fixed_amount_rm,
@@ -442,17 +442,30 @@ function aboutView(){
    '<div class="pact">'+(f.facebook?'<a class="btn ghost sm" href="'+esc(f.facebook)+'" target="_blank" rel="noopener">Facebook</a>':'')+'<a class="btn sm" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div></div>'+
    '<div class="fcv">'+tl("Career",f.career)+tl("Education",f.education)+'</div></div></section>'+trust()+'</div>';
 }
+/* Sheet text, one item per line; bullets typed by the school are dropped. */
+function lines(s){return String(s||"").split(/\n/).map(function(x){return x.trim();}).filter(Boolean);}
+function bare(x){return x.replace(/^[•·*▪◦–-]\s*/,"");}
+/* Programme structure: a line ending in ":" starts a block (Year 1:, Semester 2:, Electives:), the lines under it are its subjects. */
+function structure(s,url){
+ var groups=[],g=null;
+ lines(s).forEach(function(x){if(/[:：]$/.test(x)){g={h:x.replace(/[:：]$/,""),items:[]};groups.push(g);}else{if(!g){g={h:"",items:[]};groups.push(g);}g.items.push(bare(x));}});
+ if(!groups.length)return '<p class="hint">The institution has not listed the programme structure yet.'+(url?' <a href="'+esc(url)+'" target="_blank" rel="noopener">See the programme page</a>.':'')+'</p>';
+ return '<div class="pstruct">'+groups.map(function(g){return '<div class="psb">'+(g.h?'<b>'+esc(g.h)+'</b>':'')+(g.items.length?'<ul>'+g.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>':'')+'</div>';}).join("")+'</div>';
+}
 function detailSheet(){
  var p=prog(L.detail);if(!p)return '';var w=bestWaiver(p);
  return '<div class="scrim" data-act="close"></div><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-h" tabindex="-1">'+
   '<button type="button" class="x" data-act="close" aria-label="Close"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>'+
   cover(p.inst,true)+'<div class="sbody"><span class="pinst">'+esc(p.inst.full)+'</span><h2 id="sheet-h">'+esc(p.name)+'</h2>'+
   '<div class="pills">'+pill(levelName(p.lk)||p.level)+(p.years!=null?pill(years(p.years)):"")+(p.mqa?pill("MQA "+p.mqa,"ok"):"")+'</div>'+
+  (p.overview?'<p class="pover">'+esc(p.overview)+'</p>':'')+
   '<dl class="lfacts"><dt>Tuition fee</dt><dd>'+(p.fee!=null?esc(rm(p.fee))+' (whole programme)':p.annual.length?p.annual.map(esc).join("<br>")+' (per year)':'To be confirmed')+'</dd>'+
   (p.intakes?'<dt>Intakes</dt><dd>'+esc(p.intakes)+'</dd>':'')+'<dt>Location</dt><dd>'+esc(p.campus||[p.inst.city,p.inst.state].filter(Boolean).join(", ")||"To be confirmed")+'</dd>'+
   (p.english?'<dt>English requirement</dt><dd>'+esc(p.english)+'</dd>':'')+(w!=null?'<dt>Scholarship</dt><dd>Up to '+w+'% tuition waiver</dd>':'')+'</dl>'+
   '<h3>Entry requirements</h3>'+entryBadge(p,true)+'<dl class="lfacts">'+p.entry.map(function(e){return '<dt>'+esc(e[0])+'</dt><dd>'+(e[1]?String(e[1]).split(/\n/).filter(function(x){return x.trim();}).map(function(x){x=x.trim();var h=/[:：]$/.test(x);
    return h?'<b>'+esc(x)+'</b>':'• '+esc(x.replace(/^[•·*▪◦–-]\s*/,""));}).join("<br>"):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>'+
+  '<h3>Programme structure</h3>'+structure(p.structure,p.url)+
+  (lines(p.careers).length?'<h3>Career prospects</h3><ul class="pcareer">'+lines(p.careers).map(function(x){return '<li>'+esc(bare(x))+'</li>';}).join("")+'</ul>':'')+
   (p.notes.length?'<h3>Notes</h3>'+p.notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join(""):'')+
   '</div><div class="sfoot">'+heartBtn(p.id)+(p.url?'<a class="btn ghost sm" href="'+esc(p.url)+'" target="_blank" rel="noopener">Programme page</a>':'')+
   '<a class="btn ghost sm" href="#consultation" data-topic="Choosing a university" data-note="'+esc("Interested in: "+p.name+" ("+p.inst.name+").")+'">Free consultation</a><a class="btn sm" href="#next/'+esc(p.id)+'" data-lflow="'+cardFlow()+'">Apply now</a></div></section>';

@@ -56,7 +56,7 @@ var FIELDS = {
     'admissions_phone', 'whatsapp', 'hostel', 'hostel_fee_min', 'hostel_fee_max', 'last_updated'],
   programmes: ['programme_id*', 'institution_id*', 'course*', 'also_in_courses', 'programme_name*', 'level*', 'study_mode', 'duration_years',
     'intakes', 'campus', 'entry_spm', 'entry_uec', 'entry_olevel', 'entry_stpm', 'entry_other', 'english_requirement', 'tuition_fee_rm', 'mqa_reference',
-    'application_deadline', 'apply_url', 'notes', 'last_updated'],
+    'application_deadline', 'apply_url', 'notes', 'overview', 'programme_structure', 'career_prospects', 'last_updated'],
   campus: ['scholarship_id*', 'institution_id*', 'scholarship_name', 'type', 'qualification*', 'minimum_result*',
     'waiver_percent', 'fixed_amount_rm', 'applies_to', 'other_conditions', 'deadline', 'info_url', 'last_updated'],
   foundation: ['option_id*', 'scholarship_name*', 'organiser', 'requirements*', 'award_value', 'deadline', 'info_url', 'last_updated'],

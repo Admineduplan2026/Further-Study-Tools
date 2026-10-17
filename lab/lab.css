@@ -194,6 +194,13 @@ html[lang^="zh"] .mz{display:none}  /* the faculty name is already shown in Chin
 .lfacts{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px 14px;margin:0;font-size:15px}
 .lfacts dt{color:var(--muted)}
 .lfacts dd{margin:0}
+/* Programme details: overview, structure blocks (one per year or semester), career list */
+.pover{margin:0;font-size:15px;line-height:1.6}
+.pstruct{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.psb{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--soft);min-width:0}
+.psb b{display:block;font-size:14px;color:var(--brand);margin-bottom:4px}
+.psb ul,.pcareer{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.psb li,.pcareer li{overflow-wrap:anywhere}
 .sfoot{position:sticky;bottom:0;background:var(--card);border-top:1px solid var(--line);padding:12px 22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-end}
 .sfoot .heart{position:static;box-shadow:none;border:1px solid var(--line);margin-right:auto}
 .x{position:absolute;top:12px;right:12px;width:42px;height:42px;border-radius:50%;border:0;background:rgba(255,255,255,.92);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;z-index:2}

@@ -166,6 +166,12 @@ a.chip{display:inline-flex;align-items:center;text-decoration:none}
 .progs{display:flex;flex-direction:column;gap:16px}
 .prog{border:1px solid var(--line);border-radius:var(--r);padding:24px;display:flex;flex-direction:column;gap:20px}
 .prog h4{font-family:var(--display);font-size:14px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0}
+/* Programme structure blocks (one per year or semester) and career list */
+.pstruct{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+.psb{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--soft);min-width:0}
+.psb b{display:block;font-size:14px;color:var(--brand);margin-bottom:4px}
+.psb ul,.pcareer{margin:0;padding-left:18px;font-size:14px;display:flex;flex-direction:column;gap:2px}
+.psb li,.pcareer li{overflow-wrap:anywhere}
 .facts.entry{grid-template-columns:minmax(0,80px) minmax(0,1fr);gap:8px 16px}
 .facts.entry dt{font-weight:500;color:var(--ink)}
 .facts .line{display:block}

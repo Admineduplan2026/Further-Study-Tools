@@ -116,6 +116,7 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/xxxxxxxx/exec";
 - Campus Scholarships 的 `applies_to` 有下拉选单（Foundation Programmes / Undergraduate Programmes / Postgraduate Programmes），也可在后面加说明；留空代表适用所有阶段。
 - `intakes` 用英文月份，例如 `January / May / September`（网站也接受 `Jan, May, Sep`），或 `Monthly intake`。
 - `notes` 的两种特别写法：`Annual fee: RM 12,000 (Local)`（显示每年学费）和 `Academic tracks: A, B`（申请表可选择学科方向）。
+- 课程详情（选填，紧接 `notes` 之后的三栏）：`overview`（课程简介，2–4 句）、`programme_structure`（课程结构：每个年级或学期一行以冒号结尾的标题，如 `Year 1:`，下面每行一个科目）、`career_prospects`（就业前景，每行一个职业）。学生在网站点开课程时会看到；`programme_structure` 留空时显示「院校尚未列出课程结构」并附课程网页链接。
 - 课程页面会**自动**列出同一院校、同一阶段可申请的 Campus Scholarships（依 `level` 对应 `applies_to` 的 Foundation / Undergraduate / Postgraduate；`applies_to` 留空的奖学金适用所有阶段）。
 - Campus Scholarships 的 `applies_to` 以 `Foundation Programmes` 或 `Undergraduate Programmes` 开头时，网站第 4 页会出现「考试（SPM / IGCSE / O-Level / UEC / STPM / A-Level）」和「Foundation / Undergraduate」按钮来筛选。
   Foundation / Matriculation / Diploma 的 CGPA 条件，`qualification` 选 `Foundation`、`Matriculation` 或 `Diploma`；SPM / IGCSE / O-Level 学生选 Undergraduate 时会显示这些条件。

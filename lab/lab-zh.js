@@ -43,6 +43,7 @@ window.EDUPLAN_ZH_EXTRA={text:{
  "Free consultation":"免费咨询","Apply now":"立即申请","Ask a counsellor":"咨询顾问","See programmes":"查看课程","Award":"奖励",
  "Other scholarships open to all students":"其他公开申请的奖学金",
  "Saved programmes":"收藏的课程","Tap the heart on any programme to keep it here.":"点击课程上的爱心，就会保存在这里。","Start searching":"开始搜索",
+ "Programme structure":"课程结构","Career prospects":"就业前景","The institution has not listed the programme structure yet.":"院校尚未列出课程结构。","See the programme page":"查看课程网页",
  "Tuition fee":"学费","Intakes":"开课月份","Location":"地点","English requirement":"英语要求","Scholarship":"奖学金","Entry requirements":"入学条件","Notes":"备注","Not listed by the institution":"院校未列出","Programme page":"课程网页","To be confirmed":"待确认",
  "Need help?":"需要帮助？","Ask the AI study assistant":"问 AI 升学助手","Answers about courses, fees and scholarships":"解答课程、学费和奖学金问题","WhatsApp a counsellor":"WhatsApp 联系顾问",
  "The WhatsApp number will be added soon.":"WhatsApp 号码即将公布。","A counsellor calls you back":"顾问会回电给你",

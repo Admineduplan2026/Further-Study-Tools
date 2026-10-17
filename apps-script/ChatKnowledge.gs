@@ -54,7 +54,8 @@ function eduplanKnowledge(d) {
       p.tuition_fee_rm != null ? "Tuition fee (whole programme): " + rm(p.tuition_fee_rm) : "",
       field("Entry with SPM", p.entry_spm), field("Entry with UEC", p.entry_uec), field("Entry with O-Level", p.entry_olevel),
       field("Entry with STPM", p.entry_stpm), field("Other entry routes", p.entry_other), field("English requirement", p.english_requirement),
-      field("MQA reference", p.mqa_reference), field("Application deadline", p.application_deadline), field("Apply", p.apply_url), field("Notes", p.notes)]
+      field("MQA reference", p.mqa_reference), field("Application deadline", p.application_deadline), field("Apply", p.apply_url), field("Notes", p.notes),
+      field("About the programme", p.overview), field("Programme structure", p.programme_structure), field("Career prospects", p.career_prospects)]
       .filter(Boolean).forEach(function (l) { out.push(l); });
   });
 

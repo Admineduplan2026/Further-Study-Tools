@@ -381,6 +381,13 @@ function entryMatch(u){
  var b=RX.badge(RX.match({spm:u.entry,uec:u.uec,olevel:u.olevel,stpm:u.stpm,other:u.entry_other}));
  return b?'<p class="ematch '+b[0]+'">'+esc(b[1])+'</p>':'<p class="hint">These requirements cannot be checked against your results automatically. Ask a counsellor.</p>';
 }
+/* Programme structure from the sheet: a line ending in ":" (Year 1:, Semester 2:) starts a block, the lines under it are its subjects. */
+function progStructure(u){
+ var groups=[],g=null;
+ lines(u.structure).forEach(function(x){if(/[:：]$/.test(x)){g={h:x.replace(/[:：]$/,""),items:[]};groups.push(g);}else{if(!g){g={h:"",items:[]};groups.push(g);}g.items.push(x.replace(/^[•·*▪◦–-]\s*/,""));}});
+ if(!groups.length)return '<p class="hint">The institution has not listed the programme structure yet.'+(u.url?' <a href="'+esc(u.url)+'" target="_blank" rel="noopener">See the programme page</a>.':'')+'</p>';
+ return '<div class="pstruct">'+groups.map(function(g){return '<div class="psb">'+(g.h?'<b>'+esc(g.h)+'</b>':'')+(g.items.length?'<ul>'+g.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>':'')+'</div>';}).join("")+'</div>';
+}
 /* fold: the university pages list many programmes, so each card starts closed and opens to show the details. */
 function progCard(u,fold){
  var sch=progScholarships(u),meta=[u.level,u.years!=null?years(u.years):"",u.mode].filter(Boolean);
@@ -389,6 +396,7 @@ function progCard(u,fold){
  return (fold?'<details class="prog fold"><summary>':'<article class="prog">')+'<div class="stack"><span class="eyebrow">'+esc(u.name)+'</span><h3 class="fname">'+esc(u.programme||u.name)+'</h3>'+
   (meta.length?'<div class="meta">'+meta.map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>':'')+'</div>'+
   (fold?'<span class="foldhint"><span class="closed">Show details</span><span class="opened">Hide details</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></span></summary><div class="progbody">':'')+
+  (u.overview?'<p>'+esc(u.overview)+'</p>':'')+
   '<dl class="facts">'+
    (u.fee==null&&annual.length?'<dt>Tuition fee (per year)</dt><dd>'+annual.map(function(x){return '<span class="line">'+esc(x)+'</span>';}).join("")+'</dd>':
    '<dt>Tuition fee (whole programme)</dt><dd>'+(u.fee!=null?esc(rm(u.fee)):'<span class="hint">To be confirmed</span>')+'</dd>')+
@@ -397,6 +405,8 @@ function progCard(u,fold){
    (u.english?'<dt>English requirement</dt><dd>'+esc(u.english)+'</dd>':'')+(u.mqa?'<dt>MQA</dt><dd>'+esc(u.mqa)+'</dd>':'')+'</dl>'+
   '<div class="stack"><h4>Entry requirements</h4>'+entryMatch(u)+'<dl class="facts entry">'+ENTRY.map(function(e){var l=lines(u[e[0]]);
    return '<dt>'+esc(e[1])+'</dt><dd>'+(l.length?l.map(entryLine).join(""):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl></div>'+
+  '<div class="stack"><h4>Programme structure</h4>'+progStructure(u)+'</div>'+
+  (lines(u.careers).length?'<div class="stack"><h4>Career prospects</h4><ul class="pcareer">'+lines(u.careers).map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul></div>':'')+
   '<div class="stack"><h4>Scholarships you can apply for</h4>'+
    (sch.length?'<ul class="schlinks">'+sch.map(function(g){return '<li><a href="'+esc(g.href)+'"><span class="name">'+esc(g.name)+'</span>'+(g.best!=null?'<span class="pill brand">Up to '+g.best+'% tuition waiver</span>':'')+'</a></li>';}).join("")+'</ul>'
     :'<p class="hint">No campus scholarship listed for this level yet.</p>')+
@@ -1230,7 +1240,7 @@ function applyApi(d){
   var i=inst[p.institution_id];if(!i)return;
   var prog={inst:p.institution_id,name:i.short_name||i.name,place:[i.city,i.state].filter(Boolean).join(", "),campus:p.campus,programme:p.programme_name,level:p.level,mode:p.study_mode,
    years:p.duration_years,intakes:p.intakes,fee:p.tuition_fee_rm,entry:p.entry_spm,uec:p.entry_uec,olevel:p.entry_olevel,stpm:p.entry_stpm,entry_other:p.entry_other,english:p.english_requirement,
-   deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes,course_id:p.course_id,id:p.programme_id};
+   deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes,overview:p.overview,structure:p.programme_structure,careers:p.career_prospects,course_id:p.course_id,id:p.programme_id};
   var u=univ(p.institution_id);if(u)u.progs.push(prog);
   uniq([p.course_id].concat(p.also_course_ids||[])).forEach(function(id){if(courses[id])courses[id].universities.push(prog);});
  });
