@@ -781,6 +781,7 @@ function progSummary(x,details){
  var u=x.p,annual=lines(u.notes).filter(function(l){return /^Annual fee: /.test(l);}).map(function(l){return l.replace(/^Annual fee: /,"");}),notes=lines(u.notes).filter(function(l){return !/^Annual fee: /.test(l);});
  return '<div class="pickcard"><span class="eyebrow">'+esc(x.u.fullName||x.u.name)+'</span><h2>'+esc(x.p.programme)+'</h2>'+
   '<div class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):"",x.p.campus||x.u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>'+
+  RX.payHtml({id:x.p.id,instId:x.u.id,inst:x.u.name,level:x.p.level,rows:campusRows(),fee:x.p.fee,annual:annual,years:x.p.years,port:"#portfolio",head:"h4"})+
   (details?'<div class="pinfo">'+progInfo(u,annual)+(notes.length?'<div class="stack"><h4>Notes</h4>'+notes.map(function(l){return '<p class="muted">'+esc(l)+'</p>';}).join("")+'</div>':'')+
    (u.url?'<a class="textlink" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'')+'</div>':'')+'</div>';
 }
@@ -979,7 +980,7 @@ function pfStart(){
 window.addEventListener("eduplan:results",function(){
  pfTouch("results");
  var hx=applyExam();if(hx){S.app.v.h_results=RX.text(hx);if(S.app.err)delete S.app.err.h_results;applySave();}
- if(app.querySelector("#rx,.prog"))render(true);
+ if(app.querySelector("#rx,.prog,.paybox"))render(true);
 });
 document.addEventListener("visibilitychange",function(){
  if(document.visibilityState==="hidden")pfFlush(true);
@@ -1070,9 +1071,12 @@ V.gate=function(){
 };
 function pfCard(title,body,cls){return '<section class="panel pfcard'+(cls?' '+cls:'')+'"><h2>'+title+'</h2>'+body+'</section>';}
 /* Campus scholarships the student's saved results reach (or nearly reach), from the school sheets. */
-function pfScholarships(){
- var t=schType("campus"),rows=[];
+/* Campus scholarship tiers in the shape results.js reads. */
+function campusRows(){var t=schType("campus"),rows=[];
  ((t&&t.universities)||[]).forEach(function(u){u.tiers.forEach(function(r){if(r.qual&&r.qual!=="Other")rows.push({inst:u.id,instName:u.name,name:r.scheme||"Scholarship",applies:r.applies,qual:r.qual,min:r.min,waiver:r.waiver,amount:r.amount});});});
+ return rows;}
+function pfScholarships(){
+ var rows=campusRows();
  if(!RX.taken().length)return '<p class="muted">Add your exam results above. Eduplan then lists the campus scholarships your results qualify for.</p>';
  var list=RX.scholarships(rows),yes=list.filter(function(s){return s.hit;}),near=list.filter(function(s){return !s.hit;});
  function item(s){return '<div class="item"><span class="eyebrow">'+esc(s.instName)+'</span><span class="name">'+esc(s.name)+'</span>'+(s.applies?'<span class="hint">'+esc(s.applies)+'</span>':'')+

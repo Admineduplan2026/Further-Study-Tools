@@ -83,6 +83,18 @@ textarea{min-height:110px;resize:vertical}
 .sctrack .st{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card,#fff);min-width:0}
 .sctrack .st b{font-size:22px;font-weight:600;color:var(--brand);overflow-wrap:anywhere}
 .sctrack .st span{font-size:13px;color:var(--muted)}
+.paybox{display:flex;flex-direction:column;gap:8px;min-width:0}
+.picks{border:0;margin:0 0 4px;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.picks legend{padding:0;margin-bottom:6px}
+.pickr{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:14px;cursor:pointer;min-width:0}
+.pickr:has(input:checked){border-color:var(--brand);background:var(--brand-soft)}
+.pickr input{width:18px;height:18px;margin-top:2px;accent-color:var(--brand);flex:none}
+.pickr>span{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
+.paytot{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px 14px;margin:0}
+.paytot dt{color:var(--muted)}
+.paytot dd{margin:0}
+.paytot dd b{font-size:18px}
+@media (max-width:560px){.paytot{grid-template-columns:minmax(0,1fr)}.paytot dt{margin-top:6px}}
 .chip{font:inherit;font-size:14px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #b9c1c9;background:#fff;color:var(--ink);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:15px}

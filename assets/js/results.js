@@ -261,6 +261,46 @@ function trackerHtml(list){var t=tracker(list),ex=taken();
   (t.waiver!=null?st("Up to "+t.waiver+"%","tuition waiver"):'')+(t.amount!=null?st("Up to RM "+Number(t.amount).toLocaleString("en-MY"),"scholarship award"):'')+
   st(String(t.near),"almost there: one step away")+'</div>'+
   '<p class="hint">Checked automatically with your '+esc(ex.join(", "))+' results in My results'+(t.yes?': '+ex.filter(function(id){return t.by[id];}).map(function(id){return id+" "+t.by[id];}).join(" · "):'')+'. Each scholarship checks other conditions too.</p>';}
+/* ---------- A chosen programme: the scholarship My results reach there, and the tuition left to pay ----------
+   Used by the Lab's programme cards and details and by the main app's "Your choice" card. rows: campus scholarship
+   tiers {inst,instName,name,applies,qual,min,waiver,amount}. The pick (one scholarship per programme) is kept in
+   this browser so every page shows the same one. */
+function lvOf(l){l=String(l||"");return /pre-?university|foundation/i.test(l)?"foundation":/master|phd|doctor|postgrad/i.test(l)?"postgraduate":"undergraduate";}
+function appliesLv(a){return /^foundation/i.test(a)?"foundation":/^undergraduate/i.test(a)?"undergraduate":/^postgraduate/i.test(a)?"postgraduate":"";}
+function schFor(rows,inst,level){var lv=lvOf(level),by={},keys=[];
+ rows=rows.filter(function(r){var l=appliesLv(r.applies);return r.inst===inst&&r.qual&&r.qual!=="Other"&&(!l||l===lv);});
+ scholarships(rows).forEach(function(x){if(!x.hit)return;var k=x.name+"|"+(x.applies||"");if(!by[k]||award(x.hit)>award(by[k].t)){if(!by[k])keys.push(k);by[k]={key:k,name:x.name,applies:x.applies,exam:x.exam,t:x.hit};}});
+ return {any:rows.length>0,list:keys.map(function(k){return by[k];}).sort(function(a,b){return award(b.t)-award(a.t);})};}
+var PK_KEY="eduplan-sch-pick",PAY={};
+function picks(){try{return JSON.parse(localStorage.getItem(PK_KEY))||{};}catch(e){return {};}}
+function pickOf(id,list){var k=picks()[id];if(k==="none")return null;return list.filter(function(x){return x.key===k;})[0]||list[0]||null;}
+/* Tuition: the whole-programme fee, or the yearly fee ("RM 17,000 ...") times the duration (an estimate). */
+function rmText(n){return "RM "+Number(n).toLocaleString("en-MY");}
+function feeBase(fee,annual,yrs){if(fee!=null&&fee!=="")return {total:+fee,how:"whole programme"};
+ var m=annual&&annual.length&&String(annual[0]).match(/RM\s*([\d,]+)/),a=m?Number(m[1].replace(/,/g,"")):null;
+ if(a!=null&&yrs)return {total:Math.round(a*yrs),how:rmText(a)+" a year × "+yrs+(+yrs===1?" year":" years"),est:true};return a!=null?{total:a,how:"per year",year:true}:null;}
+function cut(base,t){return !base||!t?0:t.waiver!=null?Math.round(base.total*t.waiver/100):t.amount!=null?Math.min(+t.amount,base.total):0;}
+function awardShort(t){return t.waiver!=null?t.waiver+"% tuition waiver":t.amount!=null?rmText(t.amount):"Scholarship";}
+/* o: {id, inst (short name), level, rows, fee, annual, years, port (link to My portfolio), head (heading tag)} */
+function payHtml(o){PAY[o.id]=o;var h=o.head||"h3",top='<div class="paybox" data-paybox="'+esc(o.id)+'"><'+h+'>Your scholarship and what you pay</'+h+'>';
+ if(!taken().length)return top+'<p class="hint"><a href="'+esc(o.port)+'">Add your exam results</a> in My portfolio to see the scholarships you qualify for here and the tuition you would pay.</p></div>';
+ var r=schFor(o.rows,o.instId,o.level),list=r.list,pk=pickOf(o.id,list),base=feeBase(o.fee,o.annual,o.years),off=cut(base,pk&&pk.t),nm="rxpick-"+o.id;
+ var tot=base?'<dl class="paytot"><dt>Tuition fee</dt><dd>'+esc(rmText(base.total))+' <span class="hint">('+esc(base.how)+')</span></dd>'+
+   (pk?'<dt>Scholarship</dt><dd>− '+esc(rmText(off))+' <span class="hint">('+esc(awardShort(pk.t))+')</span></dd>':'')+
+   '<dt>Total you pay</dt><dd><b>'+esc(rmText(base.total-off))+'</b>'+(base.year?' per year':'')+'</dd></dl>'+
+   '<p class="hint">Estimate of tuition only'+(base.est?', from the yearly fee':'')+'. Other fees (registration, hostel and others) are not included. Each scholarship has its own conditions, so confirm with '+esc(o.inst)+' before you apply.</p>'
+  :'<p class="hint">The fee for this programme is not listed yet, so the total cannot be worked out.</p>';
+ if(!list.length)return top+'<p class="hint">'+(r.any?'Your results in My results do not reach a scholarship tier at '+esc(o.inst)+' for this level yet.':'No results-based scholarship is listed for this level at '+esc(o.inst)+' yet.')+'</p>'+tot+'</div>';
+ return top+'<fieldset class="picks"><legend class="hint">Your results qualify for these. Choose one to see the total.</legend>'+
+  list.map(function(x){return '<label class="pickr"><input type="radio" name="'+esc(nm)+'" data-rxpick="'+esc(o.id)+'" value="'+esc(x.key)+'"'+(pk===x?' checked':'')+'>'+
+   '<span><b>'+esc(awardShort(x.t))+'</b><span>'+esc(x.name)+'</span>'+(x.applies?'<span class="hint">'+esc(x.applies)+'</span>':'')+'<span class="hint">With your '+esc(x.exam)+' results</span></span></label>';}).join("")+
+  '<label class="pickr"><input type="radio" name="'+esc(nm)+'" data-rxpick="'+esc(o.id)+'" value="none"'+(pk?'':' checked')+'><span><b>No scholarship</b></span></label></fieldset>'+tot+'</div>';}
+/* Picking a scholarship: remember it, redraw that box in place and tell the pages (their cards show the pick). */
+document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute("data-rxpick"))return;var id=t.getAttribute("data-rxpick"),pk=picks();pk[id]=t.value;
+ try{localStorage.setItem(PK_KEY,JSON.stringify(pk));}catch(e){}
+ var bx=t.closest(".paybox");if(bx&&PAY[id]){var v=t.value;bx.outerHTML=payHtml(PAY[id]);
+  [].slice.call(document.querySelectorAll('[data-rxpick]')).forEach(function(r){if(r.getAttribute("data-rxpick")===id&&r.value===v)r.focus();});}
+ window.dispatchEvent(new CustomEvent("eduplan:schpick",{detail:{id:id}}));});
 function awardText(t){return t.waiver!=null?t.waiver+"% tuition waiver":t.amount!=null?"RM "+Number(t.amount).toLocaleString("en-MY"):"See official information";}
 /* "1 more A for 50% tuition waiver" / "Needs 8 A+ for 100% tuition waiver (you have 7)" / "Needs CGPA 3.90 for …". */
 function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
@@ -271,6 +311,6 @@ function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
 /* One line about the student's results, for the AI study assistant. */
 function forChat(){return taken().map(function(id){var e=exam(id);return id+": "+(e.cgpa?summary(id):summary(id)+" ("+aCount(id)+" A grades; "+text(id).replace(/\n/g,", ")+")");}).join("; ");}
 
-window.EDUPLAN_RESULTS={scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
+window.EDUPLAN_RESULTS={schFor:schFor,pickOf:pickOf,feeBase:feeBase,cut:cut,awardShort:awardShort,payHtml:payHtml,scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
  summary:summary,text:text,editor:editor,groupsFor:groupsFor,checkExam:checkExam,match:match,badge:badge,current:function(){return UI.cur;},setCurrent:function(id){UI.cur=id;}};
 })();
