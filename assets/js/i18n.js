@@ -299,6 +299,8 @@ var ZH_PATTERNS=[
  [/^See (Foundation|Undergraduate) level$/,function(m){return "查看"+LEVEL[m[1]]+"阶段";}],
  [/^Offered at (.+)\.$/,"开办院校：$1。"],
  [/^(\d+(?:\.\d+)?) years?$/,"$1 年"],
+ /* Yearly fees from a fee guide, e.g. "RM 28,000 (Malaysian students, 2026)." (the last line of a list ends with " (per year)") */
+ [/^RM ([\d,]+) \(Malaysian students(, part-time)?, (\d{4})\)\.?( \(per year\))?$/,function(m){return "RM "+m[1]+"（马来西亚学生"+(m[2]?"，非全日制":"")+"，"+m[3]+" 年）"+(m[4]?"（每年）":"");}],
  [/^(.+?)\. (On-campus hostel\.|Partner hostel, 10 minutes by shuttle\.|No hostel\. Eduplan helps you find a rented room nearby\.)$/,function(m){return m[1]+"。"+tr(m[2]);}],
  [/^Phone \/ WhatsApp: (.*)$/,"电话／WhatsApp：$1"],[/^Email: (.*)$/,"电邮：$1"],[/^Address: (.*)$/,"地址：$1"],
  [/^Send to: WhatsApp (.+) or email (.+)\.$/,"发送至：WhatsApp $1 或电邮 $2。"]

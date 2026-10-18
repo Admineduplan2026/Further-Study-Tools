@@ -627,6 +627,7 @@ window.EDUPLAN_CONTENT_ZH={
 "Feature Writing":"特稿写作",
 "February / April / September":"2月／4月／9月",
 "February / July / September":"2月 / 7月 / 9月",
+"Fees: XMUM Fees for Academic Year 2026 (Malaysian), November 2025.":"学费资料来源：XMUM 2026 学年学费表（马来西亚学生），2025 年 11 月。",
 "Fermentation and Bioprocess Engineering":"发酵与生物过程工程",
 "Field Experience in Marine Sciences":"海洋科学野外实习",
 "Film production and other related fields":"影视制作及其他相关领域",
