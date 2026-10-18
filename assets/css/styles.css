@@ -78,6 +78,7 @@ input[type=text],input[type=tel],input[type=email],input[type=date],input[type=m
 textarea{min-height:110px;resize:vertical}
 .err{font-size:13px;color:var(--err)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips.subchips{margin-top:10px}
 .chip{font:inherit;font-size:14px;min-height:44px;padding:0 16px;border-radius:999px;border:1px solid #b9c1c9;background:#fff;color:var(--ink);cursor:pointer}
 .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
 .check{display:flex;gap:10px;align-items:flex-start;font-size:15px}

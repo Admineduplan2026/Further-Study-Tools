@@ -194,11 +194,20 @@ function uniPage(u){
    '<span class="meta"><span class="pill brand">'+ps.length+' programme'+(ps.length===1?'':'s')+'</span>'+subs+'</span>'+
    '<span class="textlink">View programmes '+ARROW+'</span></a>';}).join("")+'</div></section>';
 }
+/* Sub-level in the address: "Bachelor's Degree" -> "bachelor", "Master's Degree" -> "master", "PhD" -> "phd". */
+function subSlug(sl){return String(sl).split(/[\s']/)[0].toLowerCase();}
+/* Page 3 buttons: all programmes of the level, or one sub-level (e.g. Diploma or Bachelor's Degree). Shown when the level has more than one. */
+function subChips(u,lv,all,cur){var base="#universities/"+esc(u.id.toLowerCase())+"/"+lv;
+ var have=all.map(function(p){return uniLevel(p.level)[1];}),list=uniq(have);if(list.length<2)return '';
+ var L=LEVELS.filter(function(x){return x[0]===lv;})[0];list.sort(function(a,b){return L[2].indexOf(a)-L[2].indexOf(b);});
+ return '<div class="chips subchips" role="group" aria-label="Programme type"><a class="chip" href="'+base+'"'+(cur?'':' aria-current="page"')+'>All · '+all.length+'</a>'+
+  list.map(function(sl){var n=have.filter(function(h){return h===sl;}).length;return '<a class="chip" href="'+base+'/'+subSlug(sl)+'"'+(cur===subSlug(sl)?' aria-current="page"':'')+'>'+esc(sl)+' · '+n+'</a>';}).join("")+'</div>';}
 function uniLevelPage(u,lv){
- var L=LEVELS.filter(function(x){return x[0]===lv;})[0],ps=u.progs.filter(function(p){return uniLevel(p.level)[0]===lv;});
+ var L=LEVELS.filter(function(x){return x[0]===lv;})[0],all=u.progs.filter(function(p){return uniLevel(p.level)[0]===lv;}),cur=S.uni&&S.uni.sub;
+ var ps=cur?all.filter(function(p){return subSlug(uniLevel(p.level)[1])===cur;}):all;
  var subs=uniq(L[2].concat(ps.map(function(p){return uniLevel(p.level)[1];})));
  return uniHead(u,3,"#universities/"+esc(u.id.toLowerCase()))+(hasBanner(u)?'':'<h1>'+esc(u.name)+' · '+L[1]+'</h1><p class="lead">'+esc(L[2].join(" / "))+'</p>')+
- '<div class="chips" role="group" aria-label="Study level">'+LEVELS.map(function(x){return '<a class="chip" href="#universities/'+esc(u.id.toLowerCase())+'/'+x[0]+'"'+(x[0]===lv?' aria-current="page"':'')+'>'+x[1]+'</a>';}).join("")+'</div></section>'+
+ '<div class="chips" role="group" aria-label="Study level">'+LEVELS.map(function(x){return '<a class="chip" href="#universities/'+esc(u.id.toLowerCase())+'/'+x[0]+'"'+(x[0]===lv?' aria-current="page"':'')+'>'+x[1]+'</a>';}).join("")+'</div>'+subChips(u,lv,all,cur)+'</section>'+
  uniTour(u,u.name+' · '+L[1],L[2].join(" / "))+
  (ps.length?'<div class="row foldall"><span class="hint">'+ps.length+' programme'+(ps.length===1?'':'s')+'. Tap a programme to see fees, entry requirements and scholarships.</span>'+
   '<button type="button" class="btn ghost" data-foldall="open">Expand all</button><button type="button" class="btn ghost" data-foldall="close">Collapse all</button></div>'+facNav(ps):'')+
@@ -1133,8 +1142,9 @@ function route(){
  }
  S.uni=null;
  if(r.indexOf("universities/")===0){
-  var up=r.split("/"),ux=univ(up[1]),ul=ux&&up[2]&&LEVELS.some(function(x){return x[0]===up[2];})?up[2]:null;
-  if(ux){r="universities/"+ux.id.toLowerCase()+(ul?"/"+ul:"");S.uni={id:ux.id,level:ul};}
+  var up=r.split("/"),ux=univ(up[1]),ul=ux&&up[2]&&LEVELS.some(function(x){return x[0]===up[2];})?up[2]:null,
+   us=ul&&up[3]&&LEVELS.filter(function(x){return x[0]===ul;})[0][2].some(function(sl){return subSlug(sl)===up[3];})?up[3]:null;
+  if(ux){r="universities/"+ux.id.toLowerCase()+(ul?"/"+ul:"")+(us?"/"+us:"");S.uni={id:ux.id,level:ul,sub:us};}
   else if(UNIV.length)r="universities";   /* before the sheet data arrives, keep the link as it is */
  }
  S.fac=null;
