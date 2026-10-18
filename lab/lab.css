@@ -151,6 +151,14 @@ html[lang^="zh"] .mz{display:none}  /* the faculty name is already shown in Chin
 .plink{background:none;border:0;padding:0;text-align:left;color:var(--ink);cursor:pointer;font-size:inherit;font-weight:inherit;line-height:inherit}
 .plink:hover{color:var(--brand);text-decoration:underline}
 .perk{font-size:13.5px;color:var(--ok);font-weight:500}
+.fee s.hint{font-size:12.5px}
+.picks{border:0;margin:0 0 10px;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
+.picks legend{padding:0;margin-bottom:6px}
+.pickr{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:14px;cursor:pointer;min-width:0}
+.pickr:has(input:checked){border-color:var(--brand);background:var(--brand-soft)}
+.pickr input{width:18px;height:18px;margin-top:2px;accent-color:var(--brand);flex:none}
+.pickr>span{display:flex;flex-direction:column;gap:2px;min-width:0;overflow-wrap:anywhere}
+.paytot dd b{font-size:18px}
 .why{font-size:13px;color:var(--sun-ink);background:var(--sun-soft);border-radius:8px;padding:4px 8px;align-self:flex-start}
 .pfoot{margin-top:auto;padding-top:10px;border-top:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
 .fee{display:flex;flex-direction:column;line-height:1.2}

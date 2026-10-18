@@ -73,8 +73,41 @@ function schLevel(a){return /^foundation/i.test(a)?"foundation":/^undergraduate/
 function bestWaiver(p){var lv=p.lk==="foundation"?"foundation":p.lk==="degree"||p.lk==="diploma"?"undergraduate":"postgraduate",best=null;
  D.sch.forEach(function(s){if(s.inst!==p.inst)return;var l=schLevel(s.applies);if(l&&l!==lv)return;if(s.waiver!=null&&(best==null||s.waiver>best))best=s.waiver;});return best;}
 
+/* Scholarships the exam results in My results reach for a programme: the institution's campus scholarships for the
+   programme's level (results.js decides each tier), one per scholarship, biggest award first. */
+function schLv(p){return p.lk==="foundation"?"foundation":p.lk==="degree"||p.lk==="diploma"?"undergraduate":"postgraduate";}
+function awardOf(t){return t.waiver!=null?t.waiver:t.amount!=null?t.amount/1000:-1;}
+function mySch(p){if(!RX.taken().length)return [];var lv=schLv(p),by={},out=[];
+ var rows=D.sch.filter(function(s){var l=schLevel(s.applies);return s.inst===p.inst&&s.qual&&s.qual!=="Other"&&(!l||l===lv);})
+  .map(function(s){return {inst:s.inst.id,instName:s.inst.name,name:s.name,applies:s.applies,qual:s.qual,min:s.min,waiver:s.waiver,amount:s.amount};});
+ RX.scholarships(rows).forEach(function(x){if(!x.hit)return;var k=x.name+"|"+(x.applies||"");if(!by[k]||awardOf(x.hit)>awardOf(by[k].t)){if(!by[k])out.push(k);by[k]={key:k,name:x.name,applies:x.applies,exam:x.exam,t:x.hit};}});
+ return out.map(function(k){return by[k];}).sort(function(a,b){return awardOf(b.t)-awardOf(a.t);});}
+/* The scholarship the student picked for this programme (the biggest one until they choose), or none. */
+function pickOf(p,list){var k=L.pick[p.id];if(k==="none")return null;return list.filter(function(x){return x.key===k;})[0]||list[0]||null;}
+/* Tuition to pay: the whole-programme fee, or the yearly fee in the notes times the duration (an estimate). */
+function annualRm(p){var m=p.annual.length&&String(p.annual[0]).match(/RM\s*([\d,]+)/);return m?Number(m[1].replace(/,/g,"")):null;}
+function feeBase(p){if(p.fee!=null)return {total:+p.fee,how:"whole programme"};var a=annualRm(p);
+ if(a!=null&&p.years)return {total:Math.round(a*p.years),how:rm(a)+" a year × "+years(p.years),est:true};return a!=null?{total:a,how:"per year",year:true}:null;}
+function cut(base,t){return !base||!t?0:t.waiver!=null?Math.round(base.total*t.waiver/100):t.amount!=null?Math.min(+t.amount,base.total):0;}
+function awardShort(t){return t.waiver!=null?t.waiver+"% tuition waiver":t.amount!=null?rm(t.amount):"Scholarship";}
+/* Detail sheet: choose one of the scholarships the results reach and see the total tuition to pay. */
+function payBox(p){var list=mySch(p),base=feeBase(p),pk=pickOf(p,list),port=esc(mainLink("#portfolio"));
+ if(!RX.taken().length)return '<div id="paybox"><h3>Your scholarship and what you pay</h3><p class="hint"><a href="'+port+'">Add your exam results</a> in My portfolio to see the scholarships you qualify for here and the tuition you would pay.</p></div>';
+ var off=cut(base,pk&&pk.t),nm="pick-"+p.id,lv=schLv(p);
+ var tot=base?'<dl class="lfacts paytot"><dt>Tuition fee</dt><dd>'+esc(rm(base.total))+' <span class="hint">('+esc(base.how)+')</span></dd>'+
+   (pk?'<dt>Scholarship</dt><dd>− '+esc(rm(off))+' <span class="hint">('+esc(awardShort(pk.t))+')</span></dd>':'')+
+   '<dt>Total you pay</dt><dd><b>'+esc(rm(base.total-off))+'</b>'+(base.year?' per year':'')+'</dd></dl>'+
+   '<p class="hint">Estimate of tuition only'+(base.est?', from the yearly fee':'')+'. Other fees (registration, hostel and others) are not included. Each scholarship has its own conditions, so confirm with '+esc(p.inst.name)+' before you apply.</p>'
+  :'<p class="hint">The fee for this programme is not listed yet, so the total cannot be worked out.</p>';
+ if(!list.length){var any=D.sch.some(function(s){var l=schLevel(s.applies);return s.inst===p.inst&&s.qual&&s.qual!=="Other"&&(!l||l===lv);});
+  return '<div id="paybox"><h3>Your scholarship and what you pay</h3><p class="hint">'+(any?'Your results in My results do not reach a scholarship tier at '+esc(p.inst.name)+' for this level yet.':'No results-based scholarship is listed for this level at '+esc(p.inst.name)+' yet.')+'</p>'+tot+'</div>';}
+ return '<div id="paybox"><h3>Your scholarship and what you pay</h3><fieldset class="picks"><legend class="hint">Your results qualify for these. Choose one to see the total.</legend>'+
+  list.map(function(x){return '<label class="pickr"><input type="radio" name="'+esc(nm)+'" data-lpick="'+esc(p.id)+'" value="'+esc(x.key)+'"'+(pk===x?' checked':'')+'>'+
+   '<span><b>'+esc(awardShort(x.t))+'</b><span class="pkn">'+esc(x.name)+'</span>'+(x.applies?'<span class="hint">'+esc(x.applies)+'</span>':'')+'<span class="hint">With your '+esc(x.exam)+' results</span></span></label>';}).join("")+
+  '<label class="pickr"><input type="radio" name="'+esc(nm)+'" data-lpick="'+esc(p.id)+'" value="none"'+(pk?'':' checked')+'><span><b>No scholarship</b></span></label></fieldset>'+tot+'</div>';}
+
 /* ---------- State (browser storage shared with the main site) ---------- */
-var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,mine:false,sort:"match",quizStep:null,help:false,menu:false,info:false};
+var L={mode:ls("eduplan-lab-mode")||"interest",view:"home",detail:null,showNoFee:false,mine:false,sort:"match",quizStep:null,help:false,menu:false,info:false,pick:{}};
 if(!MODES.some(function(m){return m[0]===L.mode;}))L.mode="interest";
 var SEARCH0={what:"",fac:"",where:"",level:"",budget:"",intake:""},SCH0={qual:"SPM",res:"",level:"foundation",inst:""};
 var S={search:ls("eduplan-lab-search")||{},sch:ls("eduplan-lab-sch")||{},recent:ls("eduplan-lab-recent")||[],saved:ls("eduplan-saved")||[],
@@ -184,13 +217,13 @@ function entryBadge(p,full){var m=entryState(p);if(!m||m.state==="none")return '
   m.state==="missing"?'Needs '+m.need[0]+(m.need.length>1?' and '+(m.need.length-1)+' more':''):m.exam+' not accepted directly';
  return '<span class="ematch '+(m.state==="meets"||m.state==="check"?"ok":m.state==="missing"?"miss":"no")+'">'+esc(full?RX.badge(m)[1]:t)+'</span>';}
 function card(p,why){
- var w=bestWaiver(p),note=esc("Interested in: "+p.name+" ("+p.inst.name+").");
+ var w=bestWaiver(p),note=esc("Interested in: "+p.name+" ("+p.inst.name+")."),list=mySch(p),pk=pickOf(p,list),base=feeBase(p);
  return '<article class="pcard">'+cover(p.inst)+heartBtn(p.id)+
   '<div class="pbody"><span class="pinst">'+esc(p.inst.name)+(p.inst.city?' · '+esc(p.inst.city):'')+'</span>'+
   '<h3><button type="button" class="plink" data-detail="'+esc(p.id)+'">'+esc(p.name)+'</button></h3>'+
   '<div class="pills">'+pill(levelName(p.lk)||p.level)+(p.years!=null?pill(years(p.years)):"")+(p.mqa?pill("MQA registered","ok"):"")+'</div>'+
-  (w!=null?'<span class="perk">Scholarship up to '+w+'% tuition waiver</span>':'')+(why?'<span class="why">'+esc(why)+'</span>':'')+entryBadge(p)+
-  '<div class="pfoot">'+feeLine(p)+'<div class="pact"><a class="btn ghost sm" href="#consultation" data-topic="Choosing a university" data-note="'+note+'">Free consultation</a>'+
+  (pk?'<span class="perk">Your scholarship: '+esc(awardShort(pk.t))+'</span>':w!=null?'<span class="perk">Scholarship up to '+w+'% tuition waiver</span>':'')+(why?'<span class="why">'+esc(why)+'</span>':'')+entryBadge(p)+
+  '<div class="pfoot">'+(pk&&base?'<span class="fee"><b>'+esc(rm(base.total-cut(base,pk&&pk.t)))+'</b><span class="hint">'+(base.year?'a year after scholarship':'to pay after scholarship')+'</span><s class="hint">'+esc(rm(base.total))+'</s></span>':feeLine(p))+'<div class="pact"><a class="btn ghost sm" href="#consultation" data-topic="Choosing a university" data-note="'+note+'">Free consultation</a>'+
   '<a class="btn sm" href="#next/'+esc(p.id)+'" data-lflow="'+cardFlow()+'">Apply now</a></div></div></div></article>';
 }
 
@@ -480,7 +513,7 @@ function detailSheet(){
   (p.overview?'<p class="pover">'+esc(p.overview)+'</p>':'')+
   '<dl class="lfacts"><dt>Tuition fee</dt><dd>'+(p.fee!=null?esc(rm(p.fee))+' (whole programme)':p.annual.length?p.annual.map(esc).join("<br>")+' (per year)':'To be confirmed')+'</dd>'+
   (p.intakes?'<dt>Intakes</dt><dd>'+esc(p.intakes)+'</dd>':'')+'<dt>Location</dt><dd>'+esc(p.campus||[p.inst.city,p.inst.state].filter(Boolean).join(", ")||"To be confirmed")+'</dd>'+
-  (p.english?'<dt>English requirement</dt><dd>'+esc(p.english)+'</dd>':'')+(w!=null?'<dt>Scholarship</dt><dd>Up to '+w+'% tuition waiver</dd>':'')+'</dl>'+
+  (p.english?'<dt>English requirement</dt><dd>'+esc(p.english)+'</dd>':'')+(w!=null?'<dt>Scholarship</dt><dd>Up to '+w+'% tuition waiver</dd>':'')+'</dl>'+payBox(p)+
   '<h3>Entry requirements</h3>'+entryBadge(p,true)+'<dl class="lfacts">'+p.entry.map(function(e){return '<dt>'+esc(e[0])+'</dt><dd>'+(e[1]?String(e[1]).split(/\n/).filter(function(x){return x.trim();}).map(function(x){x=x.trim();var h=/[:：]$/.test(x);
    return h?'<b>'+esc(x)+'</b>':'• '+esc(x.replace(/^[•·*▪◦–-]\s*/,""));}).join("<br>"):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>'+
   '<h3>Programme structure</h3>'+structure(p.structure,p.url)+
@@ -573,6 +606,8 @@ document.addEventListener("submit",function(ev){
 window.addEventListener("eduplan:results",function(){if(L.view!=="app")render(true);});
 document.addEventListener("input",function(ev){if(ev.target.id==="q-what")ev.target.removeAttribute("data-fac");});
 document.addEventListener("change",function(ev){if(ev.target.id==="r-sort"){L.sort=ev.target.value;render(true);}
+ if(ev.target.hasAttribute("data-lpick")){var pid=ev.target.getAttribute("data-lpick"),pp=prog(pid),bx=document.getElementById("paybox");L.pick[pid]=ev.target.value;
+  if(pp&&bx){bx.outerHTML=payBox(pp);var r=document.querySelector('#paybox input[value="'+ev.target.value.replace(/"/g,'\\"')+'"]');if(r)r.focus();}}
  if(ev.target.id==="q-mine"){L.mine=ev.target.checked;}
  if(ev.target.id==="r-mine"){L.mine=ev.target.checked;render(true);var mi=document.getElementById("r-mine");if(mi)mi.focus();}
  if(ev.target.id==="s-qual"){var q1=ev.target.value,was=isCgpa(S.sch.qual);S.sch.qual=q1;S.sch.level=exam(q1).lv;S.sch.inst=val("s-inst");
