@@ -286,8 +286,8 @@ function schReq(t,it){var aw=lines(it.award),dl=fsDeadline(it.deadline);
  return schHead(4,t,"#scholarships-"+esc(t.id))+'<h1>'+esc(it.name)+'</h1>'+(it.organiser?'<p class="lead">'+esc(it.organiser)+'</p>':'')+'</section>'+
  '<section class="panel fsreq"><h2>Award: what you get</h2>'+(aw.length?reqList(aw):'<p class="muted">See official information.</p>')+'</section>'+
  '<section class="panel"><h2>Requirements</h2>'+reqList(lines(it.requirements))+
-  facts([["Application deadline",dl?dl.t:""],["Last updated",it.lastUpdated]])+
-  '<div class="row">'+(it.url?'<a class="btn" href="'+esc(it.url)+'" target="_blank" rel="noopener">Official information '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+SCH_NOTE+'</section>'+
+  facts([["Application deadline",dl?dl.t:""],["Last updated",it.lastUpdated]])+(t.id==="foundation"?'<p class="hint">Information is for reference only. Please confirm with the official website.</p>':'')+
+  '<div class="row">'+(it.url?'<a class="btn" href="'+esc(it.url)+'" target="_blank" rel="noopener">Official information '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+(t.id==="foundation"?'':SCH_NOTE)+'</section>'+
  '<section class="panel"><h2>Next: choose a university</h2><p class="muted">Find a university and programme to apply to with this scholarship.</p>'+
   '<div class="row"><a class="btn" href="#universities" data-flow="scholarships">Choose a university '+ARROW+'</a><a class="btn ghost" href="#consultation" data-topic="Scholarships" data-note="'+esc("Interested in: "+it.name+".")+'">Ask a counsellor</a></div></section>';
 }
