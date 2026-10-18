@@ -4,8 +4,18 @@
    UTAR: "Student Application Form (Foundation Programmes leading to Bachelor Honours Degree Programmes)", the version
    for the January / June / October 2024 intakes (form FM-DACE-003). routes = the degree programmes listed on pages 4 to 6
    of that form for each foundation, by study area: [name, code, flag]; flag "^" = the foundation for it is at Kampar
-   Campus only, "+" = at Sungai Long Campus only ("*" = portfolio needed without an SPM credit in Pendidikan Seni). */
+   Campus only, "+" = at Sungai Long Campus only ("*" = portfolio needed without an SPM credit in Pendidikan Seni).
+   APU: "Undergraduate Application Form" (AF(UG)/APU/JAN/2026/V1), used for every APU programme (all: true): the apply page asks
+   the extra questions of that form and Apply.gs fills in a copy in its layout (parts A to J). */
 window.EDUPLAN_FORMS={
+ APU:{
+  all:true,
+  title:"Undergraduate Application Form",
+  source:"APU Undergraduate Application Form, AF(UG)/APU/JAN/2026/V1",
+  titles:["Mr","Ms","Mrs","Others"],
+  conditions:["Allergies","Anemia","Asthma","Colour Blindness","Epilepsy","Heart Disease","Others"],
+  passes:["Social Visit","Student","Dependent","Diplomatic","MM2H","Resident Pass"]
+ },
  UTAR:{
   title:"Student Application Form (Foundation Programmes leading to Bachelor Honours Degree Programmes)",
   source:"UTAR Student Application Form, Foundation (January / June / October 2024 intakes)",

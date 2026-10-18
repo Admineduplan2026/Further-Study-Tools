@@ -84,7 +84,7 @@ function applyPdf_(ref, received, summary, images, withImages) {
 }
 
 /* Schools' own application forms, filled in from the website's application (body.form, from applyFormData in app.js). */
-var APPLY_FORMS = { UTAR: applyUtarPdf_ };
+var APPLY_FORMS = { UTAR: applyUtarPdf_, APU: applyApuPdf_ };
 
 /* UTAR "Student Application Form (Foundation Programmes leading to Bachelor Honours Degree Programmes)", form
    FM-DACE-003, in its own order: Section A, I Personal information, II Parent/guardian, III Declaration, IV Checklist.
@@ -144,6 +144,78 @@ function applyUtarPdf_(ref, received, f) {
     'STPM / A-Level / UEC / SAM / CPU or other equivalent results; School Leaving Certificate and Identity Card.</p>' +
     '<div class="foot">Prepared by Eduplan from the applicant&#39;s online application ' + applyEsc_(ref) + ' (received ' + applyEsc_(received) + ', Malaysia time). ' +
     'The applicant signs and dates Section III before the form is submitted to UTAR.</div>' +
+    '</body></html>';
+  return HtmlService.createHtmlOutput(html).getBlob().getAs(MimeType.PDF);
+}
+
+/* APU "Undergraduate Application Form" (AF(UG)/APU/JAN/2026/V1), parts A to J, filled in from the online application.
+   The applicant signs Part J and attaches the documents in the Part I checklist before the form goes to APU. */
+function applyApuPdf_(ref, received, f) {
+  var t = function (v, max) { return applyEsc_(applyText_(v, max || 200)); };
+  var box = function (on) { return on ? '&#9745;' : '&#9744;'; };
+  var choose = function (opts, value, other) {
+    var hit = opts.indexOf(String(value || '')) >= 0;
+    return opts.map(function (o) { return box(o === value) + ' ' + o; }).join('&nbsp;&nbsp; ') +
+      (other ? '&nbsp;&nbsp; ' + box(value && !hit) + ' Others' + (value && !hit ? ': ' + t(value, 40) : '') : '');
+  };
+  var cell = function (label, value, span) { return '<td' + (span ? ' colspan="' + span + '"' : '') + '><div class="l">' + label + '</div><div class="v">' + (value || '&nbsp;') + '</div></td>'; };
+  var dmy = function (d) { return String(d || '').replace(/^(\d{4})-(\d{2})-(\d{2})$/, '$3/$2/$1'); };
+  var mmyy = String(f.intake || '').replace(/^(\d{4})-(\d{2}).*$/, function (a, y, m) { return m + '/' + y.slice(2); });
+  var intl = !!f.international, edu = (f.education || []).slice(0, 5), eng = (f.english || []).slice(0, 3);
+  var hi = f.highest || {}, rows = '';
+  if (hi.qual) rows += '<tr><td>' + t(hi.qual, 60) + '</td><td>' + t(hi.school, 120) + '</td><td>' + t(hi.year, 10) + '</td><td>' + box(hi.status === 'Official') + ' Actual &nbsp; ' + box(hi.status === 'Trial') + ' Forecast</td></tr>';
+  edu.forEach(function (e) { if (e.school === hi.school && e.qual === hi.qual) return; rows += '<tr><td>' + t(e.qual, 60) + '</td><td>' + t(e.school, 120) + '</td><td>' + t(e.year, 10) + '</td><td>&nbsp;</td></tr>'; });
+  var engRows = eng.map(function (e) { return '<tr><td>' + t(e.test, 60) + '</td><td>&nbsp;</td><td>' + t(e.date, 20) + '</td><td>' + t(e.score, 30) + '</td></tr>'; }).join('') || '<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>';
+  var levels = ['Foundation', 'Foundation-ODL', 'APIIT Certificate', 'Diploma', 'Degree Level 1', 'Degree Level 2'];
+  var html = '<html><head><meta charset="utf-8"><style>' +
+    'body{font-family:Arial,sans-serif;font-size:9.5pt;color:#111;margin:0}' +
+    '.top{display:flex;justify-content:space-between;align-items:flex-start}.top h1{font-size:15pt;margin:0;color:#0b3a5c}.addr{font-size:8.5pt;color:#333}' +
+    'h2{font-size:10pt;margin:12px 0 4px;padding:2px 0;color:#0b3a5c;border-bottom:2px solid #0b3a5c}' +
+    '*{box-sizing:border-box}table{width:100%;border-collapse:collapse;table-layout:fixed}td{padding:3px 5px;vertical-align:top;border:1px solid #bbb;word-wrap:break-word}' +
+    '.l{font-size:7.5pt;color:#555}.v{min-height:13px}th{font-size:8pt;text-align:left;background:#eef3f7;border:1px solid #bbb;padding:3px 5px}' +
+    '.note{font-size:8pt;color:#333}.sign td{height:40px;vertical-align:bottom}.foot{margin-top:14px;font-size:8pt;color:#555;border-top:1px solid #ccc;padding-top:4px}' +
+    '</style></head><body>' +
+    '<table style="border:0"><tr><td style="border:0"><h1 style="font-size:15pt;margin:0;color:#0b3a5c">UNDERGRADUATE APPLICATION FORM</h1>' +
+    '<div class="addr">Asia Pacific University of Technology &amp; Innovation (APU) &middot; Asia Pacific Institute of Information Technology (APIIT)<br>' +
+    'Technology Park Malaysia, Bukit Jalil, 57000 Kuala Lumpur, Malaysia. Tel: +603-8996 1000 &middot; Email: info@apu.edu.my</div></td>' +
+    '<td style="border:0;text-align:right;width:34%">' + box(!intl) + ' Malaysian &nbsp; ' + box(intl) + ' International' + (intl ? ': ' + t(f.nationality, 40) : '') + '</td></tr></table>' +
+    '<h2>PART A: PERSONAL DETAILS</h2><table>' +
+    '<tr>' + cell('Title', choose(['Mr', 'Ms', 'Mrs'], f.title, true), 2) + cell('*Gender', choose(['Male', 'Female'], f.gender)) + '</tr>' +
+    '<tr>' + cell('*Name (as per IC / Passport)', t(f.name, 120), 2) + cell('*Marital Status', choose(['Married', 'Single'], f.marital)) + '</tr>' +
+    '<tr>' + cell('*IC Number / Passport Number', t(f.ic, 40)) + cell('*Date of Birth (dd/mm/yyyy)', t(dmy(f.dob), 12)) + cell('Place of Birth (City / State)', t(f.pob, 60)) + '</tr>' +
+    '<tr>' + cell('Nationality', t(f.nationality, 60)) + cell('*Race', t(f.race, 40)) + cell('*Religion', t(f.religion, 40)) + '</tr>' +
+    '<tr>' + cell('*Student&#39;s Correspondence Address', t(f.address, 300), 3) + '</tr>' +
+    '<tr>' + cell('Postcode', t(f.postcode, 10)) + cell('*City / State', t(f.state, 60)) + cell('*Country', t(f.country, 60)) + '</tr>' +
+    '<tr>' + cell('*Contact / Mobile (with Country code)', t(f.mobile, 30)) + cell('Email', t(f.email, 120), 2) + '</tr>' +
+    '<tr>' + cell('*Parent / Guardian Name', t(f.guardian, 120)) + cell('Relationship to the Student', t(f.relation, 40)) + cell('Contact / Mobile (with Country code)', t(f.guardianMobile, 30)) + '</tr>' +
+    '<tr>' + cell('Parent / Guardian Permanent Address (if different from Student&#39;s Correspondence Address)', '', 2) + cell('*Parent / Guardian IC Number / Passport Number', t(f.guardianIc, 40)) + '</tr>' +
+    '<tr>' + cell('Postcode', '') + cell('Country', '') + cell('Parent / Guardian Email', t(f.guardianEmail, 120)) + '</tr>' +
+    '<tr>' + cell('Contact Person in Case of Emergency', t(f.emergency, 120)) + cell('Relationship to the Student', t(f.emergencyRelation, 40)) + cell('Contact / Mobile (with Country code)', t(f.emergencyMobile, 30)) + '</tr>' +
+    '</table>' +
+    '<h2>PART B: COURSE APPLIED FOR</h2><table>' +
+    '<tr>' + cell('Course Name', t(f.course, 160)) + cell('Specialism (if applicable)', t(f.specialism, 80)) + cell('Intake Date (mm/yy)', t(mmyy, 8)) + '</tr>' +
+    '<tr>' + cell('Level of Study', levels.map(function (l) { return box(l === f.level) + ' ' + l; }).join('&nbsp;&nbsp; '), 3) + '</tr></table>' +
+    '<h2>PART C: ACADEMIC BACKGROUND (from highest to lowest)</h2>' +
+    '<table><tr><th>Qualification</th><th>Name of School / College / University</th><th>Year Completed</th><th>Result</th></tr>' + (rows || '<tr><td>&nbsp;</td><td></td><td></td><td></td></tr>') + '</table>' +
+    '<p class="note">* Compulsory / Mandatory fields. Copies of certificates and transcripts are attached to the Eduplan application.</p>' +
+    '<h2>PART D: MEDICAL DISCLOSURE</h2><table>' +
+    '<tr>' + cell('1. Do you have any special / medical condition that requires the attention of the University?', choose(['Yes', 'No'], f.medical) + (f.medical === 'Yes' ? '<br>' + t(f.medicalInfo, 300) : ''), 3) + '</tr>' +
+    '<tr>' + cell('2. Have you had any history of Mental / Psychiatric conditions?', choose(['Yes', 'No'], f.mental) + (f.mental === 'Yes' ? '<br>' + t(f.mentalInfo, 300) : ''), 3) + '</tr>' +
+    '<tr>' + cell('3. Have you been diagnosed with any conditions / disorders that may affect your ability to cope with University studies?', choose(['Yes', 'No'], f.cope), 3) + '</tr></table>' +
+    '<h2>PART E: ENGLISH LANGUAGE PROFICIENCY (international applicants only)</h2>' +
+    '<p>English was the language of instruction in my previous completed studies: ' + (intl ? choose(['Yes', 'No'], f.englishInstruction) : 'Not applicable (Malaysian applicant)') + '</p>' +
+    '<table><tr><th>Name of Test / Examination</th><th>Name of Centre / Institution</th><th>Date (to be) Taken</th><th>Results (if known)</th></tr>' + engRows + '</table>' +
+    '<h2>PART F: MALAYSIAN IMMIGRATION INFORMATION (international applicants only)</h2>' +
+    (intl ? '<p>Currently holding a Malaysian Immigration Pass / Visa: ' + choose(['Yes', 'No'], f.visa) + (f.visa === 'Yes' ? ' &nbsp; Type: ' + t(f.visaType, 40) + ' &nbsp; Expiry: ' + t(dmy(f.visaExpiry), 12) : '') + '</p>' : '<p>Not applicable (Malaysian applicant)</p>') +
+    '<h2>PART G: ACCOMMODATION ARRANGEMENTS</h2><p>Do you require APU to arrange your accommodation? ' +
+    box(f.accommodation === 'Yes') + ' Yes (please fill up the APU Residence Application Form) &nbsp; ' + box(f.accommodation === 'No') + ' No, I will arrange for my own accommodation</p>' +
+    '<h2>PART H: CONDITIONS FOR ENROLMENT</h2><p class="note">Fees for the academic year are as stated in the fee guide. Fee payment refunds are governed by the Fee Refund Policy as stated in the Fee Guide. ' +
+    'Students must abide by all academic, administrative and examination rules and regulations and policies at APU.</p>' +
+    '<h2>PART J: DECLARATION</h2><p class="note">I declare that all the particulars provided in this form are complete and correct, and I agree to the declaration and the Privacy Notice (Parts J and K) on APU&#39;s application form.</p>' +
+    '<table class="sign"><tr><td style="width:34%">&nbsp;</td><td>' + t(f.name, 120) + '</td><td style="width:22%">&nbsp;</td></tr>' +
+    '<tr><td class="note" style="height:auto">Signature</td><td class="note" style="height:auto">Name</td><td class="note" style="height:auto">Date</td></tr></table>' +
+    '<div class="foot">Prepared by Eduplan from the applicant&#39;s online application ' + applyEsc_(ref) + ' (received ' + applyEsc_(received) + ', Malaysia time), in the layout of APU form AF(UG)/APU/JAN/2026/V1. ' +
+    'The applicant signs and dates Part J, and attaches the documents in APU&#39;s Part I checklist, before the form is submitted to APU.</div>' +
     '</body></html>';
   return HtmlService.createHtmlOutput(html).getBlob().getAs(MimeType.PDF);
 }

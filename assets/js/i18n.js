@@ -11,7 +11,8 @@ var ZH={
  "University & programme":"大学与课程","Ask more":"进一步咨询","Documents":"文件",
  "Next: choose a university":"下一步：选择大学","Find a university and programme to apply to with this scholarship.":"找一所大学和课程，用这项奖学金报读。",
  "Not sure which tier you reach? A counsellor can check with you.":"不确定能拿到哪一级？顾问可以帮你核对。",
- "Choose this programme":"选择这个课程","Your choice":"你选择的课程","Any questions before you apply?":"报名前还有疑问吗？",
+ "Choose this programme":"选择这个课程","Your choice":"你选择的课程","Bachelor's degree":"学士学位",
+ "Title":"称谓","Mr":"先生","Ms":"女士","Mrs":"太太","Title (other)":"称谓（其他）","Place of birth (city / state)":"出生地（城市／州属）","Do you have any special or medical condition that needs the university's attention?":"你是否有任何需要大学特别留意的特殊或医疗状况？","Have you had any history of mental or psychiatric conditions?":"你是否曾有精神或心理疾病的病史？","Have you been diagnosed with any condition that may affect your ability to cope with university studies?":"你是否曾被诊断出可能影响你应付大学学业的状况或障碍？","Level of study":"修读程度","Degree Level 1":"学位第一级（Degree Level 1）","Degree Level 2 (direct entry with a diploma)":"学位第二级（持文凭直接插班）","Was English the language of instruction in your previous studies?":"你之前完成的学业是否以英语授课？","Do you hold a Malaysian immigration pass or visa now?":"你目前是否持有马来西亚移民准证或签证？","Type of pass / visa":"准证／签证类型","Social Visit":"社交访问","Student":"学生","Dependent":"家属","Diplomatic":"外交","Resident Pass":"居留准证","Expiry date":"到期日","Example: 2026-04":"例如：2026-04","Place of birth":"出生地","Specialism":"专业方向","Parent / guardian NRIC / passport no.":"家长／监护人身份证／护照号码","Special or medical condition":"特殊或医疗状况","History of mental or psychiatric conditions":"精神或心理疾病病史","Condition that may affect coping with studies":"可能影响应付学业的状况","English was the language of instruction":"之前以英语授课","Malaysian immigration pass / visa":"马来西亚移民准证／签证","Any questions before you apply?":"报名前还有疑问吗？",
  "Ask our AI study assistant, talk to a counsellor for free, or go straight to the application form.":"可以问 AI 升学助手、免费咨询顾问，或直接填写报名表格。",
  "Ask the AI study assistant":"问 AI 升学助手","Quick answers about fees, entry requirements and scholarships, any time.":"随时快速解答学费、入学条件和奖学金问题。","Open the chat":"打开对话",
  "A counsellor goes through your options with you and your family.":"顾问与你和家人一起了解各个选择。","Book a time":"预约时间",
@@ -302,12 +303,18 @@ var ZH_PATTERNS=[
  [/^(.+)’s scholarship table lists no (Foundation|Undergraduate) programme award for (.+)\.$/,function(m){return m[1]+" 的奖学金表格没有列出 "+m[3]+" 的"+LEVEL[m[2]]+"课程奖学金。";}],
  [/^See (Foundation|Undergraduate) level$/,function(m){return "查看"+LEVEL[m[1]]+"阶段";}],
  [/^Offered at (.+)\.$/,"开办院校：$1。"],
+ /* APU form (school-forms.js all: true) */
+ [/^(\S+) asks for this\.$/,"$1 的报名表需要这一项。"],[/^(\S+): international applicants$/,"$1：国际申请者"],
+ [/^Which condition\? \((.+)\)$/,function(m){return "哪一种状况？（"+m[1].split(", ").map(function(x){return ({"Allergies":"过敏","Anemia":"贫血","Asthma":"哮喘","Colour Blindness":"色盲","Epilepsy":"癫痫","Heart Disease":"心脏病","Others":"其他"})[x]||x;}).join("、")+"）";}],
+ [/^(\S+) Undergraduate Application Form: these questions are on \S+'s own form\. Level of study: (.+?)(?: · Specialism: (.+))?\.$/,function(m){var l={"Foundation":"预科","Foundation-ODL":"预科（线上）","APIIT Certificate":"APIIT 证书","Diploma":"文凭","Degree":"学位"}[m[2]]||m[2];return m[1]+" 本科报名表：以下问题来自 "+m[1]+" 自己的报名表。修读程度："+l+(m[3]?"・专业方向："+(tr(m[3])||m[3]):"")+"。";}],
  [/^(\d+(?:\.\d+)?) years?$/,"$1 年"],
  /* Yearly fees from a fee guide, e.g. "RM 28,000 (Malaysian students, 2026)." (the last line of a list ends with " (per year)") */
  [/^RM ([\d,]+) \(Malaysian students(, part-time)?, (\d{4})\)\.?( \(per year\))?$/,function(m){return "RM "+m[1]+"（马来西亚学生"+(m[2]?"，非全日制":"")+"，"+m[3]+" 年）"+(m[4]?"（每年）":"");}],
  [/^(.+?)\. (On-campus hostel\.|Partner hostel, 10 minutes by shuttle\.|No hostel\. Eduplan helps you find a rented room nearby\.)$/,function(m){return m[1]+"。"+tr(m[2]);}],
  [/^Phone \/ WhatsApp: (.*)$/,"电话／WhatsApp：$1"],[/^Email: (.*)$/,"电邮：$1"],[/^Address: (.*)$/,"地址：$1"],
- [/^Send to: WhatsApp (.+) or email (.+)\.$/,"发送至：WhatsApp $1 或电邮 $2。"]
+ [/^Send to: WhatsApp (.+) or email (.+)\.$/,"发送至：WhatsApp $1 或电邮 $2。"],
+ /* Last: "University · Level" under the chosen programme, each side translated on its own. */
+ [/^(.+?) · (.+)$/,function(m){var a=tr(m[1]),b=tr(m[2]);return a==null&&b==null?null:(a==null?m[1]:a)+" · "+(b==null?m[2]:b);}]
 ];
 /* "5 subjects at credit (C) or better (you have 3)" and similar parts of an entry-requirement match. */
 function needZh(t){var m;

@@ -97,3 +97,11 @@ Eduplan PDF (`<ref> <NAME> - UTAR Application Form.pdf`), ready for the applican
   whose foundation runs at one campus only must match it) and the health declaration. The lists come from the UTAR
   Student Application Form for the January / June / October 2024 intakes (copy in UTAR's documents folder).
   Update the lists in `school-forms.js` when UTAR publishes a newer form.
+- **APU** (every APU programme): title, place of birth, level of study (Degree Level 1 or 2 for degrees; foundation and
+  diploma levels come from the programme), the parent/guardian NRIC or passport number (Parent / guardian step), the three
+  medical-disclosure questions, and for international applicants (nationality not Malaysian) English as the language of
+  instruction and any Malaysian immigration pass (Education step). Apply.gs fills APU's Undergraduate Application Form
+  (AF(UG)/APU/JAN/2026/V1, parts A to J) with these and the general answers (personal details, address, guardian,
+  emergency contact, education, English tests, accommodation) and saves `<ref> <NAME> - APU Application Form.pdf`.
+  The applicant signs Part J and attaches APU's Part I checklist documents. The parent's permanent address on APU's form is
+  left blank (the website does not ask for it).

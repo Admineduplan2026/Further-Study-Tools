@@ -536,12 +536,37 @@ function applyProg(){return findProg(S.app.v.prog);}
 /* The school's own application questions (assets/js/school-forms.js): UTAR foundation programmes ask for 5 preferred
    degree programmes from the list for that foundation, the preferred campus and a health declaration. */
 function schoolForm(){var x=applyProg(),F=window.EDUPLAN_FORMS||{},f=x&&F[x.u.id];if(!f)return null;
+ if(f.all)return {id:x.u.id,f:f,all:true,x:x};
  var route=Object.keys(f.routes).filter(function(k){return new RegExp(k,"i").test(x.p.programme);})[0];return route?{id:x.u.id,f:f,route:route,list:f.routes[route]}:null;}
 function sfDegree(sf,code){var hit=null;sf.list.forEach(function(g){g[1].forEach(function(d){if(d[1]===code)hit=d;});});return hit;}
 function sfLabel(sf,d){var c=d[2].replace("*",""),w=c&&sf.f.flags[c];return d[0]+" ("+d[1]+")"+(w?" · "+w+" only":"");}
 /* Campus the chosen degrees need: a "+" or "^" degree is offered from one campus only. */
 function sfCampusNeed(sf){var need={};for(var i=1;i<=5;i++){var d=S.app.v["u_pref"+i]&&sfDegree(sf,S.app.v["u_pref"+i]),c=d&&d[2].replace("*","");if(c&&sf.f.flags[c])need[sf.f.flags[c]]=d;}return need;}
-function sfGroup(sf){var v=S.app.v,prefs="";
+/* APU-style forms (all: true): level of study from the programme ("Degree Level 2" = direct entry with a diploma),
+   the specialism from "... with a specialism in X", and international students answer parts E and F. */
+function sfLevel(sf){var p=sf.x.p,l=String(p.level||"")+" "+p.programme;
+ return /foundation|pre-?university/i.test(l)?(/ODL|online/i.test(l)?"Foundation-ODL":"Foundation"):/certificate/i.test(l)?"APIIT Certificate":/diploma/i.test(l)?"Diploma":(S.app.v.a_level||"Degree Level 1");}
+function sfSpecialism(sf){var m=String(sf.x.p.programme).match(/with a specialism in (.+)$/i);return m?m[1]:"";}
+function sfIntl(){var n=String(S.app.v.nationality||"").trim();return !!n&&!/malaysia/i.test(n);}
+function sfAllGroup(sf){var v=S.app.v,deg=!/^(Foundation|Foundation-ODL|APIIT Certificate|Diploma)$/.test(sfLevel(sf));
+ return agroup(esc(sf.id)+" application form",
+  '<div class="field full"><span class="hint">'+esc(sf.id)+' '+esc(sf.f.title)+': these questions are on '+esc(sf.id)+'&#39;s own form. Level of study: '+esc(deg?"Degree":sfLevel(sf))+(sfSpecialism(sf)?' · Specialism: '+esc(sfSpecialism(sf)):'')+'.</span></div>'+
+  af("a_title","Title",{opts:sf.f.titles,first:"Choose",rerender:true})+(v.a_title==="Others"?af("a_title_other","Title (other)"):'')+
+  af("a_pob","Place of birth (city / state)",{opt:true})+
+  (deg?af("a_level","Level of study",{opts:[["Degree Level 1","Degree Level 1"],["Degree Level 2","Degree Level 2 (direct entry with a diploma)"]],first:"Choose"}):'')+
+  af("a_med","Do you have any special or medical condition that needs the university's attention?",{opts:["No","Yes"],first:"Choose",rerender:true,full:true})+
+  (v.a_med==="Yes"?af("a_med_info","Which condition? ("+sf.f.conditions.join(", ")+")",{area:true,rows:2,full:true}):'')+
+  af("a_mental","Have you had any history of mental or psychiatric conditions?",{opts:["No","Yes"],first:"Choose",rerender:true,full:true})+
+  (v.a_mental==="Yes"?af("a_mental_info","Please give details",{area:true,rows:2,full:true}):'')+
+  af("a_cope","Have you been diagnosed with any condition that may affect your ability to cope with university studies?",{opts:["No","Yes"],first:"Choose",full:true}));
+}
+function sfIntlGroup(sf){var v=S.app.v;
+ return agroup(esc(sf.id)+": international applicants",
+  af("a_eng_instr","Was English the language of instruction in your previous studies?",{opts:["Yes","No"],first:"Choose",full:true})+
+  af("a_visa","Do you hold a Malaysian immigration pass or visa now?",{opts:["No","Yes"],first:"Choose",rerender:true,full:true})+
+  (v.a_visa==="Yes"?af("a_visa_type","Type of pass / visa",{opts:sf.f.passes,first:"Choose"})+af("a_visa_exp","Expiry date",{type:"date"}):''));
+}
+function sfGroup(sf){if(sf.all)return sfAllGroup(sf);var v=S.app.v,prefs="";
  for(var i=1;i<=5;i++){var e=(S.app.err||{})["u_pref"+i];
   prefs+='<div class="field full"><label for="ap-u_pref'+i+'">Choice '+i+(i>1?' <span class="hint">(optional)</span>':'')+'</label><select id="ap-u_pref'+i+'" name="u_pref'+i+'" data-rerender'+(e?' aria-invalid="true" aria-describedby="u_pref'+i+'-err"':'')+'><option value="">'+(i===1?'Choose a degree programme':'None')+'</option>'+
    sf.list.map(function(g){return '<optgroup label="'+esc(g[0])+'">'+g[1].map(function(d){return '<option value="'+esc(d[1])+'"'+(v["u_pref"+i]===d[1]?' selected':'')+'>'+esc(sfLabel(sf,d))+'</option>';}).join("")+'</optgroup>';}).join("")+'</select>'+
@@ -617,7 +642,8 @@ function applyStep(n){
    '<datalist id="my-states">'+MY_STATES.map(function(s){return '<option value="'+s+'">';}).join("")+'</datalist>');
  if(n===4)return agroup("Parent / guardian",
    af("g_name","Full name",{full:true})+af("g_name_zh","Chinese name",{opt:true})+af("g_rel","Relationship",{hint:"Father, mother, guardian …"})+
-   af("g_mobile","Mobile",{type:"tel"})+af("g_email","Email",{type:"email",opt:true})+af("g_job","Occupation",{opt:true})+af("g_tel","Home telephone",{type:"tel",opt:true}))+
+   af("g_mobile","Mobile",{type:"tel"})+af("g_email","Email",{type:"email",opt:true})+af("g_job","Occupation",{opt:true})+af("g_tel","Home telephone",{type:"tel",opt:true})+
+   (schoolForm()&&schoolForm().all?af("a_g_ic","NRIC / passport no.",{hint:schoolForm().id+" asks for this."}):''))+
   agroup("Emergency contact",acheck("em_same","Same as parent / guardian",{rerender:true})+
    (v.em_same?'':af("e_name","Full name",{full:true})+af("e_name_zh","Chinese name",{opt:true})+af("e_rel","Relationship")+af("e_mobile","Mobile",{type:"tel"})+af("e_tel","Home telephone",{type:"tel",opt:true})));
  if(n===5){
@@ -633,7 +659,8 @@ function applyStep(n){
      :af("h_results","Subjects and grades",{area:true,rows:5,full:true,hint:"One subject per line, for example: Mathematics A+"})))+
    agroup("English language",'<div class="field full"><span class="hint">Any English test you have taken or will take.</span></div>'+eng+
     (S.app.eng<3?'<div class="field full"><button type="button" class="btn ghost" data-apply="add-eng">Add another test</button></div>':''))+
-   agroup("Others",af("disability","Do you have a disability?",{opts:["No","Yes"],rerender:true})+(v.disability==="Yes"?af("dis_info","Please give details",{area:true,rows:2,full:true}):''));
+   agroup("Others",af("disability","Do you have a disability?",{opts:["No","Yes"],rerender:true})+(v.disability==="Yes"?af("dis_info","Please give details",{area:true,rows:2,full:true}):''))+
+   (schoolForm()&&schoolForm().all&&sfIntl()?sfIntlGroup(schoolForm()):'');
  }
  var age=applyAge(v.dob),xm=x&&x.u.id==="XMUM";
  return agroup("Upload your documents",'<div class="field full"><span class="hint">Take a clear photo of each document, or choose a PDF. Each file can be up to 5 MB. Files stay on this page until you send your application, so add them again if you reload.'+
@@ -664,7 +691,9 @@ function applyErrors(n){
  function phone(id){var d=String(v[id]||"").replace(/\D/g,"");if(d&&(d.length<9||d.length>13))e[id]="Enter a phone number with 9 to 13 digits.";}
  function mail(id){var m=String(v[id]||"").trim();if(m&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(m))e[id]="Enter an email like name@example.com.";}
  if(n===1){need("prog","Choose a programme.");if(x&&progTracks(x.p).length)need("track","Choose an academic track.");need("intake","Enter the intake month and year.");
-  var sf=schoolForm();if(sf){need("u_prev");if(v.u_prev==="Yes")need("u_id");need("u_pref1","Choose at least one degree programme.");need("u_campus");need("u_health");if(v.u_health==="No")need("u_health_info");
+  var sf=schoolForm();if(sf&&sf.all){need("a_title");if(v.a_title==="Others")need("a_title_other");if(!/^(Foundation|Foundation-ODL|APIIT Certificate|Diploma)$/.test(sfLevel(sf)))need("a_level");
+   need("a_med");if(v.a_med==="Yes")need("a_med_info");need("a_mental");if(v.a_mental==="Yes")need("a_mental_info");need("a_cope");}
+  else if(sf){need("u_prev");if(v.u_prev==="Yes")need("u_id");need("u_pref1","Choose at least one degree programme.");need("u_campus");need("u_health");if(v.u_health==="No")need("u_health_info");
    var seen={};for(var i=1;i<=5;i++){var c=v["u_pref"+i];if(c&&!sfDegree(sf,c))e["u_pref"+i]="Choose again: this programme is not on the list for the "+sf.route+".";else if(c&&seen[c])e["u_pref"+i]="You chose this programme already.";if(c)seen[c]=1;}
    var nd=sfCampusNeed(sf),nk=Object.keys(nd);if(nk.length>1)e.u_campus="Your choices are offered at different campuses ("+nk.join(", ")+"). Keep only one campus's programmes.";
    else if(nk.length&&v.u_campus&&v.u_campus!==nk[0])e.u_campus=nd[nk[0]][0]+" needs "+nk[0]+".";}}
@@ -674,11 +703,13 @@ function applyErrors(n){
   if(!v.perm_same)["p_addr","p_town","p_postcode","p_state","p_country"].forEach(function(k){need(k);});
   phone("mobile");phone("tel");phone("p_tel");mail("email");}
  if(n===4){["g_name","g_rel","g_mobile"].forEach(function(k){need(k);});phone("g_mobile");phone("g_tel");mail("g_email");
-  if(!v.em_same){["e_name","e_rel","e_mobile"].forEach(function(k){need(k);});phone("e_mobile");}}
+  if(!v.em_same){["e_name","e_rel","e_mobile"].forEach(function(k){need(k);});phone("e_mobile");}
+  var sf4=schoolForm();if(sf4&&sf4.all)need("a_g_ic");}
  if(n===5){var hx=applyExam();if(hx)v.h_results=RX.text(hx);
   ["ed1_school","ed1_from","ed1_to","ed1_qual","h_type","h_status","h_school","h_start","h_end"].forEach(function(k){need(k);});
   need("h_results",hx?(RX.exam(hx).cgpa?"Enter your CGPA.":"Add at least one subject and its grade."):null);
-  if(v.disability==="Yes")need("dis_info");}
+  if(v.disability==="Yes")need("dis_info");
+  var sf5=schoolForm();if(sf5&&sf5.all&&sfIntl()){need("a_eng_instr");need("a_visa");if(v.a_visa==="Yes"){need("a_visa_type");need("a_visa_exp");}}}
  if(n===6){need("h_status","Choose official or trial.");UPLOADS.forEach(function(u){if(needFile(u)&&!(S.app.files[u[0]]||[]).length)e["f_"+u[0]]="Please add this document.";});
   if(!v.decl)e.decl="Please tick to confirm.";var a2=applyAge(v.dob);if(a2!==null&&a2<18){if(!v.decl_g)e.decl_g="Your parent or guardian must tick to agree.";need("decl_g_name");}}
  return e;
@@ -690,7 +721,12 @@ function applySummary(){
  function row(label,val){val=String(val==null?"":val).trim();if(val)L.push(label+": "+val);}
  L.push("EDUPLAN APPLICATION");
  sec("Programme");row("University",x?(x.u.fullName||x.u.name):"");row("Programme",x?x.p.programme:"");row("Level",x?x.p.level:"");row("Academic track",v.track);row("Intake",v.intake);
- var sfm=schoolForm();if(sfm){sec(sfm.id+" application form");row("Applied to "+sfm.id+" before",v.u_prev==="Yes"?"Yes ("+(v.u_id||"")+")":v.u_prev);
+ var sfm=schoolForm();if(sfm&&sfm.all){sec(sfm.id+" application form");row("Title",v.a_title==="Others"?v.a_title_other:v.a_title);row("Place of birth",v.a_pob);
+  row("Level of study",sfLevel(sfm));row("Specialism",sfSpecialism(sfm));row("Parent / guardian NRIC / passport no.",v.a_g_ic);
+  row("Special or medical condition",v.a_med==="Yes"?"Yes: "+(v.a_med_info||""):v.a_med);row("History of mental or psychiatric conditions",v.a_mental==="Yes"?"Yes: "+(v.a_mental_info||""):v.a_mental);
+  row("Condition that may affect coping with studies",v.a_cope);
+  if(sfIntl()){row("English was the language of instruction",v.a_eng_instr);row("Malaysian immigration pass / visa",v.a_visa==="Yes"?"Yes: "+(v.a_visa_type||"")+(v.a_visa_exp?", expires "+v.a_visa_exp:""):v.a_visa);}}
+ else if(sfm){sec(sfm.id+" application form");row("Applied to "+sfm.id+" before",v.u_prev==="Yes"?"Yes ("+(v.u_id||"")+")":v.u_prev);
   for(var pi=1;pi<=5;pi++){var pd=v["u_pref"+pi]&&sfDegree(sfm,v["u_pref"+pi]);if(pd)row("Degree choice "+pi,pd[0]+" ("+pd[1]+")");}
   row("Preferred campus",v.u_campus);row("Good physical and mental health",v.u_health==="No"?"No: "+(v.u_health_info||""):v.u_health);}
  sec("Personal details");row("Name (as on NRIC/passport)",String(v.name_en||"").toUpperCase());row("Chinese name",v.name_zh);row("NRIC / passport no.",v.ic);row("Date of birth",v.dob);
@@ -792,6 +828,17 @@ function applyFallback(){
 function applyFilesForShare(){var out=[];Object.keys(S.app.files).forEach(function(k){S.app.files[k].forEach(function(f){var bin=atob(f.data),u=new Uint8Array(bin.length);for(var i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);out.push(new File([u],k+"-"+f.name,{type:f.type}));});});return out;}
 /* The school's own form (school-forms.js), filled in by Apply.gs: the answers it needs, by name. */
 function applyFormData(){var sf=schoolForm(),v=S.app.v;if(!sf)return null;
+ if(sf.all){var edu=[];for(var i=1;i<=(S.app.edu||1);i++)if(v["ed"+i+"_school"])edu.push({qual:v["ed"+i+"_qual"]||"",school:v["ed"+i+"_school"],year:String(v["ed"+i+"_to"]||"").slice(0,4)});
+  var eng=[];for(var j=1;j<=(S.app.eng||1);j++)if(v["en"+j+"_type"])eng.push({test:v["en"+j+"_type"],date:v["en"+j+"_date"]||"",score:v["en"+j+"_score"]||""});
+  var em=v.em_same?{name:v.g_name,rel:v.g_rel,mobile:v.g_mobile,email:v.g_email}:{name:v.e_name,rel:v.e_rel,mobile:v.e_mobile,email:""};
+  return {school:sf.id,all:true,course:sf.x.p.programme,specialism:sfSpecialism(sf),level:sfLevel(sf),intake:v.intake||"",
+   title:v.a_title==="Others"?v.a_title_other||"":v.a_title||"",name:String(v.name_en||"").toUpperCase(),ic:v.ic||"",dob:v.dob||"",pob:v.a_pob||"",gender:v.gender||"",marital:v.marital||"",
+   nationality:v.nationality||"",international:sfIntl(),race:v.race||"",religion:v.religion||"",address:[v.addr,v.town].filter(Boolean).join(", "),postcode:v.postcode||"",state:v.state||"",country:v.country||"",
+   mobile:v.mobile||"",email:v.email||"",guardian:v.g_name||"",relation:v.g_rel||"",guardianMobile:v.g_mobile||"",guardianEmail:v.g_email||"",guardianIc:v.a_g_ic||"",
+   emergency:em.name||"",emergencyRelation:em.rel||"",emergencyMobile:em.mobile||"",emergencyEmail:em.email||"",
+   education:edu,highest:{qual:v.h_type||"",school:v.h_school||"",year:String(v.h_end||"").slice(0,4),status:v.h_status||""},
+   medical:v.a_med||"",medicalInfo:v.a_med_info||"",mental:v.a_mental||"",mentalInfo:v.a_mental_info||"",cope:v.a_cope||"",
+   englishInstruction:v.a_eng_instr||"",english:eng,visa:v.a_visa||"",visaType:v.a_visa_type||"",visaExpiry:v.a_visa_exp||"",accommodation:v.acc||""};}
  var prefs=[];for(var i=1;i<=5;i++){var d=v["u_pref"+i]&&sfDegree(sf,v["u_pref"+i]);prefs.push(d?d[0]+" ("+d[1]+")":"");}
  return {school:sf.id,route:sf.route,previous:v.u_prev||"",schoolId:v.u_id||"",prefs:prefs,campus:v.u_campus||"",health:v.u_health||"",healthInfo:v.u_health_info||"",
   name:String(v.name_en||"").toUpperCase(),ic:v.ic||"",nationality:v.nationality||"",dob:v.dob||"",gender:v.gender||"",
