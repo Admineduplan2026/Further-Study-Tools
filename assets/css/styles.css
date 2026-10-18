@@ -83,6 +83,12 @@ textarea{min-height:110px;resize:vertical}
 .sctrack .st{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card,#fff);min-width:0}
 .sctrack .st b{font-size:22px;font-weight:600;color:var(--brand);overflow-wrap:anywhere}
 .sctrack .st span{font-size:13px;color:var(--muted)}
+.fsaward{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;background:var(--ok-soft);color:var(--ok)}
+.fsaward .k{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+.fsaward b{font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.fsq{margin-top:6px;max-width:520px}
+.fsq>span{font-size:14px;font-weight:500}
+.fsitem[hidden]{display:none}
 .paybox{display:flex;flex-direction:column;gap:8px;min-width:0}
 .picks{border:0;margin:0 0 4px;padding:0;display:flex;flex-direction:column;gap:8px;min-width:0}
 .picks legend{padding:0;margin-bottom:6px}

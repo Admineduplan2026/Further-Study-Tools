@@ -262,24 +262,40 @@ function schPage3(t){
  if(t.kind==="waiver")return S.schUni?schDetails(t,S.schUni):schUniList(t);
  return S.schItem?schReq(t,S.schItem):schItemList(t);
 }
-/* Foundation Page 3: one card per scholarship; Page 4 (#scholarships-foundation/<id>) shows its requirements. */
+/* Foundation Page 3: one card per scholarship with what it gives and its closing date; Page 4
+   (#scholarships-foundation/<id>) lists its requirements and award. The award cell's first line is its summary;
+   more lines give the details. A search box narrows the list. */
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function fsDeadline(d){var m=String(d||"").match(/^(\d{4})-(\d{2})-(\d{2})$/);if(!m)return d?{t:"Closing date: "+d}:null;
+ var dt=new Date(+m[1],+m[2]-1,+m[3]),txt=(+m[3])+" "+MON[+m[2]-1]+" "+m[1],now=new Date();now.setHours(0,0,0,0);
+ return dt<now?{t:"Closed on "+txt,closed:true}:{t:"Closes "+txt};}
 function schItemList(t){
  var items=t.items.filter(function(it){return it.name;});
- return schHead(3,t,"#scholarships")+'<h1>Choose a foundation scholarship</h1><p class="lead">'+esc(t.desc)+'. Tap a scholarship to see its requirements.</p></section>'+
- (items.length?'<section class="grid">'+items.map(function(it){
-   return '<a class="item pick" href="#scholarships-'+esc(t.id)+'/'+esc(String(it.id).toLowerCase())+'"><span class="name">'+esc(it.name)+'</span>'+
-   (it.organiser?'<span class="desc">'+esc(it.organiser)+'</span>':'')+(it.award?'<span class="meta"><span class="pill brand">'+esc(it.award)+'</span></span>':'')+
-   '<span class="textlink">View requirements '+ARROW+'</span></a>';}).join("")+'</section>'
+ return schHead(3,t,"#scholarships")+'<h1>Choose a foundation scholarship</h1><p class="lead">'+esc(t.desc)+'. Each card shows what the scholarship gives; tap it to see who can apply and every requirement.</p>'+
+ (items.length>6?'<label class="field fsq"><span>Search scholarships</span><input id="fs-q" type="search" autocomplete="off" placeholder="e.g. engineering, B40, SPM, Petronas" value="'+esc(S.fsq||"")+'"></label><p class="hint" id="fs-n" aria-live="polite"></p>':'')+'</section>'+
+ (items.length?'<section class="grid">'+items.map(function(it){var aw=lines(it.award),dl=fsDeadline(it.deadline);
+   var hay=[it.name,it.organiser,it.award,lines(it.requirements).join(" ")].join(" ").toLowerCase();
+   return '<a class="item pick fsitem" data-hay="'+esc(hay)+'" href="#scholarships-'+esc(t.id)+'/'+esc(String(it.id).toLowerCase())+'"><span class="name">'+esc(it.name)+'</span>'+
+   (it.organiser?'<span class="desc">'+esc(it.organiser)+'</span>':'')+
+   '<span class="fsaward"><span class="k">Award</span><b>'+esc(aw[0]||"See official information")+'</b></span>'+
+   '<span class="meta"><span class="pill">'+lines(it.requirements).length+' requirement'+(lines(it.requirements).length===1?'':'s')+'</span>'+(dl?'<span class="pill'+(dl.closed?'':' brand')+'">'+esc(dl.t)+'</span>':'')+'</span>'+
+   '<span class="textlink">Requirements and award '+ARROW+'</span></a>';}).join("")+'</section>'
   :'<div class="empty">No foundation scholarships listed yet.</div>');
 }
-function schReq(t,it){
+function schReq(t,it){var aw=lines(it.award),dl=fsDeadline(it.deadline);
  return schHead(4,t,"#scholarships-"+esc(t.id))+'<h1>'+esc(it.name)+'</h1>'+(it.organiser?'<p class="lead">'+esc(it.organiser)+'</p>':'')+'</section>'+
+ '<section class="panel fsreq"><h2>Award: what you get</h2>'+(aw.length?reqList(aw):'<p class="muted">See official information.</p>')+'</section>'+
  '<section class="panel"><h2>Requirements</h2>'+reqList(lines(it.requirements))+
-  facts([["Award",it.award],["Application deadline",it.deadline],["Last updated",it.lastUpdated]])+
+  facts([["Application deadline",dl?dl.t:""],["Last updated",it.lastUpdated]])+
   '<div class="row">'+(it.url?'<a class="btn" href="'+esc(it.url)+'" target="_blank" rel="noopener">Official information '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+SCH_NOTE+'</section>'+
  '<section class="panel"><h2>Next: choose a university</h2><p class="muted">Find a university and programme to apply to with this scholarship.</p>'+
   '<div class="row"><a class="btn" href="#universities" data-flow="scholarships">Choose a university '+ARROW+'</a><a class="btn ghost" href="#consultation" data-topic="Scholarships" data-note="'+esc("Interested in: "+it.name+".")+'">Ask a counsellor</a></div></section>';
 }
+/* Page 3 search: hide the cards that do not contain every word typed. */
+function fsFilter(){var q=document.getElementById("fs-q");if(!q)return;S.fsq=q.value;var ws=q.value.toLowerCase().split(/\s+/).filter(Boolean),n=0,all=0;
+ [].slice.call(document.querySelectorAll(".fsitem")).forEach(function(a){var h=a.getAttribute("data-hay")||"",ok=ws.every(function(w){return h.indexOf(w)>=0;});a.hidden=!ok;all++;if(ok)n++;});
+ var o=document.getElementById("fs-n");if(o)o.textContent=ws.length?(n?n+" of "+all+" scholarships match.":"No scholarship matches. Try another word."):"";}
+document.addEventListener("input",function(ev){if(ev.target&&ev.target.id==="fs-q")fsFilter();});
 function schUniList(t){
  return schHead(3,t,"#scholarships")+'<h1>Choose a university</h1><p class="lead">'+esc(t.desc)+'. Tap a university to see its scholarship details.</p></section>'+
  (t.universities.length?'<section class="grid">'+t.universities.map(function(u){
@@ -1197,7 +1213,7 @@ function render(keepScroll){
  if(gate)r="gate";
  S.view=r;
  app.innerHTML=V[r]();
- reveal();
+ reveal();fsFilter();
  var navKey={"guided":"","home":""}[r];
  if(navKey===undefined)navKey=r.indexOf("scholarships-")===0?"scholarships":r;
  Array.prototype.forEach.call(document.querySelectorAll("nav.main a"),function(a){if(a.getAttribute("data-nav")===navKey)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});

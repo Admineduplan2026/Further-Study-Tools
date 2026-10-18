@@ -63,7 +63,7 @@ function useData(d){
  D.sch=(d.campus_scholarships||[]).filter(function(s){return by[s.institution_id];}).map(function(s){by[s.institution_id].sch++;
   return {inst:by[s.institution_id],name:s.scholarship_name||"Scholarship",qual:s.qualification,min:s.minimum_result,waiver:s.waiver_percent,amount:s.fixed_amount_rm,
    applies:s.applies_to||"",cond:s.other_conditions,deadline:s.deadline,url:s.info_url};});
- D.fnd=(d.foundation_scholarships||[]).map(function(f){return {name:f.scholarship_name,org:f.organiser,award:f.award_value,deadline:f.deadline,url:f.info_url,
+ D.fnd=(d.foundation_scholarships||[]).map(function(f){return {id:f.option_id,name:f.scholarship_name,org:f.organiser,award:f.award_value,deadline:f.deadline,url:f.info_url,
   req:Array.isArray(f.requirements)?f.requirements:String(f.requirements||"").split(/\n/).filter(Boolean)};});
  return true;
 }
@@ -424,8 +424,13 @@ function schResults(){
   (yes.length?'<div class="cards">'+yes.map(card).join("")+'</div>':(hasRes?'':'<div class="empty">No campus scholarship in our data matches '+esc(q.qual)+' at this level yet. A counsellor can check other options with you. <a class="linkbtn" href="#consultation">Book a free consultation</a></div>'))+
   (no.length?'<h2 class="rh2">'+(yes.length?'Almost there':'What these scholarships need')+'</h2><div class="cards">'+no.map(card).join("")+'</div>':'')+
   (hasRes&&!list.length?'<div class="empty">No campus scholarship in our data matches '+esc(q.qual)+' at this level yet. A counsellor can check other options with you. <a class="linkbtn" href="#consultation">Book a free consultation</a></div>':'')+
-  (fnd.length?'<h2 class="rh2">Other scholarships open to all students</h2><div class="cards">'+fnd.map(function(f){return '<article class="pcard sch"><div class="pbody"><span class="pinst">'+esc(f.org||"Scholarship")+'</span><h3>'+esc(f.name)+'</h3>'+
-    '<ul class="req">'+f.req.slice(0,5).map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul><div class="pfoot"><span class="fee">'+(f.award?'<b>'+esc(f.award)+'</b>':'')+'</span><div class="pact"><a class="btn ghost sm" href="#consultation" data-topic="Scholarships">Ask a counsellor</a></div></div></div></article>';}).join("")+'</div>':'')+'</div>';
+  /* Foundation scholarships: the award's first line, the first requirements and a link to all of them. */
+  (fnd.length?'<h2 class="rh2">Other scholarships open to all students</h2><div class="cards">'+fnd.slice(0,6).map(function(f){var aw=String(f.award||"").split(/\n/).filter(Boolean),more=f.req.length-4,href="#scholarships-foundation/"+esc(String(f.id||"").toLowerCase());
+    return '<article class="pcard sch"><div class="pbody"><span class="pinst">'+esc(f.org||"Scholarship")+'</span><h3>'+esc(f.name)+'</h3>'+
+    '<div class="win"><span>Award</span><b>'+esc(aw[0]||"See official information")+'</b></div><span class="sl">Requirements</span>'+
+    '<ul class="req">'+f.req.slice(0,4).map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>'+(more>0?'<span class="hint">'+plural(more,"more requirement","more requirements")+'</span>':'')+
+    '<div class="pfoot"><span class="fee"></span><div class="pact"><a class="btn ghost sm" href="#consultation" data-topic="Scholarships">Ask a counsellor</a><a class="btn sm" href="'+href+'">Requirements and award</a></div></div></div></article>';}).join("")+'</div>'+
+   (fnd.length>6?'<p><a class="btn ghost" href="#scholarships-foundation">See all '+fnd.length+' foundation scholarships</a></p>':''):'')+'</div>';
 }
 function savedView(){
  var list=S.saved.map(prog).filter(Boolean);
