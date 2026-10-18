@@ -355,7 +355,11 @@ function tierNeed(min){var n=RX.tierNeed(min);if(n&&!n.cgpa){n.plusOnly=n.top===
 /* Tiers that count only A+ (or only A+ and A) need the grades in My results; with only a total of As they are shown as conditions. */
 function restricted(need){return !!(need&&(need.aplus||need.plusOnly));}
 function topCount(need,qual){var e=exam(qual);return RX.has(qual)&&!e.cgpa?RX.countIn(qual,e.grades.slice(0,need.plusOnly?1:2)):null;}
-function meets(res,need,qual){if(res==null||res===""||!need)return false;
+/* UEC points, STPM averages and A-Level grade sets ("AAB") are checked from the grades saved in My results. */
+function special(need){return !!(need&&(need.pts||need.gpa||need.combo));}
+function mine(need,qual){var h=RX.has(qual)?RX.tierHave(need,qual):null;return h&&!h.few?h:null;}
+function meets(res,need,qual){if(special(need)){var h=mine(need,qual);return !!(h&&h.ok);}
+ if(res==null||res===""||!need)return false;
  if(restricted(need)){var c=topCount(need,qual);return c!=null&&c>=need.as;}
  res=+res;return need.cgpa?res>=need.lo&&(need.hi==null||res<=need.hi):res>=need.as;}
 function awardVal(t){return t.waiver!=null?t.waiver:t.amount!=null?t.amount/1000:-1;}   /* compare tiers within one scholarship */
@@ -367,15 +371,16 @@ function schResults(){
   return (l===q.level||(!l&&s.qual!=="Other"))&&examMatch(s,q.qual);});
  var groups={},order=[];rows.forEach(function(s){var k=s.inst.id+"|"+s.name+"|"+s.applies;if(!groups[k]){groups[k]={s:s,tiers:[]};order.push(k);}groups[k].tiers.push(s);});
  var list=order.map(function(k){var g=groups[k];g.best=null;g.hit=null;g.next=null;g.check=false;
-  g.tiers.forEach(function(t){if(t.waiver!=null&&(g.best==null||t.waiver>g.best))g.best=t.waiver;var n=tierNeed(t.min);if(!n)g.check=true;t.need=n;
+  g.tiers.forEach(function(t){if(t.waiver!=null&&(g.best==null||t.waiver>g.best))g.best=t.waiver;var n=tierNeed(t.min);if(!n)g.check=true;if(special(n)&&!mine(n,q.qual))g.needRes=true;t.need=n;
    if(hasRes&&meets(q.res,n,q.qual)&&(!g.hit||awardVal(t)>awardVal(g.hit)))g.hit=t;});
   /* Next step: the closest tier not reached yet that pays more than the current one (ties: the bigger award). */
-  function gapOf(t){var c=restricted(t.need)?topCount(t.need,q.qual):null,d=t.need.cgpa?t.need.lo-(+q.res):t.need.as-(c!=null?c:+q.res);return restricted(t.need)&&c==null?Math.max(d,0):d;}
-  if(hasRes)g.tiers.forEach(function(t){if(!t.need||meets(q.res,t.need,q.qual)||(gapOf(t)<=0&&!restricted(t.need))||(g.hit&&awardVal(t)<=awardVal(g.hit)))return;
+  function gapOf(t){if(special(t.need)){var h=mine(t.need,q.qual);return h?RX.gapOf(t.need,h):Infinity;}var c=restricted(t.need)?topCount(t.need,q.qual):null,d=t.need.cgpa?t.need.lo-(+q.res):t.need.as-(c!=null?c:+q.res);return restricted(t.need)&&c==null?Math.max(d,0):d;}
+  if(hasRes)g.tiers.forEach(function(t){if(!t.need||gapOf(t)===Infinity||meets(q.res,t.need,q.qual)||(gapOf(t)<=0&&!restricted(t.need))||(g.hit&&awardVal(t)<=awardVal(g.hit)))return;
    if(!g.next||gapOf(t)<gapOf(g.next)||(gapOf(t)===gapOf(g.next)&&awardVal(t)>awardVal(g.next)))g.next=t;});
   return g;});
  var yes=hasRes?list.filter(function(g){return g.hit;}).sort(function(a,b){return awardVal(b.hit)-awardVal(a.hit);}):list,no=hasRes?list.filter(function(g){return !g.hit;}):[];
- function gap(t){if(!t.need)return '';if(t.need.cgpa)return 'Needs CGPA '+t.need.lo.toFixed(2)+(t.need.hi!=null?' – '+(Math.floor(t.need.hi*100+1e-6)/100).toFixed(2):' or above');
+ function gap(t){if(!t.need)return '';
+  if(special(t.need)){var h=mine(t.need,q.qual);return h?'Needs '+RX.needWords(t.need)+' for '+awardText(t)+' (you have '+(t.need.gpa?h.have.toFixed(2):h.have)+')':'Needs '+RX.needWords(t.need)+' for '+awardText(t);}if(t.need.cgpa)return 'Needs CGPA '+t.need.lo.toFixed(2)+(t.need.hi!=null?' – '+(Math.floor(t.need.hi*100+1e-6)/100).toFixed(2):' or above');
   var d=t.need.as-(+q.res);
   var c=restricted(t.need)?topCount(t.need,q.qual):null,top=exam(q.qual).grades||[];
   if(c!=null)return 'Needs '+t.need.as+' '+(t.need.plusOnly?top[0]:top.slice(0,2).join(" or "))+' for '+awardText(t)+' (you have '+c+')';
@@ -389,6 +394,7 @@ function schResults(){
    '<table class="tiers"><thead><tr><th scope="col">'+(g.s.qual==="Other"?'Eligibility':esc(isCgpa(q.qual)?'CGPA':q.qual+' result'))+'</th><th scope="col">Award</th></tr></thead><tbody>'+g.tiers.map(function(t){
     return '<tr'+(t===g.hit?' class="hit"':'')+'><td>'+esc(t.min)+(t.need&&t.need.aplus?'<br><span class="hint">A+ and A only</span>':t.need&&t.need.plusOnly?'<br><span class="hint">A+ grades only</span>':'')+'</td><td><b>'+(t.waiver!=null?t.waiver+'%':t.amount!=null?esc(rm(t.amount)):'See official information')+'</b></td></tr>';}).join("")+'</tbody></table>'+
    (hasRes&&g.check?'<span class="hint">Some tiers here cannot be checked automatically. Read their conditions or ask a counsellor.</span>':'')+
+   (g.needRes?'<span class="hint">Save your subject grades in <a href="'+esc(mainLink("#portfolio"))+'">My results</a> to check the tiers based on points, averages or grade sets.</span>':'')+
    '<div class="pfoot"><span class="fee">'+(g.best!=null&&!g.hit?'<b>Up to '+g.best+'%</b><span class="hint">tuition waiver</span>':'')+'</span><div class="pact"><a class="btn ghost sm" href="#consultation" data-topic="Scholarships" data-note="'+esc("Scholarship: "+g.s.name+" ("+u.name+")"+(hasRes?". My result: "+q.qual+" "+resText(q):"")+".")+'">Free consultation</a>'+
    (u.progs?'<a class="btn sm" href="#universities/'+esc(u.id.toLowerCase())+'" data-flow="scholarships">See programmes</a>':'')+'</div></div></div></article>';}
  var fnd=q.level==="foundation"||q.level==="undergraduate"?D.fnd:[];

@@ -194,6 +194,12 @@ document.addEventListener("keydown",function(ev){if(ev.key==="Enter"&&ev.target.
 function tierNeed(min){var m=String(min||""),r;
  if((r=m.match(/CGPA\s*([\d.]+)\s*[-–]\s*([\d.]+)/i)))return {cgpa:true,lo:+r[1],hi:+r[2]};
  if((r=m.match(/(?:≥|>=)\s*CGPA\s*([\d.]+)/i)||m.match(/CGPA\s*([\d.]+)\s*(?:and above|or above|\+|or higher)/i)||m.match(/CGPA\s*(?:of\s*)?([\d.]+)/i)))return {cgpa:true,lo:+r[1],hi:null};
+ /* Checked from the grades in My results (see tierHave): "12 points or fewer in 6 subjects" / "13-18 points in 6 subjects"
+    (UEC: A1=1 … B6=6, best subjects added up), "3.70 and above in 3 subjects" (STPM grade points, best subjects averaged),
+    and grade sets such as "AAB" or "ABB or AAC" (A-Level, best grades). */
+ if((r=m.match(/(?:\d+\s*[-–]\s*)?(\d+)\s*points?\b(?:\s*(?:or fewer|or less|and below|or below|& below))?\s*in\s*(?:the\s*)?(?:best\s*)?(\d+)\s*subjects/i)))return {pts:true,max:+r[1],n:+r[2]};
+ if((r=m.match(/(\d\.\d+)\s*(?:and above|or above|& above|\+)?\s*in\s*(?:the\s*)?(?:best\s*)?(\d+)\s*subjects/i)))return {gpa:true,lo:+r[1],n:+r[2]};
+ if(/^\s*[A-E](?:\*?[A-E]){1,4}\*?(?:\s*(?:or|\/|,)\s*[A-E](?:\*?[A-E]){1,4}\*?)*\s*$/.test(m)){var sets=m.trim().split(/\s*(?:or|\/|,)\s*/);return {combo:sets,n:sets[0].replace(/\*/g,"").length};}
  if((r=m.match(/(\d+)\s*(A[+\-*]?(?:\s*(?:\/|,|&|and|or)\s*A[+\-*]?)*)/i))){
   /* The grades named after the number: "8A+" = A+ only; "8A+/A" or "8As (A+ and A only)" = A+ and A;
      "8A-", "8A+/A/A-", "8A" or "8As" = any A grade. */
@@ -208,7 +214,22 @@ function tierFor(qual,min,eid){if(qual===eid)return true;var e=exam(eid),q=exam(
 function tierHave(need,eid){var e=exam(eid);if(!need||!has(eid))return null;
  if(need.cgpa){var c=cgpa(eid);return c==null?null:{have:c,ok:c>=need.lo&&(need.hi==null||c<=need.hi)};}
  if(e.cgpa)return null;
+ if(need.pts||need.gpa||need.combo)return special(need,eid,e);
  var n=need.top?countIn(eid,e.grades.slice(0,need.top)):aCount(eid);return {have:n,ok:n>=need.as};}
+var STPM_GP={"A":4,"A-":3.67,"B+":3.33,"B":3,"B-":2.67,"C+":2.33,"C":2,"C-":1.67,"D+":1.33,"D":1,"F":0};
+/* The best n subjects (STPM General Studies left out), as indexes into the exam's grade list, best first. */
+function best(eid,e,n){var g=grades(eid).filter(function(s){return !/pengajian am|general studies/i.test(s[0]);})
+  .map(function(s){return e.grades.indexOf(s[1]);}).filter(function(i){return i>=0;}).sort(function(a,b){return a-b;});return g.length>=n?g.slice(0,n):null;}
+function special(need,eid,e){var b=best(eid,e,need.n);if(!b)return {have:null,ok:false,few:true};
+ if(need.pts){if(eid!=="UEC")return null;var sum=b.reduce(function(t,i){return t+i+1;},0);return {have:sum,ok:sum<=need.max};}
+ if(need.gpa){if(eid!=="STPM")return null;var avg=Math.round(b.reduce(function(t,i){return t+STPM_GP[e.grades[i]];},0)/need.n*100)/100;return {have:avg,ok:avg>=need.lo};}
+ var mine=b.map(function(i){return e.grades[i];}).join("");
+ return {have:mine,ok:need.combo.some(function(set){var req=(set.match(/[A-E]\*?/g)||[]).map(function(x){return e.grades.indexOf(x);}).sort(function(a,b){return a-b;});
+  return req.every(function(r,k){return r>=0&&b[k]<=r;});})};}
+/* How far a tier is: points to drop, average to gain, or 1 for a grade set not reached. */
+function gapOf(need,h){return need.pts?h.have-need.max:need.gpa?Math.round((need.lo-h.have)*100)/100:need.combo?1:need.cgpa?need.lo-h.have:need.as-h.have;}
+/* What a tier asks for, in words: "12 points or fewer in your best 6 subjects", "an average of 3.70 in 3 subjects", "AAB or AAC". */
+function needWords(need){return need.pts?need.max+" points or fewer in your best "+need.n+" subjects":need.gpa?"an average of "+need.lo.toFixed(2)+" in your best "+need.n+" subjects":need.combo?need.combo.join(" or "):"";}
 function award(t){return t.waiver!=null?t.waiver:t.amount!=null?t.amount/1000:-1;}
 /* rows: [{inst, instName, name, applies, qual, min, waiver, amount}]. Returns one entry per scholarship the student
    can match: hit = best tier reached (or null), next = the closest better tier, exam = the exam used. */
@@ -219,8 +240,8 @@ function scholarships(rows){
   rows.forEach(function(r){if(!tierFor(r.qual,r.min,eid))return;var k=r.inst+"|"+r.name+"|"+(r.applies||"");if(!g[k]){g[k]={exam:eid,inst:r.inst,instName:r.instName,name:r.name,applies:r.applies,tiers:[]};order.push(k);}g[k].tiers.push(r);});
   order.forEach(function(k){var s=g[k];s.hit=null;s.next=null;
    s.tiers.forEach(function(t){var h=tierHave(tierNeed(t.min),eid);if(h&&h.ok&&(!s.hit||award(t)>award(s.hit)))s.hit=t;});
-   s.tiers.forEach(function(t){var nd=tierNeed(t.min),h=tierHave(nd,eid);if(!h||h.ok||(s.hit&&award(t)<=award(s.hit)))return;
-    var gap=nd.cgpa?nd.lo-h.have:nd.as-h.have;if(gap<=0)return;   /* e.g. a CGPA band the student is above */
+   s.tiers.forEach(function(t){var nd=tierNeed(t.min),h=tierHave(nd,eid);if(!h||h.ok||h.few||(s.hit&&award(t)<=award(s.hit)))return;
+    var gap=gapOf(nd,h);if(gap<=0)return;   /* e.g. a CGPA band the student is above */
     if(!s.next||gap<s.next.gap||(gap===s.next.gap&&award(t)>award(s.next.t)))s.next={t:t,gap:gap,need:nd,have:h.have};});
    if(s.hit||s.next)out.push(s);});
  });
@@ -230,11 +251,12 @@ function awardText(t){return t.waiver!=null?t.waiver+"% tuition waiver":t.amount
 /* "1 more A for 50% tuition waiver" / "Needs 8 A+ for 100% tuition waiver (you have 7)" / "Needs CGPA 3.90 for …". */
 function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
  if(n.need.cgpa)return "Needs CGPA "+n.need.lo.toFixed(2)+" for "+awardText(n.t);
+ if(n.need.pts||n.need.gpa||n.need.combo)return "Needs "+needWords(n.need)+" for "+awardText(n.t)+" (you have "+(n.need.gpa?n.have.toFixed(2):n.have)+")";
  if(n.need.top)return "Needs "+n.need.as+" "+e.grades.slice(0,n.need.top).join(" or ")+" for "+awardText(n.t)+" (you have "+n.have+")";
  return n.gap+" more A"+(n.gap===1?"":"s")+" for "+awardText(n.t);}
 /* One line about the student's results, for the AI study assistant. */
 function forChat(){return taken().map(function(id){var e=exam(id);return id+": "+(e.cgpa?summary(id):summary(id)+" ("+aCount(id)+" A grades; "+text(id).replace(/\n/g,", ")+")");}).join("; ");}
 
-window.EDUPLAN_RESULTS={scholarships:scholarships,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
+window.EDUPLAN_RESULTS={scholarships:scholarships,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
  summary:summary,text:text,editor:editor,groupsFor:groupsFor,checkExam:checkExam,match:match,badge:badge,current:function(){return UI.cur;},setCurrent:function(id){UI.cur=id;}};
 })();

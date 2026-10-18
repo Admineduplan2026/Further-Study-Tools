@@ -252,6 +252,10 @@ var ZH_PATTERNS=[
  [/^(Official results slip|Trial exam results slip) \((.+)\)$/,function(m){return (m[1]==="Official results slip"?"正式成绩单":"模拟考（Trial）成绩单")+"（"+m[2]+"）";}],
  [/^Your results qualify for (\d+) campus scholarships?\. Each one checks other conditions too, so read its details before you apply\.$/,"你的成绩符合 $1 项校内奖学金。每项奖学金还有其他条件，申请前请先查看详情。"],
  [/^With your (.+) results$/,"以你的 $1 成绩"],
+ /* Scholarship tiers checked from My results grades (results.js needWords): UEC points, STPM averages, A-Level grade sets. */
+ [/^(Next: )?Needs (\d+) points or fewer in your best (\d+) subjects for (\d+)% tuition waiver(?: \(you have (\d+)\))?$/,function(m){return (m[1]?"下一级：":"")+"需要最好的 "+m[3]+" 科总积分不超过 "+m[2]+" 分，可获 "+m[4]+"% 学费减免"+(m[5]?"（你的是 "+m[5]+" 分）":"");}],
+ [/^(Next: )?Needs an average of ([\d.]+) in your best (\d+) subjects for (\d+)% tuition waiver(?: \(you have ([\d.]+)\))?$/,function(m){return (m[1]?"下一级：":"")+"需要最好的 "+m[3]+" 科平均绩点达到 "+m[2]+"，可获 "+m[4]+"% 学费减免"+(m[5]?"（你的是 "+m[5]+"）":"");}],
+ [/^(Next: )?Needs ([A-E*]{2,6}(?: or [A-E*]{2,6})*) for (\d+)% tuition waiver(?: \(you have ([A-E*]+)\))?$/,function(m){return (m[1]?"下一级：":"")+"需要 "+m[2].replace(/ or /g," 或 ")+"，可获 "+m[3]+"% 学费减免"+(m[4]?"（你的是 "+m[4]+"）":"");}],
  [/^(Next: )?(\d+) more As? for (\d+)% tuition waiver$/,function(m){return (m[1]?"下一级：":"")+"再多 "+m[2]+" 个 A 可获 "+m[3]+"% 学费减免";}],
  [/^(Next: )?Needs CGPA ([\d.]+) for (\d+)% tuition waiver$/,function(m){return (m[1]?"下一级：":"")+"需要 CGPA "+m[2]+"，可获 "+m[3]+"% 学费减免";}],
  [/^(Next: )?Needs (\d+) (\S+?)(?: or (\S+))? for (\d+)% tuition waiver \(you have (\d+)\)$/,function(m){return (m[1]?"下一级：":"")+"需要 "+m[2]+" 个 "+m[3]+(m[4]?" 或 "+m[4]:"")+"，可获 "+m[5]+"% 学费减免（你有 "+m[6]+" 个）";}],
