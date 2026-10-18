@@ -91,7 +91,7 @@ var ZH={
  "My results":"我的成绩","Scholarships for my results":"我的成绩可获得的奖学金","Add your exam results above. Eduplan then lists the campus scholarships your results qualify for.":"在上方填写你的考试成绩，Eduplan 就会列出你的成绩符合的校内奖学金。","See this scholarship":"查看这项奖学金","Almost there":"还差一点","No campus scholarship in our data matches your results yet.":"我们的资料中暂时没有符合你成绩的校内奖学金。","Which campus scholarships can I get with my results?":"以我的成绩可以获得哪些校内奖学金？","Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.":"成绩只需填写一次。Eduplan 会一直保存，直到你自己更改，并用来显示你符合哪些课程和奖学金。",
  "Saved to My results, and used to match programmes and scholarships for you.":"会保存到「我的成绩」，并用来为你配对课程和奖学金。","Your CGPA (out of 4.00)":"你的 CGPA（满分 4.00）","Your CGPA":"你的 CGPA",
  "+ Add subject":"+ 添加科目","Other subject…":"其他科目…","Subject name":"科目名称","Add":"添加","Add at least one subject and its grade.":"请至少添加一个科目及其成绩。","Enter your CGPA.":"请填写你的 CGPA。",
- "Add your results":"填写你的成绩"," to see if you meet these requirements.":"，查看你是否符合这些条件。","These requirements cannot be checked against your results automatically. Ask a counsellor.":"这些条件无法自动对照你的成绩，请咨询顾问。",
+ "Add your results":"填写你的成绩","to see if you meet these requirements.":"，查看你是否符合这些条件。","These requirements cannot be checked against your results automatically. Ask a counsellor.":"这些条件无法自动对照你的成绩，请咨询顾问。",
  "O-Level / IGCSE":"O-Level / IGCSE","Matriculation":"大学先修班","UEC (Senior Middle 3)":"独中统考 UEC（高三）","Secondary school":"中学","Pre-university":"大学先修","Foundation, matriculation or diploma (CGPA)":"预科／大学先修班／文凭（CGPA）",
  "Bahasa Melayu":"马来文","English":"英文","Mathematics":"数学","Additional Mathematics":"高级数学","History (Sejarah)":"历史","Science":"科学","Physics":"物理","Chemistry":"化学","Biology":"生物",
  "Islamic Education":"伊斯兰教育","Moral Education":"道德教育","Principles of Accounting":"会计原理","Economics":"经济","Business":"商业","Geography":"地理","Chinese Language":"华文","Tamil Language":"淡米尔文",
@@ -314,6 +314,8 @@ function gradeZh(g){return g.replace(/^credit \((.+)\)$/,"优等（$1）").repla
 function subjZh(s){return s.split(/(, | and | or )/).map(function(x){return x===", "?"、":x===" and "?" 和 ":x===" or "?" 或 ":(ZH[x]||x);}).join("");}
 /* Other pages (lab/lab-zh.js) add their own text: window.EDUPLAN_ZH_EXTRA={text:{...},patterns:[[regex,replacement],...]}. */
 (function(x){if(!x)return;Object.keys(x.text||{}).forEach(function(k){ZH[k]=x.text[k];});(x.patterns||[]).forEach(function(p){ZH_PATTERNS.unshift(p);});})(window.EDUPLAN_ZH_EXTRA);
+/* Course details from the school sheets (names, structures, entry rules, notes): Chinese kept in assets/js/content-zh.js, made by tools/content-zh.md. */
+if(window.EDUPLAN_CONTENT_ZH)Object.keys(window.EDUPLAN_CONTENT_ZH).forEach(function(k){if(!Object.prototype.hasOwnProperty.call(ZH,k))ZH[k]=window.EDUPLAN_CONTENT_ZH[k];});
 /* Quiz questions and options carry their own Chinese in quiz-data.js. */
 if(window.EDUPLAN_QUIZ)(window.EDUPLAN_QUIZ.questions||[]).forEach(function(q){ZH[q.q]=q.zh;q.a.forEach(function(a){ZH[a[0]]=a[1];});});
 function tr(s){

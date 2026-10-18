@@ -1,0 +1,1 @@
+window.EDUPLAN_CONTENT_ZH={};
