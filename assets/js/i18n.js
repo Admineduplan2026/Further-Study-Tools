@@ -211,7 +211,7 @@ var ZH={
  "Scholarships you can apply for":"可申请的奖学金","No campus scholarship listed for this level yet.":"此阶段暂未列出大学奖学金。",
  "Other scholarships open to all students":"其他开放给所有学生的奖学金",
  "Pre-university (Foundation / Matriculation / Form 6 / A-Level)":"大学先修（预科／大学先修班／中六／A-Level）","Certificate":"证书",
- "Bachelor's Degree":"学士学位","All":"全部","Programme type":"课程类型","Master's Degree":"硕士学位","PhD":"博士","Full-time":"全日制","Part-time":"兼读制",
+ "Bachelor's Degree":"学士学位","All":"全部","Scholarship tracker":"奖学金追踪","tuition waiver":"学费减免","scholarships you qualify for":"项你符合资格的奖学金","scholarship you qualify for":"项你符合资格的奖学金","scholarship award":"奖学金金额","almost there: one step away":"差一步就能获得","See my scholarships":"查看我的奖学金","in My portfolio, and Eduplan tracks which scholarships you qualify for.":"保存在「我的档案」，Eduplan 会自动追踪你符合资格的奖学金。","Programme type":"课程类型","Master's Degree":"硕士学位","PhD":"博士","Full-time":"全日制","Part-time":"兼读制",
  /* Scholarship flow */
  "Scholarship-based":"奖学金导向","Scholarship type":"奖学金类别","Scholarship":"奖学金","Requirements":"申请条件","University":"院校","Scholarship details":"奖学金详情","Choose a scholarship":"选择奖学金","Details":"详情",
  "Choose a scholarship type":"选择奖学金类别","Scholarships come from two places. Pick one to continue.":"奖学金有两种来源，请选择其中一种继续。",
@@ -290,6 +290,8 @@ var ZH_PATTERNS=[
  [/^Photo or PDF, up to (\d+) files\.$/,"照片或 PDF，最多 $1 个文件。"],
  [/^Send this summary and your document photos to Eduplan by WhatsApp (.+) or email (.+)\.$/,"请把这份摘要和文件照片，通过 WhatsApp $1 或电邮 $2 发送给 Eduplan。"],
  [/^Up to (\d+)% tuition waiver$/,"最高 $1% 学费减免"],
+ [/^Up to (\d+)%$/,"最高 $1%"],[/^Up to RM ([\d,]+)$/,"最高 RM $1"],
+ [/^Checked automatically with your (.+?) results in My results(?:: (.+))?\. Each scholarship checks other conditions too\.$/,function(m){return "已根据「我的成绩」里的 "+m[1].replace(/, /g,"、")+" 成绩自动检查"+(m[2]?"："+m[2].replace(/(\S+) (\d+)/g,"$1 $2 项"):"")+"。每项奖学金还有其他条件。";}],
  [/^Faculty (\d\d)$/,"科系 $1"],
  [/^Faculty (\d\d) · (.+)$/,"科系 $1 · $2"],
  [/^Explore Faculty (\d\d) · (.+)$/,"探索科系 $1 · $2"],

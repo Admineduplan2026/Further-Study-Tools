@@ -247,6 +247,20 @@ function scholarships(rows){
  });
  return out.sort(function(a,b){return (b.hit?award(b.hit):-2)-(a.hit?award(a.hit):-2);});
 }
+/* Scholarship tracker: from the list scholarships() gives, how many the student qualifies for, the highest award
+   and how many are one step away. Updated whenever My results change (the pages redraw on "eduplan:results"). */
+function tracker(list){var seen={},yes=0,near=0,w=null,a=null,by={};
+ list.forEach(function(s){var k=s.inst+"|"+s.name+"|"+(s.applies||"");if(s.hit){by[s.exam]=(by[s.exam]||0)+1;
+   if(s.hit.waiver!=null&&(w==null||s.hit.waiver>w))w=s.hit.waiver;if(s.hit.amount!=null&&(a==null||s.hit.amount>a))a=s.hit.amount;}
+  if(seen[k]==null)seen[k]=!!s.hit;else seen[k]=seen[k]||!!s.hit;});
+ Object.keys(seen).forEach(function(k){if(seen[k])yes++;else near++;});
+ return {yes:yes,near:near,waiver:w,amount:a,by:by};}
+function trackerHtml(list){var t=tracker(list),ex=taken();
+ function st(b,l){return '<div class="st"><b>'+esc(b)+'</b><span>'+esc(l)+'</span></div>';}
+ return '<div class="sctrack" role="group" aria-label="Scholarship tracker">'+st(String(t.yes),t.yes===1?"scholarship you qualify for":"scholarships you qualify for")+
+  (t.waiver!=null?st("Up to "+t.waiver+"%","tuition waiver"):'')+(t.amount!=null?st("Up to RM "+Number(t.amount).toLocaleString("en-MY"),"scholarship award"):'')+
+  st(String(t.near),"almost there: one step away")+'</div>'+
+  '<p class="hint">Checked automatically with your '+esc(ex.join(", "))+' results in My results'+(t.yes?': '+ex.filter(function(id){return t.by[id];}).map(function(id){return id+" "+t.by[id];}).join(" · "):'')+'. Each scholarship checks other conditions too.</p>';}
 function awardText(t){return t.waiver!=null?t.waiver+"% tuition waiver":t.amount!=null?"RM "+Number(t.amount).toLocaleString("en-MY"):"See official information";}
 /* "1 more A for 50% tuition waiver" / "Needs 8 A+ for 100% tuition waiver (you have 7)" / "Needs CGPA 3.90 for …". */
 function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
@@ -257,6 +271,6 @@ function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
 /* One line about the student's results, for the AI study assistant. */
 function forChat(){return taken().map(function(id){var e=exam(id);return id+": "+(e.cgpa?summary(id):summary(id)+" ("+aCount(id)+" A grades; "+text(id).replace(/\n/g,", ")+")");}).join("; ");}
 
-window.EDUPLAN_RESULTS={scholarships:scholarships,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
+window.EDUPLAN_RESULTS={scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
  summary:summary,text:text,editor:editor,groupsFor:groupsFor,checkExam:checkExam,match:match,badge:badge,current:function(){return UI.cur;},setCurrent:function(id){UI.cur=id;}};
 })();

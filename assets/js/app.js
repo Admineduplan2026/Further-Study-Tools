@@ -1079,7 +1079,7 @@ function pfScholarships(){
    (s.hit?'<span class="pill ok">'+esc(RX.awardText(s.hit))+'</span><span class="hint">With your '+esc(s.exam)+' results</span>':'')+
    (s.next?'<span class="hint">'+esc((s.hit?'Next: ':'')+RX.nextText(s))+'</span>':'')+
    '<div class="row"><a class="btn ghost" href="#scholarships-campus/'+esc(String(s.inst).toLowerCase())+'">See this scholarship '+ARROW+'</a></div></div>';}
- return (yes.length?'<p class="muted">Your results qualify for '+yes.length+' campus scholarship'+(yes.length===1?'':'s')+'. Each one checks other conditions too, so read its details before you apply.</p><div class="pfsaved">'+yes.map(item).join("")+'</div>'
+ return RX.trackerHtml(list)+(yes.length?'<p class="muted">Your results qualify for '+yes.length+' campus scholarship'+(yes.length===1?'':'s')+'. Each one checks other conditions too, so read its details before you apply.</p><div class="pfsaved">'+yes.map(item).join("")+'</div>'
    :'<div class="empty">No campus scholarship in our data matches your results yet.</div>')+
   (near.length?'<h3>Almost there</h3><div class="pfsaved">'+near.map(item).join("")+'</div>':'');
 }

@@ -267,6 +267,12 @@ function hero(){
  var lead={interest:"Search programmes from our partner universities.",scholarship:"Find the tuition waivers you can get with your results.",guidance:"Start from what you enjoy."}[L.mode];
  return '<section class="hero"><div class="hwrap"><h1>'+hello()+'</h1><p class="lead">'+lead+'</p>'+searchBox()+'</div></section>';
 }
+/* Scholarship tracker on the home page: the campus scholarships the exam results in My results qualify for
+   (results.js), updated by itself when the results change. */
+function schTracker(){var port=esc(mainLink("#portfolio"));
+ if(!RX.taken().length)return '<section class="sec"><div class="sh"><h2>Scholarship tracker</h2></div><div class="lnote"><a href="'+port+'">Add your exam results</a> in My portfolio, and Eduplan tracks which scholarships you qualify for.</div></section>';
+ var rows=D.sch.filter(function(s){return s.qual&&s.qual!=="Other";}).map(function(s){return {inst:s.inst.id,instName:s.inst.name,name:s.name,applies:s.applies,qual:s.qual,min:s.min,waiver:s.waiver,amount:s.amount};});
+ return '<section class="sec"><div class="sh"><h2>Scholarship tracker</h2><a class="hint" href="'+port+'">See my scholarships '+ARROW+'</a></div>'+RX.trackerHtml(RX.scholarships(rows))+'</section>';}
 function continueRow(){
  var items=[],a=applyState(),ap=a&&prog(a.v.prog);
  if(a&&ap&&!a.sent){var pct=a.complete?100:Math.round(((a.step||1)-1)/6*100);
@@ -323,7 +329,7 @@ function trust(){
   '<div class="logos" aria-label="Partner institutions">'+D.inst.map(function(u){return '<span class="wm" title="'+esc(u.full)+'">'+esc(u.name)+'</span>';}).join("")+'</div>'+
   '<p class="hint">Programme facts come from each university’s published information. Please confirm details with the university before you apply.</p></section>';
 }
-function home(){return hero()+'<div class="page">'+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
+function home(){return hero()+'<div class="page">'+schTracker()+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
 function resultsView(){
  var q=S.search,r=results(q);
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+
