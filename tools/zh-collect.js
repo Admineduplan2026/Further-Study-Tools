@@ -1,8 +1,10 @@
 /* List the course-detail text that still shows in English when the site is switched to 中文.
    node tools/zh-collect.js <built artifact .html> <out.json>   (needs Playwright; see tools/content-zh.md) */
-const {chromium}=require('playwright');(async()=>{const b=await chromium.launch();const fs=require('fs');
+const {chromium}=require('playwright');(async()=>{const fs=require('fs');const b=await chromium.launch();
 const p=await b.newPage({viewport:{width:1280,height:900}});await p.route(/script\.google\.com/,r=>r.abort());
-const F='file://'+process.argv[2];
+/* Serve the file as UTF-8 (a bare file:// page has no charset, and Chromium may guess another encoding). */
+const F='http://eduplan.test/';
+await p.route(F+'**',r=>r.fulfill({body:fs.readFileSync(process.argv[2]),contentType:'text/html; charset=utf-8'}));
 await p.goto(F+'#home');await p.evaluate(()=>{localStorage.setItem("eduplan-session",JSON.stringify({token:"t",email:"demo@example.com",exp:Date.now()+864e5}));localStorage.setItem("eduplan-lang","zh");});
 await p.reload();await p.waitForTimeout(800);
 const ids=await p.evaluate(()=>window.EDUPLAN_SHEET_DATA.programmes.map(x=>x.programme_id));
