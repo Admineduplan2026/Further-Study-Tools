@@ -239,9 +239,16 @@ function searchBox(){
   sel("q-level","Study level",[["","Any level"]].concat(LEVELS),s.level)+
   sel("q-budget","Budget",BUDGETS,s.budget)+
   sel("q-intake","Start date",intakeOptions(),s.intake)+
-  '</div><button type="submit" class="go">'+SEARCH+'<span>Search</span></button></form>'+
+  '</div><button type="submit" class="go">'+SEARCH+'<span>Search</span></button></form>'+autoResults()+
   (hadSearch?'<p class="memo">Your last search is filled in. <button type="button" class="linkbtn" data-act="clear-search">Clear</button></p>':'');
 }
+/* Interest search: the exam results saved in My results (the portfolio) are filled in here, so the search can keep
+   only the programmes they qualify for. Without saved results, a link to add them. */
+function autoResults(){var t=RX.taken(),port=esc(mainLink("#portfolio"));
+ return '<div class="automine"><span class="sl">Auto-fill my results</span>'+(t.length?
+  '<span class="hint">From My results in your portfolio.</span><ul class="amres">'+t.map(function(id){var e=exam(id);return '<li><b>'+esc(e.label||id)+'</b><span>'+esc(RX.summary(id))+'</span></li>';}).join("")+'</ul>'+
+  '<div class="amrow"><label class="mine"><input type="checkbox" id="q-mine"'+(L.mine?' checked':'')+'> Only programmes my results qualify for</label><a class="hint" href="'+port+'">Change in My results</a></div>'
+  :'<span class="hint">Your exam results are not in My portfolio yet. <a href="'+port+'">Add your exam results</a> once, and they are filled in here for you.</span>')+'</div>';}
 function quizBox(){
  var Q=QUIZ.questions,n=Q.length,q=S.quiz,picks=quizResult();
  if(L.quizStep==null&&picks.length)return '<div class="sbox quiz"><span class="sl">Faculties that suit your interests</span><div class="lchips">'+picks.map(function(c){return '<button type="button" class="lchip big" data-lfac="'+esc(c)+'">'+esc(facLabel(c))+' '+ARROW+'</button>';}).join("")+'</div>'+
@@ -560,6 +567,7 @@ document.addEventListener("submit",function(ev){
 window.addEventListener("eduplan:results",function(){if(L.view!=="app")render(true);});
 document.addEventListener("input",function(ev){if(ev.target.id==="q-what")ev.target.removeAttribute("data-fac");});
 document.addEventListener("change",function(ev){if(ev.target.id==="r-sort"){L.sort=ev.target.value;render(true);}
+ if(ev.target.id==="q-mine"){L.mine=ev.target.checked;}
  if(ev.target.id==="r-mine"){L.mine=ev.target.checked;render(true);var mi=document.getElementById("r-mine");if(mi)mi.focus();}
  if(ev.target.id==="s-qual"){var q1=ev.target.value,was=isCgpa(S.sch.qual);S.sch.qual=q1;S.sch.level=exam(q1).lv;S.sch.inst=val("s-inst");
   S.sch.res=isCgpa(q1)!==was?"":val("s-res");if(!isCgpa(q1)&&+S.sch.res>exam(q1).max)S.sch.res="";render(true);var f=document.getElementById("s-res");if(f)f.focus();}});

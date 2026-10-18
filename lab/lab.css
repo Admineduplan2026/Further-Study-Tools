@@ -335,5 +335,12 @@ a.dest,a.major,a.offer{text-decoration:none}
 .sf.mine a.hint{color:var(--brand)}
 label.mine{display:inline-flex;align-items:center;gap:8px;font-size:14px;min-height:40px;cursor:pointer}
 label.mine input{width:18px;height:18px;accent-color:var(--brand)}
+.automine{margin-top:10px;background:var(--card);color:var(--ink);border-radius:18px;box-shadow:var(--shadow);padding:12px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.automine .sl{font-weight:600}
+.automine a{color:var(--brand)}
+.amres{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px}
+.amres li{display:flex;gap:8px;align-items:baseline;min-width:0;flex-wrap:wrap}
+.amres span{font-size:15px;font-weight:500}
+.amrow{display:flex;flex-wrap:wrap;gap:4px 18px;align-items:center}
 .pcard .ematch{font-size:13px;padding:6px 10px;border-radius:10px;align-self:flex-start}
 .sheet .ematch{margin-bottom:8px}
