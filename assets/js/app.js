@@ -1032,7 +1032,7 @@ function pfVerify(code){
  }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender("pf-code");});
 }
 function pfAction(act){
- if(act==="guest"){PF.guest=true;sset("eduplan-guest","1");PF.err="";rerender();window.scrollTo(0,0);return;}
+ if(act==="guest"){PF.guest=true;sset("eduplan-guest","1");PF.err="";if(HOST&&HOST.locked&&sget("eduplan-pfmode")){sset("eduplan-pfmode","");location.hash="#home";return;}rerender();window.scrollTo(0,0);return;}
  if(act==="again"){pfSendCode(PF.email,true);return;}
  if(act==="other"){PF.step="email";PF.err="";PF.msg="";rerender("pf-email");return;}
  if(act==="quiz-restart"){S.guide={step:0,answers:[],tie:null};quizSave();location.hash="#guided";return;}
@@ -1063,19 +1063,23 @@ function pfLogin(gate){
  var err=PF.err?'<span class="err" id="pf-err">'+esc(PF.err)+'</span>':'',inv=PF.err?' aria-invalid="true" aria-describedby="pf-err"':'',dis=PF.busy?' disabled':'';
  var msg=PF.msg?'<p class="note" role="status">'+esc(PF.msg)+'</p>':'';
  var guest=gate&&PF.guestOk?'<div class="row"><button type="button" class="btn ghost" data-pf="guest">Continue without signing in</button></div>':'';
- if(!pfLive())return '<section class="panel pflogin"><h2>Sign in</h2><p class="muted">Sign-in works on the live Eduplan website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+
-  (gate?'<div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';
+ if(!pfLive()){var pm=sget("eduplan-pfmode"),member=HOST&&HOST.locked&&!HOST.locked("guided");
+  return '<section class="panel pflogin"><h2>'+(pm==="register"?'Register':'Sign in')+'</h2><p class="muted">Registering and signing in work on the live Eduplan website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+
+  (gate||(pm&&!member)?'<p class="muted">Tap below to try everything a member can do in this preview.</p><div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';}
  if(PF.step==="code")return '<section class="panel pflogin"><h2>Enter your code</h2>'+msg+
   '<form class="fields" id="pf-code-form" novalidate><div class="field"><label for="pf-code">6-digit code</label>'+
   '<input id="pf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+inv+'>'+err+'<span class="hint">Sent to <span data-notr>'+esc(PF.email)+'</span>. Check your spam folder if it is not in your inbox.</span></div>'+
   '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Checking…':'Sign in')+'</button>'+
   '<button type="button" class="btn ghost" data-pf="again"'+dis+'>Send a new code</button><button type="button" class="btn ghost" data-pf="other">Use another email</button></div></form>'+guest+'</section>';
- return '<section class="panel pflogin"><h2>'+(gate?'Sign in to continue':'Sign in or create your portfolio')+'</h2>'+msg+
+ var mode=gate?"":sget("eduplan-pfmode");
+ return '<section class="panel pflogin"><h2>'+(gate?'Sign in to continue':mode==="register"?'Register: create your free account':mode==="signin"?'Sign in to your account':'Sign in or create your portfolio')+'</h2>'+msg+
+  (mode==="register"?'<p class="muted">Enter your email and we send you a 6-digit code. No password needed.</p>':mode==="signin"?'<p class="muted">Enter the email you registered with. We send you a 6-digit code to sign in.</p>':'')+
   '<form class="fields" id="pf-email-form" novalidate><div class="field"><label for="pf-email">Email</label>'+
   '<input id="pf-email" type="email" autocomplete="email" value="'+esc(PF.email)+'"'+(PF.err&&PF.err!==PF_ERR.consent?inv:'')+'>'+(PF.err&&PF.err!==PF_ERR.consent?err:'')+
   '<span class="hint">No password needed. Each time you sign in, we email you a 6-digit code.</span></div>'+
   '<div class="field"><label class="check"><input type="checkbox" id="pf-consent"'+(PF.consent?' checked':'')+(PF.err===PF_ERR.consent?inv:'')+'><span>I agree that Eduplan keeps my portfolio (saved programmes, quiz result, consultation request and application details) to guide me with my studies. I can delete it at any time.</span></label>'+(PF.err===PF_ERR.consent?err:'')+'</div>'+
-  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Sending…':'Email me a code')+'</button></div></form>'+guest+'</section>';
+  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Sending…':'Email me a code')+'</button></div></form>'+
+  (mode==="register"?'<p class="hint">Already have an account? <button type="button" class="linkbtn" data-role="signin">Sign in</button></p>':mode==="signin"?'<p class="hint">First time here? <button type="button" class="linkbtn" data-role="register">Register</button></p>':'')+guest+'</section>';
 }
 /* The first page of the website until the student signs in. The page they asked for opens after signing in. */
 V.gate=function(){
@@ -1116,6 +1120,14 @@ var STORE_ROWS=[
  ["Sign-in","eduplan-session","Your email and a sign-in token","30 days, or until you sign out"],
  ["Application in progress","eduplan-apply","The application form you are filling in","Until you close the tab"],
  ["AI assistant","eduplan-chat","Your latest chat messages","Until you close the tab"]];
+/* Lab: scholarship pages and the interest quiz are for members; visitors are asked to register or sign in. */
+V.locked=function(){
+ return '<section class="stack"><span class="eyebrow">Members only</span><h1>Register or sign in to continue</h1>'+
+  '<p class="lead">Searching by scholarship, interest or guidance is for Eduplan members. It is free: register once with your email, no password needed.</p>'+
+  '<ul class="reqlist"><li>Match scholarships to your exam results</li><li>Take the interest quiz and get faculties that suit you</li><li>Save programmes and continue on any device</li></ul>'+
+  '<div class="row"><button type="button" class="btn" data-role="register">Register</button><button type="button" class="btn ghost" data-role="signin">Sign in</button></div>'+
+  '<p class="hint">Visitors can still browse:</p><div class="row"><a class="btn ghost" href="#faculty">Faculties and courses</a><a class="btn ghost" href="#universities">Universities</a></div></section>';
+};
 V.privacy=function(){
  return '<section class="stack"><span class="eyebrow">Privacy and security</span><h1>Privacy, cookies and security</h1>'+
   '<p class="lead">How Eduplan keeps your information safe, what is stored in your browser and what is sent to Eduplan.</p></section>'+
@@ -1250,6 +1262,7 @@ function render(keepScroll){
  if((r==="faculty"&&S.fac&&S.fac.course)||(r==="universities"&&S.uni&&S.uni.level))sset("eduplan-last",location.hash);
  var gate=pfGate();document.body.classList.toggle("gated",gate);
  if(gate)r="gate";
+ else if(HOST&&HOST.locked&&HOST.locked(r))r="locked";
  S.view=r;
  app.innerHTML=V[r]();
  reveal();fsFilter();

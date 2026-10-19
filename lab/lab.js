@@ -268,9 +268,26 @@ function quizBox(){
   '<h2 class="qq" id="qq">'+esc(Q[i].q)+'</h2><div class="qopts" role="group" aria-labelledby="qq">'+Q[i].a.map(function(a,k){return '<button type="button" class="qopt" data-lans="'+k+'" aria-pressed="'+(cur===k)+'">'+esc(a[0])+'</button>';}).join("")+'</div>'+
   '<div class="qrow"><button type="button" class="btn ghost sm" data-act="quiz-back"'+(i===0?" disabled":"")+'>Back</button></div></div>';
 }
+/* Who is visiting: a member (signed in), a visitor (browsing only) or someone who has not chosen yet. Searching by
+   "Where does your study journey start?" (scholarship, interest, guidance) is for members, to invite sign-ups.
+   Sign-in needs the live website; in a preview (the published artifact) "Continue to the preview" counts as a member. */
+function preview(){return !!window.EDUPLAN_SHEET_DATA||!window.EDUPLAN_API_URL;}
+function access(){if(S.session)return "member";var r=ls("eduplan-role");return r==="preview"&&preview()?"member":r==="visitor"?"visitor":"new";}
+function locked(){return access()!=="member";}
+window.EDUPLAN_HOST.locked=function(view){return locked()&&/^(guided|scholarships|results)/.test(String(view||""));};
+function roleCards(){
+ function c(role,title,sub,cls){return '<button type="button" class="rolec'+(cls?' '+cls:'')+'" data-role="'+role+'"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></button>';}
+ return '<div class="roles" role="group" aria-label="How do you want to use Eduplan?">'+
+  c("register","Register","First time here? Create a free account in one minute.","main")+
+  c("signin","Sign in","Already have an account? Sign in with your email.")+
+  c("visitor","Visitor","Just looking? Browse fields of study, faculties, courses and universities.")+'</div>';}
+function lockBox(){var v=access()==="visitor";
+ return '<div class="sbox lockbox"><div class="lockcopy"><span class="sl">'+(v?'You are browsing as a visitor':'How do you want to use Eduplan?')+'</span>'+
+  '<p>'+(v?'Register or sign in to search by scholarship, interest or guidance, match scholarships to your results and save your progress.':'Register or sign in to search by scholarship, interest or guidance. Visitors can browse fields of study, faculties, courses and universities.')+'</p></div>'+
+  (v?'<div class="row"><button type="button" class="btn" data-role="register">Register</button><button type="button" class="btn ghost" data-role="signin">Sign in</button></div>':roleCards())+'</div>';}
 function hero(){
  var lead={interest:"Search programmes from our partner universities.",scholarship:"Find the tuition waivers you can get with your results.",guidance:"Start from what you enjoy."}[L.mode];
- return '<section class="hero"><div class="hwrap"><h1>'+hello()+'</h1><p class="lead">'+lead+'</p>'+searchBox()+'</div></section>';
+ return '<section class="hero"><div class="hwrap"><h1>'+hello()+'</h1><p class="lead">'+(locked()?'Plan your studies in Malaysia: courses, universities and scholarships.':lead)+'</p>'+(locked()?lockBox():searchBox())+'</div></section>';
 }
 /* Scholarship tracker on the home page: the campus scholarships the exam results in My results qualify for
    (results.js), updated by itself when the results change. */
@@ -334,7 +351,8 @@ function trust(){
   '<div class="logos" aria-label="Partner institutions">'+D.inst.map(function(u){return '<span class="wm" title="'+esc(u.full)+'">'+esc(u.name)+'</span>';}).join("")+'</div>'+
   '<p class="hint">Programme facts come from each university’s published information. Please confirm details with the university before you apply.</p></section>';
 }
-function home(){return hero()+'<div class="page">'+schTracker()+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
+function home(){if(locked())return hero()+'<div class="page">'+continueRow()+popular()+trust()+'</div>';
+ return hero()+'<div class="page">'+schTracker()+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
 function resultsView(){
  var q=S.search,r=results(q);
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+
@@ -523,6 +541,7 @@ function render(keep){
  route();chrome();
  document.body.classList.toggle("lab-own",L.view!=="app");
  if(L.view==="app"){sheet.innerHTML="";document.body.classList.remove("locked");return;}   /* the main app draws this page */
+ if(L.view==="results"&&locked())L.view="home";
  app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():home();
  sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
  if(!keep)window.scrollTo(0,0);
@@ -538,7 +557,8 @@ function readSearch(){
  ls("eduplan-lab-search",S.search);hadSearch=true;touch("search");
 }
 function val(id){var e=document.getElementById(id);return e?e.value:"";}
-function setMode(m){L.info=false;L.mode=m;L.quizStep=null;ls("eduplan-lab-mode",m);touch("search");if(L.view!=="home")go("home");else render(true);}
+function setMode(m){if(locked()){L.info=false;L.menu=false;if(L.view!=="home")go("home");else render(true);var lb=document.querySelector(".lockbox");if(lb){lb.scrollIntoView({block:"center"});lb.classList.add("nudge");}return;}
+ L.info=false;L.mode=m;L.quizStep=null;ls("eduplan-lab-mode",m);touch("search");if(L.view!=="home")go("home");else render(true);}
 function openDetail(id){L.detail=id;S.recent=[id].concat(S.recent.filter(function(x){return x!==id;})).slice(0,8);ls("eduplan-lab-recent",S.recent);touch("recent");render(true);
  var s=sheet.querySelector(".sheet");if(s)s.focus();}
 function toggleSave(id){S.saved=ls("eduplan-saved")||[];var i=S.saved.indexOf(id);if(i<0)S.saved.push(id);else S.saved.splice(i,1);ls("eduplan-saved",S.saved);touch("saved");render(true);}
@@ -548,6 +568,11 @@ document.addEventListener("click",function(ev){
  /* Links into the main app's journey remember which route the student is on (its progress bar and Back button). */
  if(t.hasAttribute("data-lflow")){try{sessionStorage.setItem("eduplan-flow",t.getAttribute("data-lflow"));sessionStorage.setItem("eduplan-last",location.hash||"#home");}catch(e){}return;}
  if(t.hasAttribute("data-mode")){setMode(t.getAttribute("data-mode"));return;}
+ /* Register / Sign in open the sign-in form on My portfolio; Visitor browses without searching. */
+ if(t.hasAttribute("data-role")){var role=t.getAttribute("data-role");
+  if(role==="visitor"){ls("eduplan-role","visitor");L.menu=false;go("home");render(true);return;}
+  try{sessionStorage.setItem("eduplan-pfmode",role);}catch(e){}L.menu=false;location.hash="#portfolio";return;}
+ if(t.getAttribute("data-pf")==="guest"&&preview())ls("eduplan-role","preview");
  if(t.hasAttribute("data-lsave")){toggleSave(t.getAttribute("data-lsave"));return;}
  if(t.hasAttribute("data-detail")){openDetail(t.getAttribute("data-detail"));return;}
  if(t.hasAttribute("data-where")){L.mode="interest";ls("eduplan-lab-mode","interest");S.search={what:"",fac:"",where:t.getAttribute("data-where"),level:"",budget:"",intake:""};ls("eduplan-lab-search",S.search);touch("search");L.detail=null;go("results");return;}
