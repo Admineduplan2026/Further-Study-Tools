@@ -29,7 +29,7 @@ var ACCOUNT_SESSION_DAYS = 30;
 var ACCOUNT_MAX_SESSIONS = 5;           // devices signed in at the same time
 var ACCOUNT_MAX_DATA = 45000;           // characters of JSON; a Google Sheets cell holds 50,000
 var ACCOUNT_DEFAULT_DAILY_EMAILS = 80;
-var ACCOUNT_SECTIONS = ['saved', 'quiz', 'consult', 'apply', 'results', 'search', 'recent'];  // results: My results; search, recent: Eduplan Lab (lab/)
+var ACCOUNT_SECTIONS = ['saved', 'quiz', 'consult', 'apply', 'results', 'search', 'recent', 'profile'];  // results: My results; search, recent: Eduplan Lab (lab/); profile: optional name, WhatsApp, status, interests
 var ACCOUNT_HEADERS = ['Email', 'Created', 'Last sign-in', 'Last saved', 'Name', 'Mobile', 'Saved programmes', 'Interest quiz',
   'Application', 'Data (do not edit)', 'Sessions (do not edit)'];
 var ACCOUNT_COL = { email: 1, created: 2, signin: 3, saved: 4, name: 5, mobile: 6, progs: 7, quiz: 8, app: 9, data: 10, sessions: 11 };

@@ -513,7 +513,9 @@ V.consultation=function(){
   '<p class="muted">Send to: WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL].</p>'+
   (findProg(S.pick)?'<div class="row"><a class="btn" href="#apply/'+esc(S.pick)+'">Continue to the application form '+ARROW+'</a></div>':'')+'</section>';
  }
- var c=S.cons,e=S.consErr||{};
+ var c=S.cons,e=S.consErr||{},pr=S.prof||{};
+ /* Empty fields start from My profile and the signed-in email. */
+ if(!c["cons-name"]&&pr.name)c["cons-name"]=pr.name;if(!c["cons-phone"]&&pr.phone)c["cons-phone"]=pr.phone;if(!c["cons-email"]&&PF.s)c["cons-email"]=PF.s.email;
  function f(id,label,type,hint,req){return '<div class="field"><label for="'+id+'">'+label+(req?"":' <span class="hint">(optional)</span>')+'</label><input type="'+type+'" id="'+id+'" value="'+esc(c[id]||"")+'"'+(e[id]?' aria-invalid="true" aria-describedby="'+id+'-err"':"")+'>'+(hint?'<span class="hint">'+hint+'</span>':"")+(e[id]?'<span class="err" id="'+id+'-err">'+esc(e[id])+'</span>':"")+'</div>';}
  var topics=["Scholarships","Choosing a course","Choosing a university","Accommodation","I am not sure what to study"];
  var quals=["SPM","UEC","STPM","A-Level","Foundation or Matriculation","Diploma","Other"];
@@ -816,7 +818,10 @@ V.next=function(){
 };
 
 V.apply=function(){
- var a=S.app,n=APPLY_STEPS.length;
+ var a=S.app,n=APPLY_STEPS.length,pr=S.prof||{};
+ /* Empty fields start from My profile and the signed-in email; the student checks them against the IC. */
+ var pre={name_en:pr.name,mobile:pr.phone,email:PF.s&&PF.s.email},ch=false;
+ Object.keys(pre).forEach(function(k){if(!a.v[k]&&pre[k]){a.v[k]=pre[k];ch=true;}});if(ch)applySave();
  return '<section class="stack">'+flowStep("Apply")+'<span class="eyebrow">Apply with Eduplan</span><h1>Application form</h1>'+
   '<p class="lead">One form for your university application. It takes about 10 minutes. '+(PF.s?'Your answers are saved to your portfolio as you type.':'Your answers stay on this device until you close the tab. <a href="#portfolio">Sign in</a> to save them and continue later.')+'</p></section>'+
   '<section class="panel" style="max-width:760px"><div class="formstep"><span>Part '+a.step+' of '+n+': '+esc(APPLY_STEPS[a.step-1])+'</span><span class="bar" aria-hidden="true"><i style="width:'+Math.round(a.step/n*100)+'%"></i></span></div>'+
@@ -891,7 +896,8 @@ function applySend(){
    also saved to their portfolio on Eduplan's server (apps-script/Account.gs), so they can continue on any device.
    Each section (saved, quiz, consult, apply) has its own "changed at" time; the newer copy wins when devices differ.
    Uploaded documents are never saved in the portfolio. Signing out removes the student's details from this browser. */
-var PF_KEY="eduplan-session",PF_AT="eduplan-at",PF_SECTIONS=["saved","quiz","consult","apply","results"];
+S.prof=store("eduplan-profile")||{};
+var PF_KEY="eduplan-session",PF_AT="eduplan-at",PF_SECTIONS=["saved","quiz","consult","apply","results","profile"];
 var PF={s:store(PF_KEY),at:store(PF_AT)||{},step:"email",email:"",consent:false,msg:"",err:"",busy:false,dirty:false,saving:false,timer:null,loaded:0,del:false};
 if(PF.s&&!(PF.s.token&&PF.s.exp>Date.now()))PF.s=null;
 /* The website opens with the sign-in page (pfGate). Guests are let in only when sign-in cannot work: the artifact
@@ -919,7 +925,8 @@ function pfDoc(){var a=PF.at;return {
  quiz:{step:S.guide.step,answers:S.guide.answers,tie:S.guide.tie||null,result:pfQuizResult(),at:a.quiz||0},
  consult:{f:S.cons,at:a.consult||0},
  apply:{v:S.app.v,step:S.app.step,edu:S.app.edu,eng:S.app.eng,complete:!!S.app.complete,sent:S.app.sent||null,at:a.apply||0},
- results:{exams:RX.get().exams,at:a.results||0}};}
+ results:{exams:RX.get().exams,at:a.results||0},
+ profile:{f:S.prof,at:a.profile||0}};}
 /* Takes the server's sections that are newer than this browser's. union: first sign-in on this device, so the
    programmes saved before signing in are added to the portfolio's. Returns true when something changed. */
 function pfUse(d,union){
@@ -930,6 +937,7 @@ function pfUse(d,union){
  else if(newer("saved")){SAVED=(d.saved.ids||[]).slice();store("eduplan-saved",SAVED);a.saved=d.saved.at;ch=true;}
  if(newer("quiz")){S.guide={step:d.quiz.step||0,answers:d.quiz.answers||[],tie:d.quiz.tie||null};store("eduplan-quiz",S.guide);a.quiz=d.quiz.at;ch=true;}
  if(newer("results")){RX.use({exams:d.results.exams||{}});a.results=d.results.at;ch=true;}
+ if(newer("profile")){S.prof=d.profile.f||{};store("eduplan-profile",S.prof);a.profile=d.profile.at;ch=true;}
  if(newer("consult")){S.cons=d.consult.f||{};S.consDone=null;store("eduplan-consult",S.cons);a.consult=d.consult.at;ch=true;}
  if(newer("apply")){var x=d.apply,files=S.app.files;
   try{sessionStorage.setItem(APPLY_KEY,JSON.stringify({v:x.v,step:x.step,edu:x.edu,eng:x.eng,complete:x.complete,sent:x.sent}));}catch(e){}
@@ -970,9 +978,9 @@ function pfStatus(t,warn){
 /* Removes everything personal from this browser (sign out, delete, or a shared computer). */
 function pfForget(){
  PF.s=null;PF.dirty=false;PF.del=false;clearTimeout(PF.timer);
- try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-results"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
+ try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-results","eduplan-profile"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
  RX.use({});
- PF.at={};SAVED=[];S.guide={step:0,answers:[]};S.cons={};S.consDone=null;S.app=applyLoad();
+ PF.at={};SAVED=[];S.guide={step:0,answers:[]};S.cons={};S.prof={};S.consDone=null;S.app=applyLoad();
 }
 /* The session ended on the server (expired, deleted, or signed out on another device): keep the local copy. */
 function pfSignedOut(){
@@ -1059,12 +1067,18 @@ function toggleSave(id){
  if(!PF.s)pfStatus(on?"Saved in this browser. Sign in to keep it on any device.":"Removed from your saved programmes");
 }
 
+/* First layer: signing in asks only for an email, a one-time code and agreement to how the portfolio is used. */
+function pfAsk(){return '<div class="pfask"><span class="sl">To sign in we only ask for</span><ul>'+
+  '<li><b>Your email</b><span>Your account; we send the sign-in code and reminders here.</span></li>'+
+  '<li><b>A one-time code</b><span>Proves the email is yours. No password to remember.</span></li>'+
+  '<li><b>Your agreement</b><span>To how Eduplan uses your portfolio (Malaysia’s Personal Data Protection Act 2010).</span></li></ul>'+
+  '<p class="hint">Everything else is optional, or asked only when you apply. We never ask for a password or card details. <a href="#privacy">What we ask for, and when</a></p></div>';}
 function pfLogin(gate){
  var err=PF.err?'<span class="err" id="pf-err">'+esc(PF.err)+'</span>':'',inv=PF.err?' aria-invalid="true" aria-describedby="pf-err"':'',dis=PF.busy?' disabled':'';
  var msg=PF.msg?'<p class="note" role="status">'+esc(PF.msg)+'</p>':'';
  var guest=gate&&PF.guestOk?'<div class="row"><button type="button" class="btn ghost" data-pf="guest">Continue without signing in</button></div>':'';
  if(!pfLive()){var pm=sget("eduplan-pfmode"),member=HOST&&HOST.locked&&!HOST.locked("guided");
-  return '<section class="panel pflogin"><h2>'+(pm==="register"?'Register':'Sign in')+'</h2><p class="muted">Registering and signing in work on the live Eduplan website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+
+  return '<section class="panel pflogin"><h2>'+(pm==="register"?'Register':'Sign in')+'</h2><p class="muted">Registering and signing in work on the live Eduplan website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+pfAsk()+
   (gate||(pm&&!member)?'<p class="muted">Tap below to try everything a member can do in this preview.</p><div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';}
  if(PF.step==="code")return '<section class="panel pflogin"><h2>Enter your code</h2>'+msg+
   '<form class="fields" id="pf-code-form" novalidate><div class="field"><label for="pf-code">6-digit code</label>'+
@@ -1073,11 +1087,11 @@ function pfLogin(gate){
   '<button type="button" class="btn ghost" data-pf="again"'+dis+'>Send a new code</button><button type="button" class="btn ghost" data-pf="other">Use another email</button></div></form>'+guest+'</section>';
  var mode=gate?"":sget("eduplan-pfmode");
  return '<section class="panel pflogin"><h2>'+(gate?'Sign in to continue':mode==="register"?'Register: create your free account':mode==="signin"?'Sign in to your account':'Sign in or create your portfolio')+'</h2>'+msg+
-  (mode==="register"?'<p class="muted">Enter your email and we send you a 6-digit code. No password needed.</p>':mode==="signin"?'<p class="muted">Enter the email you registered with. We send you a 6-digit code to sign in.</p>':'')+
+  (mode==="register"?'<p class="muted">Enter your email and we send you a 6-digit code. No password needed.</p>':mode==="signin"?'<p class="muted">Enter the email you registered with. We send you a 6-digit code to sign in.</p>':'')+pfAsk()+
   '<form class="fields" id="pf-email-form" novalidate><div class="field"><label for="pf-email">Email</label>'+
   '<input id="pf-email" type="email" autocomplete="email" value="'+esc(PF.email)+'"'+(PF.err&&PF.err!==PF_ERR.consent?inv:'')+'>'+(PF.err&&PF.err!==PF_ERR.consent?err:'')+
   '<span class="hint">No password needed. Each time you sign in, we email you a 6-digit code.</span></div>'+
-  '<div class="field"><label class="check"><input type="checkbox" id="pf-consent"'+(PF.consent?' checked':'')+(PF.err===PF_ERR.consent?inv:'')+'><span>I agree that Eduplan keeps my portfolio (saved programmes, quiz result, consultation request and application details) to guide me with my studies. I can delete it at any time.</span></label>'+(PF.err===PF_ERR.consent?err:'')+'</div>'+
+  '<div class="field"><label class="check"><input type="checkbox" id="pf-consent"'+(PF.consent?' checked':'')+(PF.err===PF_ERR.consent?inv:'')+'><span>I agree that Eduplan keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only Eduplan staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+(PF.err===PF_ERR.consent?err:'')+'</div>'+
   '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Sending…':'Email me a code')+'</button></div></form>'+
   (mode==="register"?'<p class="hint">Already have an account? <button type="button" class="linkbtn" data-role="signin">Sign in</button></p>':mode==="signin"?'<p class="hint">First time here? <button type="button" class="linkbtn" data-role="register">Register</button></p>':'')+guest+'</section>';
 }
@@ -1116,6 +1130,7 @@ var STORE_ROWS=[
  ["Interest quiz","eduplan-quiz","Your quiz answers","Until you retake it or clear this browser"],
  ["Searches","eduplan-lab-search, eduplan-lab-sch, eduplan-lab-mode","Your last search and route","Until you clear them"],
  ["Scholarship choice","eduplan-sch-pick","The scholarship you chose for each programme","Until you change it"],
+ ["My profile","eduplan-profile","The optional name, WhatsApp number, status and interests you filled in","Until you change them or clear this browser"],
  ["Consultation request","eduplan-consult","Details you typed in the consultation form","Until you clear this browser"],
  ["Sign-in","eduplan-session","Your email and a sign-in token","30 days, or until you sign out"],
  ["Application in progress","eduplan-apply","The application form you are filling in","Until you close the tab"],
@@ -1138,8 +1153,13 @@ V.privacy=function(){
   '<div class="row"><button type="button" class="btn ghost" data-act="privacy-clear">Clear Eduplan data from this browser</button></div>'+
   '<p class="hint">This removes everything above from this browser and signs you out here. A portfolio saved to your account stays there; delete it from My portfolio.</p>'+
   (sget("eduplan-cleared")?'<p class="ematch ok" role="status">Eduplan data was cleared from this browser.</p>':'')+'</section>'+
+ '<section class="panel"><h2>What we ask for, and when</h2><ol class="tiers3">'+
+  '<li><b>To sign in</b><span>Only your email, a one-time code sent to it, and your agreement to this notice. No password.</span></li>'+
+  '<li><b>In My profile (optional)</b><span>Your name, WhatsApp number, where you are in your studies, your exam results and the fields and places you are interested in. You can skip any of them; the website works without them.</span></li>'+
+  '<li><b>When you apply</b><span>Your full name as on your IC, IC number, date of birth, address, documents and, for students under 18, a parent or guardian’s details. Some universities’ own forms also ask for things like religion or health; these are asked only on that university’s form. Before your application goes to the university, you are asked to agree to it.</span></li></ol>'+
+  '<p class="muted"><b>We never ask for:</b> a password, bank or card numbers (payments are made to the university), or your IC number when you sign in.</p></section>'+
  '<section class="panel"><h2>What is sent to Eduplan</h2><ul class="reqlist">'+
-  '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device.</li>'+
+  '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, profile, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device.</li>'+
   '<li><b>Applications:</b> your form and documents are kept in a private folder that only Eduplan staff can open, and are shared with the university you apply to so it can process your application.</li>'+
   '<li><b>AI study assistant:</b> your messages are sent through Eduplan’s server to Anthropic’s Claude to write the reply. Please do not type your IC number, phone number or other personal details in the chat.</li>'+
   '<li><b>Consultation requests:</b> sent to Eduplan so a counsellor can contact you.</li></ul></section>'+
@@ -1154,6 +1174,23 @@ V.privacy=function(){
   '<li>Delete your portfolio at any time from <a href="#portfolio">My portfolio</a>.</li>'+
   '<li>Under Malaysia’s Personal Data Protection Act 2010 you may ask to see or correct your personal data. <a href="#consultation">Contact Eduplan</a>.</li></ul></section>';
 };
+/* My profile (second layer): optional details asked after sign-in, never required. Name and WhatsApp fill in the
+   consultation and application forms when they are empty; status and interests help Eduplan's counsellors. */
+var PROF_STATUS=["Form 4 or Form 5 student","Waiting for SPM results","Finished SPM","In pre-university (Form 6, A-Level, foundation, matriculation)","Studying at a college or university"];
+var MY_STATES=["Johor","Kedah","Kelantan","Kuala Lumpur","Labuan","Melaka","Negeri Sembilan","Pahang","Penang","Perak","Perlis","Putrajaya","Sabah","Sarawak","Selangor","Terengganu"];
+function pfProfile(){var p=S.prof||{},fi=p.fields||[];
+ return '<p class="muted">Optional: fill in only what you want, and skip the rest. Your name and WhatsApp number are filled in on the consultation and application forms for you. Your status and interests help our counsellors suggest courses.</p>'+
+  '<div class="fields" id="pf-prof">'+
+  '<div class="field"><label for="pr-name">Your name <span class="hint">(optional)</span></label><input id="pr-name" type="text" data-prof="name" autocomplete="name" value="'+esc(p.name||"")+'"></div>'+
+  '<div class="field"><label for="pr-phone">WhatsApp number <span class="hint">(optional)</span></label><input id="pr-phone" data-prof="phone" type="tel" autocomplete="tel" placeholder="012-345 6789" value="'+esc(p.phone||"")+'"><span class="hint">For counsellor follow-ups and deadline reminders.</span></div>'+
+  '<div class="field"><label for="pr-status">Where are you now? <span class="hint">(optional)</span></label><select id="pr-status" data-prof="status"><option value="">Choose</option>'+PROF_STATUS.map(function(x){return '<option'+(p.status===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
+  '<div class="field"><label for="pr-region">Where would you like to study? <span class="hint">(optional)</span></label><select id="pr-region" data-prof="region"><option value="">Anywhere in Malaysia</option>'+MY_STATES.map(function(x){return '<option'+(p.region===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
+  (FAC.fields.length?'<fieldset class="field pfset"><legend class="legend">Fields you are interested in <span class="hint">(optional)</span></legend><div class="chips">'+FAC.fields.filter(function(f){return f.code!=="00";}).map(function(f){return '<label class="chip pchk"><input type="checkbox" data-proff="'+esc(f.code)+'"'+(fi.indexOf(f.code)>=0?' checked':'')+'> '+esc(f.name)+'</label>';}).join("")+'</div></fieldset>':'')+
+  '</div><p class="hint">Exam results are kept in My results above. Saved as you type'+(PF.s?' to your portfolio':' in this browser')+'.</p>';}
+document.addEventListener("change",function(ev){var t=ev.target;if(!t||!t.closest||!t.closest("#pf-prof"))return;S.prof=S.prof||{};
+ if(t.hasAttribute("data-proff")){var c=t.getAttribute("data-proff"),a=(S.prof.fields||[]).filter(function(x){return x!==c;});if(t.checked)a.push(c);S.prof.fields=a;}
+ else if(t.hasAttribute("data-prof"))S.prof[t.getAttribute("data-prof")]=t.value.trim();
+ store("eduplan-profile",S.prof);pfTouch("profile");});
 V.portfolio=function(){
  var head='<section class="stack"><span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
   (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'
@@ -1190,7 +1227,7 @@ V.portfolio=function(){
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
  return head+(PF.s?'':pfLogin())+
   '<div class="pfgrid">'+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor())+
-   pfCard("Scholarships for my results",pfScholarships(),"wide")+saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+'</div>'+
+   pfCard("Scholarships for my results",pfScholarships(),"wide")+pfCard("My profile",pfProfile())+saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+'</div>'+
   (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
 };
 
@@ -1253,7 +1290,7 @@ function render(keepScroll){
   if(HOST.owns(location.hash))return;
   /* The host page may have changed the shared state since this app last drew. */
   SAVED=store("eduplan-saved")||[];PF.s=store(PF_KEY);if(PF.s&&!(PF.s.token&&PF.s.exp>Date.now()))PF.s=null;
-  S.guide=store("eduplan-quiz")||S.guide;S.cons=store("eduplan-consult")||S.cons;S.flow=sget("eduplan-flow")||S.flow;S.pick=sget("eduplan-pick")||S.pick;
+  S.guide=store("eduplan-quiz")||S.guide;S.cons=store("eduplan-consult")||S.cons;S.prof=store("eduplan-profile")||S.prof;S.flow=sget("eduplan-flow")||S.flow;S.pick=sget("eduplan-pick")||S.pick;
  }
  var r=route();
  if(r==="faculty")setFlow("faculty");
