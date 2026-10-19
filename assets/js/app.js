@@ -1003,7 +1003,7 @@ function pfStart(){
 /* My results changed (assets/js/results.js): save it to the portfolio, fill the application's results, redraw. */
 window.addEventListener("eduplan:results",function(){
  pfTouch("results");
- var hx=applyExam();if(hx){S.app.v.h_results=RX.text(hx);if(S.app.err)delete S.app.err.h_results;applySave();}
+ var hx=applyExam();if(hx){S.app.v.h_results=RX.text(hx);var rv=RX.get().exams[hx];if(rv&&rv.v&&RX.has(hx))S.app.v.h_status=rv.v.kind;if(S.app.err)delete S.app.err.h_results;applySave();}
  if(app.querySelector("#rx,.prog,.paybox"))render(true);
 });
 document.addEventListener("visibilitychange",function(){
@@ -1162,6 +1162,7 @@ V.privacy=function(){
   '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, profile, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device.</li>'+
   '<li><b>Applications:</b> your form and documents are kept in a private folder that only Eduplan staff can open, and are shared with the university you apply to so it can process your application.</li>'+
   '<li><b>AI study assistant:</b> your messages are sent through Eduplan’s server to Anthropic’s Claude to write the reply. Please do not type your IC number, phone number or other personal details in the chat.</li>'+
+  '<li><b>Results slip:</b> when you upload it in My results, it is sent through Eduplan’s server to Anthropic’s Claude to read your subjects and grades. The slip itself is not stored; only the grades are kept, with a mark that they were read from your slip.</li>'+
   '<li><b>Consultation requests:</b> sent to Eduplan so a counsellor can contact you.</li></ul></section>'+
  '<section class="panel"><h2>How your account is protected</h2><ul class="reqlist">'+
   '<li>No passwords: you sign in with a 6-digit code sent to your email. The code works for 10 minutes and allows 5 tries.</li>'+

@@ -40,7 +40,10 @@ var KEY="eduplan-results";
 function load(){var r=null;try{r=JSON.parse(localStorage.getItem(KEY));}catch(e){}r=r&&typeof r==="object"?r:{};r.exams=r.exams&&typeof r.exams==="object"?r.exams:{};return r;}
 var R=load(),UI={cur:null,other:null};
 function save(){try{localStorage.setItem(KEY,JSON.stringify(R));}catch(e){}window.dispatchEvent(new CustomEvent("eduplan:results"));}
-function has(id){var x=R.exams[id];return !!(x&&((x.g&&x.g.length)||(x.cgpa!==""&&x.cgpa!=null)));}
+/* On the live website, results count only when they were read from the student's results slip (apps-script/Results.gs);
+   the preview (published artifact) cannot reach the server, so typed results are allowed there to try the website. */
+function live(){return !!(window.EDUPLAN_API_URL&&window.fetch&&!window.EDUPLAN_SHEET_DATA);}
+function has(id){var x=R.exams[id];return !!(x&&(!live()||x.v)&&((x.g&&x.g.length)||(x.cgpa!==""&&x.cgpa!=null)));}
 function taken(){return EXAMS.filter(function(e){return has(e.id);}).map(function(e){return e.id;});}
 function grades(id){var x=R.exams[id];return x&&x.g?x.g:[];}
 function cgpa(id){var x=R.exams[id];return x&&x.cgpa!==""&&x.cgpa!=null?Number(x.cgpa):null;}
@@ -51,11 +54,11 @@ function aCount(id){var e=exam(id);return e&&!e.cgpa&&has(id)?countIn(id,e.a):nu
 function summary(id){var e=exam(id);if(!e||!has(id))return "";if(e.cgpa)return "CGPA "+R.exams[id].cgpa;
  return e.grades.map(function(g){var n=countIn(id,[g]);return n?n+" "+g:"";}).filter(Boolean).join(" · ");}
 /* Plain text for the application: one subject per line. */
-function text(id){var e=exam(id);if(!e||!has(id))return "";if(e.cgpa)return "CGPA "+R.exams[id].cgpa;
- return grades(id).slice().sort(function(a,b){return e.grades.indexOf(a[1])-e.grades.indexOf(b[1]);}).map(function(s){return s[0]+" "+s[1];}).join("\n");}
-function setGrade(id,subj,g){subj=String(subj||"").trim();if(!subj)return;var x=R.exams[id]=R.exams[id]||{g:[]};x.g=(x.g||[]).filter(function(s){return norm(s[0])!==norm(subj);});
+function text(id){var e=exam(id);if(!e||!has(id))return "";var v=R.exams[id].v,vt=v?"\nVerified by AI from the "+(v.kind==="Trial"?"trial":"official")+" results slip ("+day(v.at)+")":"";if(e.cgpa)return "CGPA "+R.exams[id].cgpa+vt;
+ return grades(id).slice().sort(function(a,b){return e.grades.indexOf(a[1])-e.grades.indexOf(b[1]);}).map(function(s){return s[0]+" "+s[1];}).join("\n")+vt;}
+function setGrade(id,subj,g){subj=String(subj||"").trim();if(!subj||live())return;var x=R.exams[id]=R.exams[id]||{g:[]};x.g=(x.g||[]).filter(function(s){return norm(s[0])!==norm(subj);});
  if(g)x.g.push([subj,g]);save();}
-function setCgpa(id,v){var n=parseFloat(v);R.exams[id]={cgpa:isNaN(n)?"":String(Math.max(0,Math.min(4,n)))};save();}
+function setCgpa(id,v){if(live())return;var n=parseFloat(v);R.exams[id]={cgpa:isNaN(n)?"":String(Math.max(0,Math.min(4,n)))};save();}
 function removeExam(id){delete R.exams[id];if(UI.cur===id)UI.cur=null;save();}
 /* Another device's newer copy (portfolio sync). */
 function use(d){R=d&&typeof d==="object"?d:{};R.exams=R.exams||{};try{localStorage.setItem(KEY,JSON.stringify(R));}catch(e){}}
@@ -149,9 +152,46 @@ function badge(m){if(!m)return null;
 
 /* ---------- Editor (My portfolio and the application form) ----------
    fixed: show one exam only (the application form's "Highest qualification"). */
+var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function day(t){var d=new Date(t);return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear();}
+function session(){try{var x=JSON.parse(localStorage.getItem("eduplan-session"));return x&&x.token&&x.exp>Date.now()?x:null;}catch(e){return null;}}
+var RX_ERR={not_slip:"This does not look like a results slip. Upload a clear photo or PDF of your results slip.",
+ wrong_exam:"This slip is for a different exam. Choose the right exam above, or upload the right slip.",
+ not_official:"This looks like a trial or school report, not the official results. Choose Trial results, or upload the official slip.",
+ unreadable:"The grades could not be read clearly. Upload a sharper photo with the whole slip in view.",
+ too_large:"The file is larger than 5 MB. Upload a smaller photo or PDF.",signed_out:"Please sign in again, then upload your slip.",
+ daily_limit:"Too many slips were checked today. Please try again tomorrow, or ask a counsellor.",busy:"The checker is busy. Please try again in a minute.",
+ not_configured:"Reading results slips is not available yet. Please ask a counsellor.",net:"Could not reach Eduplan. Check your connection and try again.",bad_request:"Choose a photo (JPG, PNG) or PDF of your slip."};
+/* Live website: the student uploads the slip and Claude reads it (Results.gs); the grades are shown, not editable. */
+function slipBox(id,e){var x=R.exams[id],v=x&&x.v,ok=has(id);
+ var shown=!ok?'':'<div class="rxver"><span class="rxbadge">✓ Verified by AI from your '+(v.kind==="Trial"?'trial':'official')+' results slip · '+esc(day(v.at))+'</span>'+
+  (v.name?'<span class="hint">Name on the slip: <span data-notr>'+esc(v.name)+'</span></span>':'')+
+  (e.cgpa?'<p class="rxsum"><strong>CGPA '+esc(x.cgpa)+'</strong></p>':'<ul class="rxlist">'+grades(id).map(function(sg){return '<li><span>'+esc(sg[0])+'</span><b data-notr>'+esc(sg[1])+'</b></li>';}).join("")+'</ul>')+
+  '<p class="hint">These grades come from your slip and cannot be typed in or changed here. Upload a new slip to replace them, for example when your official results come out. If something was read wrongly, ask a counsellor.</p></div>';
+ if(!session())return shown+'<p class="hint">'+(ok?'':'Your '+esc(e.id)+' results are read from your results slip by AI, so they cannot be typed in. ')+'<a href="#portfolio">Sign in</a> to upload your slip.</p>';
+ if(UI.busy)return shown+'<p class="note" role="status">Reading your slip… This takes up to a minute.</p>';
+ return shown+'<div class="rxup"><span class="sl">'+(ok?'Upload a new slip':'Upload your '+esc(e.id)+' results slip')+'</span>'+
+  '<div class="field"><label for="rx-kind">Which results slip?</label><select id="rx-kind"><option value="Official"'+(UI.kind!=="Trial"?' selected':'')+'>Official results</option><option value="Trial"'+(UI.kind==="Trial"?' selected':'')+'>Trial results (school trial exam)</option></select></div>'+
+  '<div class="field"><label for="rx-file">Photo or PDF of the slip</label><input id="rx-file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="hint">Max 5 MB. AI reads your grades; the slip itself is not stored.</span></div>'+
+  (UI.err?'<p class="err" role="alert">'+esc(UI.err)+'</p>':'')+'<div class="row"><button type="button" class="btn" data-rx-read="'+esc(id)+'">Read my results</button></div></div>';}
+function readSlip(id){var f=document.getElementById("rx-file"),k=document.getElementById("rx-kind"),file=f&&f.files&&f.files[0],ss=session();
+ UI.kind=k?k.value:"Official";UI.err="";
+ if(!file){UI.err="Choose a photo or PDF of your slip first.";return save();}
+ if(file.size>5*1024*1024){UI.err=RX_ERR.too_large;return save();}
+ if(!ss){UI.err=RX_ERR.signed_out;return save();}
+ var rd=new FileReader();rd.onload=function(){var data=String(rd.result).split(",")[1]||"";UI.busy=true;save();
+  fetch(window.EDUPLAN_API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"results_read",token:ss.token,exam:id,kind:UI.kind,file:{type:file.type,data:data}})})
+   .then(function(r){return r.json();}).then(function(d){UI.busy=false;
+    if(!d||!d.ok){UI.err=RX_ERR[d&&d.error]||RX_ERR.busy;return save();}
+    var x={v:{kind:d.kind,at:d.at,sig:d.sig,name:d.name||"",year:d.year||""}};if(d.g)x.g=d.g;if(d.cgpa!=null)x.cgpa=d.cgpa;
+    R.exams[id]=x;UI.err="";save();})
+   .catch(function(){UI.busy=false;UI.err=RX_ERR.net;save();});};
+ rd.readAsDataURL(file);}
 function editor(fixed){
  var list=taken(),id=fixed||UI.cur||(list[0]||"SPM"),e=exam(id);if(!e)return "";
  UI.cur=id;
+ if(live()){var tb=fixed?'':'<div class="rxtabs" role="group" aria-label="Exam">'+EXAMS.map(function(x){return '<button type="button" class="chip" data-rx-exam="'+esc(x.id)+'" aria-pressed="'+(x.id===id)+'">'+esc(x.label||x.id)+(has(x.id)?' ✓':'')+'</button>';}).join("")+'</div>';
+  return '<div class="rx" id="rx">'+tb+slipBox(id,e)+(has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';}
  var tabs=fixed?'':'<div class="rxtabs" role="group" aria-label="Exam">'+EXAMS.map(function(x){return '<button type="button" class="chip" data-rx-exam="'+esc(x.id)+'" aria-pressed="'+(x.id===id)+'">'+esc(x.label||x.id)+(has(x.id)?' ✓':'')+'</button>';}).join("")+'</div>';
  var body;
  if(e.cgpa){var c=R.exams[id]&&R.exams[id].cgpa;
@@ -165,12 +205,13 @@ function editor(fixed){
      '<select class="rxadd" data-rx-add="'+esc(g)+'" aria-label="Add a subject with grade '+esc(g)+'"><option value="">+ Add subject</option>'+free.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join("")+
      '<option value="__other">Other subject…</option></select>')+'</div></div>';}).join("")+'</div>';}
  var sum=has(id)?'<p class="rxsum"><strong>'+esc(e.id)+':</strong> '+esc(summary(id))+(e.cgpa?'':' · <strong>'+aCount(id)+' A'+(aCount(id)===1?'':'s')+'</strong>')+'</p>':'';
- return '<div class="rx" id="rx">'+tabs+body+sum+
+ return '<div class="rx" id="rx">'+tabs+'<p class="hint">Preview: type your results here to try the website. On the live Eduplan website, results are read from your results slip by AI and cannot be typed in.</p>'+body+sum+
   (has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';
 }
 function refocus(sel){var el=document.querySelector(sel);if(el)el.focus();}
 document.addEventListener("click",function(ev){
- var t=ev.target.closest&&ev.target.closest("[data-rx-exam],[data-rx-del],[data-rx-remove],[data-rx-otherok]");if(!t)return;
+ var t=ev.target.closest&&ev.target.closest("[data-rx-exam],[data-rx-del],[data-rx-remove],[data-rx-otherok],[data-rx-read]");if(!t)return;
+ if(t.hasAttribute("data-rx-read")){if(!UI.busy)readSlip(t.getAttribute("data-rx-read"));return;}
  if(t.hasAttribute("data-rx-exam")){UI.cur=t.getAttribute("data-rx-exam");UI.other=null;save();refocus('[data-rx-exam="'+UI.cur+'"]');}
  else if(t.hasAttribute("data-rx-del")){setGrade(UI.cur,t.getAttribute("data-rx-del"),null);refocus("#rx select");}
  else if(t.hasAttribute("data-rx-remove")){removeExam(t.getAttribute("data-rx-remove"));refocus("#rx button");}
@@ -311,6 +352,6 @@ function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
 /* One line about the student's results, for the AI study assistant. */
 function forChat(){return taken().map(function(id){var e=exam(id);return id+": "+(e.cgpa?summary(id):summary(id)+" ("+aCount(id)+" A grades; "+text(id).replace(/\n/g,", ")+")");}).join("; ");}
 
-window.EDUPLAN_RESULTS={schFor:schFor,pickOf:pickOf,feeBase:feeBase,cut:cut,awardShort:awardShort,payHtml:payHtml,scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
+window.EDUPLAN_RESULTS={live:live,schFor:schFor,pickOf:pickOf,feeBase:feeBase,cut:cut,awardShort:awardShort,payHtml:payHtml,scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
  summary:summary,text:text,editor:editor,groupsFor:groupsFor,checkExam:checkExam,match:match,badge:badge,current:function(){return UI.cur;},setCurrent:function(id){UI.cur=id;}};
 })();

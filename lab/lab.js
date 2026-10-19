@@ -378,10 +378,12 @@ function examSelect(v){var grps=[];EXAMS.forEach(function(e){if(grps.indexOf(e.g
 function examMatch(s,id){if(s.qual===id)return true;var e=exam(id);
  return e.cgpa&&exam(s.qual).cgpa&&s.qual===exam(s.qual).id&&new RegExp("\\b"+id+"\\b","i").test(s.min||"");}
 /* With the exam in My results, the search uses those results (kept until the student changes them there). */
-function myRes(q){return RX.has(q.qual)?String(isCgpa(q.qual)?RX.cgpa(q.qual):RX.aCount(q.qual)):q.res;}
+function myRes(q){return RX.has(q.qual)?String(isCgpa(q.qual)?RX.cgpa(q.qual):RX.aCount(q.qual)):RX.live()?"":q.res;}
 function resultField(q){
  if(RX.has(q.qual))return '<div class="sf mine"><span class="sl">From My results</span><span class="mres">'+esc(RX.summary(q.qual))+(isCgpa(q.qual)?'':' → <span>'+esc(resText({qual:q.qual,res:RX.aCount(q.qual)}))+'</span>')+'</span>'+
   '<a class="hint" href="'+esc(mainLink("#portfolio"))+'">Change in My results</a></div>';
+ /* Live website: results come only from the student's slip (My results), never typed here. */
+ if(RX.live())return '<div class="sf mine"><span class="sl">Your results</span><span class="mres">Not added yet</span><a class="hint" href="'+esc(mainLink("#portfolio"))+'">Upload your results slip</a></div>';
  if(isCgpa(q.qual))return '<label class="sf" for="s-res"><span class="sl">Your CGPA</span><input id="s-res" type="number" inputmode="decimal" min="0" max="4" step="0.01" placeholder="e.g. 3.85" value="'+esc(q.res==null?"":q.res)+'"></label>';
  var e=exam(q.qual),o=[["","Not out yet"]];for(var i=0;i<=e.max;i++)o.push([String(i),i+" A"+(i===1?"":"s")]);
  return sel("s-res","Number of A grades",o,q.res==null||+q.res>e.max?"":q.res).replace('</label>','<span class="hint">Counts as A: '+esc(e.a.join(", "))+'. <a href="'+esc(mainLink("#portfolio"))+'">Save your results</a></span></label>');

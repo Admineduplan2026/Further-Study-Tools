@@ -210,6 +210,8 @@ function accountSave_(body) {
       if (!v || typeof v !== 'object' || Array.isArray(v)) return;
       var at = Math.min(Number(v.at) || 0, now + 60000);
       if (!at) return;  // never changed on that device
+      // My results: only the grades read from a results slip for this student are kept (Results.gs).
+      if (k === 'results') v = { exams: resultsVerified_(v.exams, String(sh.getRange(s.row, ACCOUNT_COL.email).getValue()).toLowerCase()), at: v.at };
       if (!cur[k] || at > (Number(cur[k].at) || 0)) { v.at = at; cur[k] = v; }
     });
     var json = JSON.stringify(cur);
