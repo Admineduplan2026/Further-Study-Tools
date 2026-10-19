@@ -251,9 +251,9 @@ function searchBox(){
    only the programmes they qualify for. Without saved results, a link to add them. */
 function autoResults(){var t=RX.taken(),port=esc(mainLink("#portfolio"));
  return '<div class="automine"><span class="sl">Auto-fill my results</span>'+(t.length?
-  '<span class="hint">From My results in your portfolio.</span><ul class="amres">'+t.map(function(id){var e=exam(id);return '<li><b>'+esc(e.label||id)+'</b><span>'+esc(RX.summary(id))+'</span></li>';}).join("")+'</ul>'+
-  '<div class="amrow"><label class="mine"><input type="checkbox" id="q-mine"'+(L.mine?' checked':'')+'> Only programmes my results qualify for</label><a class="hint" href="'+port+'">Change in My results</a></div>'
-  :'<span class="hint">Your exam results are not in My portfolio yet. <a href="'+port+'">Add your exam results</a> once, and they are filled in here for you.</span>')+'</div>';}
+  '<span class="hint">From My results in your portfolio.</span><ul class="amres">'+t.map(function(id){var e=exam(id);return '<li><b>'+esc(e.label||id)+'</b><span>'+esc(RX.letters(id))+(RX.locked()?' 🔒':'')+'</span></li>';}).join("")+'</ul>'+
+  '<div class="amrow"><label class="mine"><input type="checkbox" id="q-mine"'+(L.mine?' checked':'')+'> Only programmes my results qualify for</label><a class="hint" href="'+port+'">'+(RX.locked()?'Upload a new slip in My results':'Change in My results')+'</a></div>'
+  :RX.locked()?RX.snapField("SPM",true):'<span class="hint">Your exam results are not in My portfolio yet. <a href="'+port+'">Add your exam results</a> once, and they are filled in here for you.</span>')+'</div>';}
 function quizBox(){
  var Q=QUIZ.questions,n=Q.length,q=S.quiz,picks=quizResult();
  if(L.quizStep==null&&picks.length)return '<div class="sbox quiz"><span class="sl">Faculties that suit your interests</span><div class="lchips">'+picks.map(function(c){return '<button type="button" class="lchip big" data-lfac="'+esc(c)+'">'+esc(facLabel(c))+' '+ARROW+'</button>';}).join("")+'</div>'+
@@ -380,10 +380,11 @@ function examMatch(s,id){if(s.qual===id)return true;var e=exam(id);
 /* With the exam in My results, the search uses those results (kept until the student changes them there). */
 function myRes(q){return RX.has(q.qual)?String(isCgpa(q.qual)?RX.cgpa(q.qual):RX.aCount(q.qual)):RX.live()?"":q.res;}
 function resultField(q){
- if(RX.has(q.qual))return '<div class="sf mine"><span class="sl">From My results</span><span class="mres">'+esc(RX.summary(q.qual))+(isCgpa(q.qual)?'':' → <span>'+esc(resText({qual:q.qual,res:RX.aCount(q.qual)}))+'</span>')+'</span>'+
-  '<a class="hint" href="'+esc(mainLink("#portfolio"))+'">Change in My results</a></div>';
+ if(RX.has(q.qual))return '<div class="sf mine"><span class="sl">'+(RX.locked()?'🔒 Read from your results slip':'From My results')+'</span><span class="mres">'+esc(RX.letters(q.qual))+(isCgpa(q.qual)?'':' → <span>'+esc(resText({qual:q.qual,res:RX.aCount(q.qual)}))+'</span>')+'</span>'+
+  '<a class="hint" href="'+esc(mainLink("#portfolio"))+'">'+(RX.locked()?'Upload a new slip in My results':'Change in My results')+'</a></div>';
+ /* Results come only from a photo of the slip when AI can read it (live website, or the preview with Claude). */
+ if(RX.locked())return RX.snapField(q.qual);
  /* Live website: results come only from the student's slip (My results), never typed here. */
- if(RX.live())return '<div class="sf mine"><span class="sl">Your results</span><span class="mres">Not added yet</span><a class="hint" href="'+esc(mainLink("#portfolio"))+'">Upload your results slip</a></div>';
  if(isCgpa(q.qual))return '<label class="sf" for="s-res"><span class="sl">Your CGPA</span><input id="s-res" type="number" inputmode="decimal" min="0" max="4" step="0.01" placeholder="e.g. 3.85" value="'+esc(q.res==null?"":q.res)+'"></label>';
  var e=exam(q.qual),o=[["","Not out yet"]];for(var i=0;i<=e.max;i++)o.push([String(i),i+" A"+(i===1?"":"s")]);
  return sel("s-res","Number of A grades",o,q.res==null||+q.res>e.max?"":q.res).replace('</label>','<span class="hint">Counts as A: '+esc(e.a.join(", "))+'. <a href="'+esc(mainLink("#portfolio"))+'">Save your results</a></span></label>');

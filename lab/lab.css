@@ -396,3 +396,9 @@ body.introopen{overflow:hidden}
 @keyframes iout{to{opacity:0;transform:scale(1.03)}}
 @media (max-width:720px){.ijr{grid-template-columns:repeat(2,minmax(0,1fr))}.icta{width:100%;text-align:center;position:sticky;bottom:max(12px,env(safe-area-inset-bottom));box-shadow:0 8px 24px rgba(0,0,0,.25)}}
 @media (prefers-reduced-motion:reduce){.intro,.intro *,.intro .iblobs i{animation:none!important}}
+.sf.snap{cursor:default;gap:6px}
+.snaprow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.snaprow select{border:1px solid var(--line);border-radius:10px;padding:6px 8px;font:inherit;font-size:14px;background:var(--card);color:var(--ink);width:auto;min-width:0}
+.snapbtn{cursor:pointer;white-space:nowrap}
+.sf.snap .err{color:var(--err,#b3261e);font-size:13px}
+.automine .sf.snap{border:0;padding:0;background:transparent}

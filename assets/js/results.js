@@ -43,7 +43,18 @@ function save(){try{localStorage.setItem(KEY,JSON.stringify(R));}catch(e){}windo
 /* On the live website, results count only when they were read from the student's results slip (apps-script/Results.gs);
    the preview (published artifact) cannot reach the server, so typed results are allowed there to try the website. */
 function live(){return !!(window.EDUPLAN_API_URL&&window.fetch&&!window.EDUPLAN_SHEET_DATA);}
-function has(id){var x=R.exams[id];return !!(x&&(!live()||x.v)&&((x.g&&x.g.length)||(x.cgpa!==""&&x.cgpa!=null)));}
+/* In the preview, Claude reads the slip through the artifact's own "sample" capability (images); results can be typed
+   there only when that is not available either. */
+var AI={ok:null};
+function checkAI(){if(AI.p)return AI.p;var c=window.claude;if(live()||!c||typeof c.use!=="function"){AI.ok=false;return AI.p=Promise.resolve(false);}
+ return AI.p=c.use("sample").then(function(sm){if(!sm||!sm.limits)return false;AI.sm=sm;return sm.limits().then(function(l){return !!(l&&l.images);},function(){return false;});},function(){return false;})
+  .then(function(ok){AI.ok=ok;if(ok)save();return ok;});}
+function locked(){return live()||AI.ok===true;}   /* results only from a slip */
+function has(id){var x=R.exams[id];return !!(x&&(!locked()||x.v)&&((x.g&&x.g.length)||(x.cgpa!==""&&x.cgpa!=null)));}
+/* Grades counted by letter: "5A · 2B · 1C" (SPM A+, A and A- are all A; UEC A1, A2 are A; B3 to B6 are B). */
+function letters(id){var e=exam(id);if(!e||!has(id))return "";if(e.cgpa)return "CGPA "+R.exams[id].cgpa;var n={},order=[];
+ grades(id).forEach(function(s){var l=String(s[1]).charAt(0);if(!n[l]){n[l]=0;order.push(l);}n[l]++;});
+ order.sort(function(a,b){return "ABCDEFGU".indexOf(a)-"ABCDEFGU".indexOf(b);});return order.map(function(l){return n[l]+l;}).join(" · ");}
 function taken(){return EXAMS.filter(function(e){return has(e.id);}).map(function(e){return e.id;});}
 function grades(id){var x=R.exams[id];return x&&x.g?x.g:[];}
 function cgpa(id){var x=R.exams[id];return x&&x.cgpa!==""&&x.cgpa!=null?Number(x.cgpa):null;}
@@ -56,9 +67,9 @@ function summary(id){var e=exam(id);if(!e||!has(id))return "";if(e.cgpa)return "
 /* Plain text for the application: one subject per line. */
 function text(id){var e=exam(id);if(!e||!has(id))return "";var v=R.exams[id].v,vt=v?"\nVerified by AI from the "+(v.kind==="Trial"?"trial":"official")+" results slip ("+day(v.at)+")":"";if(e.cgpa)return "CGPA "+R.exams[id].cgpa+vt;
  return grades(id).slice().sort(function(a,b){return e.grades.indexOf(a[1])-e.grades.indexOf(b[1]);}).map(function(s){return s[0]+" "+s[1];}).join("\n")+vt;}
-function setGrade(id,subj,g){subj=String(subj||"").trim();if(!subj||live())return;var x=R.exams[id]=R.exams[id]||{g:[]};x.g=(x.g||[]).filter(function(s){return norm(s[0])!==norm(subj);});
+function setGrade(id,subj,g){subj=String(subj||"").trim();if(!subj||locked())return;var x=R.exams[id]=R.exams[id]||{g:[]};x.g=(x.g||[]).filter(function(s){return norm(s[0])!==norm(subj);});
  if(g)x.g.push([subj,g]);save();}
-function setCgpa(id,v){if(live())return;var n=parseFloat(v);R.exams[id]={cgpa:isNaN(n)?"":String(Math.max(0,Math.min(4,n)))};save();}
+function setCgpa(id,v){if(locked())return;var n=parseFloat(v);R.exams[id]={cgpa:isNaN(n)?"":String(Math.max(0,Math.min(4,n)))};save();}
 function removeExam(id){delete R.exams[id];if(UI.cur===id)UI.cur=null;save();}
 /* Another device's newer copy (portfolio sync). */
 function use(d){R=d&&typeof d==="object"?d:{};R.exams=R.exams||{};try{localStorage.setItem(KEY,JSON.stringify(R));}catch(e){}}
@@ -168,29 +179,62 @@ function slipBox(id,e){var x=R.exams[id],v=x&&x.v,ok=has(id);
   (v.name?'<span class="hint">Name on the slip: <span data-notr>'+esc(v.name)+'</span></span>':'')+
   (e.cgpa?'<p class="rxsum"><strong>CGPA '+esc(x.cgpa)+'</strong></p>':'<ul class="rxlist">'+grades(id).map(function(sg){return '<li><span>'+esc(sg[0])+'</span><b data-notr>'+esc(sg[1])+'</b></li>';}).join("")+'</ul>')+
   '<p class="hint">These grades come from your slip and cannot be typed in or changed here. Upload a new slip to replace them, for example when your official results come out. If something was read wrongly, ask a counsellor.</p></div>';
- if(!session())return shown+'<p class="hint">'+(ok?'':'Your '+esc(e.id)+' results are read from your results slip by AI, so they cannot be typed in. ')+'<a href="#portfolio">Sign in</a> to upload your slip.</p>';
+if(live()&&!session())return shown+'<p class="hint">'+(ok?'':'Your '+esc(e.id)+' results are read from your results slip by AI, so they cannot be typed in. ')+'<a href="#portfolio">Sign in</a> to upload your slip.</p>';
  if(UI.busy)return shown+'<p class="note" role="status">Reading your slip… This takes up to a minute.</p>';
  return shown+'<div class="rxup"><span class="sl">'+(ok?'Upload a new slip':'Upload your '+esc(e.id)+' results slip')+'</span>'+
   '<div class="field"><label for="rx-kind">Which results slip?</label><select id="rx-kind"><option value="Official"'+(UI.kind!=="Trial"?' selected':'')+'>Official results</option><option value="Trial"'+(UI.kind==="Trial"?' selected':'')+'>Trial results (school trial exam)</option></select></div>'+
-  '<div class="field"><label for="rx-file">Photo or PDF of the slip</label><input id="rx-file" type="file" accept="image/jpeg,image/png,image/webp,application/pdf"><span class="hint">Max 5 MB. AI reads your grades; the slip itself is not stored.</span></div>'+
+  '<div class="field"><label for="rx-file">Photo or PDF of the slip</label><input id="rx-file" type="file" accept="'+(live()?'image/jpeg,image/png,image/webp,application/pdf':'image/*')+'" capture="environment"><span class="hint">Max 5 MB. AI reads your grades; the slip itself is not stored.</span></div>'+
   (UI.err?'<p class="err" role="alert">'+esc(UI.err)+'</p>':'')+'<div class="row"><button type="button" class="btn" data-rx-read="'+esc(id)+'">Read my results</button></div></div>';}
-function readSlip(id){var f=document.getElementById("rx-file"),k=document.getElementById("rx-kind"),file=f&&f.files&&f.files[0],ss=session();
- UI.kind=k?k.value:"Official";UI.err="";
+/* Reads a results slip: on the live website through Eduplan's server (signed, Results.gs); in the preview through
+   Claude in the artifact. Either way the grades are checked against the exam's grade list and then locked. */
+var SLIP_PROMPT="You read a Malaysian student's exam results slip for Eduplan, a study guidance service. Read exactly what is printed; never guess. "+
+ "Reply with JSON only: {\"is_results_slip\":boolean,\"exam\":\"SPM|UEC|STPM|IGCSE|O-Level|A-Level|Foundation|Matriculation|Diploma|Other\",\"slip_kind\":\"official|trial|unclear\","+
+ "\"candidate_name\":string,\"year\":string,\"subjects\":[{\"subject\":string,\"grade\":string}],\"cgpa\":number|null,\"problems\":string}. "+
+ "is_results_slip is true only for a results slip, statement or transcript of an exam. slip_kind official = results from the examining body (for example the Lembaga Peperiksaan SPM slip); trial = a school trial or mock exam report. "+
+ "Give every subject with the grade exactly as printed (SPM: A+, A, A-, B+, B, C+, C, D, E, G, TH), subject names in English. cgpa only for foundation, matriculation or diploma transcripts. Leave out any grade you cannot read with certainty and say so in problems.";
+function useSlip(id,kind,r,signed){var e=exam(id);
+ if(!r||!r.is_results_slip)return {error:"not_slip"};
+ if(r.exam!==id)return {error:"wrong_exam"};
+ if(kind==="Official"&&r.slip_kind!=="official")return {error:"not_official"};
+ var x={v:{kind:kind,at:Date.now(),name:String(r.candidate_name||"").slice(0,120),year:String(r.year||"").slice(0,20)}};
+ if(e.cgpa){var c=Number(r.cgpa);if(!(c>=0&&c<=4))return {error:"unreadable"};x.cgpa=Math.round(c*100)/100;}
+ else{x.g=(r.subjects||[]).map(function(t){return [String(t.subject||"").trim().slice(0,80),String(t.grade||"").trim().toUpperCase()];})
+   .filter(function(t){return t[0]&&e.grades.indexOf(t[1])>-1;});if(!x.g.length)return {error:"unreadable"};}
+ return {x:x};}
+function readFile(id,file,kind){UI.err="";UI.kind=kind;UI.cur=id;
  if(!file){UI.err="Choose a photo or PDF of your slip first.";return save();}
  if(file.size>5*1024*1024){UI.err=RX_ERR.too_large;return save();}
- if(!ss){UI.err=RX_ERR.signed_out;return save();}
+ function done(x){R.exams[id]=x;UI.busy=false;UI.err="";save();}
+ function fail(code){UI.busy=false;UI.err=RX_ERR[code]||RX_ERR.busy;save();}
+ if(!live()){if(!AI.sm||!/^image\//.test(file.type))return fail(AI.sm?"bad_request":"not_configured");
+  UI.busy=true;save();
+  AI.sm.json(SLIP_PROMPT+" The student says this is their "+kind.toLowerCase()+" "+id+" results.",{images:[file],modelTier:"complex",cache:false})
+   .then(function(r){var u=useSlip(id,kind,r);if(u.error)return fail(u.error);done(u.x);},function(err){fail(err&&err.code==="rate_limited"?"daily_limit":err&&err.code==="image_rejected"?"bad_request":"busy");});
+  return;}
+ var ss=session();if(!ss)return fail("signed_out");
  var rd=new FileReader();rd.onload=function(){var data=String(rd.result).split(",")[1]||"";UI.busy=true;save();
-  fetch(window.EDUPLAN_API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"results_read",token:ss.token,exam:id,kind:UI.kind,file:{type:file.type,data:data}})})
-   .then(function(r){return r.json();}).then(function(d){UI.busy=false;
-    if(!d||!d.ok){UI.err=RX_ERR[d&&d.error]||RX_ERR.busy;return save();}
-    var x={v:{kind:d.kind,at:d.at,sig:d.sig,name:d.name||"",year:d.year||""}};if(d.g)x.g=d.g;if(d.cgpa!=null)x.cgpa=d.cgpa;
-    R.exams[id]=x;UI.err="";save();})
-   .catch(function(){UI.busy=false;UI.err=RX_ERR.net;save();});};
+  fetch(window.EDUPLAN_API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"results_read",token:ss.token,exam:id,kind:kind,file:{type:file.type,data:data}})})
+   .then(function(r){return r.json();}).then(function(d){if(!d||!d.ok)return fail(d&&d.error);
+    var x={v:{kind:d.kind,at:d.at,sig:d.sig,name:d.name||"",year:d.year||""}};if(d.g)x.g=d.g;if(d.cgpa!=null)x.cgpa=d.cgpa;done(x);})
+   .catch(function(){fail("net");});};
  rd.readAsDataURL(file);}
+function readSlip(id){var f=document.getElementById("rx-file"),k=document.getElementById("rx-kind");readFile(id,f&&f.files&&f.files[0],k?k.value:"Official");}
+/* The photo box in the search forms: take or choose a photo of the slip; the grades fill in and lock. */
+function snapField(id,pick){var e=exam(id)||exam("SPM"),grade=EXAMS.filter(function(x){return !x.cgpa;});
+ if(live()&&!session())return '<div class="sf snap"><span class="sl">Your results</span><span class="hint">Your grades are read from a photo of your results slip. <a href="#portfolio">Sign in</a> to upload it.</span></div>';
+ return '<div class="sf snap"><span class="sl">Your results</span>'+
+  (UI.busy?'<span class="note" role="status">Reading your slip… This takes up to a minute.</span>':
+  '<div class="snaprow">'+(pick?'<select data-snap-exam aria-label="Exam">'+grade.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===e.id?' selected':'')+'>'+esc(x.label||x.id)+'</option>';}).join("")+'</select>':'')+
+  '<select data-snap-kind aria-label="Which results slip?"><option value="Official"'+(UI.kind!=="Trial"?' selected':'')+'>Official results</option><option value="Trial"'+(UI.kind==="Trial"?' selected':'')+'>Trial results</option></select>'+
+  '<label class="btn sm snapbtn">📷 Photo of my results slip<input type="file" accept="'+(live()?'image/*,application/pdf':'image/*')+'" capture="environment" data-snap="'+esc(e.id)+'" hidden></label></div>'+
+  '<span class="hint">AI reads your grades and fills them in. They are locked: they cannot be typed in or changed.</span>')+
+  (UI.err&&!UI.busy?'<span class="err" role="alert">'+esc(UI.err)+'</span>':'')+'</div>';}
+document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute("data-snap"))return;var box=t.closest(".snap"),k=box&&box.querySelector("[data-snap-kind]"),x=box&&box.querySelector("[data-snap-exam]");
+ readFile(x?x.value:t.getAttribute("data-snap"),t.files&&t.files[0],k?k.value:"Official");});
 function editor(fixed){
  var list=taken(),id=fixed||UI.cur||(list[0]||"SPM"),e=exam(id);if(!e)return "";
  UI.cur=id;
- if(live()){var tb=fixed?'':'<div class="rxtabs" role="group" aria-label="Exam">'+EXAMS.map(function(x){return '<button type="button" class="chip" data-rx-exam="'+esc(x.id)+'" aria-pressed="'+(x.id===id)+'">'+esc(x.label||x.id)+(has(x.id)?' ✓':'')+'</button>';}).join("")+'</div>';
+ if(locked()){var tb=fixed?'':'<div class="rxtabs" role="group" aria-label="Exam">'+EXAMS.map(function(x){return '<button type="button" class="chip" data-rx-exam="'+esc(x.id)+'" aria-pressed="'+(x.id===id)+'">'+esc(x.label||x.id)+(has(x.id)?' ✓':'')+'</button>';}).join("")+'</div>';
   return '<div class="rx" id="rx">'+tb+slipBox(id,e)+(has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';}
  var tabs=fixed?'':'<div class="rxtabs" role="group" aria-label="Exam">'+EXAMS.map(function(x){return '<button type="button" class="chip" data-rx-exam="'+esc(x.id)+'" aria-pressed="'+(x.id===id)+'">'+esc(x.label||x.id)+(has(x.id)?' ✓':'')+'</button>';}).join("")+'</div>';
  var body;
@@ -205,7 +249,7 @@ function editor(fixed){
      '<select class="rxadd" data-rx-add="'+esc(g)+'" aria-label="Add a subject with grade '+esc(g)+'"><option value="">+ Add subject</option>'+free.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join("")+
      '<option value="__other">Other subject…</option></select>')+'</div></div>';}).join("")+'</div>';}
  var sum=has(id)?'<p class="rxsum"><strong>'+esc(e.id)+':</strong> '+esc(summary(id))+(e.cgpa?'':' · <strong>'+aCount(id)+' A'+(aCount(id)===1?'':'s')+'</strong>')+'</p>':'';
- return '<div class="rx" id="rx">'+tabs+'<p class="hint">Preview: type your results here to try the website. On the live Eduplan website, results are read from your results slip by AI and cannot be typed in.</p>'+body+sum+
+ return '<div class="rx" id="rx">'+tabs+(AI.ok===null?'':'<p class="hint">Preview: type your results here to try the website. On the live Eduplan website, results are read from your results slip by AI and cannot be typed in.</p>')+body+sum+
   (has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';
 }
 function refocus(sel){var el=document.querySelector(sel);if(el)el.focus();}
@@ -352,6 +396,7 @@ function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
 /* One line about the student's results, for the AI study assistant. */
 function forChat(){return taken().map(function(id){var e=exam(id);return id+": "+(e.cgpa?summary(id):summary(id)+" ("+aCount(id)+" A grades; "+text(id).replace(/\n/g,", ")+")");}).join("; ");}
 
-window.EDUPLAN_RESULTS={live:live,schFor:schFor,pickOf:pickOf,feeBase:feeBase,cut:cut,awardShort:awardShort,payHtml:payHtml,scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
+window.EDUPLAN_RESULTS={live:live,locked:locked,letters:letters,snapField:snapField,checkAI:checkAI,schFor:schFor,pickOf:pickOf,feeBase:feeBase,cut:cut,awardShort:awardShort,payHtml:payHtml,scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
  summary:summary,text:text,editor:editor,groupsFor:groupsFor,checkExam:checkExam,match:match,badge:badge,current:function(){return UI.cur;},setCurrent:function(id){UI.cur=id;}};
+checkAI();
 })();
