@@ -615,8 +615,39 @@ document.addEventListener("change",function(ev){if(ev.target.id==="r-sort"){L.so
   S.sch.res=isCgpa(q1)!==was?"":val("s-res");if(!isCgpa(q1)&&+S.sch.res>exam(q1).max)S.sch.res="";render(true);var f=document.getElementById("s-res");if(f)f.focus();}});
 document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.detail){L.detail=null;render(true);}else if(L.info){L.info=false;render(true);var ib=top.querySelector(".info");if(ib)ib.focus();}else if(L.menu){L.menu=false;render(true);var bb=top.querySelector(".burger");if(bb)bb.focus();}else if(L.help){L.help=false;render(true);}}});
 
+/* Cover: an animated About us screen when the website opens (once per browser tab); "Click to continue" opens the site.
+   Facts come from lab-about.js and the live counts from the sheet data. */
+function intro(){
+ try{if(sessionStorage.getItem("eduplan-intro"))return;}catch(e){}
+ var A=window.EDUPLAN_ABOUT;if(!A||/^#(privacy|portfolio)/.test(location.hash))return;
+ var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
+ function real(u){return !/^demo/i.test(u.id)&&!/\(demo\)/i.test(u.name);}   /* demo institutions are not counted */
+ var unis=D.inst.filter(function(u){return u.progs&&real(u);}).length,stats=[[unis,"partner institutions"],[D.progs.filter(function(p){return real(p.inst);}).length,"programmes"],
+  [D.sch.filter(function(x){return real(x.inst);}).length+D.fnd.length,"scholarship options"]].filter(function(x){return x[0]>0;});
+ var d=document.createElement("div");d.className="intro";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","intro-h");
+ d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
+  '<img class="ilogo" src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan">'+
+  '<span class="ieye">About us</span>'+
+  '<h1 id="intro-h"><span>We lead students to the right place to study</span></h1>'+
+  '<p class="ilead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
+  '<ol class="ijr">'+A.journey.map(function(j,i){return '<li style="--i:'+i+'"><b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span></li>';}).join("")+'</ol>'+
+  (stats.length?'<div class="istats">'+stats.map(function(x){return '<div><b data-count="'+x[0]+'">0</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+
+  '<div class="ifounder">'+(photo?'<img src="'+esc(photo)+'" alt="">':'')+'<div><b>'+esc(f.name)+'</b><span>'+esc(f.role)+'</span><span>Guiding students since 2015</span></div></div>'+
+  '<button type="button" class="btn icta">Click to continue <span aria-hidden="true">→</span></button></div>';
+ document.body.appendChild(d);document.body.classList.add("introopen");
+ var btn=d.querySelector(".icta");setTimeout(function(){btn.focus({preventScroll:true});},50);
+ /* Count the numbers up once the cover is in view; reduced motion shows them straight away. */
+ var still=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+ [].slice.call(d.querySelectorAll("[data-count]")).forEach(function(b){var n=+b.getAttribute("data-count");if(still){b.textContent=n;return;}
+  var t0=null;setTimeout(function(){requestAnimationFrame(function step(t){t0=t0||t;var k=Math.min(1,(t-t0)/1200);b.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step);});},1500);});
+ function done(){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}d.classList.add("out");document.body.classList.remove("introopen");
+  setTimeout(function(){d.remove();var m=document.querySelector("main,#app");if(m&&m.focus)m.focus({preventScroll:true});},still?0:450);}
+ btn.addEventListener("click",done);
+ d.addEventListener("keydown",function(ev){if(ev.key==="Tab"){ev.preventDefault();btn.focus();}});   /* keep focus on the cover */
+}
 if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);
 render();
 syncLoad();
+intro();
 if(API&&window.fetch&&!PREVIEW)fetch(API).then(function(r){return r.json();}).then(function(d){if(useData(d))render(true);}).catch(function(){});
 })();
