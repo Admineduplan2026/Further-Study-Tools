@@ -454,6 +454,7 @@ function menu(){
   item("#saved","Saved programmes",n?plural(n,"programme","programmes"):"")+
   item("#apply","My applications","")+
   item("#consultation","Book a free consultation","")+
+  item("#privacy","Privacy, cookies and security","No cookies or tracking. What this browser keeps")+
   '</nav>';
 }
 function aboutView(){

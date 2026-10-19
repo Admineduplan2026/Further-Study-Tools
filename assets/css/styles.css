@@ -83,6 +83,17 @@ textarea{min-height:110px;resize:vertical}
 .sctrack .st{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card,#fff);min-width:0}
 .sctrack .st b{font-size:22px;font-weight:600;color:var(--brand);overflow-wrap:anywhere}
 .sctrack .st span{font-size:13px;color:var(--muted)}
+.pnotice{position:fixed;left:16px;bottom:16px;z-index:60;max-width:560px;display:flex;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:var(--card,#fff);color:var(--ink);box-shadow:0 8px 28px rgba(0,0,0,.14)}
+.pnotice p{margin:0;font-size:14px;line-height:1.45}
+.pnotice a{color:var(--brand)}
+.pnotice .btn{flex:none}
+@media (max-width:560px){.pnotice{right:84px;left:12px;bottom:12px;flex-direction:column;align-items:stretch;gap:8px}}
+.tablewrap{overflow-x:auto;max-width:100%}
+.ptable{width:100%;border-collapse:collapse;font-size:14px}
+.ptable th,.ptable td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--line)}
+.ptable td b{display:block;font-weight:600}
+.ptable td .hint{font-size:12px;overflow-wrap:anywhere}
+@media (max-width:560px){.ptable thead{display:none}.ptable tr{display:block;padding:8px 0;border-bottom:1px solid var(--line)}.ptable td{display:block;border:0;padding:2px 0}}
 .fsaward{display:flex;flex-direction:column;gap:2px;padding:8px 12px;border-radius:12px;background:var(--ok-soft);color:var(--ok)}
 .fsaward .k{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .fsaward b{font-weight:600;color:var(--ink);overflow-wrap:anywhere}

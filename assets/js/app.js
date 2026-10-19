@@ -1103,6 +1103,45 @@ function pfScholarships(){
    :'<div class="empty">No campus scholarship in our data matches your results yet.</div>')+
   (near.length?'<h3>Almost there</h3><div class="pfsaved">'+near.map(item).join("")+'</div>':'');
 }
+/* Privacy, cookies and security (#privacy). Everything here describes what the code does: no cookies, browser storage
+   for progress, the portfolio and applications on Eduplan's Google account (apps-script/Account.gs, Apply.gs). */
+var STORE_ROWS=[
+ ["Language","eduplan-lang","English or 中文","Until you change it"],
+ ["My results","eduplan-results","Your exam subjects and grades","Until you remove them or clear this browser"],
+ ["Saved and recent programmes","eduplan-saved, eduplan-lab-recent","Programmes you saved or opened","Until you remove them or clear this browser"],
+ ["Interest quiz","eduplan-quiz","Your quiz answers","Until you retake it or clear this browser"],
+ ["Searches","eduplan-lab-search, eduplan-lab-sch, eduplan-lab-mode","Your last search and route","Until you clear them"],
+ ["Scholarship choice","eduplan-sch-pick","The scholarship you chose for each programme","Until you change it"],
+ ["Consultation request","eduplan-consult","Details you typed in the consultation form","Until you clear this browser"],
+ ["Sign-in","eduplan-session","Your email and a sign-in token","30 days, or until you sign out"],
+ ["Application in progress","eduplan-apply","The application form you are filling in","Until you close the tab"],
+ ["AI assistant","eduplan-chat","Your latest chat messages","Until you close the tab"]];
+V.privacy=function(){
+ return '<section class="stack"><span class="eyebrow">Privacy and security</span><h1>Privacy, cookies and security</h1>'+
+  '<p class="lead">How Eduplan keeps your information safe, what is stored in your browser and what is sent to Eduplan.</p></section>'+
+ '<section class="panel"><h2>Cookies</h2><ul class="reqlist"><li>Eduplan does not use cookies.</li><li>There are no advertising or tracking cookies, and no analytics tools on this website.</li>'+
+  '<li>To remember your progress, the website uses your browser’s own storage (local storage and session storage). It stays on your device and is not sent anywhere unless you sign in or submit a form.</li></ul></section>'+
+ '<section class="panel"><h2>What this browser keeps</h2><div class="tablewrap"><table class="ptable"><thead><tr><th scope="col">What</th><th scope="col">Contents</th><th scope="col">Kept</th></tr></thead><tbody>'+
+  STORE_ROWS.map(function(r){return '<tr><td><b>'+esc(r[0])+'</b><span class="hint" data-notr>'+esc(r[1])+'</span></td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>';}).join("")+'</tbody></table></div>'+
+  '<div class="row"><button type="button" class="btn ghost" data-act="privacy-clear">Clear Eduplan data from this browser</button></div>'+
+  '<p class="hint">This removes everything above from this browser and signs you out here. A portfolio saved to your account stays there; delete it from My portfolio.</p>'+
+  (sget("eduplan-cleared")?'<p class="ematch ok" role="status">Eduplan data was cleared from this browser.</p>':'')+'</section>'+
+ '<section class="panel"><h2>What is sent to Eduplan</h2><ul class="reqlist">'+
+  '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device.</li>'+
+  '<li><b>Applications:</b> your form and documents are kept in a private folder that only Eduplan staff can open, and are shared with the university you apply to so it can process your application.</li>'+
+  '<li><b>AI study assistant:</b> your messages are sent through Eduplan’s server to Anthropic’s Claude to write the reply. Please do not type your IC number, phone number or other personal details in the chat.</li>'+
+  '<li><b>Consultation requests:</b> sent to Eduplan so a counsellor can contact you.</li></ul></section>'+
+ '<section class="panel"><h2>How your account is protected</h2><ul class="reqlist">'+
+  '<li>No passwords: you sign in with a 6-digit code sent to your email. The code works for 10 minutes and allows 5 tries.</li>'+
+  '<li>You stay signed in for 30 days. Eduplan’s server keeps only a scrambled (hashed) copy of your sign-in token.</li>'+
+  '<li>Signing out ends the sign-in on Eduplan’s server and removes your details from this browser. Please sign out on a shared computer.</li>'+
+  '<li>The website and Eduplan’s server talk over an encrypted connection (HTTPS).</li>'+
+  '<li>Eduplan’s service keys are kept on the server, never in the website.</li></ul></section>'+
+ '<section class="panel"><h2>Your choices</h2><ul class="reqlist">'+
+  '<li>Use the website without signing in: your progress then stays in this browser only.</li>'+
+  '<li>Delete your portfolio at any time from <a href="#portfolio">My portfolio</a>.</li>'+
+  '<li>Under Malaysia’s Personal Data Protection Act 2010 you may ask to see or correct your personal data. <a href="#consultation">Contact Eduplan</a>.</li></ul></section>';
+};
 V.portfolio=function(){
  var head='<section class="stack"><span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
   (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'
@@ -1254,6 +1293,11 @@ app.addEventListener("click",function(ev){
  var t=ev.target.closest("button,a");if(!t)return;
  if(t.hasAttribute("data-save")){toggleSave(t.getAttribute("data-save"));return;}
  if(t.hasAttribute("data-pf")){pfAction(t.getAttribute("data-pf"));return;}
+ /* Privacy page: end the sign-in on the server, remove every eduplan-* key from this browser, start afresh. */
+ if(t.getAttribute("data-act")==="privacy-clear"){var tk=PF.s&&PF.s.token;
+  function wipe(){[localStorage,sessionStorage].forEach(function(st){try{Object.keys(st).filter(function(k){return k.indexOf("eduplan-")===0;}).forEach(function(k){st.removeItem(k);});}catch(e){}});
+   sset("eduplan-cleared","1");location.reload();}
+  if(tk&&pfLive())pfPost({action:"account_logout",token:tk}).then(wipe,wipe);else wipe();return;}
  if(t.hasAttribute("data-ask")){window.dispatchEvent(new CustomEvent("eduplan:ask",{detail:{text:t.getAttribute("data-ask")}}));return;}
  if(t.hasAttribute("data-apply")){var act=t.getAttribute("data-apply"),A=S.app;
   if(act==="back"){A.err={};A.step=Math.max(1,A.step-1);applySave();rerender();window.scrollTo(0,0);}
