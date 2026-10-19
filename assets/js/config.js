@@ -3,4 +3,4 @@
    Leave it empty to use only the data in faculty-data.js and scholarship-data.js.
    When set, the website loads the published sheet data on top of those files; if the API cannot be
    reached, the website keeps showing the local data. See docs/google-sheet-api-setup.md. */
-window.EDUPLAN_API_URL="https://script.google.com/macros/s/AKfycbxYhizojahaG-rI0LaFmmwDgHIZpDbWMzuOos24ONXiyPEzrVxYMXKVNnuDY3pevhY/exec";
+window.EDUPLAN_API_URL="https://script.google.com/macros/s/AKfycbwVtqrntxp2HITILIGk0pnV7Wk8FghGodcwKJTJGPazu1LdnmAOUYGKErbCeSzqaryp/exec";
