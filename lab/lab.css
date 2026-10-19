@@ -402,3 +402,15 @@ body.introopen{overflow:hidden}
 .snapbtn{cursor:pointer;white-space:nowrap}
 .sf.snap .err{color:var(--err,#b3261e);font-size:13px}
 .automine .sf.snap{border:0;padding:0;background:transparent}
+.ipgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;width:100%}
+.ipc{position:relative;display:flex;align-items:center;gap:10px;text-align:left;padding:14px 14px;border-radius:16px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.1);color:#fff;font:inherit;cursor:pointer;min-width:0}
+.ipc b{font-size:15px;font-weight:600;overflow-wrap:anywhere}
+.ipc .ipn{flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;border:2px solid rgba(255,255,255,.6);font-weight:600}
+.ipc.on{background:#fff;color:#0b3a5c;border-color:#fff}
+.ipc.on .ipn{background:#ffd166;border-color:#ffd166;color:#0b3a5c}
+.ipc:disabled{opacity:.45;cursor:not-allowed}
+.ipc:focus-visible{outline:3px solid #ffd166;outline-offset:2px}
+.ipcount{margin:0;color:#d6ebf8}
+.icta:disabled{opacity:1;background:#cfdbe4;border-color:#cfdbe4;color:#3f5160;cursor:not-allowed;animation:none}
+.myints{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;color:#e3f1fa;font-size:14px}
+.myints .lchip{cursor:pointer}

@@ -244,7 +244,8 @@ function searchBox(){
   sel("q-level","Study level",[["","Any level"]].concat(LEVELS),s.level)+
   sel("q-budget","Budget",BUDGETS,s.budget)+
   sel("q-intake","Start date",intakeOptions(),s.intake)+
-  '</div><button type="submit" class="go">'+SEARCH+'<span>Search</span></button></form>'+autoResults()+
+  '</div><button type="submit" class="go">'+SEARCH+'<span>Search</span></button></form>'+
+  (myInts().length?'<div class="myints"><span>Your top interests:</span>'+myInts().map(function(c,i){return '<button type="button" class="lchip" data-lfac="'+esc(c)+'">'+(i+1)+'. '+esc(facLabel(c))+'</button>';}).join("")+'</div>':'')+autoResults()+
   (hadSearch?'<p class="memo">Your last search is filled in. <button type="button" class="linkbtn" data-act="clear-search">Clear</button></p>':'');
 }
 /* Interest search: the exam results saved in My results (the portfolio) are filled in here, so the search can keep
@@ -333,7 +334,8 @@ function offers(){
     (dl!=null&&dl>=0?'<span class="cd">'+(dl===0?"Closes today":plural(dl,"day","days")+" left")+'</span>':'<span class="hint">Deadline: check with the university</span>')+'</a>';}).join("")+'</div></section>';
 }
 function recommended(){
- var picks=quizResult(),q=S.search,scored=D.progs.map(function(p){var sc=0,why="";
+ var picks=quizResult(),ints=myInts(),q=S.search,scored=D.progs.map(function(p){var sc=0,why="";
+   if(p.fac&&ints.indexOf(p.fac.code)>=0){sc+=2.5-ints.indexOf(p.fac.code)*0.5;why="Your interest: "+p.fac.name;}
    if(p.fac&&picks.indexOf(p.fac.code)>=0){sc+=3-picks.indexOf(p.fac.code)*0.5;why="Matches your quiz: "+p.fac.name;}
    if(q.level&&p.lk===q.level){sc+=1.5;why=why||"Your study level: "+levelName(q.level);}
    if(q.fac&&p.fac&&p.fac.code===q.fac){sc+=2;why=why||"Your last search: "+p.fac.name;}
@@ -620,8 +622,33 @@ document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.deta
 
 /* Cover: an animated About us screen when the website opens (once per browser tab); "Click to continue" opens the site.
    Facts come from lab-about.js and the live counts from the sheet data. */
+/* Second screen: every visitor (guest or signed in) picks their top 3 fields of study, in order, from the faculties
+   offered under "What do you want to study?". Saved in My profile (eduplan-profile .fields); asked until there are 3. */
+function myInts(){var p=ls("eduplan-profile")||{};return (p.fields||[]).filter(function(c){return facByCode(c);});}
+function intFacs(){return FAC.fields.filter(function(f){return f.code!=="00"&&D.progs.some(function(p){return p.fac===f;});});}
+function interests(){
+ if(myInts().length>=3||/^#(privacy|portfolio)/.test(location.hash)||document.querySelector(".ipick")||!intFacs().length)return false;
+ var pick=myInts().slice(0,3),d=document.createElement("div");d.className="intro ipick";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","ipick-h");
+ function draw(){
+  d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
+   '<span class="ieye">Step 2 of 2 · Your interests</span><h1 id="ipick-h"><span>What are your top 3 interests?</span></h1>'+
+   '<p class="ilead">Choose three fields of study, in order: your first choice first. We use them to suggest courses and universities for you.</p>'+
+   '<div class="ipgrid" role="group" aria-label="Fields of study">'+intFacs().map(function(f){var k=pick.indexOf(f.code);
+    return '<button type="button" class="ipc'+(k>=0?' on':'')+'" role="checkbox" aria-checked="'+(k>=0)+'" data-ip="'+esc(f.code)+'"'+(k<0&&pick.length>=3?' disabled':'')+'>'+
+     '<span class="ipn" aria-hidden="true">'+(k>=0?k+1:'')+'</span><b>'+esc(f.name)+'</b></button>';}).join("")+'</div>'+
+   '<p class="ipcount" aria-live="polite">'+pick.length+' of 3 chosen</p>'+
+   '<button type="button" class="btn icta" data-ipok'+(pick.length<3?' disabled':'')+'>Continue <span aria-hidden="true">→</span></button></div>';}
+ draw();document.body.appendChild(d);document.body.classList.add("introopen");
+ d.addEventListener("click",function(ev){var b=ev.target.closest("button");if(!b)return;
+  if(b.hasAttribute("data-ip")){var c=b.getAttribute("data-ip"),k=pick.indexOf(c);if(k>=0)pick.splice(k,1);else if(pick.length<3)pick.push(c);draw();
+   var nb=d.querySelector('[data-ip="'+c+'"]');if(nb)nb.focus();return;}
+  if(b.hasAttribute("data-ipok")&&pick.length===3){var p=ls("eduplan-profile")||{};p.fields=pick.slice();ls("eduplan-profile",p);
+   window.dispatchEvent(new CustomEvent("eduplan:profile"));
+   d.classList.add("out");setTimeout(function(){d.remove();document.body.classList.remove("introopen");render(true);},300);}});
+ setTimeout(function(){var f=d.querySelector("[data-ip]");if(f)f.focus({preventScroll:true});},50);
+ return true;}
 function intro(){
- try{if(sessionStorage.getItem("eduplan-intro"))return;}catch(e){}
+ try{if(sessionStorage.getItem("eduplan-intro")){interests();return;}}catch(e){}
  var A=window.EDUPLAN_ABOUT;if(!A||/^#(privacy|portfolio)/.test(location.hash))return;
  var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
  function real(u){return !/^demo/i.test(u.id)&&!/\(demo\)/i.test(u.name);}   /* demo institutions are not counted */
@@ -643,8 +670,8 @@ function intro(){
  var still=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
  [].slice.call(d.querySelectorAll("[data-count]")).forEach(function(b){var n=+b.getAttribute("data-count");if(still){b.textContent=n;return;}
   var t0=null;setTimeout(function(){requestAnimationFrame(function step(t){t0=t0||t;var k=Math.min(1,(t-t0)/1200);b.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step);});},1500);});
- function done(){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}d.classList.add("out");document.body.classList.remove("introopen");
-  setTimeout(function(){d.remove();var m=document.querySelector("main,#app");if(m&&m.focus)m.focus({preventScroll:true});},still?0:450);}
+ function done(){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}d.classList.add("out");
+  setTimeout(function(){d.remove();if(!interests()){document.body.classList.remove("introopen");var m=document.querySelector("main,#app");if(m&&m.focus)m.focus({preventScroll:true});}},still?0:450);}
  btn.addEventListener("click",done);
  d.addEventListener("keydown",function(ev){if(ev.key==="Tab"){ev.preventDefault();btn.focus();}});   /* keep focus on the cover */
 }

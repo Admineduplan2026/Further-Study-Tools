@@ -1004,6 +1004,8 @@ function pfStart(){
   if(ch&&!(f&&app.contains(f)&&/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)))rerender();
  }).catch(function(){});
 }
+/* The lab's interests step saved the top 3 fields: keep them in the portfolio. */
+window.addEventListener("eduplan:profile",function(){S.prof=store("eduplan-profile")||{};pfTouch("profile");});
 /* Claude can read photos in this view (results.js checkAI): redraw so the photo buttons appear. */
 window.addEventListener("eduplan:ai",function(){if(app.querySelector(".idup,.idok,.pflogin,#cons-form")||/consultation|portfolio/.test(location.hash))render(true);});
 /* My results changed (assets/js/results.js): save it to the portfolio, fill the application's results, redraw. */
