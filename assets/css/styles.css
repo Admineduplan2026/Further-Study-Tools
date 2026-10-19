@@ -83,6 +83,10 @@ textarea{min-height:110px;resize:vertical}
 .sctrack .st{display:flex;flex-direction:column;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card,#fff);min-width:0}
 .sctrack .st b{font-size:22px;font-weight:600;color:var(--brand);overflow-wrap:anywhere}
 .sctrack .st span{font-size:13px;color:var(--muted)}
+.idok{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--ok);border-radius:12px;background:var(--ok-soft)}
+.idbadge{font-size:13px;font-weight:600;color:var(--ok)}
+.idup{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.idbtn{cursor:pointer}
 .rxver{display:flex;flex-direction:column;gap:8px;padding:12px 14px;border:1px solid var(--ok);border-radius:14px;background:var(--ok-soft)}
 .rxbadge{font-weight:600;color:var(--ok)}
 .rxlist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:4px 16px}

@@ -48,7 +48,7 @@ function live(){return !!(window.EDUPLAN_API_URL&&window.fetch&&!window.EDUPLAN_
 var AI={ok:null};
 function checkAI(){if(AI.p)return AI.p;var c=window.claude;if(live()||!c||typeof c.use!=="function"){AI.ok=false;return AI.p=Promise.resolve(false);}
  return AI.p=c.use("sample").then(function(sm){if(!sm||!sm.limits)return false;AI.sm=sm;return sm.limits().then(function(l){return !!(l&&l.images);},function(){return false;});},function(){return false;})
-  .then(function(ok){AI.ok=ok;if(ok)save();return ok;});}
+  .then(function(ok){AI.ok=ok;if(ok){save();window.dispatchEvent(new CustomEvent("eduplan:ai"));}return ok;});}
 function locked(){return live()||AI.ok===true;}   /* results only from a slip */
 function has(id){var x=R.exams[id];return !!(x&&(!locked()||x.v)&&((x.g&&x.g.length)||(x.cgpa!==""&&x.cgpa!=null)));}
 /* Grades counted by letter: "5A · 2B · 1C" (SPM A+, A and A- are all A; UEC A1, A2 are A; B3 to B6 are B). */
@@ -166,7 +166,7 @@ function badge(m){if(!m)return null;
 var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function day(t){var d=new Date(t);return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear();}
 function session(){try{var x=JSON.parse(localStorage.getItem("eduplan-session"));return x&&x.token&&x.exp>Date.now()?x:null;}catch(e){return null;}}
-var RX_ERR={not_slip:"This does not look like a results slip. Upload a clear photo or PDF of your results slip.",
+var RX_ERR={not_id:"This does not look like the front of an IC (MyKad or MyKid) or a passport photo page. Take a clear photo of the front of your IC.",not_slip:"This does not look like a results slip. Upload a clear photo or PDF of your results slip.",
  wrong_exam:"This slip is for a different exam. Choose the right exam above, or upload the right slip.",
  not_official:"This looks like a trial or school report, not the official results. Choose Trial results, or upload the official slip.",
  unreadable:"The grades could not be read clearly. Upload a sharper photo with the whole slip in view.",
@@ -219,6 +219,28 @@ function readFile(id,file,kind){UI.err="";UI.kind=kind;UI.cur=id;
    .catch(function(){fail("net");});};
  rd.readAsDataURL(file);}
 function readSlip(id){var f=document.getElementById("rx-file"),k=document.getElementById("rx-kind");readFile(id,f&&f.files&&f.files[0],k?k.value:"Official");}
+/* Name check (Identity.gs): Claude reads the front of the student's MyKad / MyKid / passport. Only the name and the
+   last 4 characters of the number are kept; the photo and the full number are not. Resolves {v} or {error}. */
+var ID_PROMPT="You read the front of an identity document for Eduplan, a study guidance service in Malaysia, to confirm the student's name. "+
+ "Reply with JSON only: {\"is_id_document\":boolean,\"card_type\":\"MyKad|MyKid|passport|other\",\"name\":string,\"id_number\":string,\"problems\":string}. "+
+ "is_id_document is true only for the front of a Malaysian MyKad or MyKid, or the photo page of a passport. name: the holder's full name exactly as printed. "+
+ "id_number: the IC number (000000-00-0000) or passport number exactly as printed. Leave a field \"\" if you cannot read it with certainty.";
+function idCheck(r){if(!r||!r.is_id_document||r.card_type==="other")return {error:"not_id"};
+ var name=String(r.name||"").replace(/\s+/g," ").trim(),num=String(r.id_number||"").replace(/[\s-]/g,"").toUpperCase(),m;
+ if(name.length<3||name.length>120)return {error:"unreadable"};
+ if(r.card_type==="passport"){if(!/^[A-Z0-9]{6,12}$/.test(num))return {error:"unreadable"};}
+ else if(!(m=num.match(/^(\d{2})(\d{2})(\d{2})\d{6}$/))||+m[2]<1||+m[2]>12||+m[3]<1||+m[3]>31)return {error:"unreadable"};
+ return {v:{name:name,last4:num.slice(-4),at:Date.now(),type:r.card_type}};}
+function readId(file){
+ if(!file)return Promise.resolve({error:"bad_request"});
+ if(file.size>5*1024*1024)return Promise.resolve({error:"too_large"});
+ if(!live()){if(!AI.sm||!/^image\//.test(file.type))return Promise.resolve({error:AI.sm?"bad_request":"not_configured"});
+  return AI.sm.json(ID_PROMPT,{images:[file],modelTier:"complex",cache:false}).then(idCheck,function(err){return {error:err&&err.code==="rate_limited"?"daily_limit":"busy"};});}
+ var ss=session();if(!ss)return Promise.resolve({error:"signed_out"});
+ return new Promise(function(res){var rd=new FileReader();rd.onload=function(){
+  fetch(window.EDUPLAN_API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"id_verify",token:ss.token,file:{type:file.type,data:String(rd.result).split(",")[1]||""}})})
+   .then(function(r){return r.json();}).then(function(d){res(d&&d.ok?{v:{name:d.name,last4:d.last4,at:d.at,type:d.type,sig:d.sig}}:{error:(d&&d.error)||"busy"});},function(){res({error:"net"});});};
+  rd.readAsDataURL(file);});}
 /* The photo box in the search forms: take or choose a photo of the slip; the grades fill in and lock. */
 function snapField(id,pick){var e=exam(id)||exam("SPM"),grade=EXAMS.filter(function(x){return !x.cgpa;});
  if(live()&&!session())return '<div class="sf snap"><span class="sl">Your results</span><span class="hint">Your grades are read from a photo of your results slip. <a href="#portfolio">Sign in</a> to upload it.</span></div>';
@@ -396,7 +418,7 @@ function nextText(s){var n=s.next,e=exam(s.exam);if(!n)return "";
 /* One line about the student's results, for the AI study assistant. */
 function forChat(){return taken().map(function(id){var e=exam(id);return id+": "+(e.cgpa?summary(id):summary(id)+" ("+aCount(id)+" A grades; "+text(id).replace(/\n/g,", ")+")");}).join("; ");}
 
-window.EDUPLAN_RESULTS={live:live,locked:locked,letters:letters,snapField:snapField,checkAI:checkAI,schFor:schFor,pickOf:pickOf,feeBase:feeBase,cut:cut,awardShort:awardShort,payHtml:payHtml,scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
+window.EDUPLAN_RESULTS={live:live,readId:readId,errText:function(c){return RX_ERR[c]||RX_ERR.busy;},canRead:function(){return live()||AI.ok===true;},locked:locked,letters:letters,snapField:snapField,checkAI:checkAI,schFor:schFor,pickOf:pickOf,feeBase:feeBase,cut:cut,awardShort:awardShort,payHtml:payHtml,scholarships:scholarships,tracker:tracker,trackerHtml:trackerHtml,awardText:awardText,nextText:nextText,forChat:forChat,tierNeed:tierNeed,tierHave:tierHave,needWords:needWords,gapOf:gapOf,EXAMS:EXAMS,exam:exam,get:function(){return R;},use:use,has:has,taken:taken,grades:grades,cgpa:cgpa,countIn:countIn,aCount:aCount,
  summary:summary,text:text,editor:editor,groupsFor:groupsFor,checkExam:checkExam,match:match,badge:badge,current:function(){return UI.cur;},setCurrent:function(id){UI.cur=id;}};
 checkAI();
 })();

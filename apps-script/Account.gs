@@ -212,6 +212,8 @@ function accountSave_(body) {
       if (!at) return;  // never changed on that device
       // My results: only the grades read from a results slip for this student are kept (Results.gs).
       if (k === 'results') v = { exams: resultsVerified_(v.exams, String(sh.getRange(s.row, ACCOUNT_COL.email).getValue()).toLowerCase()), at: v.at };
+      // My profile: the name counts as verified only when Identity.gs checked it for this student.
+      if (k === 'profile' && v.f && v.f.idv && !idVerified_(v.f.idv, String(sh.getRange(s.row, ACCOUNT_COL.email).getValue()).toLowerCase())) delete v.f.idv;
       if (!cur[k] || at > (Number(cur[k].at) || 0)) { v.at = at; cur[k] = v; }
     });
     var json = JSON.stringify(cur);

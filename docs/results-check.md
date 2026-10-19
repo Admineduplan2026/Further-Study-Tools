@@ -44,3 +44,23 @@ The published artifacts cannot reach Apps Script, so test on the website served 
 (`https://<owner>.github.io/<repo>/lab/`) or locally with `python3 -m http.server 8000` and
 `http://localhost:8000/lab/`. Sign in with your email code, open My portfolio → My results, choose the exam and
 Official / Trial, upload the slip and press **Read my results**.
+
+# Name check: AI reads the student's IC
+
+To book a free consultation, a student's name must be verified with their IC (MyKad or MyKid; international students:
+passport photo page). Everyone else is a guest: they can browse but the consultation page asks them to verify first.
+
+- The student takes a photo of the front of the IC in My profile or on the consultation page.
+- `apps-script/Identity.gs` (`id_verify`) has Claude read the name and the IC / passport number, checks the number
+  (12 digits starting with a real date of birth, or a passport number) and signs the name with the student's email.
+- Only the **name and the last 4 digits** are kept, in the portfolio's profile. The photo and the full number are not
+  stored. `Account.gs` drops a name check without a valid signature.
+- The verified name is locked on the consultation form and fills in the application form; the consultation summary
+  says "verified with IC ending 1234".
+
+Set up: paste `apps-script/Identity.gs` (new file) and the updated `Code.gs` and `Account.gs`, then deploy a new
+version. It uses the same `ANTHROPIC_API_KEY`, model and daily limit as the results check. Test in the editor with
+`idTest` (put the IC photo's Drive file ID at the top, Run).
+
+Students under 18: a MyKad or MyKid photo is personal data of a minor. Ask a PDPA adviser whether a parent's consent is
+needed before the name check.

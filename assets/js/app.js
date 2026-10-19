@@ -513,15 +513,19 @@ V.consultation=function(){
   '<p class="muted">Send to: WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL].</p>'+
   (findProg(S.pick)?'<div class="row"><a class="btn" href="#apply/'+esc(S.pick)+'">Continue to the application form '+ARROW+'</a></div>':'')+'</section>';
  }
- var c=S.cons,e=S.consErr||{},pr=S.prof||{};
- /* Empty fields start from My profile and the signed-in email. */
- if(!c["cons-name"]&&pr.name)c["cons-name"]=pr.name;if(!c["cons-phone"]&&pr.phone)c["cons-phone"]=pr.phone;if(!c["cons-email"]&&PF.s)c["cons-email"]=PF.s.email;
+ var c=S.cons,e=S.consErr||{},pr=S.prof||{},vid=idv();
+ /* Guests (name not verified with an IC) are asked to verify first. */
+ if(!vid)return '<section class="stack">'+(S.pick?flowStep("Ask more"):'')+'<span class="eyebrow">Free Consultation</span><h1>Verify your name to book a free consultation</h1>'+
+  '<p class="lead">You are browsing as a guest. Free consultations are for students whose name is verified with their IC, so our counsellors know who they are speaking to.</p></section>'+
+  '<section class="panel" style="max-width:720px"><h2>Verify your name</h2>'+idBox()+'</section>';
+ /* The verified name; empty fields start from My profile and the signed-in email. */
+ c["cons-name"]=vid.name;if(!c["cons-phone"]&&pr.phone)c["cons-phone"]=pr.phone;if(!c["cons-email"]&&PF.s)c["cons-email"]=PF.s.email;
  function f(id,label,type,hint,req){return '<div class="field"><label for="'+id+'">'+label+(req?"":' <span class="hint">(optional)</span>')+'</label><input type="'+type+'" id="'+id+'" value="'+esc(c[id]||"")+'"'+(e[id]?' aria-invalid="true" aria-describedby="'+id+'-err"':"")+'>'+(hint?'<span class="hint">'+hint+'</span>':"")+(e[id]?'<span class="err" id="'+id+'-err">'+esc(e[id])+'</span>':"")+'</div>';}
  var topics=["Scholarships","Choosing a course","Choosing a university","Accommodation","I am not sure what to study"];
  var quals=["SPM","UEC","STPM","A-Level","Foundation or Matriculation","Diploma","Other"];
  return '<section class="stack">'+(S.pick?flowStep("Ask more"):'')+'<span class="eyebrow">Free Consultation</span><h1>Book a free consultation</h1><p class="lead">Tell us a little about yourself. It takes about a minute.</p></section>'+
  '<section class="panel" style="max-width:720px"><form class="fields" id="cons-form" novalidate>'+
-  f("cons-name","Full name","text","",true)+
+  '<div class="field"><span class="legend">Full name</span><div class="idok"><span class="idbadge">✓ Verified with your IC</span><b data-notr>'+esc(vid.name)+'</b></div></div>'+
   f("cons-phone","Phone or WhatsApp number","tel","Example: 012-345 6789",true)+
   f("cons-email","Email","email","",false)+
   '<div class="field"><label for="cons-qual">Latest qualification</label><select id="cons-qual">'+quals.map(function(q){return '<option'+(c["cons-qual"]===q?" selected":"")+'>'+q+'</option>';}).join("")+'</select></div>'+
@@ -820,7 +824,7 @@ V.next=function(){
 V.apply=function(){
  var a=S.app,n=APPLY_STEPS.length,pr=S.prof||{};
  /* Empty fields start from My profile and the signed-in email; the student checks them against the IC. */
- var pre={name_en:pr.name,mobile:pr.phone,email:PF.s&&PF.s.email},ch=false;
+ var pre={name_en:pr.idv&&pr.idv.name,mobile:pr.phone,email:PF.s&&PF.s.email},ch=false;
  Object.keys(pre).forEach(function(k){if(!a.v[k]&&pre[k]){a.v[k]=pre[k];ch=true;}});if(ch)applySave();
  return '<section class="stack">'+flowStep("Apply")+'<span class="eyebrow">Apply with Eduplan</span><h1>Application form</h1>'+
   '<p class="lead">One form for your university application. It takes about 10 minutes. '+(PF.s?'Your answers are saved to your portfolio as you type.':'Your answers stay on this device until you close the tab. <a href="#portfolio">Sign in</a> to save them and continue later.')+'</p></section>'+
@@ -1000,6 +1004,8 @@ function pfStart(){
   if(ch&&!(f&&app.contains(f)&&/^(INPUT|TEXTAREA|SELECT)$/.test(f.tagName)))rerender();
  }).catch(function(){});
 }
+/* Claude can read photos in this view (results.js checkAI): redraw so the photo buttons appear. */
+window.addEventListener("eduplan:ai",function(){if(app.querySelector(".idup,.idok,.pflogin,#cons-form")||/consultation|portfolio/.test(location.hash))render(true);});
 /* My results changed (assets/js/results.js): save it to the portfolio, fill the application's results, redraw. */
 window.addEventListener("eduplan:results",function(){
  pfTouch("results");
@@ -1130,7 +1136,7 @@ var STORE_ROWS=[
  ["Interest quiz","eduplan-quiz","Your quiz answers","Until you retake it or clear this browser"],
  ["Searches","eduplan-lab-search, eduplan-lab-sch, eduplan-lab-mode","Your last search and route","Until you clear them"],
  ["Scholarship choice","eduplan-sch-pick","The scholarship you chose for each programme","Until you change it"],
- ["My profile","eduplan-profile","The optional name, WhatsApp number, status and interests you filled in","Until you change them or clear this browser"],
+ ["My profile","eduplan-profile","Your verified name and the last 4 digits of your IC, and the optional WhatsApp number, status and interests you filled in","Until you change them or clear this browser"],
  ["Consultation request","eduplan-consult","Details you typed in the consultation form","Until you clear this browser"],
  ["Sign-in","eduplan-session","Your email and a sign-in token","30 days, or until you sign out"],
  ["Application in progress","eduplan-apply","The application form you are filling in","Until you close the tab"],
@@ -1156,8 +1162,9 @@ V.privacy=function(){
  '<section class="panel"><h2>What we ask for, and when</h2><ol class="tiers3">'+
   '<li><b>To sign in</b><span>Only your email, a one-time code sent to it, and your agreement to this notice. No password.</span></li>'+
   '<li><b>In My profile (optional)</b><span>Your name, WhatsApp number, where you are in your studies, your exam results and the fields and places you are interested in. You can skip any of them; the website works without them.</span></li>'+
+  '<li><b>To book a free consultation</b><span>A photo of the front of your IC (or passport photo page) so AI can confirm your name. We keep only your name and the last 4 digits of the number; the photo and the full number are not stored. Without it you browse as a guest.</span></li>'+
   '<li><b>When you apply</b><span>Your full name as on your IC, IC number, date of birth, address, documents and, for students under 18, a parent or guardian’s details. Some universities’ own forms also ask for things like religion or health; these are asked only on that university’s form. Before your application goes to the university, you are asked to agree to it.</span></li></ol>'+
-  '<p class="muted"><b>We never ask for:</b> a password, bank or card numbers (payments are made to the university), or your IC number when you sign in.</p></section>'+
+  '<p class="muted"><b>We never ask for:</b> a password, bank or card numbers (payments are made to the university), or your IC number when you sign in. Your full IC number is asked only on the application form.</p></section>'+
  '<section class="panel"><h2>What is sent to Eduplan</h2><ul class="reqlist">'+
   '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, profile, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device.</li>'+
   '<li><b>Applications:</b> your form and documents are kept in a private folder that only Eduplan staff can open, and are shared with the university you apply to so it can process your application.</li>'+
@@ -1177,12 +1184,28 @@ V.privacy=function(){
 };
 /* My profile (second layer): optional details asked after sign-in, never required. Name and WhatsApp fill in the
    consultation and application forms when they are empty; status and interests help Eduplan's counsellors. */
+/* Verified name: read from the student's IC by AI (Identity.gs; in the preview by Claude in the page). Students without
+   it are guests: they can browse but not book a free consultation. */
+function idv(){var v=S.prof&&S.prof.idv;return v&&v.name&&(!RX.live()||v.sig)?v:null;}
+function idBox(){var v=idv();
+ if(v)return '<div class="idok"><span class="idbadge">✓ Verified with your IC</span><b data-notr>'+esc(v.name)+'</b><span class="hint">'+(v.type==="passport"?'Passport':'IC')+' ending ••••'+esc(v.last4)+'</span></div>';
+ if(RX.live()&&!PF.s)return '<p class="hint"><a href="#portfolio">Sign in</a>, then verify your name with a photo of your IC.</p>';
+ if(!RX.canRead())return '<p class="hint">Verifying your name with your IC works on the live Eduplan website.</p>';
+ if(S.idBusy)return '<p class="note" role="status">Reading your IC… This takes up to a minute.</p>';
+ return '<div class="idup"><label class="btn idbtn">🪪 Verify my name with my IC<input type="file" accept="'+(RX.live()?'image/*,application/pdf':'image/*')+'" capture="environment" data-idfile hidden></label>'+
+  '<span class="hint">Take a photo of the front of your IC (MyKad or MyKid; international students: passport photo page). AI reads your name. We keep only your name and the last 4 digits of the number; the photo is not stored.</span>'+
+  (S.idErr?'<span class="err" role="alert">'+esc(S.idErr)+'</span>':'')+'</div>';}
+document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute("data-idfile"))return;var file=t.files&&t.files[0];if(!file)return;
+ S.idBusy=true;S.idErr="";rerender();
+ RX.readId(file).then(function(r){S.idBusy=false;
+  if(r.error)S.idErr=RX.errText(r.error);else{S.prof=S.prof||{};S.prof.idv=r.v;S.prof.name=r.v.name;store("eduplan-profile",S.prof);pfTouch("profile");}
+  rerender();});});
 var PROF_STATUS=["Form 4 or Form 5 student","Waiting for SPM results","Finished SPM","In pre-university (Form 6, A-Level, foundation, matriculation)","Studying at a college or university"];
 var MY_STATES=["Johor","Kedah","Kelantan","Kuala Lumpur","Labuan","Melaka","Negeri Sembilan","Pahang","Penang","Perak","Perlis","Putrajaya","Sabah","Sarawak","Selangor","Terengganu"];
 function pfProfile(){var p=S.prof||{},fi=p.fields||[];
- return '<p class="muted">Optional: fill in only what you want, and skip the rest. Your name and WhatsApp number are filled in on the consultation and application forms for you. Your status and interests help our counsellors suggest courses.</p>'+
+ return '<p class="muted">Your name is verified with your IC; it is needed to book a free consultation. Everything else here is optional. Your name and WhatsApp number are filled in on the consultation and application forms for you. Your status and interests help our counsellors suggest courses.</p>'+
   '<div class="fields" id="pf-prof">'+
-  '<div class="field"><label for="pr-name">Your name <span class="hint">(optional)</span></label><input id="pr-name" type="text" data-prof="name" autocomplete="name" value="'+esc(p.name||"")+'"></div>'+
+  '<div class="field"><span class="legend">Your name</span>'+idBox()+'</div>'+
   '<div class="field"><label for="pr-phone">WhatsApp number <span class="hint">(optional)</span></label><input id="pr-phone" data-prof="phone" type="tel" autocomplete="tel" placeholder="012-345 6789" value="'+esc(p.phone||"")+'"><span class="hint">For counsellor follow-ups and deadline reminders.</span></div>'+
   '<div class="field"><label for="pr-status">Where are you now? <span class="hint">(optional)</span></label><select id="pr-status" data-prof="status"><option value="">Choose</option>'+PROF_STATUS.map(function(x){return '<option'+(p.status===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
   '<div class="field"><label for="pr-region">Where would you like to study? <span class="hint">(optional)</span></label><select id="pr-region" data-prof="region"><option value="">Anywhere in Malaysia</option>'+MY_STATES.map(function(x){return '<option'+(p.region===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
@@ -1194,6 +1217,7 @@ document.addEventListener("change",function(ev){var t=ev.target;if(!t||!t.closes
  store("eduplan-profile",S.prof);pfTouch("profile");});
 V.portfolio=function(){
  var head='<section class="stack"><span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
+  '<p><span class="pill'+(idv()?' ok':'')+'">'+(idv()?'✓ Verified student':'Guest: verify your name with your IC in My profile')+'</span></p>'+
   (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'
    :'<p class="lead">Keep your saved programmes, quiz result, consultation request and application in one place, and continue on any device.</p>')+'</section>';
  /* Saved programmes */
@@ -1314,7 +1338,7 @@ function rerender(focusId){render(true);if(focusId){var el=document.getElementBy
 window.addEventListener("hashchange",function(){render(false);app.focus({preventScroll:true});});
 
 /* ---------- Events (delegated) ---------- */
-function readCons(){["cons-name","cons-phone","cons-email","cons-qual","cons-topic","cons-msg"].forEach(function(id){var el=document.getElementById(id);if(el)S.cons[id]=el.value;});consSave();}
+function readCons(){var vv=idv();if(vv)S.cons["cons-name"]=vv.name;["cons-phone","cons-email","cons-qual","cons-topic","cons-msg"].forEach(function(id){var el=document.getElementById(id);if(el)S.cons[id]=el.value;});consSave();}
 function consSave(){store("eduplan-consult",S.cons);pfTouch("consult");}
 /* Application form: answers are saved as they are typed; some choices show or hide fields. */
 function applyField(t){if(!t.name||!t.closest("#apply-form,#stay-form"))return false;S.app.v[t.name]=t.type==="checkbox"?t.checked:t.value;if(t.name==="prog")S.app.v.track="";applySave();
@@ -1404,7 +1428,7 @@ app.addEventListener("submit",function(ev){
  S.consErr=e;
  var first=Object.keys(e)[0];
  if(first){rerender(first);return;}
- S.consDone=["Eduplan free consultation request","","Name: "+c["cons-name"].trim(),"Phone: "+c["cons-phone"].trim(),"Email: "+(em||"-"),"Latest qualification: "+(c["cons-qual"]||"SPM"),"Topic: "+(c["cons-topic"]||"Scholarships"),"Notes: "+((c["cons-msg"]||"").trim()||"-")].join("\n");
+ S.consDone=["Eduplan free consultation request","","Name: "+c["cons-name"].trim()+(idv()?" (verified with "+(idv().type==="passport"?"passport":"IC")+" ending "+idv().last4+")":""),"Phone: "+c["cons-phone"].trim(),"Email: "+(em||"-"),"Latest qualification: "+(c["cons-qual"]||"SPM"),"Topic: "+(c["cons-topic"]||"Scholarships"),"Notes: "+((c["cons-msg"]||"").trim()||"-")].join("\n");
  rerender("cons-copy");window.scrollTo(0,0);
 });
 
