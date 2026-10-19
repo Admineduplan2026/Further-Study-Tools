@@ -110,7 +110,11 @@ function resultsRead_(body) {
   var sh = accountSheet_(), s = accountSession_(sh, body.token);
   if (!s) return { error: 'signed_out' };
   var email = String(sh.getRange(s.row, ACCOUNT_COL.email).getValue()).toLowerCase();
+  return resultsReadFile_(email, exam, kind, type, data);
+}
 
+/* Claude reads the slip; the checks and the signature. Also used by resultsTest. */
+function resultsReadFile_(email, exam, kind, type, data) {
   var props = PropertiesService.getScriptProperties(), apiKey = props.getProperty('ANTHROPIC_API_KEY');
   if (!apiKey) return { error: 'not_configured' };
   if (!resultsAllowed_()) return { error: 'daily_limit' };
@@ -164,4 +168,17 @@ function resultsRead_(body) {
   x.sig = resultsSign_(email, exam, x);
   return { ok: true, exam: exam, kind: kind, at: x.at, g: x.g || null, cgpa: x.cgpa == null ? null : x.cgpa, sig: x.sig,
     name: accountCell_(r.candidate_name, 120), year: accountCell_(r.year, 20), problems: String(r.problems || '').slice(0, 300) };
+}
+
+/* Test from the Apps Script editor, without the website: put a results slip (photo or PDF) in Google Drive, copy its
+   file ID from its link (drive.google.com/file/d/<ID>/view), set the three values below, select resultsTest and Run.
+   The log shows what Claude read and whether the checks passed. It counts towards RESULTS_DAILY_LIMIT. */
+function resultsTest() {
+  var FILE_ID = 'PASTE-THE-FILE-ID-HERE';
+  var EXAM = 'SPM';          // SPM, UEC, STPM, IGCSE, O-Level, A-Level, Foundation, Matriculation or Diploma
+  var KIND = 'Official';     // Official or Trial
+  var file = DriveApp.getFileById(FILE_ID), blob = file.getBlob();
+  var out = resultsReadFile_('test@eduplan', EXAM, KIND, String(blob.getContentType()).toLowerCase(), Utilities.base64Encode(blob.getBytes()));
+  console.log(file.getName() + ' (' + blob.getContentType() + ', ' + Math.round(blob.getBytes().length / 1024) + ' KB)');
+  console.log(JSON.stringify(out, null, 2));
 }

@@ -31,3 +31,16 @@ uploads a clearer photo to replace the results.
 
 In the preview (the published artifact) the website cannot reach the server, so results can still be typed there
 to try the website; the page says so.
+
+## Test
+
+**1. The AI reading only (Apps Script editor, no website needed)**
+Put a results slip photo or PDF in Google Drive. In `Results.gs`, set `FILE_ID`, `EXAM` and `KIND` at the top of
+`resultsTest`, choose `resultsTest` in the toolbar and press **Run**. The execution log shows what Claude read
+(subjects, grades, candidate name) or why the slip was refused (`not_slip`, `wrong_exam`, `not_official`, `unreadable`).
+
+**2. The whole flow (live website)**
+The published artifacts cannot reach Apps Script, so test on the website served from this repository: GitHub Pages
+(`https://<owner>.github.io/<repo>/lab/`) or locally with `python3 -m http.server 8000` and
+`http://localhost:8000/lab/`. Sign in with your email code, open My portfolio → My results, choose the exam and
+Official / Trial, upload the slip and press **Read my results**.
