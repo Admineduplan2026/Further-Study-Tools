@@ -273,7 +273,7 @@ function quizBox(){
    Sign-in needs the live website; in a preview (the published artifact) "Continue to the preview" counts as a member. */
 function preview(){return !!window.EDUPLAN_SHEET_DATA||!window.EDUPLAN_API_URL;}
 function access(){if(S.session)return "member";var r=ls("eduplan-role");return r==="preview"&&preview()?"member":r==="visitor"?"visitor":"new";}
-function locked(){return access()!=="member";}
+function locked(){return window.EDUPLAN_MEMBERS_ONLY===true&&access()!=="member";}   /* off until Eduplan turns it on (lab-config.js) */
 window.EDUPLAN_HOST.locked=function(view){return locked()&&/^(guided|scholarships|results)/.test(String(view||""));};
 function roleCards(){
  function c(role,title,sub,cls){return '<button type="button" class="rolec'+(cls?' '+cls:'')+'" data-role="'+role+'"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></button>';}
