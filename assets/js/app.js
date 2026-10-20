@@ -1046,6 +1046,7 @@ function pfVerify(code){
   pfUse(d.data,true);
   if(PF.dirty)PF.timer=setTimeout(pfFlush,300);
   pfStatus("Signed in. Your progress is saved automatically.");rerender();window.scrollTo(0,0);
+  try{window.dispatchEvent(new CustomEvent("eduplan:signedin"));}catch(e){}
  }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender("pf-code");});
 }
 function pfAction(act){
@@ -1088,7 +1089,7 @@ function pfLogin(gate){
  var guest=gate&&PF.guestOk?'<div class="row"><button type="button" class="btn ghost" data-pf="guest">Continue without signing in</button></div>':'';
  if(!pfLive()){var pm=sget("eduplan-pfmode"),member=HOST&&HOST.locked&&!HOST.locked("guided");
   return '<section class="panel pflogin"><h2>'+(pm==="register"?'Register':'Sign in')+'</h2><p class="muted">Registering and signing in work on the live Eduplan website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+pfAsk()+
-  (gate||(pm&&!member)?'<p class="muted">Tap below to try everything a member can do in this preview.</p><div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';}
+  (gate||(pm&&!member)||sget("eduplan-onb")==="ints"?'<p class="muted">Tap below to try everything a member can do in this preview.</p><div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';}
  if(PF.step==="code")return '<section class="panel pflogin"><h2>Enter your code</h2>'+msg+
   '<form class="fields" id="pf-code-form" novalidate><div class="field"><label for="pf-code">6-digit code</label>'+
   '<input id="pf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+inv+'>'+err+'<span class="hint">Sent to <span data-notr>'+esc(PF.email)+'</span>. Check your spam folder if it is not in your inbox.</span></div>'+

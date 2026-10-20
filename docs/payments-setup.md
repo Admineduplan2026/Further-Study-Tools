@@ -20,9 +20,10 @@ Eduplan has no payment gateway account yet, so the website cannot send students 
 **Continue to payment** records the request and the student sees its reference (for example `PAY-20261020-7F3A`)
 with the message that online payment is not open yet and Eduplan will contact them with the payment details.
 
-Each request is a row in the **Payments** tab of the private spreadsheet *Eduplan Student Portfolios*:
-Time, Reference, Email, Programme, Plan, Method, Amount due now (RM), Total after scholarship (RM), Status.
-The tab is created on the first request.
+Each request is a row in the private spreadsheet *Eduplan Payments* in `Eduplan Databases/4. Payments (private)`:
+Time, Reference, Email, Programme, Plan, Method, Amount due now (RM), Total after scholarship (RM), Status, Paid on,
+Transaction ID, Receipt. When Eduplan marks a payment *Paid*, a PDF payment record is saved automatically as proof
+(see [google-drive-structure.md](google-drive-structure.md#proof-of-payment)).
 
 The student must be signed in (the reference is tied to their portfolio). In the Claude artifact preview the button
 is disabled with "Online payment works on the live Eduplan website".
@@ -30,9 +31,10 @@ is disabled with "Online payment works on the live Eduplan website".
 ## Setup (Apps Script)
 
 1. Open the Eduplan Apps Script project.
-2. Add a file **Payments.gs** and paste `apps-script/Payments.gs`.
+2. Add a file **Payments.gs** and paste `apps-script/Payments.gs`; add **Drive.gs** the same way.
 3. Replace **Code.gs** with `apps-script/Code.gs` (it adds the `pay_create` action).
-4. **Deploy → Manage deployments → Edit → Version: New version → Deploy**. The /exec URL stays the same.
+4. Run **driveOrganize** once (see [google-drive-structure.md](google-drive-structure.md)).
+5. **Deploy → Manage deployments → Edit → Version: New version → Deploy**. The /exec URL stays the same.
 
 ## Connecting a payment gateway later
 
@@ -45,5 +47,5 @@ To send students to the real payment pages, Eduplan needs a merchant account:
 Once the account exists, set the Script Property `PAY_GATEWAY` to the gateway's name and build its checkout in
 `payCheckout_` (Payments.gs): it creates the gateway's bill with the reference and amount, and returns its
 payment page URL. The website then sends the student straight to that page; bank and card details are entered only
-on the gateway's own page, never on Eduplan. The gateway's API keys go in Script Properties only. A payment
-callback (to mark rows as *Paid*) is added at the same time.
+on the gateway's own page, never on Eduplan. The gateway's API keys go in Script Properties only. The gateway's
+payment confirmation then calls `payMarkPaid_` (Payments.gs), which marks the row *Paid* and saves the payment record.

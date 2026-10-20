@@ -584,7 +584,8 @@ document.addEventListener("click",function(ev){
  if(t.hasAttribute("data-role")){var role=t.getAttribute("data-role");
   if(role==="visitor"){ls("eduplan-role","visitor");L.menu=false;go("home");render(true);return;}
   try{sessionStorage.setItem("eduplan-pfmode",role);}catch(e){}L.menu=false;location.hash="#portfolio";return;}
- if(t.getAttribute("data-pf")==="guest"&&preview())ls("eduplan-role","preview");
+ if(t.getAttribute("data-pf")==="guest"&&preview()){ls("eduplan-role","preview");
+  var onb=false;try{onb=sessionStorage.getItem("eduplan-onb")==="ints";}catch(e){}if(onb)setTimeout(function(){location.hash="#home";},50);}
  if(t.hasAttribute("data-lsave")){toggleSave(t.getAttribute("data-lsave"));return;}
  if(t.hasAttribute("data-detail")){openDetail(t.getAttribute("data-detail"));return;}
  if(t.hasAttribute("data-where")){L.mode="interest";ls("eduplan-lab-mode","interest");S.search={what:"",fac:"",where:t.getAttribute("data-where"),level:"",budget:"",intake:""};ls("eduplan-lab-search",S.search);touch("search");L.detail=null;go("results");return;}
@@ -637,28 +638,64 @@ function myInts(){var p=ls("eduplan-profile")||{};return (p.fields||[]).filter(f
 function intFacs(){var all=FAC.fields.filter(function(f){return f.code!=="00";}),has=all.filter(function(f){return D.progs.some(function(p){return p.fac===f;});});
  return has.length?has:all;}
 function interests(){
- if(myInts().length>=3||/^#(privacy|portfolio)/.test(location.hash)||document.querySelector(".ipick")||!intFacs().length)return false;
+ var skipped=false;try{skipped=!!sessionStorage.getItem("eduplan-ints-skip");}catch(e){}
+ if(skipped||myInts().length>=3||/^#(privacy|portfolio)/.test(location.hash)||document.querySelector(".ipick")||!intFacs().length)return false;
  var pick=myInts().slice(0,3),d=document.createElement("div");d.className="intro ipick";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","ipick-h");
  function draw(){
   d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
-   '<span class="ieye">Step 2 of 2 · Your interests</span><h1 id="ipick-h"><span>What are your top 3 interests?</span></h1>'+
+   '<span class="ieye">Step 3 of 3 · Your interests</span><h1 id="ipick-h"><span>What are your top 3 interests?</span></h1>'+
    '<p class="ilead">Choose three fields of study, in order: your first choice first. We use them to suggest courses and universities for you.</p>'+
    '<div class="ipgrid" role="group" aria-label="Fields of study">'+intFacs().map(function(f){var k=pick.indexOf(f.code);
     return '<button type="button" class="ipc'+(k>=0?' on':'')+'" role="checkbox" aria-checked="'+(k>=0)+'" data-ip="'+esc(f.code)+'"'+(k<0&&pick.length>=3?' disabled':'')+'>'+
      '<span class="ipn" aria-hidden="true">'+(k>=0?k+1:'')+'</span><b>'+esc(f.name)+'</b></button>';}).join("")+'</div>'+
    '<p class="ipcount" aria-live="polite">'+pick.length+' of 3 chosen</p>'+
-   '<button type="button" class="btn icta" data-ipok'+(pick.length<3?' disabled':'')+'>Continue <span aria-hidden="true">→</span></button></div>';}
+   '<div class="ibtns"><button type="button" class="btn icta" data-ipok'+(pick.length<3?' disabled':'')+'>Continue <span aria-hidden="true">→</span></button>'+
+   '<button type="button" class="iskip" data-ipskip>Skip for now</button></div></div>';}
  draw();document.body.appendChild(d);document.body.classList.add("introopen");
  d.addEventListener("click",function(ev){var b=ev.target.closest("button");if(!b)return;
   if(b.hasAttribute("data-ip")){var c=b.getAttribute("data-ip"),k=pick.indexOf(c);if(k>=0)pick.splice(k,1);else if(pick.length<3)pick.push(c);draw();
    var nb=d.querySelector('[data-ip="'+c+'"]');if(nb)nb.focus();return;}
+  if(b.hasAttribute("data-ipskip")){try{sessionStorage.setItem("eduplan-ints-skip","1");}catch(e){}
+   d.classList.add("out");setTimeout(function(){d.remove();document.body.classList.remove("introopen");render(true);},300);return;}
   if(b.hasAttribute("data-ipok")&&pick.length===3){var p=ls("eduplan-profile")||{};p.fields=pick.slice();ls("eduplan-profile",p);
    window.dispatchEvent(new CustomEvent("eduplan:profile"));
    d.classList.add("out");setTimeout(function(){d.remove();document.body.classList.remove("introopen");render(true);},300);}});
  setTimeout(function(){var f=d.querySelector("[data-ip]");if(f)f.focus({preventScroll:true});},50);
  return true;}
+/* Second screen: sign in, register or continue as a guest (skipped when already signed in, or once chosen in this tab).
+   Sign in and Register open the email form on My portfolio; once signed in (or back on another page) the interests
+   step follows. */
+function account(){
+ var done=false;try{done=!!sessionStorage.getItem("eduplan-acct");}catch(e){}
+ if(S.session||done||/^#(privacy|portfolio)/.test(location.hash)||document.querySelector(".iacct"))return false;
+ var d=document.createElement("div");d.className="intro iacct";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","iacct-h");
+ d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
+  '<span class="ieye">Step 2 of 3 · Your account</span><h1 id="iacct-h"><span>Sign in to save your progress</span></h1>'+
+  '<p class="ilead">With a free account your results, saved programmes and applications are kept, and you can continue on any device. No password: we email you a 6-digit code.</p>'+
+  '<div class="iacts"><button type="button" class="btn icta" data-onb="signin">Sign in</button>'+
+  '<button type="button" class="btn icta ighost" data-onb="register">Register</button></div>'+
+  '<button type="button" class="iskip" data-onb="guest">Continue as guest <span aria-hidden="true">→</span></button>'+
+  '<p class="ipcount">Guests can browse and search; sign in any time from the menu.</p></div>';
+ document.body.appendChild(d);document.body.classList.add("introopen");
+ setTimeout(function(){var f=d.querySelector("[data-onb]");if(f)f.focus({preventScroll:true});},50);
+ d.addEventListener("click",function(ev){var b=ev.target.closest("[data-onb]");if(!b)return;var role=b.getAttribute("data-onb");
+  try{sessionStorage.setItem("eduplan-acct","1");}catch(e){}
+  d.classList.add("out");
+  setTimeout(function(){d.remove();
+   if(role==="guest"){if(!interests())document.body.classList.remove("introopen");return;}
+   document.body.classList.remove("introopen");
+   try{sessionStorage.setItem("eduplan-pfmode",role);sessionStorage.setItem("eduplan-onb","ints");}catch(e){}
+   L.menu=false;location.hash="#portfolio";},300);});
+ return true;}
+/* After signing in on My portfolio (or leaving it), the interests step of the opening screens follows. */
+function onbResume(){var p=false;try{p=sessionStorage.getItem("eduplan-onb")==="ints";}catch(e){}
+ if(!p||/^#(privacy|portfolio)/.test(location.hash))return;
+ try{sessionStorage.removeItem("eduplan-onb");}catch(e){}setTimeout(interests,350);}
+window.addEventListener("hashchange",onbResume);
+window.addEventListener("eduplan:signedin",function(){var p=false;try{p=sessionStorage.getItem("eduplan-onb")==="ints";}catch(e){}
+ S.session=ls("eduplan-session");if(p)setTimeout(function(){location.hash="#home";},1200);});
 function intro(){
- try{if(sessionStorage.getItem("eduplan-intro")){interests();return;}}catch(e){}
+ try{if(sessionStorage.getItem("eduplan-intro")){if(!account())interests();return;}}catch(e){}
  var A=window.EDUPLAN_ABOUT;if(!A||/^#(privacy|portfolio)/.test(location.hash))return;
  var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
  function real(u){return !/^demo/i.test(u.id)&&!/\(demo\)/i.test(u.name);}   /* demo institutions are not counted */
@@ -667,7 +704,7 @@ function intro(){
  var d=document.createElement("div");d.className="intro";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","intro-h");
  d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
   '<img class="ilogo" src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan">'+
-  '<span class="ieye">About us</span>'+
+  '<span class="ieye">Step 1 of 3 · About us</span>'+
   '<h1 id="intro-h"><span>We lead students to the right place to study</span></h1>'+
   '<p class="ilead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
   '<ol class="ijr">'+A.journey.map(function(j,i){return '<li style="--i:'+i+'"><b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span></li>';}).join("")+'</ol>'+
@@ -681,7 +718,7 @@ function intro(){
  [].slice.call(d.querySelectorAll("[data-count]")).forEach(function(b){var n=+b.getAttribute("data-count");if(still){b.textContent=n;return;}
   var t0=null;setTimeout(function(){requestAnimationFrame(function step(t){t0=t0||t;var k=Math.min(1,(t-t0)/1200);b.textContent=Math.round(n*(1-Math.pow(1-k,3)));if(k<1)requestAnimationFrame(step);});},1500);});
  function done(){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}d.classList.add("out");
-  setTimeout(function(){d.remove();if(!interests()){document.body.classList.remove("introopen");var m=document.querySelector("main,#app");if(m&&m.focus)m.focus({preventScroll:true});}},still?0:450);}
+  setTimeout(function(){d.remove();if(!account()&&!interests()){document.body.classList.remove("introopen");var m=document.querySelector("main,#app");if(m&&m.focus)m.focus({preventScroll:true});}},still?0:450);}
  btn.addEventListener("click",done);
  d.addEventListener("keydown",function(ev){if(ev.key==="Tab"){ev.preventDefault();btn.focus();}});   /* keep focus on the cover */
 }

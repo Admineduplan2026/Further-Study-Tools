@@ -10,7 +10,7 @@
  *   {"action":"account_logout","token":"..."}               signs this device out
  *   {"action":"account_delete","token":"..."}               deletes the student's portfolio row
  *
- * Portfolios are kept in a private spreadsheet "Eduplan Student Portfolios" in "Eduplan Applications (private)",
+ * Portfolios are kept in a private spreadsheet "Eduplan Student Portfolios" in "Eduplan Databases/3. Students and visitors (private)" (Drive.gs),
  * one row per student, with readable columns for counsellors (name, mobile, saved programmes, quiz result,
  * application progress) and the full data as JSON. Uploaded documents are never stored here: they are sent only with
  * the application (Apply.gs). Session tokens and codes are stored only as SHA-256 hashes.
@@ -66,7 +66,7 @@ function accountSheet_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('ACCOUNT_SHEET_ID');
   if (id) { try { return SpreadsheetApp.openById(id).getSheets()[0]; } catch (err) { /* deleted or no access: make a new one */ } }
   var ss = SpreadsheetApp.create('Eduplan Student Portfolios');
-  DriveApp.getFileById(ss.getId()).moveTo(applyFolder_());
+  DriveApp.getFileById(ss.getId()).moveTo(driveFolder_('people'));
   var sh = ss.getSheets()[0];
   sh.setName('Students');
   sh.appendRow(ACCOUNT_HEADERS);

@@ -1,8 +1,9 @@
 /**
  * Eduplan application form: receives applications from the website (#apply and #stay).
  *
- * Every application is saved in one private folder in My Drive, sorted by school:
- *   Eduplan Applications (private)/<SCHOOL>/<EDU-YYYYMMDD-XXXX STUDENT NAME>/
+ * Every application is saved in one private folder, sorted by school (Drive.gs; this folder was called
+ * "Eduplan Applications (private)" before driveOrganize):
+ *   Eduplan Databases/2. Student applications (private)/<SCHOOL>/<EDU-YYYYMMDD-XXXX STUDENT NAME>/
  *       <ref> <NAME> - Application.pdf   the completed form as a PDF, with photos of the documents at the end
  *       <ref> <NAME> - UTAR Application Form.pdf   for schools with their own form (assets/js/school-forms.js): the
  *                                                  school's form, filled in from the application
@@ -33,8 +34,8 @@ var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile
 function applyFolder_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_FOLDER_ID');
   if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted or no access: make a new one */ } }
-  var found = DriveApp.getRootFolder().getFoldersByName('Eduplan Applications (private)');
-  var folder = found.hasNext() ? found.next() : DriveApp.createFolder('Eduplan Applications (private)');
+  var found = driveTop_().getFoldersByName(DRIVE_NAMES.apply);   // Drive.gs
+  var folder = found.hasNext() ? found.next() : driveTop_().createFolder(DRIVE_NAMES.apply);
   props.setProperty('APPLY_FOLDER_ID', folder.getId());
   return folder;
 }

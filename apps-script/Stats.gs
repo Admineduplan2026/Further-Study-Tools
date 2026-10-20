@@ -1,6 +1,7 @@
 /**
  * Eduplan student overview: who registered, signed in and used the website, and how many guests visited.
- * Everything is in the private spreadsheet "Eduplan Student Portfolios" (Account.gs), next to the "Students" tab:
+ * Everything is in the private spreadsheet "Eduplan Student Portfolios" (Account.gs; in "Eduplan Databases/3. Students and
+ * visitors (private)", Drive.gs), next to the "Students" tab:
  *   - Students     one row per student; column L "Last active" is updated whenever the student uses the website.
  *   - Sign-in log  one row per event: Registered (first sign-in), Signed in, Signed out, Deleted portfolio.
  *   - Visits       one row per day (Malaysia time): visits by guests and by signed-in students, and by route.
