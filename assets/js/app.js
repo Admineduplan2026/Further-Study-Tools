@@ -916,7 +916,8 @@ var PF_ERR={bad_email:"Enter an email like name@example.com.",consent:"Please ti
  wait:"A code was sent less than a minute ago. Check your inbox and spam folder, or wait a minute and ask again.",
  too_many:"Too many codes were asked for this email. Please try again in a few hours.",daily_limit:"Sign-in is very busy today. Please try again tomorrow.",
  bad_code:"That code is not right. Use the latest code Eduplan emailed you.",expired:"This code has expired. Ask for a new code.",
- busy:"Eduplan is busy right now. Please try again in a moment.",net:"Eduplan could not be reached. Check your connection and try again.",
+ busy:"Eduplan is busy right now. Please try again in a moment.",net:"Eduplan could not be reached. Check your connection and try again in a few minutes.",
+ server:"Eduplan's server had a problem. Please try again in a few minutes. If it keeps happening, please tell Eduplan.",
  bad_request:"Something went wrong. Please try again."};
 var STAR='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg>';
 

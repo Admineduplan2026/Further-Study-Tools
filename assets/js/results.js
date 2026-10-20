@@ -173,6 +173,7 @@ var RX_ERR={id_first:"Verify your name with your IC first (My portfolio, My prof
  not_official:"This looks like a trial or school report, not the official results. Choose Trial results, or upload the official slip.",
  unreadable:"The grades could not be read clearly. Upload a sharper photo with the whole slip in view.",
  too_large:"The file is larger than 5 MB. Upload a smaller photo or PDF.",signed_out:"Please sign in again, then upload your slip.",
+ server:"Eduplan's server had a problem. Please try again in a few minutes. If it keeps happening, please tell Eduplan.",
  daily_limit:"Too many slips were checked today. Please try again tomorrow, or ask a counsellor.",busy:"The checker is busy. Please try again in a minute.",
  not_configured:"Reading results slips is not available yet. Please ask a counsellor.",net:"Could not reach Eduplan. Check your connection and try again.",bad_request:"Choose a photo (JPG, PNG) or PDF of your slip."};
 /* The name verified from the student's IC (My profile; signed by Identity.gs on the live website), or null. */

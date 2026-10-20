@@ -75,13 +75,19 @@ function doGet(e) {
 function doPost(e) {
   var body;
   try { body = JSON.parse(e.postData.contents); } catch (err) { return chatJson_({ error: 'bad_request' }); }
-  if (body && body.action === 'chat') return chatJson_(chatReply_(body.messages));
-  if (body && body.action === 'apply') return chatJson_(applySubmit_(body));
-  if (body && /^account_/.test(body.action)) return chatJson_(accountAction_(body));
-  if (body && body.action === 'results_read') return chatJson_(resultsRead_(body));  // Results.gs
-  if (body && body.action === 'id_verify') return chatJson_(idVerify_(body));  // Identity.gs
-  if (body && body.action === 'visit') return chatJson_(statsVisit_(body));  // Stats.gs
-  if (body && body.action === 'pay_create') return chatJson_(payCreate_(body));  // Payments.gs
+  // A script error is logged (Apps Script > Executions) and answered as {error:"server"}, so the website can say so.
+  try {
+    if (body && body.action === 'chat') return chatJson_(chatReply_(body.messages));
+    if (body && body.action === 'apply') return chatJson_(applySubmit_(body));
+    if (body && /^account_/.test(body.action)) return chatJson_(accountAction_(body));
+    if (body && body.action === 'results_read') return chatJson_(resultsRead_(body));  // Results.gs
+    if (body && body.action === 'id_verify') return chatJson_(idVerify_(body));  // Identity.gs
+    if (body && body.action === 'visit') return chatJson_(statsVisit_(body));  // Stats.gs
+    if (body && body.action === 'pay_create') return chatJson_(payCreate_(body));  // Payments.gs
+  } catch (err) {
+    console.error('doPost ' + (body && body.action) + ': ' + (err && err.stack || err));
+    return chatJson_({ error: 'server' });
+  }
   return chatJson_({ error: 'bad_request' });
 }
 
