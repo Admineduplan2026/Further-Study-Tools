@@ -1142,7 +1142,8 @@ var STORE_ROWS=[
  ["Consultation request","eduplan-consult","Details you typed in the consultation form","Until you clear this browser"],
  ["Sign-in","eduplan-session","Your email and a sign-in token","30 days, or until you sign out"],
  ["Application in progress","eduplan-apply","The application form you are filling in","Until you close the tab"],
- ["AI assistant","eduplan-chat","Your latest chat messages","Until you close the tab"]];
+ ["AI assistant","eduplan-chat","Your latest chat messages","Until you close the tab"],
+ ["Visit counted","eduplan-visit","A mark that this tab's visit was counted, so it is counted once","Until you close the tab"]];
 /* Lab: scholarship pages and the interest quiz are for members; visitors are asked to register or sign in. */
 V.locked=function(){
  return '<section class="stack"><span class="eyebrow">Members only</span><h1>Register or sign in to continue</h1>'+
@@ -1154,7 +1155,7 @@ V.locked=function(){
 V.privacy=function(){
  return '<section class="stack"><span class="eyebrow">Privacy and security</span><h1>Privacy, cookies and security</h1>'+
   '<p class="lead">How Eduplan keeps your information safe, what is stored in your browser and what is sent to Eduplan.</p></section>'+
- '<section class="panel"><h2>Cookies</h2><ul class="reqlist"><li>Eduplan does not use cookies.</li><li>There are no advertising or tracking cookies, and no analytics tools on this website.</li>'+
+ '<section class="panel"><h2>Cookies</h2><ul class="reqlist"><li>Eduplan does not use cookies.</li><li>There are no advertising or tracking cookies, and no analytics tools from other companies on this website.</li><li>Eduplan counts visits anonymously: how many visits each day, whether the visitor was signed in, and which route (interest, scholarship or guidance) was open. No cookie, IP address or other identifier is kept.</li>'+
   '<li>To remember your progress, the website uses your browser’s own storage (local storage and session storage). It stays on your device and is not sent anywhere unless you sign in or submit a form.</li></ul></section>'+
  '<section class="panel"><h2>What this browser keeps</h2><div class="tablewrap"><table class="ptable"><thead><tr><th scope="col">What</th><th scope="col">Contents</th><th scope="col">Kept</th></tr></thead><tbody>'+
   STORE_ROWS.map(function(r){return '<tr><td><b>'+esc(r[0])+'</b><span class="hint" data-notr>'+esc(r[1])+'</span></td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>';}).join("")+'</tbody></table></div>'+
@@ -1168,7 +1169,7 @@ V.privacy=function(){
   '<li><b>When you apply</b><span>Your full name as on your IC, IC number, date of birth, address, documents and, for students under 18, a parent or guardian’s details. Some universities’ own forms also ask for things like religion or health; these are asked only on that university’s form. Before your application goes to the university, you are asked to agree to it.</span></li></ol>'+
   '<p class="muted"><b>We never ask for:</b> a password, bank or card numbers (payments are made to the university), or your IC number when you sign in. Your full IC number is asked only on the application form.</p></section>'+
  '<section class="panel"><h2>What is sent to Eduplan</h2><ul class="reqlist">'+
-  '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, profile, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device.</li>'+
+  '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, profile, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device. Eduplan also keeps when you registered, signed in, signed out and last used the website.</li>'+
   '<li><b>Applications:</b> your form and documents are kept in a private folder that only Eduplan staff can open, and are shared with the university you apply to so it can process your application.</li>'+
   '<li><b>AI study assistant:</b> your messages are sent through Eduplan’s server to Anthropic’s Claude to write the reply. Please do not type your IC number, phone number or other personal details in the chat.</li>'+
   '<li><b>Results slip:</b> when you upload it in My results, it is sent through Eduplan’s server to Anthropic’s Claude to read your subjects and grades. The slip itself is not stored; only the grades are kept, with a mark that they were read from your slip.</li>'+

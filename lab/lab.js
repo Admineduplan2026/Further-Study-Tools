@@ -685,6 +685,9 @@ function intro(){
 if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);
 render();
 syncLoad();
+/* One anonymous visit per browser tab for Eduplan's overview (apps-script/Stats.gs): signed in or guest, and the
+   route. No cookie, no identifier; the preview does not count. */
+try{if(API&&window.fetch&&!PREVIEW&&!sessionStorage.getItem("eduplan-visit")){sessionStorage.setItem("eduplan-visit","1");post({action:"visit",member:!!S.session,mode:L.mode}).catch(function(){});}}catch(e){}
 intro();
 if(API&&window.fetch&&!PREVIEW)fetch(API).then(function(r){return r.json();}).then(function(d){if(useData(d))render(true);}).catch(function(){});
 })();

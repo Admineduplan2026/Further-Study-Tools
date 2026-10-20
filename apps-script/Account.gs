@@ -166,6 +166,7 @@ function accountVerify_(body) {
     cache.remove(k);
 
     var sh = accountSheet_(), now = new Date(), row = accountFind_(sh, ACCOUNT_COL.email, email);
+    var isNew = !row;
     if (!row) {
       sh.appendRow([accountCell_(email, 120), now, now, '', '', '', '', '', '', '{}', '']);
       row = sh.getLastRow();
@@ -175,6 +176,7 @@ function accountVerify_(body) {
     list.push({ h: accountHash_('session:' + token), x: now.getTime() + ACCOUNT_SESSION_DAYS * 864e5 });
     sh.getRange(row, ACCOUNT_COL.sessions).setValue(accountSessionsText_(list.slice(-ACCOUNT_MAX_SESSIONS)));
     sh.getRange(row, ACCOUNT_COL.signin).setValue(now);
+    statsActive_(sh, row); statsLog_(email, isNew ? 'Registered' : 'Signed in');   // Stats.gs
     return { token: token, email: email, days: ACCOUNT_SESSION_DAYS, data: accountData_(sh, row) };
   } finally {
     lock.releaseLock();
@@ -184,6 +186,7 @@ function accountVerify_(body) {
 function accountLoad_(body) {
   var sh = accountSheet_(), s = accountSession_(sh, body.token);
   if (!s) return { error: 'signed_out' };
+  statsActive_(sh, s.row);
   return { email: sh.getRange(s.row, ACCOUNT_COL.email).getValue(), data: accountData_(sh, s.row) };
 }
 
@@ -219,6 +222,7 @@ function accountSave_(body) {
     var json = JSON.stringify(cur);
     if (json.length > ACCOUNT_MAX_DATA) return { error: 'too_large' };
     sh.getRange(s.row, ACCOUNT_COL.saved, 1, 8).setValues([[new Date()].concat(accountSummary_(cur), [json, accountSessionsText_(s.list)])]);
+    statsActive_(sh, s.row);
     return { ok: true, data: cur };
   } finally {
     lock.releaseLock();
@@ -230,7 +234,10 @@ function accountLogout_(body) {
   if (!lock.tryLock(20000)) return { error: 'busy' };
   try {
     var sh = accountSheet_(), s = accountSession_(sh, body.token);
-    if (s) sh.getRange(s.row, ACCOUNT_COL.sessions).setValue(accountSessionsText_(s.list.filter(function (x) { return x.h !== s.h; })));
+    if (s) {
+      sh.getRange(s.row, ACCOUNT_COL.sessions).setValue(accountSessionsText_(s.list.filter(function (x) { return x.h !== s.h; })));
+      statsLog_(sh.getRange(s.row, ACCOUNT_COL.email).getValue(), 'Signed out');
+    }
     return { ok: true };
   } finally {
     lock.releaseLock();
@@ -244,6 +251,7 @@ function accountDelete_(body) {
   try {
     var sh = accountSheet_(), s = accountSession_(sh, body.token);
     if (!s) return { error: 'signed_out' };
+    statsLog_(sh.getRange(s.row, ACCOUNT_COL.email).getValue(), 'Deleted portfolio');
     sh.deleteRow(s.row);
     return { ok: true };
   } finally {

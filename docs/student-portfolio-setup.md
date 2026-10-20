@@ -84,3 +84,22 @@ sign in each day, deploy the script from a Google Workspace account (1,500 email
   applications), who can see it (Eduplan counsellors), how long it is kept, and that students can delete it
   from **My portfolio**. Then link the notice from the sign-in box.
 - Decide how long inactive portfolios are kept (for example, delete rows not signed in to for 2 years).
+
+## Student overview: who registered, signed in and used the website
+
+`apps-script/Stats.gs` adds an overview to the private spreadsheet **Eduplan Student Portfolios**:
+
+| Tab | What it shows |
+|---|---|
+| **Overview** | Registered students, new registrations (today / 7 days), active in the last 15 minutes ("online now"), active today / 7 days, sign-ins and registrations today, visits by guests and signed-in students, the latest 25 active students, the latest 25 sign-in events and a chart of visits per day. Updated every minute. |
+| **Students** | One row per student; the new column **L "Last active"** is updated whenever the student uses the website. |
+| **Sign-in log** | One row per event: *Registered* (first sign-in), *Signed in*, *Signed out*, *Deleted portfolio*. |
+| **Visits** | One row per day (Malaysia time): visits by guests and by signed-in students, and by route (interest, scholarship, guidance). Guests are counted anonymously: no cookie, no IP address, no identifier; one count per browser tab. |
+
+Set up:
+1. Paste `apps-script/Stats.gs` (new file) and the updated `Code.gs` and `Account.gs`.
+2. Select **statsSetup** and **Run** (it can be run again; it rebuilds the Overview tab). The log shows the link.
+3. Deploy a new version (Deploy → Manage deployments → Edit → New version).
+
+"Online now" means active in the last 15 minutes: the website reports activity when a signed-in student opens a
+page or their portfolio is saved, not every second. Guests appear only as counts, never by name.
