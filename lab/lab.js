@@ -288,7 +288,7 @@ function lockBox(){var v=access()==="visitor";
   (v?'<div class="row"><button type="button" class="btn" data-role="register">Register</button><button type="button" class="btn ghost" data-role="signin">Sign in</button></div>':roleCards())+'</div>';}
 function hero(){
  var lead={interest:"Search programmes from our partner universities.",scholarship:"Find the tuition waivers you can get with your results.",guidance:"Start from what you enjoy."}[L.mode];
- return '<section class="hero"><div class="hwrap"><h1>'+hello()+'</h1><p class="lead">'+(locked()?'Plan your studies in Malaysia: courses, universities and scholarships.':lead)+'</p>'+(locked()?lockBox():searchBox())+'</div></section>';
+ return '<section class="hero"><div class="hwrap"><h1>'+hello()+'</h1><p class="lead">'+(locked()?'Plan your studies in Malaysia: courses, universities and scholarships.':lead)+'</p>'+(locked()?lockBox():searchBox()+intsBar())+'</div></section>';
 }
 /* Scholarship tracker on the home page: the campus scholarships the exam results in My results qualify for
    (results.js), updated by itself when the results change. */
@@ -306,11 +306,13 @@ function continueRow(){
  if(!items.length)return '';
  return '<section class="sec"><div class="sh"><h2>Continue where you left off</h2></div><div class="hscroll">'+items.slice(0,10).join("")+'</div></section>';
 }
-/* Home, every route (interest, scholarship, guidance): the top 3 fields of study chosen on the second opening screen. */
-function myIntsSec(){var ints=myInts();if(!ints.length)return '';
- return '<section class="sec"><div class="sh"><h2>Your top 3 interests</h2><a class="hint" href="'+esc(mainLink("#portfolio"))+'">Change in My profile</a></div><div class="majors">'+ints.map(function(c,i){var f=facByCode(c),ps=D.progs.filter(function(p){return p.fac===f;}),unis=uniq(ps.map(function(p){return p.inst;})).length;
-   return '<a class="major myint" href="#faculty/'+esc(f.code)+'" data-lflow="faculty" style="--h:'+((Number(f.code)*33+190)%360)+'"><span class="mc" aria-hidden="true">'+(i+1)+'</span><span class="mn">'+esc(f.name)+'</span><span class="mz">'+esc(f.zh||"")+'</span>'+
-    '<span class="dc"><span>'+plural(unis,"university","universities")+'</span> · <span>'+plural(ps.length,"programme","programmes")+'</span></span></a>';}).join("")+'</div></section>';}
+/* Under every search (interest, scholarship, guidance, and the results pages): the top 3 interests, and the
+   universities with the most programmes in them (first interest counts most). A chip searches that field. */
+function intsBar(){var ints=myInts();if(!ints.length)return '';var sc={};
+ D.progs.forEach(function(p){var k=p.fac?ints.indexOf(p.fac.code):-1;if(k>=0)sc[p.inst.id]=(sc[p.inst.id]||0)+(3-k);});
+ var top=D.inst.filter(function(u){return sc[u.id];}).sort(function(a,b){return sc[b.id]-sc[a.id];}).slice(0,4);
+ return '<div class="myints"><span>Your top 3 interests:</span>'+ints.map(function(c,i){return '<button type="button" class="lchip" data-lfac="'+esc(c)+'">'+(i+1)+'. '+esc(facLabel(c))+'</button>';}).join("")+'</div>'+
+  (top.length?'<div class="myints"><span>Recommended universities:</span>'+top.map(function(u){return '<a class="lchip" href="#universities/'+esc(u.id.toLowerCase())+'" data-lflow="universities">'+esc(u.name)+'</a>';}).join("")+'</div>':'');}
 function popular(){
  var unis=D.inst.filter(function(u){return u.progs||u.sch;}).sort(function(a,b){return b.progs-a.progs;});
  var facs=FAC.fields.map(function(f){return {f:f,n:D.progs.filter(function(p){return p.fac===f;}).length};}).filter(function(x){return x.n;}).sort(function(a,b){return b.n-a.n;});
@@ -358,12 +360,12 @@ function trust(){
   '<div class="logos" aria-label="Partner institutions">'+D.inst.map(function(u){return '<span class="wm" title="'+esc(u.full)+'">'+esc(u.name)+'</span>';}).join("")+'</div>'+
   '<p class="hint">Programme facts come from each university’s published information. Please confirm details with the university before you apply.</p></section>';
 }
-function home(){if(locked())return hero()+'<div class="page">'+myIntsSec()+continueRow()+popular()+trust()+'</div>';
- return hero()+'<div class="page">'+myIntsSec()+schTracker()+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
+function home(){if(locked())return hero()+'<div class="page">'+continueRow()+popular()+trust()+'</div>';
+ return hero()+'<div class="page">'+schTracker()+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
 function resultsView(){
  var q=S.search,r=results(q);
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+
-  '<div class="lchips">'+summary(q).map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
+  '<div class="lchips">'+summary(q).map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div>'+intsBar()+'</div></section>'+
   '<div class="page"><div class="rtools"><h1 class="rh">'+plural(r.list.length,"programme","programmes")+'</h1>'+
   sel("r-sort","Sort by",[["match","Best match"],["short","Shortest duration"],["fee","Lowest fee"]],L.sort)+'</div>'+
   (RX.taken().length?'<label class="mine"><input type="checkbox" id="r-mine"'+(L.mine?' checked':'')+'> Only programmes my results qualify for</label>'
@@ -445,7 +447,7 @@ function schResults(){
    (u.progs?'<a class="btn sm" href="#universities/'+esc(u.id.toLowerCase())+'" data-flow="scholarships">See programmes</a>':'')+'</div></div></div></article>';}
  var fnd=q.level==="foundation"||q.level==="undergraduate"?D.fnd:[];
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">Change search</button><div class="lchips">'+
-  [q.level==="others"?"":q.qual+(hasRes?' · '+resText(q):''),q.level==="foundation"?"Foundation":q.level==="others"?"Others":"Undergraduate degree",q.inst?(D.inst.filter(function(u){return u.id===q.inst;})[0]||{}).name:"All universities"].filter(Boolean).map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div></div></section>'+
+  [q.level==="others"?"":q.qual+(hasRes?' · '+resText(q):''),q.level==="foundation"?"Foundation":q.level==="others"?"Others":"Undergraduate degree",q.inst?(D.inst.filter(function(u){return u.id===q.inst;})[0]||{}).name:"All universities"].filter(Boolean).map(function(t){return '<span class="lchip">'+esc(t)+'</span>';}).join("")+'</div></div>'+intsBar()+'</div></section>'+
   '<div class="page">'+
   (hasRes?'<h1 class="rh">'+(yes.length?'You qualify for '+plural(yes.length,"scholarship","scholarships"):'No scholarship matches this result yet')+'</h1>'
    :'<h1 class="rh">'+plural(list.length,"campus scholarship","campus scholarships")+'</h1>'+(q.level!=="others"?'<p class="muted">Add your result in the search to see which tier you reach.</p>':''))+
