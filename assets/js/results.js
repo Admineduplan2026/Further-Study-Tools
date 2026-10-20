@@ -166,21 +166,30 @@ function badge(m){if(!m)return null;
 var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function day(t){var d=new Date(t);return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear();}
 function session(){try{var x=JSON.parse(localStorage.getItem("eduplan-session"));return x&&x.token&&x.exp>Date.now()?x:null;}catch(e){return null;}}
-var RX_ERR={not_id:"This does not look like the front of an IC (MyKad or MyKid) or a passport photo page. Take a clear photo of the front of your IC.",not_slip:"This does not look like a results slip. Upload a clear photo or PDF of your results slip.",
+var RX_ERR={id_first:"Verify your name with your IC first (My portfolio, My profile). The name on your results slip must match your IC.",
+ no_name:"Your name could not be read on this slip. Upload a clear photo that shows your name and your grades.",
+ name_mismatch:"The name on this slip does not match the name on your IC. Upload your own results slip.",not_id:"This does not look like the front of an IC (MyKad or MyKid) or a passport photo page. Take a clear photo of the front of your IC.",not_slip:"This does not look like a results slip. Upload a clear photo or PDF of your results slip.",
  wrong_exam:"This slip is for a different exam. Choose the right exam above, or upload the right slip.",
  not_official:"This looks like a trial or school report, not the official results. Choose Trial results, or upload the official slip.",
  unreadable:"The grades could not be read clearly. Upload a sharper photo with the whole slip in view.",
  too_large:"The file is larger than 5 MB. Upload a smaller photo or PDF.",signed_out:"Please sign in again, then upload your slip.",
  daily_limit:"Too many slips were checked today. Please try again tomorrow, or ask a counsellor.",busy:"The checker is busy. Please try again in a minute.",
  not_configured:"Reading results slips is not available yet. Please ask a counsellor.",net:"Could not reach Eduplan. Check your connection and try again.",bad_request:"Choose a photo (JPG, PNG) or PDF of your slip."};
+/* The name verified from the student's IC (My profile; signed by Identity.gs on the live website), or null. */
+function icName(){try{var p=JSON.parse(localStorage.getItem("eduplan-profile"))||{},v=p.idv;return v&&v.name&&(!live()||v.sig)?v:null;}catch(e){return null;}}
+/* The same name, ignoring case, punctuation, spacing and word order (as Results.gs resultsSameName_). */
+function nameKey(s){return String(s||"").toUpperCase().replace(/[^A-Z\u00C0-\u024F\u4E00-\u9FFF]+/g," ").trim().split(/\s+/).filter(Boolean).sort().join(" ");}
+function sameName(a,b){var x=nameKey(a);return !!x&&x===nameKey(b);}
+function idFirst(){return '<p class="hint rxid">The name on your results slip must match your IC, so verify your name with your IC first: <a href="#portfolio">My portfolio, My profile</a>.</p>';}
 /* Live website: the student uploads the slip and Claude reads it (Results.gs); the grades are shown, not editable. */
 function slipBox(id,e){var x=R.exams[id],v=x&&x.v,ok=has(id);
  var shown=!ok?'':'<div class="rxver"><span class="rxbadge">✓ Verified by AI from your '+(v.kind==="Trial"?'trial':'official')+' results slip · '+esc(day(v.at))+'</span>'+
-  (v.name?'<span class="hint">Name on the slip: <span data-notr>'+esc(v.name)+'</span></span>':'')+
+  (v.name?'<span class="hint">Name on the slip: <span data-notr>'+esc(v.name)+'</span>'+(v.icMatch?' <span class="pill ok">✓ Matches your IC</span>':'')+'</span>':'')+
   (e.cgpa?'<p class="rxsum"><strong>CGPA '+esc(x.cgpa)+'</strong></p>':'<ul class="rxlist">'+grades(id).map(function(sg){return '<li><span>'+esc(sg[0])+'</span><b data-notr>'+esc(sg[1])+'</b></li>';}).join("")+'</ul>')+
   '<p class="hint">These grades come from your slip and cannot be typed in or changed here. Upload a new slip to replace them, for example when your official results come out. If something was read wrongly, ask a counsellor.</p></div>';
 if(live()&&!session())return shown+'<p class="hint">'+(ok?'':'Your '+esc(e.id)+' results are read from your results slip by AI, so they cannot be typed in. ')+'<a href="#portfolio">Sign in</a> to upload your slip.</p>';
  if(UI.busy)return shown+'<p class="note" role="status">Reading your slip… This takes up to a minute.</p>';
+ if(!icName())return shown+idFirst();
  return shown+'<div class="rxup"><span class="sl">'+(ok?'Upload a new slip':'Upload your '+esc(e.id)+' results slip')+'</span>'+
   '<div class="field"><label for="rx-kind">Which results slip?</label><select id="rx-kind"><option value="Official"'+(UI.kind!=="Trial"?' selected':'')+'>Official results</option><option value="Trial"'+(UI.kind==="Trial"?' selected':'')+'>Trial results (school trial exam)</option></select></div>'+
   '<div class="field"><label for="rx-file">Photo or PDF of the slip</label><input id="rx-file" type="file" accept="'+(live()?'image/jpeg,image/png,image/webp,application/pdf':'image/*')+'" capture="environment"><span class="hint">Max 5 MB. AI reads your grades; the slip itself is not stored.</span></div>'+
@@ -196,7 +205,11 @@ function useSlip(id,kind,r,signed){var e=exam(id);
  if(!r||!r.is_results_slip)return {error:"not_slip"};
  if(r.exam!==id)return {error:"wrong_exam"};
  if(kind==="Official"&&r.slip_kind!=="official")return {error:"not_official"};
- var x={v:{kind:kind,at:Date.now(),name:String(r.candidate_name||"").slice(0,120),year:String(r.year||"").slice(0,20)}};
+ var ic=icName(),onSlip=String(r.candidate_name||"").trim();
+ if(!ic)return {error:"id_first"};
+ if(!onSlip)return {error:"no_name"};
+ if(!sameName(onSlip,ic.name))return {error:"name_mismatch",found:onSlip};
+ var x={v:{kind:kind,at:Date.now(),name:onSlip.slice(0,120),year:String(r.year||"").slice(0,20),icMatch:true}};
  if(e.cgpa){var c=Number(r.cgpa);if(!(c>=0&&c<=4))return {error:"unreadable"};x.cgpa=Math.round(c*100)/100;}
  else{x.g=(r.subjects||[]).map(function(t){return [String(t.subject||"").trim().slice(0,80),String(t.grade||"").trim().toUpperCase()];})
    .filter(function(t){return t[0]&&e.grades.indexOf(t[1])>-1;});if(!x.g.length)return {error:"unreadable"};}
@@ -205,17 +218,20 @@ function readFile(id,file,kind){UI.err="";UI.kind=kind;UI.cur=id;
  if(!file){UI.err="Choose a photo or PDF of your slip first.";return save();}
  if(file.size>5*1024*1024){UI.err=RX_ERR.too_large;return save();}
  function done(x){R.exams[id]=x;UI.busy=false;UI.err="";save();}
- function fail(code){UI.busy=false;UI.err=RX_ERR[code]||RX_ERR.busy;save();}
+ function fail(code,found){UI.busy=false;UI.err=RX_ERR[code]||RX_ERR.busy;
+  if(code==="name_mismatch"){var ic=icName();UI.err="The name on this slip ("+(found||"?")+") does not match the name on your IC ("+(ic?ic.name:"?")+"). Upload your own results slip.";}
+  save();}
+ if(!icName())return fail("id_first");
  if(!live()){if(!AI.sm||!/^image\//.test(file.type))return fail(AI.sm?"bad_request":"not_configured");
   UI.busy=true;save();
   AI.sm.json(SLIP_PROMPT+" The student says this is their "+kind.toLowerCase()+" "+id+" results.",{images:[file],modelTier:"complex",cache:false})
-   .then(function(r){var u=useSlip(id,kind,r);if(u.error)return fail(u.error);done(u.x);},function(err){fail(err&&err.code==="rate_limited"?"daily_limit":err&&err.code==="image_rejected"?"bad_request":"busy");});
+   .then(function(r){var u=useSlip(id,kind,r);if(u.error)return fail(u.error,u.found);done(u.x);},function(err){fail(err&&err.code==="rate_limited"?"daily_limit":err&&err.code==="image_rejected"?"bad_request":"busy");});
   return;}
  var ss=session();if(!ss)return fail("signed_out");
  var rd=new FileReader();rd.onload=function(){var data=String(rd.result).split(",")[1]||"";UI.busy=true;save();
-  fetch(window.EDUPLAN_API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"results_read",token:ss.token,exam:id,kind:kind,file:{type:file.type,data:data}})})
-   .then(function(r){return r.json();}).then(function(d){if(!d||!d.ok)return fail(d&&d.error);
-    var x={v:{kind:d.kind,at:d.at,sig:d.sig,name:d.name||"",year:d.year||""}};if(d.g)x.g=d.g;if(d.cgpa!=null)x.cgpa=d.cgpa;done(x);})
+  fetch(window.EDUPLAN_API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"results_read",token:ss.token,exam:id,kind:kind,idv:icName(),file:{type:file.type,data:data}})})
+   .then(function(r){return r.json();}).then(function(d){if(!d||!d.ok)return fail(d&&d.error,d&&d.found);
+    var x={v:{kind:d.kind,at:d.at,sig:d.sig,name:d.name||"",year:d.year||"",icMatch:true}};if(d.g)x.g=d.g;if(d.cgpa!=null)x.cgpa=d.cgpa;done(x);})
    .catch(function(){fail("net");});};
  rd.readAsDataURL(file);}
 function readSlip(id){var f=document.getElementById("rx-file"),k=document.getElementById("rx-kind");readFile(id,f&&f.files&&f.files[0],k?k.value:"Official");}
@@ -244,6 +260,7 @@ function readId(file){
 /* The photo box in the search forms: take or choose a photo of the slip; the grades fill in and lock. */
 function snapField(id,pick){var e=exam(id)||exam("SPM"),grade=EXAMS.filter(function(x){return !x.cgpa;});
  if(live()&&!session())return '<div class="sf snap"><span class="sl">Your results</span><span class="hint">Your grades are read from a photo of your results slip. <a href="#portfolio">Sign in</a> to upload it.</span></div>';
+ if(!icName()&&!(UI.busy))return '<div class="sf snap"><span class="sl">Your results</span><span class="hint">Your grades are read from a photo of your results slip, and the name on it must match your IC. Verify your name with your IC first in <a href="#portfolio">My portfolio</a>.</span></div>';
  return '<div class="sf snap"><span class="sl">Your results</span>'+
   (UI.busy?'<span class="note" role="status">Reading your slip… This takes up to a minute.</span>':
   '<div class="snaprow">'+(pick?'<select data-snap-exam aria-label="Exam">'+grade.map(function(x){return '<option value="'+esc(x.id)+'"'+(x.id===e.id?' selected':'')+'>'+esc(x.label||x.id)+'</option>';}).join("")+'</select>':'')+

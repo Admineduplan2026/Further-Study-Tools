@@ -1,12 +1,18 @@
 # Results check: AI reads the student's results slip
 
-On the live website, **My results** can no longer be typed in. A signed-in student uploads a photo or PDF of their
+On the live website, **My portfolio** is filled in only after signing in, and **My results** can no longer be typed in. A signed-in student uploads a photo or PDF of their
 results slip and chooses **Official results** or **Trial results**. Claude reads the exam, subjects and grades
 (`apps-script/Results.gs`), and the website fills them in, marked "Verified by AI from your official / trial results
 slip". The student cannot edit them; a new slip replaces them (for example when the official results come out).
 
 ## What the server checks
 
+- The student has verified their name with their IC first (My profile, `Identity.gs`); the request carries that
+  signed name check.
+- The **name printed on the slip is the same as the name on the IC** (case, punctuation, spacing and word order do
+  not matter; every word must be there: `TAN LILI` matches `Tan Lili`, not `TAN LI LI` or `LIM LILI`). A slip without a
+  readable name, or with another name, is refused ("The name on this slip (…) does not match the name on your IC (…)").
+  So the results used for scholarships and applications are the student's own.
 - The file is a results slip, for the exam the student chose.
 - "Official results" must be an official slip (a school trial report is refused; the student can choose Trial).
 - Every grade exists for that exam (SPM A+ … G; UEC A1 … F9; STPM A … F; IGCSE / O-Level / A-Level A* …). Grades
@@ -64,3 +70,13 @@ version. It uses the same `ANTHROPIC_API_KEY`, model and daily limit as the resu
 
 Students under 18: a MyKad or MyKid photo is personal data of a minor. Ask a PDPA adviser whether a parent's consent is
 needed before the name check.
+
+## IC, name and results slip: one name everywhere
+
+1. The student signs in, then verifies their name with a photo of the front of their IC (MyKad / MyKid / passport).
+   The name, exactly as printed (for example `TAN LILI`), becomes their name in My profile; it cannot be typed.
+2. The results slip (official SPM or trial) must show the same name, or it is refused.
+3. The application form's "Full name (as on NRIC/passport)" is filled in from the IC and locked, and the application
+   PDF shows "Name verified with IC: Yes, by Eduplan (IC ending ####)".
+
+To test the name check from the editor, set `IC_NAME` in `resultsTest` (Results.gs) to the name on the IC.

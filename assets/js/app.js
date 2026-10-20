@@ -657,8 +657,11 @@ function applyStep(n){
    af("intake","Intake (month and year)",{type:"month",hint:x&&x.p.intakes?"Intakes: "+esc(x.p.intakes):"Example: 2026-04"}))+
    (schoolForm()?sfGroup(schoolForm()):'');
  }
+ if(n===2){var iv=idv();if(iv&&S.app.v.name_en!==iv.name){S.app.v.name_en=iv.name;applySave();}}
  if(n===2)return agroup("Personal details",
-   af("name_en","Full name (as on NRIC/passport)",{full:true,auto:"name",hint:"In capital letters, for example TAN WEI MING."})+
+   (idv()?'<div class="field full"><label for="ap-name_en">Full name (as on NRIC/passport)</label><input id="ap-name_en" name="name_en" value="'+esc(idv().name)+'" readonly aria-readonly="true">'+
+    '<span class="hint">✓ From your IC (verified). Your results slip and scholarship use the same name.</span></div>'
+   :af("name_en","Full name (as on NRIC/passport)",{full:true,auto:"name",hint:"In capital letters, exactly as on your IC, for example TAN WEI MING. Verify your name with your IC in My portfolio to fill it in for you."}))+
    af("name_zh","Chinese name",{opt:true})+af("ic","NRIC / passport no.",{hint:"Example: 080101-14-1234"})+
    af("dob","Date of birth",{type:"date",auto:"bday"})+af("gender","Gender",{opts:["Male","Female"],first:"Choose"})+
    af("marital","Marital status",{opts:["Single","Married"],first:"Choose"})+af("race","Race")+af("religion","Religion")+
@@ -760,7 +763,7 @@ function applySummary(){
  else if(sfm){sec(sfm.id+" application form");row("Applied to "+sfm.id+" before",v.u_prev==="Yes"?"Yes ("+(v.u_id||"")+")":v.u_prev);
   for(var pi=1;pi<=5;pi++){var pd=v["u_pref"+pi]&&sfDegree(sfm,v["u_pref"+pi]);if(pd)row("Degree choice "+pi,pd[0]+" ("+pd[1]+")");}
   row("Preferred campus",v.u_campus);row("Good physical and mental health",v.u_health==="No"?"No: "+(v.u_health_info||""):v.u_health);}
- sec("Personal details");row("Name (as on NRIC/passport)",String(v.name_en||"").toUpperCase());row("Chinese name",v.name_zh);row("NRIC / passport no.",v.ic);row("Date of birth",v.dob);
+ sec("Personal details");row("Name (as on NRIC/passport)",String(v.name_en||"").toUpperCase());row("Name verified with IC",idv()&&sameNameApp(idv().name,v.name_en)?"Yes, by Eduplan (IC ending "+idv().last4+")":"No");row("Chinese name",v.name_zh);row("NRIC / passport no.",v.ic);row("Date of birth",v.dob);
  row("Gender",v.gender);row("Marital status",v.marital);row("Race",v.race);row("Religion",v.religion);row("Nationality",v.nationality);row("Country of permanent residence",v.residence);
  sec("Contact details");row("Mobile",v.mobile);row("Email",v.email);row("Home telephone",v.tel);
  row("Correspondence address",[v.addr,v.postcode+" "+v.town,v.state,v.country].join(", ").replace(/\s*\n\s*/g,", "));
@@ -1258,6 +1261,7 @@ V.privacy=function(){
    consultation and application forms when they are empty; status and interests help Eduplan's counsellors. */
 /* Verified name: read from the student's IC by AI (Identity.gs; in the preview by Claude in the page). Students without
    it are guests: they can browse but not book a free consultation. */
+function sameNameApp(a,b){function k(s){return String(s||"").toUpperCase().replace(/[^A-Z\u00C0-\u024F\u4E00-\u9FFF]+/g," ").trim().split(/\s+/).filter(Boolean).sort().join(" ");}return !!k(a)&&k(a)===k(b);}
 function idv(){var v=S.prof&&S.prof.idv;return v&&v.name&&(!RX.live()||v.sig)?v:null;}
 function idBox(){var v=idv();
  if(v)return '<div class="idok"><span class="idbadge">✓ Verified with your IC</span><b data-notr>'+esc(v.name)+'</b><span class="hint">'+(v.type==="passport"?'Passport':'IC')+' ending ••••'+esc(v.last4)+'</span></div>';
@@ -1275,7 +1279,7 @@ document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribu
 var PROF_STATUS=["Form 4 or Form 5 student","Waiting for SPM results","Finished SPM","In pre-university (Form 6, A-Level, foundation, matriculation)","Studying at a college or university"];
 var MY_STATES=["Johor","Kedah","Kelantan","Kuala Lumpur","Labuan","Melaka","Negeri Sembilan","Pahang","Penang","Perak","Perlis","Putrajaya","Sabah","Sarawak","Selangor","Terengganu"];
 function pfProfile(){var p=S.prof||{},fi=p.fields||[];
- return '<p class="muted">Your name is verified with your IC; it is needed to book a free consultation. Everything else here is optional. Your name and WhatsApp number are filled in on the consultation and application forms for you. Your status and interests help our counsellors suggest courses.</p>'+
+ return '<p class="muted">Your name comes from your IC, exactly as printed (for example TAN LI LI), and cannot be typed in. The name on your results slip must match it, so your results, scholarships and applications are accurate. It is also needed to book a free consultation. Everything else here is optional. Your name and WhatsApp number are filled in on the consultation and application forms for you. Your status and interests help our counsellors suggest courses.</p>'+
   '<div class="fields" id="pf-prof">'+
   '<div class="field"><span class="legend">Your name</span>'+idBox()+'</div>'+
   '<div class="field"><label for="pr-phone">WhatsApp number <span class="hint">(optional)</span></label><input id="pr-phone" data-prof="phone" type="tel" autocomplete="tel" placeholder="012-345 6789" value="'+esc(p.phone||"")+'"><span class="hint">For counsellor follow-ups and deadline reminders.</span></div>'+
@@ -1288,6 +1292,13 @@ document.addEventListener("change",function(ev){var t=ev.target;if(!t||!t.closes
  else if(t.hasAttribute("data-prof"))S.prof[t.getAttribute("data-prof")]=t.value.trim();
  store("eduplan-profile",S.prof);pfTouch("profile");});
 V.portfolio=function(){
+ /* Live website: the portfolio is filled in only after signing in. */
+ if(pfLive()&&!PF.s)return '<section class="stack"><span class="eyebrow">My portfolio</span><h1>Sign in to fill in your portfolio</h1>'+
+  '<p class="lead">Your portfolio keeps your verified name, results, profile, saved programmes, application and payment in one place, on any device.</p></section>'+pfLogin()+
+  '<section class="panel pfcard"><h2>After you sign in</h2><ol class="pfsteps">'+
+  '<li><b>Verify your name with your IC.</b> AI reads the name on the front of your IC. We keep only your name and the last 4 digits.</li>'+
+  '<li><b>Upload your results slip</b> (official SPM results or trial results). AI reads your grades and checks that the name on the slip is the same as on your IC.</li>'+
+  '<li><b>Apply and get scholarships</b> with the same verified name, results and details.</li></ol></section>';
  var head='<section class="stack"><span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
   '<p><span class="pill'+(idv()?' ok':'')+'">'+(idv()?'✓ Verified student':'Guest: verify your name with your IC in My profile')+'</span></p>'+
   (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'

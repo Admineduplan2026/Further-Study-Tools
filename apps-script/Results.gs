@@ -3,7 +3,9 @@
  *
  * The website POSTs {"action":"results_read","token":"...","exam":"SPM","kind":"Official"|"Trial",
  *   "file":{"type":"image/jpeg"|"image/png"|"image/webp"|"application/pdf","data":"<base64>"}} to /exec (doPost in Code.gs).
- * The student must be signed in (Account.gs). Claude returns the exam, the subjects and grades it reads on the slip;
+ * The student must be signed in (Account.gs) and must have verified their name with their IC first (Identity.gs): the
+ * request carries the signed name check {"idv":{name,last4,at,sig}}, and the name printed on the slip must be the
+ * same as the name on the IC, so a student cannot use someone else's slip. Claude returns the exam, the subjects and grades it reads on the slip;
  * this script checks them (a real results slip, the exam the student chose, grades that exist for that exam, an
  * official slip when "Official" was chosen) and signs them with a key kept in Script Properties. The slip itself is
  * not stored. Account.gs keeps only signed results in the portfolio, so a student cannot type or change grades;
@@ -110,11 +112,19 @@ function resultsRead_(body) {
   var sh = accountSheet_(), s = accountSession_(sh, body.token);
   if (!s) return { error: 'signed_out' };
   var email = String(sh.getRange(s.row, ACCOUNT_COL.email).getValue()).toLowerCase();
-  return resultsReadFile_(email, exam, kind, type, data);
+  if (!idVerified_(body.idv, email)) return { error: 'id_first' };
+  return resultsReadFile_(email, exam, kind, type, data, String(body.idv.name));
 }
 
-/* Claude reads the slip; the checks and the signature. Also used by resultsTest. */
-function resultsReadFile_(email, exam, kind, type, data) {
+/* The same name, ignoring case, punctuation, spacing and word order ("TAN LI LI" = "Tan Li-Li" = "LI LI TAN"). */
+function resultsNameKey_(s) {
+  return String(s || '').toUpperCase().replace(/[^A-Z\u00C0-\u024F\u4E00-\u9FFF]+/g, ' ').trim().split(/\s+/).filter(String).sort().join(' ');
+}
+function resultsSameName_(a, b) { var x = resultsNameKey_(a); return !!x && x === resultsNameKey_(b); }
+
+/* Claude reads the slip; the checks and the signature. icName: the name verified from the student's IC, which the
+   name on the slip must match (resultsTest may leave it empty to skip that check). Also used by resultsTest. */
+function resultsReadFile_(email, exam, kind, type, data, icName) {
   var props = PropertiesService.getScriptProperties(), apiKey = props.getProperty('ANTHROPIC_API_KEY');
   if (!apiKey) return { error: 'not_configured' };
   if (!resultsAllowed_()) return { error: 'daily_limit' };
@@ -154,6 +164,11 @@ function resultsReadFile_(email, exam, kind, type, data) {
   if (!r.is_results_slip) return { error: 'not_slip' };
   if (r.exam !== exam) return { error: 'wrong_exam', found: r.exam };
   if (kind === 'Official' && r.slip_kind !== 'official') return { error: 'not_official' };
+  if (icName) {
+    var onSlip = String(r.candidate_name || '').trim();
+    if (!onSlip) return { error: 'no_name' };
+    if (!resultsSameName_(onSlip, icName)) return { error: 'name_mismatch', found: accountCell_(onSlip, 120) };
+  }
   var x = { kind: kind, at: Date.now() }, grades = RESULTS_EXAMS[exam];
   if (grades) {
     var g = (r.subjects || []).map(function (s) { return [accountCell_(s.subject, 80), String(s.grade || '').trim().toUpperCase()]; })
@@ -177,8 +192,9 @@ function resultsTest() {
   var FILE_ID = 'PASTE-THE-FILE-ID-HERE';
   var EXAM = 'SPM';          // SPM, UEC, STPM, IGCSE, O-Level, A-Level, Foundation, Matriculation or Diploma
   var KIND = 'Official';     // Official or Trial
+  var IC_NAME = '';          // optional: the name on the student's IC, to test the name check (e.g. 'TAN LI LI')
   var file = DriveApp.getFileById(FILE_ID), blob = file.getBlob();
-  var out = resultsReadFile_('test@eduplan', EXAM, KIND, String(blob.getContentType()).toLowerCase(), Utilities.base64Encode(blob.getBytes()));
+  var out = resultsReadFile_('test@eduplan', EXAM, KIND, String(blob.getContentType()).toLowerCase(), Utilities.base64Encode(blob.getBytes()), IC_NAME);
   console.log(file.getName() + ' (' + blob.getContentType() + ', ' + Math.round(blob.getBytes().length / 1024) + ' KB)');
   console.log(JSON.stringify(out, null, 2));
 }
