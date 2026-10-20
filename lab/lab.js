@@ -245,7 +245,7 @@ function searchBox(){
   sel("q-budget","Budget",BUDGETS,s.budget)+
   sel("q-intake","Start date",intakeOptions(),s.intake)+
   '</div><button type="submit" class="go">'+SEARCH+'<span>Search</span></button></form>'+
-  (myInts().length?'<div class="myints"><span>Your top interests:</span>'+myInts().map(function(c,i){return '<button type="button" class="lchip" data-lfac="'+esc(c)+'">'+(i+1)+'. '+esc(facLabel(c))+'</button>';}).join("")+'</div>':'')+autoResults()+
+  autoResults()+
   (hadSearch?'<p class="memo">Your last search is filled in. <button type="button" class="linkbtn" data-act="clear-search">Clear</button></p>':'');
 }
 /* Interest search: the exam results saved in My results (the portfolio) are filled in here, so the search can keep
@@ -306,6 +306,11 @@ function continueRow(){
  if(!items.length)return '';
  return '<section class="sec"><div class="sh"><h2>Continue where you left off</h2></div><div class="hscroll">'+items.slice(0,10).join("")+'</div></section>';
 }
+/* Home, every route (interest, scholarship, guidance): the top 3 fields of study chosen on the second opening screen. */
+function myIntsSec(){var ints=myInts();if(!ints.length)return '';
+ return '<section class="sec"><div class="sh"><h2>Your top 3 interests</h2><a class="hint" href="'+esc(mainLink("#portfolio"))+'">Change in My profile</a></div><div class="majors">'+ints.map(function(c,i){var f=facByCode(c),ps=D.progs.filter(function(p){return p.fac===f;}),unis=uniq(ps.map(function(p){return p.inst;})).length;
+   return '<a class="major myint" href="#faculty/'+esc(f.code)+'" data-lflow="faculty" style="--h:'+((Number(f.code)*33+190)%360)+'"><span class="mc" aria-hidden="true">'+(i+1)+'</span><span class="mn">'+esc(f.name)+'</span><span class="mz">'+esc(f.zh||"")+'</span>'+
+    '<span class="dc"><span>'+plural(unis,"university","universities")+'</span> · <span>'+plural(ps.length,"programme","programmes")+'</span></span></a>';}).join("")+'</div></section>';}
 function popular(){
  var unis=D.inst.filter(function(u){return u.progs||u.sch;}).sort(function(a,b){return b.progs-a.progs;});
  var facs=FAC.fields.map(function(f){return {f:f,n:D.progs.filter(function(p){return p.fac===f;}).length};}).filter(function(x){return x.n;}).sort(function(a,b){return b.n-a.n;});
@@ -353,8 +358,8 @@ function trust(){
   '<div class="logos" aria-label="Partner institutions">'+D.inst.map(function(u){return '<span class="wm" title="'+esc(u.full)+'">'+esc(u.name)+'</span>';}).join("")+'</div>'+
   '<p class="hint">Programme facts come from each university’s published information. Please confirm details with the university before you apply.</p></section>';
 }
-function home(){if(locked())return hero()+'<div class="page">'+continueRow()+popular()+trust()+'</div>';
- return hero()+'<div class="page">'+schTracker()+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
+function home(){if(locked())return hero()+'<div class="page">'+myIntsSec()+continueRow()+popular()+trust()+'</div>';
+ return hero()+'<div class="page">'+myIntsSec()+schTracker()+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
 function resultsView(){
  var q=S.search,r=results(q);
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+

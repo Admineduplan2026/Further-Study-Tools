@@ -414,3 +414,4 @@ body.introopen{overflow:hidden}
 .icta:disabled{opacity:1;background:#cfdbe4;border-color:#cfdbe4;color:#3f5160;cursor:not-allowed;animation:none}
 .myints{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px;color:#e3f1fa;font-size:14px}
 .myints .lchip{cursor:pointer}
+.major.myint .mc{opacity:.32}
