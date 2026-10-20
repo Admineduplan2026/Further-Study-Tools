@@ -632,7 +632,10 @@ document.addEventListener("keydown",function(ev){if(ev.key==="Escape"){if(L.deta
 /* Second screen: every visitor (guest or signed in) picks their top 3 fields of study, in order, from the faculties
    offered under "What do you want to study?". Saved in My profile (eduplan-profile .fields); asked until there are 3. */
 function myInts(){var p=ls("eduplan-profile")||{};return (p.fields||[]).filter(function(c){return facByCode(c);});}
-function intFacs(){return FAC.fields.filter(function(f){return f.code!=="00"&&D.progs.some(function(p){return p.fac===f;});});}
+/* Fields with programmes; every field while the programmes are still loading (the live website waits for Apps Script),
+   so the interests step is never skipped. */
+function intFacs(){var all=FAC.fields.filter(function(f){return f.code!=="00";}),has=all.filter(function(f){return D.progs.some(function(p){return p.fac===f;});});
+ return has.length?has:all;}
 function interests(){
  if(myInts().length>=3||/^#(privacy|portfolio)/.test(location.hash)||document.querySelector(".ipick")||!intFacs().length)return false;
  var pick=myInts().slice(0,3),d=document.createElement("div");d.className="intro ipick";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","ipick-h");
