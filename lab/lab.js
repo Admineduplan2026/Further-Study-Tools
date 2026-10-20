@@ -361,7 +361,7 @@ function trust(){
   '<p class="hint">Programme facts come from each university’s published information. Please confirm details with the university before you apply.</p></section>';
 }
 function home(){if(locked())return hero()+'<div class="page">'+continueRow()+popular()+trust()+'</div>';
- return hero()+'<div class="page">'+schTracker()+continueRow()+(L.mode==="guidance"?recommended()+popular():popular()+offers()+recommended())+trust()+'</div>';}
+ return hero()+'<div class="page">'+recommended()+popular()+schTracker()+continueRow()+(L.mode==="guidance"?'':offers())+trust()+'</div>';}   /* recommended first, then popular, then the rest */
 function resultsView(){
  var q=S.search,r=results(q);
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+
