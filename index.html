@@ -10,41 +10,31 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap">
   <link rel="stylesheet" href="assets/css/styles.css">
+  <link rel="stylesheet" href="lab/lab.css">
 </head>
 <body>
 <div class="sample">Sample data. Universities, scholarships, fees and contact details on this site are placeholders until Eduplan replaces them.</div>
-<header class="site">
-  <div class="wrap bar">
-    <a class="logo" href="#home" aria-label="Eduplan home"><img src="assets/img/logo.png" alt="Eduplan: plan your future"></a>
-    <nav class="main" aria-label="Main">
-      <a href="#about" data-nav="about">About Us</a>
-      <a href="#faculty" data-nav="faculty">Faculty</a>
-      <a href="#universities" data-nav="universities">Universities</a>
-      <a href="#scholarships" data-nav="scholarships">Scholarships</a>
-      <a href="#accommodation" data-nav="accommodation">Accommodation</a>
-      <a href="#apply" data-nav="apply">Apply</a>
-      <a href="#portfolio" data-nav="portfolio">My portfolio</a>
-      <a class="cta" href="#consultation" data-nav="consultation">Free Consultation</a>
-    </nav>
-  </div>
-</header>
-<div class="wrap"><main id="app" tabindex="-1"></main></div>
-<footer class="site">
-  <div class="wrap cols">
-    <div><strong style="color:var(--ink);font-weight:500">Eduplan</strong><span>Plan your future. Guidance from choosing a course to registration, free of charge.</span></div>
-    <div><a href="#privacy">Privacy, cookies and security</a></div>
-    <div><span>Phone / WhatsApp: [YOUR PHONE NUMBER]</span><span>Email: [YOUR EMAIL]</span><span>Address: [YOUR OFFICE ADDRESS]</span></div>
-  </div>
-</footer>
+<header class="site" id="top"></header>
+<main id="app" tabindex="-1"></main>
+<div id="sheet"></div>
+<div id="helpbox"></div>
 
+<script>/* The Eduplan home page uses the Eduplan Lab layout (lab/); its pictures are at the website root. The previous layout is classic.html. */
+window.EDUPLAN_ASSET_BASE="";window.EDUPLAN_LOGO="assets/img/logo.png";window.EDUPLAN_FOUNDER_PHOTO="assets/img/founder.jpg";
+window.EDUPLAN_CAMPUS_PHOTOS={XMUM:"assets/img/campus/xmum.jpg",UTAR:"assets/img/campus/utar.jpg",APU:"assets/img/campus/apu.jpg"};</script>
 <script src="assets/js/config.js"></script>
+<script src="lab/lab-config.js"></script>
+<script src="lab/lab-about.js"></script>
 <script src="assets/js/scholarship-data.js"></script>
 <script src="assets/js/faculty-data.js"></script>
 <script src="assets/js/quiz-data.js"></script>
 <script src="assets/js/results.js"></script>
 <script src="assets/js/privacy-notice.js"></script>
+<script src="lab/lab-zh.js"></script>
+<script src="lab/lab-host.js"></script>
 <script src="assets/js/school-forms.js"></script>
 <script src="assets/js/app.js"></script>
+<script src="lab/lab.js"></script>
 <script src="assets/js/chat-knowledge.js"></script>
 <script src="assets/js/chat.js"></script>
 <script src="assets/js/content-zh.js"></script>

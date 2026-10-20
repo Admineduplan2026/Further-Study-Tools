@@ -1,6 +1,7 @@
 # Eduplan Lab (new layout): how it connects to Google Drive
 
-Eduplan Lab (`lab/index.html`) is a second layout for the same website. It uses exactly the same Google Drive
+Eduplan Lab (`lab/index.html`) is a second layout for the same website. The website's home page (`index.html`) now
+uses this layout too (the previous home page is `classic.html`). It uses exactly the same Google Drive
 set-up as the main site, so nothing extra is needed in Drive:
 
 | What | Where it comes from / goes to |

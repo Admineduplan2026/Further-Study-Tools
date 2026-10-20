@@ -6,7 +6,8 @@ Eduplan education tools is a tool with leads the students to a right study insti
 The Eduplan website is a static site (no build step) made from the Eduplan artifact.
 
 ```
-index.html              page shell: header, navigation, footer
+index.html              home page: the Eduplan Lab layout (lab/) with About us, top-3 interests and one search
+classic.html            the previous home page (header, navigation, footer), kept for reference
 assets/css/styles.css   all styles
 assets/js/config.js            EDUPLAN_API_URL: the school data API (empty = local data only)
 assets/js/scholarship-data.js  all scholarship data (Foundation and Campus scholarships)
@@ -53,5 +54,5 @@ The universities, scholarships, fees and contact details are placeholders. Repla
 
 - the data arrays at the top of `assets/js/app.js` (`COURSES`, `UNIS`)
 - the empty `universities` lists in `assets/js/faculty-data.js`
-- `[YOUR PHONE NUMBER]`, `[YOUR EMAIL]` and `[YOUR OFFICE ADDRESS]` in `index.html` and `assets/js/app.js`
-- then remove the yellow "Sample data" banner at the top of `index.html`
+- `[YOUR PHONE NUMBER]`, `[YOUR EMAIL]` and `[YOUR OFFICE ADDRESS]` in `classic.html` and `assets/js/app.js`
+- then remove the yellow "Sample data" banner at the top of `index.html` (and `classic.html`)

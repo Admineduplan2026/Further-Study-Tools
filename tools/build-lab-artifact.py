@@ -15,7 +15,7 @@ html=open("lab/index.html").read()
 body=html[html.index("<body>")+6:html.index("<script")].strip()
 official="--official" in sys.argv[2:]
 if official:
- main=open("index.html").read()
+ main=open("classic.html").read()
  notice=re.search(r'<div class="sample">.*?</div>',main).group(0)
  body=re.sub(r'<div class="sample">.*?</div>',lambda m:notice,body,count=1)
 settings="window.EDUPLAN_LOGO=%r;window.EDUPLAN_CAMPUS_PHOTOS={XMUM:%r,UTAR:%r,APU:%r};window.EDUPLAN_FOUNDER_PHOTO=%r;" % (
