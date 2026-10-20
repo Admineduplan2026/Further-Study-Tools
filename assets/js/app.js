@@ -1041,14 +1041,23 @@ function pfVerify(code){
  pfPost({action:"account_verify",email:PF.email,code:code}).then(function(d){
   PF.busy=false;
   if(!d||!d.token){PF.err=PF_ERR[d&&d.error]||PF_ERR.bad_request;return rerender("pf-code");}
-  PF.s={token:d.token,email:d.email,exp:Date.now()+(d.days||30)*864e5};store(PF_KEY,PF.s);
-  PF.step="email";PF.msg="";PF.loaded=Date.now();
-  pfUse(d.data,true);
-  if(PF.dirty)PF.timer=setTimeout(pfFlush,300);
-  pfStatus("Signed in. Your progress is saved automatically.");rerender();window.scrollTo(0,0);
-  try{window.dispatchEvent(new CustomEvent("eduplan:signedin"));}catch(e){}
+  pfSignedIn(d);rerender();window.scrollTo(0,0);
  }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender("pf-code");});
 }
+/* A verified code: keep the session and load the portfolio into this browser (My portfolio and the opening screens). */
+function pfSignedIn(d){
+ PF.s={token:d.token,email:d.email,exp:Date.now()+(d.days||30)*864e5};store(PF_KEY,PF.s);
+ PF.step="email";PF.msg="";PF.err="";PF.loaded=Date.now();
+ pfUse(d.data,true);
+ if(PF.dirty)PF.timer=setTimeout(pfFlush,300);
+ pfStatus("Signed in. Your progress is saved automatically.");
+ try{window.dispatchEvent(new CustomEvent("eduplan:signedin"));}catch(e){}
+}
+/* Sign-in for other screens (the lab's opening screens): the same account and portfolio as My portfolio. */
+window.EDUPLAN_ACCOUNT={live:pfLive,errors:PF_ERR,
+ sendCode:function(email){PF.email=String(email||"").trim().toLowerCase();PF.consent=true;return pfPost({action:"account_code",email:PF.email});},
+ verify:function(email,code){return pfPost({action:"account_verify",email:String(email||"").trim().toLowerCase(),code:String(code||"").replace(/\D/g,"")}).then(function(d){
+  if(d&&d.token){pfSignedIn(d);render(true);}return d;});}};
 function pfAction(act){
  if(act==="guest"){PF.guest=true;sset("eduplan-guest","1");PF.err="";if(HOST&&HOST.locked&&sget("eduplan-pfmode")){sset("eduplan-pfmode","");location.hash="#home";return;}rerender();window.scrollTo(0,0);return;}
  if(act==="again"){pfSendCode(PF.email,true);return;}
@@ -1089,7 +1098,7 @@ function pfLogin(gate){
  var guest=gate&&PF.guestOk?'<div class="row"><button type="button" class="btn ghost" data-pf="guest">Continue without signing in</button></div>':'';
  if(!pfLive()){var pm=sget("eduplan-pfmode"),member=HOST&&HOST.locked&&!HOST.locked("guided");
   return '<section class="panel pflogin"><h2>'+(pm==="register"?'Register':'Sign in')+'</h2><p class="muted">Registering and signing in work on the live Eduplan website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+pfAsk()+
-  (gate||(pm&&!member)||sget("eduplan-onb")==="ints"?'<p class="muted">Tap below to try everything a member can do in this preview.</p><div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';}
+  (gate||(pm&&!member)?'<p class="muted">Tap below to try everything a member can do in this preview.</p><div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';}
  if(PF.step==="code")return '<section class="panel pflogin"><h2>Enter your code</h2>'+msg+
   '<form class="fields" id="pf-code-form" novalidate><div class="field"><label for="pf-code">6-digit code</label>'+
   '<input id="pf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+inv+'>'+err+'<span class="hint">Sent to <span data-notr>'+esc(PF.email)+'</span>. Check your spam folder if it is not in your inbox.</span></div>'+
