@@ -124,9 +124,9 @@ var LEVELS=[["foundation","Foundation",["Foundation"]],["undergraduate","Undergr
  ["postgraduate","Postgraduate",["Master's Degree","PhD","Professional Certificate"]]];
 /* The three routes and their pages. Each ends with Ask more, Apply and Accommodation (see the Journey section). */
 var FLOWS={
- faculty:["Faculty","Courses","University & programme","Ask more","Apply","Accommodation"],
- universities:["Universities","University","Programme","Ask more","Apply","Accommodation"],
- scholarships:["Scholarship","Scholarship type","Requirements","University","Programme","Ask more","Apply","Accommodation"]
+ faculty:["Faculty","Courses","University & programme","Ask more","Apply","Accommodation","Payment"],
+ universities:["Universities","University","Programme","Ask more","Apply","Accommodation","Payment"],
+ scholarships:["Scholarship","Scholarship type","Requirements","University","Programme","Ask more","Apply","Accommodation","Payment"]
 };
 /* University pages are pages 1-3 of their own route, or pages 4-5 when the student came from a scholarship. */
 function uniStepper(step){return S.flow==="scholarships"?stepper(FLOWS.scholarships,step===3?5:4):stepper(FLOWS.universities,step);}
@@ -839,7 +839,8 @@ V.stay=function(){
  var a=S.app,v=a.v;
  var head='<section class="stack">'+flowStep("Accommodation")+'<span class="eyebrow">Apply with Eduplan</span>';
  if(a.sent)return head+'<h1>Application sent</h1><p class="lead">Thank you. Your reference number is <strong>'+esc(a.sent)+'</strong>. A counsellor will contact you about signatures, the application fee and the next steps.</p></section>'+
-  '<section class="panel" style="max-width:760px"><div class="row"><button type="button" class="btn ghost" data-apply="clear">Start a new application</button><a class="btn ghost" href="#home">Back to home</a></div></section>';
+  '<section class="panel" style="max-width:760px"><h2>Next: pay your tuition fees</h2><p class="muted">Choose to pay per semester or in full, then your payment method (FPX, Touch \'n Go eWallet or PayPal).</p>'+
+  '<div class="row"><a class="btn" href="#pay">Pay tuition fees '+ARROW+'</a><button type="button" class="btn ghost" data-apply="clear">Start a new application</button><a class="btn ghost" href="#home">Back to home</a></div></section>';
  if(!a.complete)return head+'<h1>Finish your application first</h1><p class="lead">Accommodation help is the last step of the application.</p><div class="row"><a class="btn" href="#apply">Go to the application form</a></div></section>';
  var x=applyProg();
  return head+'<h1>Do you need help with accommodation?</h1><p class="lead">Eduplan can help you find a hostel or a room near '+esc(x?x.u.name:"your campus")+'.</p></section>'+
@@ -1144,6 +1145,64 @@ var STORE_ROWS=[
  ["Application in progress","eduplan-apply","The application form you are filling in","Until you close the tab"],
  ["AI assistant","eduplan-chat","Your latest chat messages","Until you close the tab"],
  ["Visit counted","eduplan-visit","A mark that this tab's visit was counted, so it is counted once","Until you close the tab"]];
+/* ---------- Payment (#pay, #pay/method): tuition to Eduplan, per semester or in full ----------
+   The amount is the programme's tuition minus the scholarship the student chose (results.js). Per semester assumes
+   2 semesters a year; the university's fee schedule decides the real amounts, which Eduplan confirms before charging.
+   The server (Payments.gs) records the request and, once a gateway is connected, returns its checkout page. */
+var PAY_KEY="eduplan-pay";S.pay=store(PAY_KEY)||{};
+var PAY_METHODS=[["fpx","FPX online banking","Pay from your Malaysian bank account"],["tng","Touch 'n Go eWallet","Pay with the TNG eWallet app"],["paypal","PayPal","Pay with a PayPal account or card"]];
+function payQuote(){var x=applyProg()||findProg(S.pick);if(!x)return null;
+ var annual=lines(x.p.notes).filter(function(l){return /^Annual fee: /.test(l);}).map(function(l){return l.replace(/^Annual fee: /,"");});
+ var base=RX.feeBase(x.p.fee,annual,x.p.years);if(!base||base.year)return {x:x};
+ var list=RX.taken().length?RX.schFor(campusRows(),x.u.id,x.p.level).list:[],pk=RX.pickOf(x.p.id,list),off=RX.cut(base,pk&&pk.t),total=base.total-off;
+ var n=Math.max(1,Math.round((x.p.years||1)*2));
+ return {x:x,base:base,pk:pk,off:off,total:total,n:n,sem:Math.round(total/n*100)/100};}
+function payDue(q){return S.pay.plan==="semester"?q.sem:q.total;}
+function paySave(){S.pay.prog=(payQuote()||{x:{p:{}}}).x.p.id;store(PAY_KEY,S.pay);}
+V.pay=function(){var q=payQuote(),step=S.payStep;
+ var head='<section class="stack">'+flowStep("Payment")+'<span class="eyebrow">Payment</span>';
+ if(!q)return head+'<h1>Choose a programme first</h1><p class="lead">Payment comes after you choose a programme and apply.</p><div class="row"><a class="btn" href="#universities">Find a programme</a></div></section>';
+ var x=q.x,card='<div class="pickcard"><span class="eyebrow">'+esc(x.u.fullName||x.u.name)+'</span><h2>'+esc(x.p.programme)+'</h2></div>';
+ if(!q.base)return head+'<h1>Pay tuition fees</h1>'+card+'<p class="lead">The tuition fee for this programme is not listed yet, so it cannot be paid online. A counsellor will confirm the amount with you.</p><div class="row"><a class="btn" href="#consultation">Ask a counsellor</a></div></section>';
+ var sum='<dl class="paytot"><dt>Tuition fee</dt><dd>'+esc(rm(q.base.total))+' <span class="hint">('+esc(q.base.how)+')</span></dd>'+
+  (q.pk?'<dt>Scholarship</dt><dd>− '+esc(rm(q.off))+' <span class="hint">('+esc(RX.awardShort(q.pk.t))+')</span></dd>':'')+'<dt>Total to pay</dt><dd><b>'+esc(rm(q.total))+'</b></dd></dl>';
+ if(step!=="method")return head+'<h1>How would you like to pay?</h1>'+card+'</section>'+
+  '<section class="panel" style="max-width:760px">'+sum+'<fieldset class="picks"><legend class="hint">Choose a payment plan.</legend>'+
+   '<label class="pickr"><input type="radio" name="payplan" data-payplan="semester"'+(S.pay.plan==="semester"?' checked':'')+'><span><b>Per semester (instalments)</b><span>'+esc(rm(q.sem))+' a semester × '+q.n+' semesters</span><span class="hint">Pay each semester before it starts.</span></span></label>'+
+   '<label class="pickr"><input type="radio" name="payplan" data-payplan="full"'+(S.pay.plan==="full"?' checked':'')+'><span><b>Full payment</b><span>'+esc(rm(q.total))+' once</span><span class="hint">Pay the whole programme now.</span></span></label></fieldset>'+
+   '<p class="hint">Estimate for '+(q.base.est?'the yearly fee × duration':'the whole programme')+', 2 semesters a year. The university\'s fee schedule decides the exact amounts and dates; Eduplan confirms the amount with you before you pay.</p>'+
+   '<div class="row"><a class="btn'+(S.pay.plan?'':' disabled')+'" href="#pay/method"'+(S.pay.plan?'':' aria-disabled="true" tabindex="-1"')+' data-paynext>Choose payment method '+ARROW+'</a></div></section>';
+ if(!S.pay.plan){location.hash="#pay";return '';}
+ var due=payDue(q),done=S.pay.ref&&S.pay.prog===x.p.id&&S.pay.status;
+ return head+'<h1>Choose a payment method</h1>'+card+'</section>'+
+  '<section class="panel" style="max-width:760px"><dl class="paytot"><dt>Plan</dt><dd>'+(S.pay.plan==="semester"?'Per semester (instalments)':'Full payment')+' <a class="hint" href="#pay">Change</a></dd>'+
+   '<dt>Amount due now</dt><dd><b>'+esc(rm(due))+'</b>'+(S.pay.plan==="semester"?' <span class="hint">(semester 1 of '+q.n+')</span>':'')+'</dd></dl>'+
+   '<fieldset class="picks"><legend class="hint">Choose how to pay. You will be taken to the payment provider\'s own page to pay; Eduplan never sees your bank or card details.</legend>'+
+   PAY_METHODS.map(function(m){return '<label class="pickr"><input type="radio" name="paymethod" data-paymethod="'+m[0]+'"'+(S.pay.method===m[0]?' checked':'')+'><span><b>'+esc(m[1])+'</b><span class="hint">'+esc(m[2])+'</span></span></label>';}).join("")+'</fieldset>'+
+   (S.payErr?'<p class="err" role="alert">'+esc(S.payErr)+'</p>':'')+
+   (done?'<div class="note" role="status">Payment request <strong data-notr>'+esc(S.pay.ref)+'</strong> is recorded. Online payment is not open yet: a counsellor will send you the payment details for '+esc(rm(due))+'.</div>':'')+
+   (!pfLive()?'<p class="hint">Online payment works on the live Eduplan website. This preview shows the steps only.</p>':!PF.s?'<p class="hint"><a href="#portfolio">Sign in</a> to pay, so the payment is linked to your application.</p>':'')+
+   '<div class="row"><button type="button" class="btn" data-paygo'+(!S.pay.method||S.payBusy||!pfLive()||!PF.s?' disabled':'')+'>'+(S.payBusy?'Please wait…':'Continue to payment '+ARROW)+'</button><a class="btn ghost" href="#pay">Back</a></div></section>';
+};
+function payGo(){var q=payQuote();if(!q||!q.base||!S.pay.plan||!S.pay.method||!PF.s)return;S.payBusy=true;S.payErr="";rerender();
+ pfPost({action:"pay_create",token:PF.s.token,prog:q.x.p.id,plan:S.pay.plan,method:S.pay.method,amount:payDue(q),total:q.total}).then(function(d){S.payBusy=false;
+  if(d&&d.ok&&d.url){S.pay.ref=d.ref;S.pay.status="redirected";paySave();location.href=d.url;return;}
+  if(d&&d.ok){S.pay.ref=d.ref;S.pay.status="requested";S.pay.at=Date.now();paySave();}
+  else S.payErr=d&&d.error==="signed_out"?"Please sign in again.":"Could not start the payment. Please try again, or ask a counsellor.";
+  rerender();}).catch(function(){S.payBusy=false;S.payErr="Could not reach Eduplan. Check your connection and try again.";rerender();});}
+document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribute)return;
+ if(t.hasAttribute("data-payplan")){S.pay.plan=t.getAttribute("data-payplan");S.pay.ref=null;S.pay.status=null;paySave();rerender();}
+ if(t.hasAttribute("data-paymethod")){S.pay.method=t.getAttribute("data-paymethod");paySave();rerender();}});
+document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-paygo],[data-paynext]");if(!t)return;
+ if(t.hasAttribute("data-paynext")&&!S.pay.plan){ev.preventDefault();return;}if(t.hasAttribute("data-paygo"))payGo();});
+/* My portfolio: the payment plan and the last payment request. */
+function pfPayment(){var q=payQuote();
+ if(!q||!S.app.v.prog)return '<p class="muted">After you apply for a programme, choose here how to pay the tuition fees: per semester or in full.</p><div class="row"><a class="btn ghost" href="#universities">Find a programme</a></div>';
+ if(!q.base)return '<p class="muted">The tuition fee for '+esc(q.x.p.programme)+' is not listed yet; a counsellor will confirm it.</p>';
+ return '<dl class="paytot"><dt>Programme</dt><dd>'+esc(q.x.p.programme)+' <span class="hint">('+esc(q.x.u.name)+')</span></dd><dt>Total to pay</dt><dd><b>'+esc(rm(q.total))+'</b>'+(q.pk?' <span class="hint">after '+esc(RX.awardShort(q.pk.t))+'</span>':'')+'</dd>'+
+  '<dt>Plan</dt><dd>'+(S.pay.plan==="semester"?'Per semester: '+esc(rm(q.sem))+' × '+q.n:S.pay.plan==="full"?'Full payment':'Not chosen yet')+'</dd>'+
+  (S.pay.ref&&S.pay.prog===q.x.p.id?'<dt>Last request</dt><dd data-notr>'+esc(S.pay.ref)+'</dd>':'')+'</dl>'+
+  '<div class="row"><a class="btn" href="#pay">'+(S.pay.plan?'Change plan or pay':'Choose how to pay')+' '+ARROW+'</a></div>';}
 /* Lab: scholarship pages and the interest quiz are for members; visitors are asked to register or sign in. */
 V.locked=function(){
  return '<section class="stack"><span class="eyebrow">Members only</span><h1>Register or sign in to continue</h1>'+
@@ -1167,7 +1226,7 @@ V.privacy=function(){
   '<li><b>In My profile (optional)</b><span>Your name, WhatsApp number, where you are in your studies, your exam results and the fields and places you are interested in. You can skip any of them; the website works without them.</span></li>'+
   '<li><b>To book a free consultation</b><span>A photo of the front of your IC (or passport photo page) so AI can confirm your name. We keep only your name and the last 4 digits of the number; the photo and the full number are not stored. Without it you browse as a guest.</span></li>'+
   '<li><b>When you apply</b><span>Your full name as on your IC, IC number, date of birth, address, documents and, for students under 18, a parent or guardian’s details. Some universities’ own forms also ask for things like religion or health; these are asked only on that university’s form. Before your application goes to the university, you are asked to agree to it.</span></li></ol>'+
-  '<p class="muted"><b>We never ask for:</b> a password, bank or card numbers (payments are made to the university), or your IC number when you sign in. Your full IC number is asked only on the application form.</p></section>'+
+  '<p class="muted"><b>We never ask for:</b> a password, bank or card numbers (you pay on the payment provider’s own page: FPX, Touch ’n Go or PayPal), or your IC number when you sign in. Your full IC number is asked only on the application form.</p></section>'+
  '<section class="panel"><h2>What is sent to Eduplan</h2><ul class="reqlist">'+
   '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, profile, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device. Eduplan also keeps when you registered, signed in, signed out and last used the website.</li>'+
   '<li><b>Applications:</b> your form and documents are kept in a private folder that only Eduplan staff can open, and are shared with the university you apply to so it can process your application.</li>'+
@@ -1255,7 +1314,7 @@ V.portfolio=function(){
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
  return head+(PF.s?'':pfLogin())+
   '<div class="pfgrid">'+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor())+
-   pfCard("Scholarships for my results",pfScholarships(),"wide")+pfCard("My profile",pfProfile())+saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+'</div>'+
+   pfCard("Scholarships for my results",pfScholarships(),"wide")+pfCard("My profile",pfProfile())+saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+pfCard("My payment",pfPayment())+'</div>'+
   (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
 };
 
@@ -1299,7 +1358,8 @@ function route(){
   if(hit){if(S.app.v.prog!==hit.p.id){S.app.v.prog=hit.p.id;S.app.v.track="";}S.app.step=1;S.app.err={};S.app.complete=false;S.app.sent=null;applySave();r="apply";}
   else if(!pid||UNIV.length)r="apply";   /* before the sheet data arrives, keep the programme in the link */
  }
- view=r.indexOf("next")===0?"next":r.indexOf("apply")===0?"apply":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
+ S.payStep=r==="pay/method"?"method":"plan";if(r==="pay/method")r="pay/method";
+ view=r.indexOf("pay")===0&&/^pay(\/method)?$/.test(r)?"pay":r.indexOf("next")===0?"next":r.indexOf("apply")===0?"apply":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
  if(!V[view])r=view="home";
  if(r!==h&&h)history.replaceState(null,"","#"+r);
  return view;

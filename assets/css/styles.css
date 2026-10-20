@@ -93,6 +93,7 @@ textarea{min-height:110px;resize:vertical}
 .rxlist li{display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid var(--line);min-width:0}
 .rxlist li span{overflow-wrap:anywhere}
 .rxup{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+.btn.disabled{opacity:.5;pointer-events:none}
 .pfask{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--soft);display:flex;flex-direction:column;gap:6px}
 .pfask .sl{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
 .pfask ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}

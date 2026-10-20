@@ -81,6 +81,7 @@ function doPost(e) {
   if (body && body.action === 'results_read') return chatJson_(resultsRead_(body));  // Results.gs
   if (body && body.action === 'id_verify') return chatJson_(idVerify_(body));  // Identity.gs
   if (body && body.action === 'visit') return chatJson_(statsVisit_(body));  // Stats.gs
+  if (body && body.action === 'pay_create') return chatJson_(payCreate_(body));  // Payments.gs
   return chatJson_({ error: 'bad_request' });
 }
 
