@@ -198,3 +198,20 @@ function resultsTest() {
   console.log(file.getName() + ' (' + blob.getContentType() + ', ' + Math.round(blob.getBytes().length / 1024) + ' KB)');
   console.log(JSON.stringify(out, null, 2));
 }
+
+/* Check the Claude API set-up from the editor (select aiCheck, Run): the log says whether ANTHROPIC_API_KEY is set,
+   which model is used, and Claude's answer to a one-word test, or its error. The key itself is never logged. */
+function aiCheck() {
+  var props = PropertiesService.getScriptProperties(), key = String(props.getProperty('ANTHROPIC_API_KEY') || '').trim();
+  var model = props.getProperty('RESULTS_MODEL') || RESULTS_DEFAULT_MODEL;
+  console.log('ANTHROPIC_API_KEY: ' + (key ? 'set (' + key.length + ' characters, starts with ' + key.slice(0, 10) + '…)' : 'NOT SET in this project'));
+  if (props.getProperty('ANTHROPIC_API_KEY') && props.getProperty('ANTHROPIC_API_KEY') !== key) console.log('Warning: the key has spaces or line breaks around it; remove them.');
+  console.log('Model: ' + model + (props.getProperty('RESULTS_MODEL') ? ' (RESULTS_MODEL)' : ' (default)'));
+  if (!key) return;
+  var res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    payload: JSON.stringify({ model: model, max_tokens: 10, messages: [{ role: 'user', content: 'Reply with the word OK.' }] })
+  });
+  console.log('Claude API ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 400));
+}
