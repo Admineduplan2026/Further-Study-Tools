@@ -31,6 +31,8 @@ Guests are counted, never identified: the Visits tab has only numbers per day (n
 
 1. In the Apps Script project, add the file **Drive.gs** (paste `apps-script/Drive.gs`) and replace **Payments.gs**,
    **Account.gs**, **Apply.gs** and **Stats.gs** with the versions in `apps-script/`.
+   Simpler: delete every .gs file in the project (keep appsscript.json), add one file **Eduplan** and paste
+   `dist/Eduplan-all.gs`, which holds all of `apps-script/*.gs` (rebuild it with `python3 tools/bundle-apps-script.py`).
 2. Select **driveOrganize** and click **Run**. Google asks for permission once (Drive, Sheets, triggers): allow it.
    The log lists the four folders with their links.
 3. **Deploy → Manage deployments → Edit → Version: New version → Deploy** (the /exec URL stays the same).
