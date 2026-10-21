@@ -166,7 +166,7 @@ function badge(m){if(!m)return null;
 var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function day(t){var d=new Date(t);return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear();}
 function session(){try{var x=JSON.parse(localStorage.getItem("eduplan-session"));return x&&x.token&&x.exp>Date.now()?x:null;}catch(e){return null;}}
-var RX_ERR={id_first:"Verify your name with your IC first (My portfolio, My profile). The name on your results slip must match your IC.",
+var RX_ERR={id_not_configured:"Reading IC photos is not available yet. Please ask a counsellor.",id_first:"Verify your name with your IC first (My portfolio, My profile). The name on your results slip must match your IC.",
  no_name:"Your name could not be read on this slip. Upload a clear photo that shows your name and your grades.",
  name_mismatch:"The name on this slip does not match the name on your IC. Upload your own results slip.",not_id:"This does not look like the front of an IC (MyKad or MyKid) or a passport photo page. Take a clear photo of the front of your IC.",not_slip:"This does not look like a results slip. Upload a clear photo or PDF of your results slip.",
  wrong_exam:"This slip is for a different exam. Choose the right exam above, or upload the right slip.",
@@ -215,8 +215,20 @@ function useSlip(id,kind,r,signed){var e=exam(id);
  else{x.g=(r.subjects||[]).map(function(t){return [String(t.subject||"").trim().slice(0,80),String(t.grade||"").trim().toUpperCase()];})
    .filter(function(t){return t[0]&&e.grades.indexOf(t[1])>-1;});if(!x.g.length)return {error:"unreadable"};}
  return {x:x};}
-function readFile(id,file,kind){UI.err="";UI.kind=kind;UI.cur=id;
- if(!file){UI.err="Choose a photo or PDF of your slip first.";return save();}
+/* Phone photos are often larger than 5 MB or in a format the server does not take (HEIC): a photo is redrawn as a
+   JPEG of at most 2000 px before it is sent. PDFs, small JPEG/PNG/WebP photos, and photos the browser cannot open are
+   sent as they are. */
+function shrink(file){
+ if(!file||!/^image\//.test(file.type)||(/^image\/(jpeg|png|webp)$/.test(file.type)&&file.size<=1.5*1024*1024)||!window.URL||!document.createElement("canvas").toBlob)return Promise.resolve(file);
+ return new Promise(function(res){var url=URL.createObjectURL(file),img=new Image();
+  img.onload=function(){var k=Math.min(1,2000/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement("canvas");
+   c.width=Math.round(img.naturalWidth*k);c.height=Math.round(img.naturalHeight*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+   c.toBlob(function(b){res(b?new File([b],(file.name||"photo").replace(/\.\w+$/,"")+".jpg",{type:"image/jpeg"}):file);},"image/jpeg",0.85);};
+  img.onerror=function(){URL.revokeObjectURL(url);res(file);};img.src=url;});}
+function readFile(id,file,kind){
+ if(!file){UI.err="Choose a photo or PDF of your slip first.";UI.kind=kind;UI.cur=id;return save();}
+ shrink(file).then(function(f){readSlipFile(id,f,kind);});}
+function readSlipFile(id,file,kind){UI.err="";UI.kind=kind;UI.cur=id;
  if(file.size>5*1024*1024){UI.err=RX_ERR.too_large;return save();}
  function done(x){R.exams[id]=x;UI.busy=false;UI.err="";save();}
  function fail(code,found){UI.busy=false;UI.err=RX_ERR[code]||RX_ERR.busy;
@@ -250,6 +262,8 @@ function idCheck(r){if(!r||!r.is_id_document||r.card_type==="other")return {erro
  return {v:{name:name,last4:num.slice(-4),at:Date.now(),type:r.card_type}};}
 function readId(file){
  if(!file)return Promise.resolve({error:"bad_request"});
+ return shrink(file).then(readIdFile).then(function(r){if(r&&r.error==="not_configured")r.error="id_not_configured";return r;});}
+function readIdFile(file){
  if(file.size>5*1024*1024)return Promise.resolve({error:"too_large"});
  if(!live()){if(!AI.sm||!/^image\//.test(file.type))return Promise.resolve({error:AI.sm?"bad_request":"not_configured"});
   return AI.sm.json(ID_PROMPT,{images:[file],modelTier:"complex",cache:false}).then(idCheck,function(err){return {error:err&&err.code==="rate_limited"?"daily_limit":"busy"};});}
