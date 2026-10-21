@@ -57,7 +57,7 @@ function payCheckout_(ref, email, method, amount) {
 /* The "Payments" tab of "Eduplan Payments" (4. Payments (private)), created when missing. */
 function payTab_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('PAY_SHEET_ID'), ss = null;
-  if (id) { try { ss = SpreadsheetApp.openById(id); } catch (err) { ss = null; } }
+  if (id) ss = driveSheetLive_(id);   // Drive.gs: not deleted or in the trash
   if (!ss) {
     ss = SpreadsheetApp.create('Eduplan Payments');
     DriveApp.getFileById(ss.getId()).moveTo(driveFolder_('pay'));

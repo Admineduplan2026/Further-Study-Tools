@@ -33,9 +33,10 @@ var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile
 
 function applyFolder_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_FOLDER_ID');
-  if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted or no access: make a new one */ } }
-  var found = driveTop_().getFoldersByName(DRIVE_NAMES.apply);   // Drive.gs
-  var folder = found.hasNext() ? found.next() : driveTop_().createFolder(DRIVE_NAMES.apply);
+  if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted or no access: find or make one */ } }
+  // Drive.gs: the folder in Eduplan Databases, or the earlier "Eduplan Applications (private)" in My Drive, or a new one.
+  var found = driveTop_().getFoldersByName(DRIVE_NAMES.apply), old = DriveApp.getRootFolder().getFoldersByName('Eduplan Applications (private)');
+  var folder = found.hasNext() ? found.next() : old.hasNext() ? old.next() : driveTop_().createFolder(DRIVE_NAMES.apply);
   props.setProperty('APPLY_FOLDER_ID', folder.getId());
   return folder;
 }
@@ -223,7 +224,8 @@ function applyApuPdf_(ref, received, f) {
 
 function applySheet_(folder) {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_SHEET_ID');
-  if (id) { try { return SpreadsheetApp.openById(id).getSheets()[0]; } catch (err) { /* make a new one */ } }
+  var live = id && driveSheetLive_(id);   // Drive.gs
+  if (live) return live.getSheets()[0];
   var ss = SpreadsheetApp.create('Eduplan Applications');
   DriveApp.getFileById(ss.getId()).moveTo(folder);
   var sh = ss.getSheets()[0];

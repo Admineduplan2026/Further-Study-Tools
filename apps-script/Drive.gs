@@ -29,9 +29,15 @@ var DRIVE_NAMES = {
   receipts: 'Receipts'
 };
 
+/* A file or folder this project made earlier, unless it was deleted or moved to the trash. */
+function driveLive_(item) { return item && !item.isTrashed() ? item : null; }
+function driveSheetLive_(id) {
+  try { return driveLive_(DriveApp.getFileById(id)) ? SpreadsheetApp.openById(id) : null; } catch (err) { return null; }
+}
+
 function driveTop_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('DRIVE_TOP_ID');
-  if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted: make a new one */ } }
+  if (id) { try { var t = driveLive_(DriveApp.getFolderById(id)); if (t) return t; } catch (err) { /* deleted: make a new one */ } }
   var found = DriveApp.getRootFolder().getFoldersByName(DRIVE_TOP);
   var folder = found.hasNext() ? found.next() : DriveApp.createFolder(DRIVE_TOP);
   props.setProperty('DRIVE_TOP_ID', folder.getId());
@@ -41,7 +47,7 @@ function driveTop_() {
 /* "people", "pay" (in Eduplan Databases) or "receipts" (in 4. Payments), created when missing. */
 function driveFolder_(key) {
   var props = PropertiesService.getScriptProperties(), prop = 'DRIVE_' + key.toUpperCase() + '_ID', id = props.getProperty(prop);
-  if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted: make a new one */ } }
+  if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted: make a new one */ } }
   var parent = key === 'receipts' ? driveFolder_('pay') : driveTop_(), found = parent.getFoldersByName(DRIVE_NAMES[key]);
   var folder = found.hasNext() ? found.next() : parent.createFolder(DRIVE_NAMES[key]);
   props.setProperty(prop, folder.getId());

@@ -403,7 +403,8 @@ function accountCell_(v, max) {
 
 function accountSheet_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('ACCOUNT_SHEET_ID');
-  if (id) { try { return SpreadsheetApp.openById(id).getSheets()[0]; } catch (err) { /* deleted or no access: make a new one */ } }
+  var live = id && driveSheetLive_(id);   // Drive.gs: not deleted or in the trash
+  if (live) return live.getSheets()[0];
   var ss = SpreadsheetApp.create('Eduplan Student Portfolios');
   DriveApp.getFileById(ss.getId()).moveTo(driveFolder_('people'));
   var sh = ss.getSheets()[0];
@@ -646,9 +647,10 @@ var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile
 
 function applyFolder_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_FOLDER_ID');
-  if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted or no access: make a new one */ } }
-  var found = driveTop_().getFoldersByName(DRIVE_NAMES.apply);   // Drive.gs
-  var folder = found.hasNext() ? found.next() : driveTop_().createFolder(DRIVE_NAMES.apply);
+  if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted or no access: find or make one */ } }
+  // Drive.gs: the folder in Eduplan Databases, or the earlier "Eduplan Applications (private)" in My Drive, or a new one.
+  var found = driveTop_().getFoldersByName(DRIVE_NAMES.apply), old = DriveApp.getRootFolder().getFoldersByName('Eduplan Applications (private)');
+  var folder = found.hasNext() ? found.next() : old.hasNext() ? old.next() : driveTop_().createFolder(DRIVE_NAMES.apply);
   props.setProperty('APPLY_FOLDER_ID', folder.getId());
   return folder;
 }
@@ -836,7 +838,8 @@ function applyApuPdf_(ref, received, f) {
 
 function applySheet_(folder) {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_SHEET_ID');
-  if (id) { try { return SpreadsheetApp.openById(id).getSheets()[0]; } catch (err) { /* make a new one */ } }
+  var live = id && driveSheetLive_(id);   // Drive.gs
+  if (live) return live.getSheets()[0];
   var ss = SpreadsheetApp.create('Eduplan Applications');
   DriveApp.getFileById(ss.getId()).moveTo(folder);
   var sh = ss.getSheets()[0];
@@ -1161,9 +1164,15 @@ var DRIVE_NAMES = {
   receipts: 'Receipts'
 };
 
+/* A file or folder this project made earlier, unless it was deleted or moved to the trash. */
+function driveLive_(item) { return item && !item.isTrashed() ? item : null; }
+function driveSheetLive_(id) {
+  try { return driveLive_(DriveApp.getFileById(id)) ? SpreadsheetApp.openById(id) : null; } catch (err) { return null; }
+}
+
 function driveTop_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('DRIVE_TOP_ID');
-  if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted: make a new one */ } }
+  if (id) { try { var t = driveLive_(DriveApp.getFolderById(id)); if (t) return t; } catch (err) { /* deleted: make a new one */ } }
   var found = DriveApp.getRootFolder().getFoldersByName(DRIVE_TOP);
   var folder = found.hasNext() ? found.next() : DriveApp.createFolder(DRIVE_TOP);
   props.setProperty('DRIVE_TOP_ID', folder.getId());
@@ -1173,7 +1182,7 @@ function driveTop_() {
 /* "people", "pay" (in Eduplan Databases) or "receipts" (in 4. Payments), created when missing. */
 function driveFolder_(key) {
   var props = PropertiesService.getScriptProperties(), prop = 'DRIVE_' + key.toUpperCase() + '_ID', id = props.getProperty(prop);
-  if (id) { try { return DriveApp.getFolderById(id); } catch (err) { /* deleted: make a new one */ } }
+  if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted: make a new one */ } }
   var parent = key === 'receipts' ? driveFolder_('pay') : driveTop_(), found = parent.getFoldersByName(DRIVE_NAMES[key]);
   var folder = found.hasNext() ? found.next() : parent.createFolder(DRIVE_NAMES[key]);
   props.setProperty(prop, folder.getId());
@@ -1397,7 +1406,7 @@ function payCheckout_(ref, email, method, amount) {
 /* The "Payments" tab of "Eduplan Payments" (4. Payments (private)), created when missing. */
 function payTab_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('PAY_SHEET_ID'), ss = null;
-  if (id) { try { ss = SpreadsheetApp.openById(id); } catch (err) { ss = null; } }
+  if (id) ss = driveSheetLive_(id);   // Drive.gs: not deleted or in the trash
   if (!ss) {
     ss = SpreadsheetApp.create('Eduplan Payments');
     DriveApp.getFileById(ss.getId()).moveTo(driveFolder_('pay'));

@@ -64,7 +64,8 @@ function accountCell_(v, max) {
 
 function accountSheet_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('ACCOUNT_SHEET_ID');
-  if (id) { try { return SpreadsheetApp.openById(id).getSheets()[0]; } catch (err) { /* deleted or no access: make a new one */ } }
+  var live = id && driveSheetLive_(id);   // Drive.gs: not deleted or in the trash
+  if (live) return live.getSheets()[0];
   var ss = SpreadsheetApp.create('Eduplan Student Portfolios');
   DriveApp.getFileById(ss.getId()).moveTo(driveFolder_('people'));
   var sh = ss.getSheets()[0];
