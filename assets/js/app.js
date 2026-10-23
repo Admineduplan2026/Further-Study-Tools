@@ -1400,9 +1400,10 @@ function cmpData(x){
   badge:RX.taken().length?RX.badge(RX.match({spm:p.entry,uec:p.uec,olevel:p.olevel,stpm:p.stpm,other:p.entry_other})):null};
 }
 /* Winner of a row: lowest or highest value among the programmes that have one (needs at least 2 values). */
-function cmpWin(list,key,low){var v=list.filter(function(d){return d[key]!=null;});if(v.length<2)return null;
- var w=v.reduce(function(a,b){return (low?b[key]<a[key]:b[key]>a[key])?b:a;});
- return v.filter(function(d){return d[key]===w[key];}).length===v.length?null:w;}
+/* Winners of a row: every programme with the lowest (or highest) value, so a tie crowns them all; none when all are equal. */
+function cmpWin(list,key,low){var v=list.filter(function(d){return d[key]!=null;});if(v.length<2)return [];
+ var best=v.reduce(function(a,b){return (low?b[key]<a[key]:b[key]>a[key])?b:a;})[key],w=v.filter(function(d){return d[key]===best;});
+ return w.length===v.length?[]:w;}
 function cmpRow(icon,title,list,cell,note,txt){return '<section class="crow'+(txt?' txt':'')+'"><h3><span aria-hidden="true">'+icon+'</span>'+title+'</h3><div class="ccells n'+list.length+'">'+list.map(function(d,i){return '<div class="ccell" style="--i:'+i+';--h:'+CMP_HUE[i]+'"><span class="ctag" data-notr>'+(i+1)+' · '+esc(d.x.u.name)+'</span>'+cell(d,i)+'</div>';}).join("")+'</div>'+(note?'<p class="hint">'+note+'</p>':'')+'</section>';}
 function cmpMeter(v,max,low){var w=max?Math.max(6,Math.round(v/max*100)):0;return '<span class="cmeter'+(low?' low':'')+'" aria-hidden="true"><i style="--w:'+w+'%"></i></span>';}
 function crown(on,label){return on?'<span class="crown">👑 <span>'+label+'</span></span>':'';}
@@ -1422,7 +1423,7 @@ V.compare=function(){
  var maxFee=Math.max.apply(null,D2.map(function(d){return d.fee||0;})),maxYears=Math.max.apply(null,D2.map(function(d){return d.years||0;})),
   maxKm=Math.max.apply(null,D2.map(function(d){return d.km||0;})),maxReach=Math.max.apply(null,D2.map(function(d){return d.reach||0;}));
  var heads='<div class="cheads n'+D2.length+'">'+D2.map(function(d,i){var x=d.x,meta=[x.p.level,d.years!=null?years(d.years):""].filter(Boolean);
-   var wins=[d===wFee?'Lowest fee':'',d===wYears?'Shortest':'',d===wKm?'Nearest':'',d===wSch?'Biggest scholarship':''].filter(Boolean);
+   var wins=[wFee.indexOf(d)>=0?'Lowest fee':'',wYears.indexOf(d)>=0?'Shortest':'',wKm.indexOf(d)>=0?'Nearest':'',wSch.indexOf(d)>=0?'Biggest scholarship':''].filter(Boolean);
    return '<article class="chead" style="--i:'+i+';--h:'+CMP_HUE[i]+'"><span class="cn" aria-hidden="true">'+(i+1)+'</span><span class="eyebrow">'+esc(x.u.name)+'</span><h2>'+esc(x.p.programme)+'</h2>'+
     (meta.length?'<span class="meta">'+meta.map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>':'')+
     (wins.length?'<span class="cwins">'+wins.map(function(w){return crown(true,esc(w));}).join("")+'</span>':'')+'</article>';}).join("")+'</div>';
@@ -1433,22 +1434,22 @@ V.compare=function(){
  var rows=(anyFit?cmpRow("🎯","Your fit",D2,function(d){var c=progFac(d.x.p),f=c&&fitScore(c);return f?'<span class="fitpill '+f.cls+'"><span>'+esc(f.band[1])+'</span></span>'+cnum(f.pct,"","%")+cmpMeter(f.pct,100,f.cls==="ok"):'<span class="hint">Not answered for this faculty</span>';},'From the Am I a good fit? quiz.'):'<a class="fitgo" href="#fit"><span class="fiti" aria-hidden="true">🎯</span><span class="fitt"><b>Am I a good fit?</b><span>Answer a few questions to add your fit to this comparison</span></span>'+ARROW+'</a>')+
   cmpRow("💰","Tuition fee (whole programme)",D2,function(d){
    if(d.fee==null)return d.annual.length?'<span class="cval">'+d.annual.map(function(a){return '<span class="line">'+esc(a)+'</span>';}).join("")+'</span><span class="hint">per year</span>':'<span class="hint">To be confirmed</span>';
-   return crown(d===wFee,'Lowest')+cnum(d.fee,"RM ")+cmpMeter(d.fee,maxFee,d===wFee)+(d.perYear?'<span class="hint"><span>About</span> <span data-notr>'+esc(rm(d.perYear))+'</span> <span>a year</span></span>':'');},
+   return crown(wFee.indexOf(d)>=0,'Lowest')+cnum(d.fee,"RM ")+cmpMeter(d.fee,maxFee,wFee.indexOf(d)>=0)+(d.perYear?'<span class="hint"><span>About</span> <span data-notr>'+esc(rm(d.perYear))+'</span> <span>a year</span></span>':'');},
    'Fees from the universities\' own fee lists. Hostel, books and other costs are not included.')+
-  cmpRow("⏱️","Duration",D2,function(d){return d.years==null?'<span class="hint">Not listed</span>':crown(d===wYears,'Shortest')+cnum(d.years,"",d.years===1?" year":" years")+cmpMeter(d.years,maxYears,d===wYears);})+
+  cmpRow("⏱️","Duration",D2,function(d){return d.years==null?'<span class="hint">Not listed</span>':crown(wYears.indexOf(d)>=0,'Shortest')+cnum(d.years,"",d.years===1?" year":" years")+cmpMeter(d.years,maxYears,wYears.indexOf(d)>=0);})+
   cmpRow("📍","Location and distance from home",D2,function(d){var x=d.x,place=x.p.campus||x.p.place||"";
    return '<span class="cval">'+(place?esc(place):'<span class="hint">To be confirmed</span>')+'</span>'+
-    (d.km!=null?crown(d===wKm,'Nearest')+cnum(d.km,"≈ "," km")+cmpMeter(d.km,maxKm,d===wKm)+(d.town&&d.town.approx?'<span class="hint"><span>Measured to the state capital:</span> <span data-notr>'+esc(d.town.t[0])+'</span></span>':''):'');},
+    (d.km!=null?crown(wKm.indexOf(d)>=0,'Nearest')+cnum(d.km,"≈ "," km")+cmpMeter(d.km,maxKm,wKm.indexOf(d)>=0)+(d.town&&d.town.approx?'<span class="hint"><span>Measured to the state capital:</span> <span data-notr>'+esc(d.town.t[0])+'</span></span>':''):'');},
    home?'Straight-line distance between town centres; the road trip is longer.':'',true)+
   '<div class="chomewrap">'+homeBox+'</div>'+
   cmpRow("🎓","Scholarship",D2,function(d){
-   return (d.best!=null?crown(d===wSch,'Biggest')+cnum(d.best,"Up to ","%")+'<span class="hint">tuition waiver</span>'+cmpMeter(d.best,100,d===wSch):d.sch.length?'<span class="cval">'+esc(d.sch[0].name)+'</span>':'<span class="hint">No campus scholarship listed</span>')+
+   return (d.best!=null?crown(wSch.indexOf(d)>=0,'Biggest')+cnum(d.best,"Up to ","%")+'<span class="hint">tuition waiver</span>'+cmpMeter(d.best,100,wSch.indexOf(d)>=0):d.sch.length?'<span class="cval">'+esc(d.sch[0].name)+'</span>':'<span class="hint">No campus scholarship listed</span>')+
     (d.mine?'<span class="pill ok"><span>With your results:</span> <b>'+esc(RX.awardText(d.mine))+'</b></span>':'');},
    RX.taken().length?'':'<a href="#portfolio">Add your results</a> to see the scholarship you would get.')+
-  cmpRow("✅","Entry requirements (SPM)",D2,function(d){var l=lines(d.x.p.entry);
-   return (d.badge?'<span class="ematch '+d.badge[0]+'">'+esc(d.badge[1])+'</span>':'')+(l.length?'<ul class="clist">'+l.slice(0,5).map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul>'+(l.length>5?'<span class="hint">+'+(l.length-5)+'</span>':''):'<span class="hint">Not listed by the institution</span>')+
+  cmpRow("✅","Entry requirements",D2,function(d){var l=[],ex="";ENTRY.some(function(e){var x=lines(d.x.p[e[0]]);if(x.length){l=x;ex=e[1];return true;}return false;});
+   return (ex?'<span class="pill">'+esc(ex)+'</span>':'')+(d.badge?'<span class="ematch '+d.badge[0]+'">'+esc(d.badge[1])+'</span>':'')+(l.length?'<ul class="clist">'+l.slice(0,5).map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul>'+(l.length>5?'<span class="hint">+'+(l.length-5)+'</span>':''):'<span class="hint">Not listed by the institution</span>')+
     (d.x.p.english?'<span class="hint"><span>English:</span> '+esc(cmpCut(d.x.p.english,160))+'</span>':'');},RX.taken().length?'':'<a href="#portfolio">Add your results</a> to see if you meet them.',true)+
-  cmpRow("🔥","Popularity",D2,function(d){return d.reach==null?'<span class="hint">Not available</span>':crown(d===wReach,'Most offered')+cnum(d.reach,"",d.reach===1?" university":" universities")+cmpMeter(d.reach,maxReach,false);},
+  cmpRow("🔥","Popularity",D2,function(d){return d.reach==null?'<span class="hint">Not available</span>':crown(wReach.indexOf(d)>=0,'Most offered')+cnum(d.reach,"",d.reach===1?" university":" universities")+cmpMeter(d.reach,maxReach,false);},
    'How many universities on Eduplan offer the same course: a sign of how established and in demand it is.')+
   cmpRow("🚀","Future careers",D2,function(d){return d.careers.length?'<span class="cchips">'+d.careers.slice(0,6).map(function(c){return '<span class="cchip">'+esc(c)+'</span>';}).join("")+'</span>':'<span class="hint">Not listed by the institution yet</span>';},"",true)+
   cmpRow("🗓️","Intakes",D2,function(d){return d.x.p.intakes?'<span class="cval">'+esc(d.x.p.intakes)+'</span>':'<span class="hint">Not listed</span>';})+
