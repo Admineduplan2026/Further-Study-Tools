@@ -504,7 +504,7 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .chome select{max-width:100%}
 .btn.sm{min-height:40px;padding:0 16px;font-size:14px}
 @media (max-width:640px){.cheads.n3,.ccells.n3{gap:6px}.cheads.n3 .chead{padding:14px 10px}.ccells.n3 .ccell{padding:8px}.cheads.n3 .chead .cn{font-size:44px}
- .crow{padding:14px 10px}.cnum{font-size:17px}.cmpbar{top:76px}}
+ .crow{padding:14px 10px}.cnum{font-size:17px}.cmpbar{position:static}}
 .motion .chead{animation:cmpIn .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 120ms)}
 .motion .crow{animation:cmpUp .6s ease both}
 .motion .ccell{animation:cmpUp .6s ease both;animation-delay:calc(150ms + var(--i) * 90ms)}
@@ -519,3 +519,41 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .ctag{display:none;align-self:flex-start;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;color:#fff;background:hsl(var(--h) 60% 42%)}
 .chead .pill{white-space:normal}
 @media (max-width:640px){.crow.txt .ccells{grid-template-columns:minmax(0,1fr)}.crow.txt .ctag{display:inline-block}.cact .ctag{display:none!important}.cact .btn{width:100%}}
+
+/* ---------- Am I a good fit? (#fit) ---------- */
+.fitgo{display:flex;align-items:center;gap:14px;padding:14px 18px;border-radius:18px;text-decoration:none;color:#fff;
+ background:linear-gradient(120deg,#ff7a45,#e0407b 55%,#7b4bd8);box-shadow:0 12px 26px -14px rgba(224,64,123,.8);transition:transform .2s}
+.fitgo:hover{transform:translateY(-2px)}
+.fiti{font-size:28px;line-height:1}
+.fitt{flex:1;display:flex;flex-direction:column;gap:2px}.fitt b{font-family:var(--display);font-size:18px;font-weight:500}.fitt span{font-size:14px;opacity:.9}
+.motion .fitgo .fiti{animation:fitPulse 2.4s ease-in-out infinite}
+@keyframes fitPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15) rotate(-8deg)}}
+.fitpill{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;font-size:13px;padding:3px 10px;border-radius:999px;background:var(--soft)}
+.fitpill.ok{background:var(--ok-soft);color:var(--ok)}.fitpill.good{background:var(--brand-soft);color:var(--brand)}.fitpill.mid{background:var(--warn-soft);color:var(--warn)}.fitpill.low{background:#fbe4e2;color:var(--err)}
+.fitprog{height:8px;border-radius:99px;background:var(--line);overflow:hidden}
+.fitprog i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#ff7a45,#e0407b,#7b4bd8);transition:width .4s ease}
+.fitqt{font-size:clamp(20px,3vw,26px)}
+.motion .fitq .fitqt,.motion .fitq .opt{animation:cmpUp .45s ease both}
+.motion .fitq .opt:nth-child(2){animation-delay:.05s}.motion .fitq .opt:nth-child(3){animation-delay:.1s}.motion .fitq .opt:nth-child(4){animation-delay:.15s}
+.fitres{display:flex;flex-direction:column;gap:22px}
+.fitres h1{background:linear-gradient(90deg,#ff7a45,#e0407b,#7b4bd8);-webkit-background-clip:text;background-clip:text;color:transparent}
+.fitcards{display:grid;gap:18px}
+.fitcard{display:grid;grid-template-columns:150px minmax(0,1fr);gap:22px;align-items:start;padding:22px;border-radius:24px;border:1px solid var(--line);background:var(--bg)}
+.fitcard h2{font-size:26px}
+.fitring{position:relative;display:block;width:150px;height:150px}
+.fitring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.fitring circle{fill:none;stroke-width:12}.fitring .tr{stroke:var(--line)}.fitring .pr{stroke-linecap:round;stroke:var(--brand)}
+.fitring.ok .pr{stroke:#12a37f}.fitring.mid .pr{stroke:#e0a100}.fitring.low .pr{stroke:#d9534f}
+.fitpct{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:20px;color:var(--muted)}
+.fitpct b{font-size:40px;font-weight:500;color:var(--ink)}
+.fitpct{grid-auto-flow:column;align-content:center;justify-content:center}
+.fitlist{padding:12px 14px;border-radius:14px;font-size:14px}.fitlist ul{margin:6px 0 0;padding-left:18px}
+.fitlist.good{background:var(--ok-soft)}.fitlist.think{background:var(--warn-soft)}
+.fitprogs{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.fitp{display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:14px;background:var(--soft);text-decoration:none;color:var(--ink)}
+.fitp .name{font-weight:500}
+.motion .fitcard{animation:cmpIn .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 150ms)}
+.motion .fitring .pr{animation:fitDraw 1.4s .3s cubic-bezier(.2,.8,.2,1) both}
+@keyframes fitDraw{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--o)}}
+@media (max-width:640px){.fitcard{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}.fitcard .stack{width:100%;text-align:left}.fitcard .stack>.eyebrow,.fitcard h2{text-align:center}}
+@media (prefers-reduced-motion:reduce){.fitcard,.fitring .pr,.fitgo .fiti,.fitq .opt,.fitq .fitqt{animation:none!important}}

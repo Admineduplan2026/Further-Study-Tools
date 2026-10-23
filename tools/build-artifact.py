@@ -14,7 +14,7 @@ h=h[:a]+"\n"+css+"\n"+h[b:]
 a=h.index("<script>")+len("<script>");b=h.index("</script>",a)
 # The AI chat instructions are kept in two identical copies (website and Apps Script).
 assert open("assets/js/chat-knowledge.js").read()==open("apps-script/ChatKnowledge.gs").read(), "assets/js/chat-knowledge.js and apps-script/ChatKnowledge.gs differ"
-js="\n".join(open("assets/js/"+f).read() for f in ["config.js","scholarship-data.js","faculty-data.js","quiz-data.js","results.js","school-forms.js","app.js","chat-knowledge.js","chat.js","content-zh.js","i18n.js"])
+js="\n".join(open("assets/js/"+f).read() for f in ["config.js","scholarship-data.js","faculty-data.js","quiz-data.js","fit-data.js","results.js","school-forms.js","app.js","chat-knowledge.js","chat.js","content-zh.js","i18n.js"])
 assert "EDUPLAN_SHEET_DATA=" not in js
 import re
 # Images referenced from the JS ("assets/img/....jpg|png|webp") are inlined, since the artifact is a single page.

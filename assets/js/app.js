@@ -987,7 +987,7 @@ function pfStatus(t,warn){
 /* Removes everything personal from this browser (sign out, delete, or a shared computer). */
 function pfForget(){
  PF.s=null;PF.dirty=false;PF.del=false;clearTimeout(PF.timer);
- try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-results","eduplan-profile","eduplan-compare"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
+ try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-results","eduplan-profile","eduplan-compare","eduplan-fit"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
  RX.use({});
  PF.at={};SAVED=[];S.guide={step:0,answers:[]};S.cons={};S.prof={};S.consDone=null;S.app=applyLoad();
 }
@@ -1306,11 +1306,11 @@ V.portfolio=function(){
   (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'
    :'<p class="lead">Keep your saved programmes, quiz result, consultation request and application in one place, and continue on any device.</p>')+'</section>';
  /* Saved programmes */
- var saved=pfCard("My choices",SAVED.length?'<p class="muted">Programmes you saved. Tick 2 or 3 and compare them side by side.</p>'+cmpBar()+'<div class="pfsaved">'+SAVED.map(function(id){var x=findProg(id);
+ var saved=pfCard("My choices",SAVED.length?'<p class="muted">Programmes you saved. Tick 2 or 3 and compare them side by side, or check how well you fit them.</p>'+cmpBar()+'<a class="fitgo" href="#fit"><span class="fiti" aria-hidden="true">🎯</span><span class="fitt"><b>Am I a good fit?</b><span>'+(fitFields().length&&fitFields().every(function(c){return fitScore(c);})?'See your fit again, or answer again':'A few quick questions for each faculty you saved, then your fit in %')+'</span></span>'+ARROW+'</a>'+'<div class="pfsaved">'+SAVED.map(function(id){var x=findProg(id);
    if(!x)return '<div class="item"><span class="name" data-notr>'+esc(id)+'</span><span class="hint">'+(UNIV.length?'This programme is no longer listed.':'Loading…')+'</span><div class="row">'+saveBtn(id)+'</div></div>';
    return '<div class="item"><span class="eyebrow">'+esc(x.u.name)+'</span><span class="name">'+esc(x.p.programme)+'</span>'+
     '<span class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):""].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>'+
-    cmpTick(id)+'<div class="row"><a class="btn" href="#next/'+esc(x.p.id)+'">Choose '+ARROW+'</a>'+saveBtn(id)+'</div></div>';}).join("")+'</div>'
+    fitPill(x.p)+cmpTick(id)+'<div class="row"><a class="btn" href="#next/'+esc(x.p.id)+'">Choose '+ARROW+'</a>'+saveBtn(id)+'</div></div>';}).join("")+'</div>'
   :'<div class="empty">No saved programmes yet. Tap <strong>Save</strong> on a programme to keep it here, then compare 2 or 3 of them side by side.</div><div class="row"><a class="btn ghost" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div>',"wide");
  /* Interest quiz */
  var g=S.guide,n=QUIZ.questions.length,done=g.answers.filter(function(v){return v!=null;}).length,qr=g.step>=n?guidedScore(g.answers,g.tie):null,quiz;
@@ -1429,7 +1429,8 @@ V.compare=function(){
  var homeBox=home?'<p class="hint"><span>Distance measured from</span> '+(S.geo?'<b>your location</b>':'<b data-notr>'+esc(home[0])+'</b>')+' <button type="button" class="linkbtn" data-cmpact="home-change">Change</button></p>'
   :'<div class="chome"><label for="cmp-home">Where do you live?</label>'+homeSelect("cmp-home")+'<button type="button" class="btn ghost sm" data-cmpact="geo"><span aria-hidden="true">📍</span><span>Use my location</span></button></div>'+(S.geoErr?'<p class="err" role="alert">'+esc(S.geoErr)+'</p>':'');
  if(S.homeEdit&&home)homeBox='<div class="chome"><label for="cmp-home">Where do you live?</label>'+homeSelect("cmp-home")+'<button type="button" class="btn ghost sm" data-cmpact="geo"><span aria-hidden="true">📍</span><span>Use my location</span></button></div>';
- var rows=
+ var anyFit=D2.some(function(d){var c=progFac(d.x.p);return c&&fitScore(c);});
+ var rows=(anyFit?cmpRow("🎯","Your fit",D2,function(d){var c=progFac(d.x.p),f=c&&fitScore(c);return f?'<span class="fitpill '+f.cls+'"><span>'+esc(f.band[1])+'</span></span>'+cnum(f.pct,"","%")+cmpMeter(f.pct,100,f.cls==="ok"):'<span class="hint">Not answered for this faculty</span>';},'From the Am I a good fit? quiz.'):'<a class="fitgo" href="#fit"><span class="fiti" aria-hidden="true">🎯</span><span class="fitt"><b>Am I a good fit?</b><span>Answer a few questions to add your fit to this comparison</span></span>'+ARROW+'</a>')+
   cmpRow("💰","Tuition fee (whole programme)",D2,function(d){
    if(d.fee==null)return d.annual.length?'<span class="cval">'+d.annual.map(function(a){return '<span class="line">'+esc(a)+'</span>';}).join("")+'</span><span class="hint">per year</span>':'<span class="hint">To be confirmed</span>';
    return crown(d===wFee,'Lowest')+cnum(d.fee,"RM ")+cmpMeter(d.fee,maxFee,d===wFee)+(d.perYear?'<span class="hint"><span>About</span> <span data-notr>'+esc(rm(d.perYear))+'</span> <span>a year</span></span>':'');},
@@ -1460,7 +1461,7 @@ V.compare=function(){
   heads+rows+'</div>';
 };
 /* Numbers count up when the comparison opens (skipped with reduced motion). */
-function cmpAnimate(){if(!motion)return;Array.prototype.forEach.call(app.querySelectorAll(".cmp [data-count]"),function(el,k){
+function cmpAnimate(){if(!motion)return;Array.prototype.forEach.call(app.querySelectorAll(".cmp [data-count],.fitres [data-count]"),function(el,k){
  var to=Number(el.getAttribute("data-count")),pre="",suf="",t0=null,dur=900,delay=250+k*40,dec=to%1?1:0;
  function step(ts){if(t0==null)t0=ts+delay;var f=Math.min(1,Math.max(0,(ts-t0)/dur)),e=1-Math.pow(1-f,3);el.textContent=pre+(to*e).toLocaleString("en-MY",{maximumFractionDigits:dec,minimumFractionDigits:f<1?0:dec})+suf;if(f<1)requestAnimationFrame(step);}
  el.textContent=pre+"0"+suf;requestAnimationFrame(step);});}
@@ -1473,6 +1474,67 @@ document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.targe
   t.disabled=true;navigator.geolocation.getCurrentPosition(function(p){S.geo=[Math.round(p.coords.latitude*100)/100,Math.round(p.coords.longitude*100)/100];S.geoErr="";S.homeEdit=false;render(true);},
    function(){S.geoErr="Location not shared. Choose your home town instead.";render(true);},{timeout:10000,maximumAge:600000});}});
 
+/* ---------- Am I a good fit? (#fit): a short quiz for the faculties of the saved programmes ----------
+   Questions and points are in fit-data.js. The fit percentage per faculty is the answers (70%) and the grades in the
+   faculty's key subjects from My results (30%); without results, the answers alone. Kept in this browser. */
+var FIT=window.EDUPLAN_FIT||{common:[],fields:{},bands:[],weights:{quiz:1,results:0}};
+S.fit=store("eduplan-fit")||{a:{}};
+function fitSave(){store("eduplan-fit",S.fit);}
+function progFac(p){var f=facOfCourse(p.course_id);return f?f.code:null;}
+/* Faculties of the saved programmes that have fit questions, in the order the programmes were saved. */
+function fitFields(){var out=[];SAVED.forEach(function(id){var x=findProg(id),c=x&&progFac(x.p);if(c&&FIT.fields[c]&&out.indexOf(c)<0)out.push(c);});return out;}
+function fitQs(fields){var qs=FIT.common.map(function(q,i){return {key:"c"+i,q:q,field:null};});
+ fields.forEach(function(c){FIT.fields[c].questions.forEach(function(q,i){qs.push({key:c+"-"+i,q:q,field:c});});});return qs;}
+/* Grades in the faculty's key subjects, 0-100 (A grades 100, credit 70, pass 35, below 0); null without any. */
+function fitResults(code){var re=FIT.fields[code].subjects,sum=0,n=0;
+ RX.taken().forEach(function(eid){var e=RX.exam(eid);if(!e||e.cgpa)return;var ci=e.grades.indexOf(e.credit),pi=e.grades.indexOf(e.pass);
+  RX.grades(eid).forEach(function(s){if(!re.test(s[0]))return;var k=e.grades.indexOf(s[1]);if(k<0)return;
+   sum+=e.a.indexOf(s[1])>=0?100:k<=ci?70:k<=pi?35:0;n++;});});
+ return n?{pct:Math.round(sum/n),n:n}:null;}
+/* null until every question for this faculty (and the common ones) is answered. */
+function fitScore(code){
+ if(!FIT.fields[code])return null;var qs=fitQs([code]),got=0,max=0,good=[],think=[];
+ for(var i=0;i<qs.length;i++){var k=S.fit.a[qs[i].key];if(k==null)return null;var o=qs[i].q.a[k];got+=o[2];max+=3;
+  if(qs[i].field){if(o[2]===3)good.push(qs[i].q.q);else if(o[2]<=1)think.push(qs[i].q.q);}}
+ var quiz=Math.round(got/max*100),res=fitResults(code),w=FIT.weights,pct=res?Math.round(quiz*w.quiz+res.pct*w.results):quiz;
+ var band=FIT.bands.filter(function(b){return pct>=b[0];})[0]||FIT.bands[FIT.bands.length-1];
+ return {pct:pct,quiz:quiz,res:res,band:band,good:good,think:think,cls:pct>=75?"ok":pct>=55?"good":pct>=40?"mid":"low"};}
+function fitPill(p){var c=progFac(p),s=c&&fitScore(c);return s?'<span class="fitpill '+s.cls+'">🎯 <b data-notr>'+s.pct+'%</b> <span>'+esc(s.band[1])+'</span></span>':'';}
+function fitRing(pct,cls){var r=52,c=2*Math.PI*r,off=(c*(1-pct/100)).toFixed(1);
+ return '<span class="fitring '+cls+'"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="'+r+'" class="tr"/><circle cx="60" cy="60" r="'+r+'" class="pr" style="--c:'+c.toFixed(1)+';--o:'+off+'" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+off+'"/></svg>'+
+  '<span class="fitpct"><b data-count="'+pct+'" data-notr>'+pct+'</b>%</span></span>';}
+V.fit=function(){
+ var head='<section class="stack"><span class="eyebrow">Am I a good fit?</span><h1>Am I a good fit?</h1>';
+ if(!SAVED.length)return head+'<p class="lead">Save the programmes you are thinking about first. This quiz then checks how well you fit their faculties.</p><div class="row"><a class="btn" href="#universities">Browse universities '+ARROW+'</a></div></section>';
+ if(!UNIV.length)return head+'<p class="muted">Loading…</p></section>';
+ var fields=fitFields();
+ if(!fields.length)return head+'<p class="lead">Your saved programmes are foundation or general programmes. Take the 12-question interest quiz to find the faculty that suits you.</p><div class="row"><a class="btn" href="#guided">Take the interest quiz '+ARROW+'</a></div></section>';
+ var qs=fitQs(fields),n=qs.length;
+ if(S.fitStep==null){S.fitStep=0;while(S.fitStep<n&&S.fit.a[qs[S.fitStep].key]!=null)S.fitStep++;}
+ if(S.fitStep<n){var t=qs[S.fitStep],cur=S.fit.a[t.key],f=t.field&&facField(t.field);
+  return head+'<p class="lead">'+n+' quick questions about what studying and working in '+(fields.length===1?'this faculty':'these faculties')+' is really like. Answer honestly: there are no wrong answers.</p></section>'+
+   '<section class="panel fitq" style="max-width:760px"><div class="fitprog" aria-hidden="true"><i style="width:'+Math.round(S.fitStep/n*100)+'%"></i></div>'+
+   '<p class="muted"><span>Question</span> <span data-notr>'+(S.fitStep+1)+' / '+n+'</span>'+(f?' · <span class="pill brand">'+esc(facLabel(f.code))+'</span>':' · <span class="pill">For every faculty</span>')+'</p>'+
+   '<h2 id="fit-q" class="fitqt">'+esc(t.q.q)+'</h2><div class="opts" role="group" aria-labelledby="fit-q">'+t.q.a.map(function(a,k){return '<button type="button" class="opt" data-fitans="'+k+'" aria-pressed="'+(cur===k)+'">'+esc(a[0])+'</button>';}).join("")+'</div>'+
+   '<div class="row"><button type="button" class="btn ghost" data-fitact="back"'+(S.fitStep===0?' disabled':'')+'>Back</button><button type="button" class="btn" data-fitact="next"'+(cur==null?' disabled':'')+'>'+(S.fitStep===n-1?'See my fit':'Next')+'</button></div></section>';}
+ var cards=fields.map(function(c,i){var s=fitScore(c),f=facField(c),progs=SAVED.map(findProg).filter(function(x){return x&&progFac(x.p)===c;});
+  return '<article class="fitcard '+s.cls+'" style="--i:'+i+'">'+fitRing(s.pct,s.cls)+'<div class="stack"><span class="eyebrow">'+esc(facLabel(c))+'</span><h2>'+esc(s.band[1])+'</h2>'+
+   '<p class="hint"><span>Your answers:</span> <b data-notr>'+s.quiz+'%</b>'+(s.res?' · <span>Your grades in key subjects:</span> <b data-notr>'+s.res.pct+'%</b>':' · <a href="#portfolio">Add your results</a> <span>to include your grades.</span>')+'</p>'+
+   (s.good.length?'<div class="fitlist good"><b>Strong signs</b><ul>'+s.good.map(function(q){return '<li>'+esc(q)+'</li>';}).join("")+'</ul></div>':'')+
+   (s.think.length?'<div class="fitlist think"><b>Think about</b><ul>'+s.think.map(function(q){return '<li>'+esc(q)+'</li>';}).join("")+'</ul></div>':'')+
+   '<div class="fitprogs">'+progs.map(function(x){var b=RX.taken().length?RX.badge(RX.match({spm:x.p.entry,uec:x.p.uec,olevel:x.p.olevel,stpm:x.p.stpm,other:x.p.entry_other})):null;
+    return '<a class="fitp" href="#next/'+esc(x.p.id)+'"><span class="eyebrow">'+esc(x.u.name)+'</span><span class="name">'+esc(x.p.programme)+'</span>'+(b?'<span class="ematch '+b[0]+'">'+esc(b[1])+'</span>':'')+'</a>';}).join("")+'</div></div></article>';}).join("");
+ return '<div class="fitres">'+head+'<p class="lead">How well you fit the faculties of your saved programmes, from your answers'+(RX.taken().length?' and your results':'')+'. It is a guide to think with, not a test: talk it through with a counsellor before you decide.</p>'+
+  '<div class="row"><a class="btn ghost sm" href="#portfolio">Back to My choices</a>'+(SAVED.length>1?'<a class="btn ghost sm" href="'+esc(cmpHref((CMP.length>1?CMP:SAVED).slice(0,CMP_MAX)))+'">⚖️ <span>Compare</span></a>':'')+'<button type="button" class="btn ghost sm" data-fitact="redo">Answer again</button><a class="btn ghost sm" href="#consultation">Talk to a counsellor</a></div></section>'+
+  '<div class="fitcards">'+cards+'</div></div>';
+};
+document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-fitans],[data-fitact]");if(!t||S.view!=="fit")return;
+ var qs=fitQs(fitFields()),n=qs.length;
+ if(t.hasAttribute("data-fitans")){S.fit.a[qs[S.fitStep].key]=Number(t.getAttribute("data-fitans"));S.fit.at=Date.now();fitSave();
+  if(S.fitStep<n-1){S.fitStep++;}else S.fitStep=n;render(false);return;}
+ var a=t.getAttribute("data-fitact");
+ if(a==="back"&&S.fitStep>0)S.fitStep--;else if(a==="next"&&S.fitStep<n)S.fitStep++;else if(a==="redo"){S.fit={a:{}};fitSave();S.fitStep=0;}
+ render(false);});
 S.app=applyLoad();
 S.flow=sget("eduplan-flow")||null;
 S.pick=sget("eduplan-pick")||null;
@@ -1514,6 +1576,7 @@ function route(){
   else if(!pid||UNIV.length)r="apply";   /* before the sheet data arrives, keep the programme in the link */
  }
  if(r==="compare"||r.indexOf("compare/")===0){S.cmpIds=r.slice(8).split(",").map(function(x){try{return decodeURIComponent(x);}catch(e){return x;}}).filter(Boolean).slice(0,CMP_MAX);}
+ if(r==="fit"&&S.view!=="fit")S.fitStep=null;
  S.payStep=r==="pay/method"?"method":"plan";if(r==="pay/method")r="pay/method";
  view=r.indexOf("pay")===0&&/^pay(\/method)?$/.test(r)?"pay":r.indexOf("next")===0?"next":r.indexOf("apply")===0?"apply":r.indexOf("compare")===0?"compare":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
  if(!V[view])r=view="home";
@@ -1546,7 +1609,7 @@ function render(keepScroll){
  else if(HOST&&HOST.locked&&HOST.locked(r))r="locked";
  S.view=r;
  app.innerHTML=V[r]();
- reveal();fsFilter();if(r==="compare")cmpAnimate();
+ reveal();fsFilter();if(r==="compare"||r==="fit")cmpAnimate();
  var navKey={"guided":"","home":""}[r];
  if(navKey===undefined)navKey=r.indexOf("scholarships-")===0?"scholarships":r;
  Array.prototype.forEach.call(document.querySelectorAll("nav.main a"),function(a){if(a.getAttribute("data-nav")===navKey)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
