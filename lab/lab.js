@@ -464,7 +464,7 @@ function schResults(){
 }
 function savedView(){
  var list=S.saved.map(prog).filter(Boolean);
- return '<div class="page"><h1 class="rh">Saved programmes</h1>'+(list.length?'<div class="cards">'+list.map(function(p){return card(p);}).join("")+'</div>':'<div class="empty">Tap the heart on any programme to keep it here. <button type="button" class="linkbtn" data-act="home">Start searching</button></div>')+'</div>';
+ return '<div class="page"><h1 class="rh">Saved programmes</h1>'+(list.length>1?'<div class="cmpbar"><span class="hint">Compare 2 or 3 of your saved programmes side by side: fees, distance, scholarships and careers.</span><a class="btn sm" href="'+esc(mainLink("#portfolio"))+'">⚖️ Compare</a></div>':'')+(list.length?'<div class="cards">'+list.map(function(p){return card(p);}).join("")+'</div>':'<div class="empty">Tap the heart on any programme to keep it here. <button type="button" class="linkbtn" data-act="home">Start searching</button></div>')+'</div>';
 }
 /* Menu (three lines, top right): My portfolio and About us, plus the account links that are icons on phones. */
 function menu(){

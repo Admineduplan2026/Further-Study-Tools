@@ -461,3 +461,61 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .facts .line.lhead:first-child{margin-top:0}
 .pfgrid .pfcard.wide{grid-column:1/-1}
 .pfsaved .item .pill{align-self:flex-start}
+
+/* ---------- Compare (#compare) and the picker in My choices ---------- */
+.cmpbar{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;padding:12px 16px;border-radius:16px;background:linear-gradient(120deg,var(--brand-soft),#efe9fb);position:sticky;top:84px;z-index:2}
+.cmpcount{font-family:var(--display);font-size:15px;color:var(--muted)}.cmpcount b{font-size:24px;color:var(--brand)}
+.cmpbar .hint{flex:1 1 180px}
+.cmpgo{gap:8px}.cmpgo[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.cmpchk{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;padding:6px 12px;border:1px solid var(--line);border-radius:999px;font-size:14px;cursor:pointer;transition:background .2s,border-color .2s}
+.cmpchk input{accent-color:var(--brand);width:18px;height:18px;margin:0}
+.cmpchk.on{background:var(--brand-soft);border-color:var(--brand);color:var(--brand)}
+.cmpchk.full{opacity:.5;cursor:not-allowed}
+.cmp{display:flex;flex-direction:column;gap:22px}
+.chero h1{background:linear-gradient(90deg,#0a6ea8,#6a3fc9,#d9662b);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cheads,.ccells{display:grid;gap:12px}
+.cheads.n2,.ccells.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cheads.n3,.ccells.n3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.chead{position:relative;display:flex;flex-direction:column;gap:8px;padding:20px 18px 18px;border-radius:22px;color:#fff;overflow:hidden;min-width:0;
+ background:linear-gradient(145deg,hsl(var(--h) 70% 38%),hsl(calc(var(--h) + 40) 65% 52%));box-shadow:0 14px 32px -16px hsl(var(--h) 60% 30% / .7)}
+.chead::after{content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.12)}
+.chead .eyebrow{color:rgba(255,255,255,.85)}
+.chead h2{font-size:clamp(16px,2.2vw,22px);line-height:1.25;overflow-wrap:anywhere}
+.chead .pill{background:rgba(255,255,255,.2);color:#fff;border-color:transparent}
+.chead .meta{display:flex;flex-wrap:wrap;gap:6px}
+.chead .cn{position:absolute;right:14px;bottom:6px;font-family:var(--display);font-size:64px;font-weight:600;line-height:1;opacity:.18}
+.cwins{display:flex;flex-wrap:wrap;gap:6px}.chead .crown{background:#fff;color:#7a4b00}
+.crow{display:flex;flex-direction:column;gap:10px;padding:18px;border:1px solid var(--line);border-radius:20px;background:var(--bg)}
+.crow h3{display:flex;align-items:center;gap:10px;font-size:16px}
+.crow h3 span{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--soft);font-size:18px}
+.ccell{display:flex;flex-direction:column;gap:6px;min-width:0;padding:12px;border-radius:14px;background:var(--soft);overflow-wrap:anywhere}
+.cact .ccell{background:transparent;padding:0}
+.cnum{font-family:var(--display);font-size:clamp(18px,2.6vw,26px);font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums}
+.cval{font-size:15px}.cval .line{display:block}
+.cmeter{display:block;height:10px;border-radius:99px;background:var(--line);overflow:hidden}
+.cmeter i{display:block;height:100%;width:var(--w);border-radius:inherit;background:linear-gradient(90deg,#5aa9d6,#0a6ea8)}
+.cmeter.low i{background:linear-gradient(90deg,#3cc09c,#12715b)}
+.crown{align-self:flex-start;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:#fff4d6;color:#7a4b00}
+.clist{margin:0;padding-left:18px;font-size:14px}
+.cchips{display:flex;flex-wrap:wrap;gap:6px}
+.cchip{font-size:13px;padding:4px 10px;border-radius:999px;background:var(--bg);border:1px solid var(--line)}
+.chomewrap{margin-top:-10px}
+.chome{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:14px 18px;border:1px dashed var(--brand);border-radius:16px;background:var(--brand-soft)}
+.chome select{max-width:100%}
+.btn.sm{min-height:40px;padding:0 16px;font-size:14px}
+@media (max-width:640px){.cheads.n3,.ccells.n3{gap:6px}.cheads.n3 .chead{padding:14px 10px}.ccells.n3 .ccell{padding:8px}.cheads.n3 .chead .cn{font-size:44px}
+ .crow{padding:14px 10px}.cnum{font-size:17px}.cmpbar{top:76px}}
+.motion .chead{animation:cmpIn .7s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(var(--i) * 120ms)}
+.motion .crow{animation:cmpUp .6s ease both}
+.motion .ccell{animation:cmpUp .6s ease both;animation-delay:calc(150ms + var(--i) * 90ms)}
+.motion .cmeter i{animation:cmpGrow 1.1s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(300ms + var(--i,0) * 90ms)}
+.motion .crown{animation:cmpPop .5s 1.1s cubic-bezier(.3,1.6,.5,1) both}
+.motion .cmpchk.on{animation:cmpPop .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes cmpIn{from{opacity:0;transform:translateY(24px) scale(.94) rotate(-1deg)}to{opacity:1;transform:none}}
+@keyframes cmpUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes cmpGrow{from{width:0}to{width:var(--w)}}
+@keyframes cmpPop{0%{transform:scale(.6);opacity:0}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.chead,.crow,.ccell,.cmeter i,.crown,.cmpchk{animation:none!important}}
+.ctag{display:none;align-self:flex-start;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;padding:2px 8px;border-radius:999px;color:#fff;background:hsl(var(--h) 60% 42%)}
+.chead .pill{white-space:normal}
+@media (max-width:640px){.crow.txt .ccells{grid-template-columns:minmax(0,1fr)}.crow.txt .ctag{display:inline-block}.cact .ctag{display:none!important}.cact .btn{width:100%}}

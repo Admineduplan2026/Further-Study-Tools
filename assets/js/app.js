@@ -987,7 +987,7 @@ function pfStatus(t,warn){
 /* Removes everything personal from this browser (sign out, delete, or a shared computer). */
 function pfForget(){
  PF.s=null;PF.dirty=false;PF.del=false;clearTimeout(PF.timer);
- try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-results","eduplan-profile"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
+ try{["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-results","eduplan-profile","eduplan-compare"].forEach(function(k){localStorage.removeItem(k);});sessionStorage.removeItem(APPLY_KEY);}catch(e){}
  RX.use({});
  PF.at={};SAVED=[];S.guide={step:0,answers:[]};S.cons={};S.prof={};S.consDone=null;S.app=applyLoad();
 }
@@ -1285,6 +1285,7 @@ function pfProfile(){var p=S.prof||{},fi=p.fields||[];
   '<div class="field"><span class="legend">Your name</span>'+idBox()+'</div>'+
   '<div class="field"><label for="pr-phone">WhatsApp number <span class="hint">(optional)</span></label><input id="pr-phone" data-prof="phone" type="tel" autocomplete="tel" placeholder="012-345 6789" value="'+esc(p.phone||"")+'"><span class="hint">For counsellor follow-ups and deadline reminders.</span></div>'+
   '<div class="field"><label for="pr-status">Where are you now? <span class="hint">(optional)</span></label><select id="pr-status" data-prof="status"><option value="">Choose</option>'+PROF_STATUS.map(function(x){return '<option'+(p.status===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
+  '<div class="field"><label for="pr-home">Your home town <span class="hint">(optional)</span></label>'+homeSelect("pr-home")+'<span class="hint">Used to show how far each university is from home when you compare programmes.</span></div>'+
   '<div class="field"><label for="pr-region">Where would you like to study? <span class="hint">(optional)</span></label><select id="pr-region" data-prof="region"><option value="">Anywhere in Malaysia</option>'+MY_STATES.map(function(x){return '<option'+(p.region===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
   (FAC.fields.length?'<fieldset class="field pfset"><legend class="legend">Fields you are interested in <span class="hint">(optional)</span></legend><div class="chips">'+FAC.fields.filter(function(f){return f.code!=="00";}).map(function(f){return '<label class="chip pchk"><input type="checkbox" data-proff="'+esc(f.code)+'"'+(fi.indexOf(f.code)>=0?' checked':'')+'> '+esc(f.name)+'</label>';}).join("")+'</div></fieldset>':'')+
   '</div><p class="hint">Exam results are kept in My results above. Saved as you type'+(PF.s?' to your portfolio':' in this browser')+'.</p>';}
@@ -1305,12 +1306,12 @@ V.portfolio=function(){
   (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'
    :'<p class="lead">Keep your saved programmes, quiz result, consultation request and application in one place, and continue on any device.</p>')+'</section>';
  /* Saved programmes */
- var saved=pfCard("Saved programmes",SAVED.length?'<div class="pfsaved">'+SAVED.map(function(id){var x=findProg(id);
+ var saved=pfCard("My choices",SAVED.length?'<p class="muted">Programmes you saved. Tick 2 or 3 and compare them side by side.</p>'+cmpBar()+'<div class="pfsaved">'+SAVED.map(function(id){var x=findProg(id);
    if(!x)return '<div class="item"><span class="name" data-notr>'+esc(id)+'</span><span class="hint">'+(UNIV.length?'This programme is no longer listed.':'Loading…')+'</span><div class="row">'+saveBtn(id)+'</div></div>';
    return '<div class="item"><span class="eyebrow">'+esc(x.u.name)+'</span><span class="name">'+esc(x.p.programme)+'</span>'+
     '<span class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):""].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>'+
-    '<div class="row"><a class="btn" href="#next/'+esc(x.p.id)+'">Choose '+ARROW+'</a>'+saveBtn(id)+'</div></div>';}).join("")+'</div>'
-  :'<div class="empty">No saved programmes yet. Tap <strong>Save</strong> on a programme to keep it here.</div><div class="row"><a class="btn ghost" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div>');
+    cmpTick(id)+'<div class="row"><a class="btn" href="#next/'+esc(x.p.id)+'">Choose '+ARROW+'</a>'+saveBtn(id)+'</div></div>';}).join("")+'</div>'
+  :'<div class="empty">No saved programmes yet. Tap <strong>Save</strong> on a programme to keep it here, then compare 2 or 3 of them side by side.</div><div class="row"><a class="btn ghost" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div>',"wide");
  /* Interest quiz */
  var g=S.guide,n=QUIZ.questions.length,done=g.answers.filter(function(v){return v!=null;}).length,qr=g.step>=n?guidedScore(g.answers,g.tie):null,quiz;
  if(qr&&!qr.close)quiz='<p class="muted">Faculties that suit your interests:</p><div class="chips">'+qr.picks.map(function(c){return '<a class="chip" href="#faculty/'+esc(c)+'">'+esc(facLabel(c))+'</a>';}).join("")+'</div>'+
@@ -1336,9 +1337,141 @@ V.portfolio=function(){
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
  return head+(PF.s?'':pfLogin())+
   '<div class="pfgrid">'+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor())+
-   pfCard("Scholarships for my results",pfScholarships(),"wide")+pfCard("My profile",pfProfile())+saved+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+pfCard("My payment",pfPayment())+'</div>'+
+   pfCard("Scholarships for my results",pfScholarships(),"wide")+saved+pfCard("My profile",pfProfile())+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+pfCard("My payment",pfPayment())+'</div>'+
   (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
 };
+
+/* ---------- Compare (#compare/ID,ID,ID): 2 or 3 saved programmes side by side ----------
+   The student ticks programmes in My choices (portfolio), then Compare. Every number comes from the school sheets;
+   distance is a straight line between town centres (TOWNS) and the popularity row counts how many universities on
+   Eduplan offer the same course. Nothing here is estimated beyond that. */
+var CMP_MAX=3,CMP=store("eduplan-compare")||[];
+/* Town centres [name, latitude, longitude, state]: home towns to choose from, and where campuses are. */
+var TOWNS=[["Kuala Lumpur",3.139,101.687,"W.P. Kuala Lumpur"],["Setapak",3.200,101.720,"W.P. Kuala Lumpur"],["Cheras",3.100,101.740,"W.P. Kuala Lumpur"],["Bukit Jalil",3.058,101.692,"W.P. Kuala Lumpur"],
+ ["Petaling Jaya",3.107,101.607,"Selangor"],["Subang Jaya",3.050,101.585,"Selangor"],["Bandar Sunway",3.068,101.603,"Selangor"],["Shah Alam",3.073,101.518,"Selangor"],["Klang",3.044,101.446,"Selangor"],
+ ["Puchong",3.025,101.618,"Selangor"],["Cyberjaya",2.922,101.651,"Selangor"],["Kajang",2.993,101.787,"Selangor"],["Semenyih",2.952,101.843,"Selangor"],["Bangi",2.920,101.780,"Selangor"],
+ ["Seri Kembangan",3.022,101.705,"Selangor"],["Rawang",3.320,101.580,"Selangor"],["Sepang",2.690,101.750,"Selangor"],["Kota Damansara",3.150,101.580,"Selangor"],["Putrajaya",2.926,101.696,"W.P. Putrajaya"],
+ ["Seremban",2.725,101.938,"Negeri Sembilan"],["Nilai",2.810,101.800,"Negeri Sembilan"],["Port Dickson",2.520,101.800,"Negeri Sembilan"],
+ ["Melaka",2.189,102.250,"Melaka"],
+ ["Johor Bahru",1.492,103.741,"Johor"],["Iskandar Puteri",1.430,103.640,"Johor"],["Skudai",1.530,103.660,"Johor"],["Kulai",1.660,103.600,"Johor"],["Kluang",2.030,103.320,"Johor"],["Batu Pahat",1.850,102.930,"Johor"],["Muar",2.040,102.570,"Johor"],["Segamat",2.510,102.820,"Johor"],
+ ["Ipoh",4.597,101.090,"Perak"],["Kampar",4.310,101.150,"Perak"],["Seri Iskandar",4.360,100.980,"Perak"],["Teluk Intan",4.020,101.020,"Perak"],["Taiping",4.850,100.740,"Perak"],["Sitiawan",4.220,100.700,"Perak"],
+ ["George Town",5.414,100.329,"Pulau Pinang"],["Bayan Lepas",5.290,100.260,"Pulau Pinang"],["Butterworth",5.399,100.364,"Pulau Pinang"],["Bukit Mertajam",5.360,100.460,"Pulau Pinang"],
+ ["Alor Setar",6.121,100.368,"Kedah"],["Sungai Petani",5.647,100.488,"Kedah"],["Bedong",5.730,100.510,"Kedah"],["Kangar",6.440,100.200,"Perlis"],
+ ["Kota Bharu",6.125,102.238,"Kelantan"],["Kuala Terengganu",5.329,103.137,"Terengganu"],["Kuantan",3.807,103.326,"Pahang"],["Temerloh",3.450,102.420,"Pahang"],["Bentong",3.520,101.910,"Pahang"],
+ ["Kota Kinabalu",5.980,116.073,"Sabah"],["Sandakan",5.840,118.120,"Sabah"],["Tawau",4.240,117.890,"Sabah"],
+ ["Kuching",1.553,110.359,"Sarawak"],["Miri",4.400,113.990,"Sarawak"],["Sibu",2.300,111.820,"Sarawak"],["Bintulu",3.170,113.030,"Sarawak"],["Labuan",5.280,115.240,"W.P. Labuan"],
+ ["Singapore",1.352,103.820,""]];
+/* The state's capital stands in when a campus town is not in TOWNS. */
+var STATE_TOWN={"W.P. Kuala Lumpur":"Kuala Lumpur","Kuala Lumpur":"Kuala Lumpur","Selangor":"Shah Alam","W.P. Putrajaya":"Putrajaya","Putrajaya":"Putrajaya","Negeri Sembilan":"Seremban","Melaka":"Melaka","Johor":"Johor Bahru",
+ "Perak":"Ipoh","Pulau Pinang":"George Town","Penang":"George Town","Kedah":"Alor Setar","Perlis":"Kangar","Kelantan":"Kota Bharu","Terengganu":"Kuala Terengganu","Pahang":"Kuantan","Sabah":"Kota Kinabalu","Sarawak":"Kuching","W.P. Labuan":"Labuan","Labuan":"Labuan"};
+function town(name){name=String(name||"").toLowerCase();for(var i=0;i<TOWNS.length;i++)if(TOWNS[i][0].toLowerCase()===name)return TOWNS[i];return null;}
+/* Where a programme is taught: a town named in its campus or the university's city, else the state's capital (approx). */
+function campusTown(x){
+ var text=(String(x.p.campus||"")+" | "+String(x.u.city||"")).toLowerCase(),best=null;
+ TOWNS.forEach(function(t){if(text.indexOf(t[0].toLowerCase())>=0&&(!best||t[0].length>best[0].length))best=t;});
+ if(best)return {t:best,approx:false};
+ var s=town(STATE_TOWN[x.u.state]||"");return s?{t:s,approx:true}:null;
+}
+function kmBetween(a,b){var r=Math.PI/180,dl=(b[1]-a[1])*r,dn=(b[2]-a[2])*r,h=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dn/2)*Math.sin(dn/2);return Math.round(12742*Math.asin(Math.sqrt(h)));}
+/* The student's home: a town chosen in My profile, or this device's location for this visit only (never saved). */
+function homePoint(){if(S.geo)return ["your location",S.geo[0],S.geo[1]];return town(S.prof&&S.prof.home);}
+function homeSelect(id){var h=S.prof&&S.prof.home||"",states={};TOWNS.forEach(function(t){var s=t[3]||"Outside Malaysia";(states[s]=states[s]||[]).push(t[0]);});
+ return '<select id="'+id+'" data-home><option value="">Choose your home town</option>'+Object.keys(states).sort().map(function(s){return '<optgroup label="'+esc(s)+'">'+states[s].map(function(n){return '<option'+(h===n?' selected':'')+'>'+esc(n)+'</option>';}).join("")+'</optgroup>';}).join("")+'</select>';}
+function cmpSave(){CMP=CMP.filter(function(id){return SAVED.indexOf(id)>=0;});store("eduplan-compare",CMP);}
+function cmpHref(ids){return "#compare/"+ids.map(encodeURIComponent).join(",");}
+/* The picker in My choices: tick 2 or 3 saved programmes, then Compare. */
+function cmpBar(){cmpSave();var n=CMP.length;
+ return '<div class="cmpbar"><span class="cmpcount"><b>'+n+'</b> / '+CMP_MAX+'</span><span class="hint">'+(n<2?'Tick 2 or 3 programmes to compare them.':n===CMP_MAX?'Ready. You can compare up to 3.':'Ready. Tick one more if you like.')+'</span>'+
+  (n>=2?'<a class="btn cmpgo" href="'+esc(cmpHref(CMP))+'">⚖️ <span>Compare</span> '+ARROW+'</a>':'<span class="btn cmpgo" aria-disabled="true">⚖️ <span>Compare</span></span>')+'</div>';}
+function cmpTick(id){var on=CMP.indexOf(id)>=0,full=!on&&CMP.length>=CMP_MAX;
+ return '<label class="cmpchk'+(on?' on':'')+(full?' full':'')+'"><input type="checkbox" data-cmp="'+esc(id)+'"'+(on?' checked':'')+(full?' disabled':'')+'><span>'+(on?'In comparison':'Compare')+'</span></label>';}
+function cmpToggle(id){var i=CMP.indexOf(id);if(i>=0)CMP.splice(i,1);else if(CMP.length<CMP_MAX)CMP.push(id);store("eduplan-compare",CMP);rerender();}
+
+function annualOf(p){return lines(p.notes).filter(function(x){return /^Annual fee: /.test(x);}).map(function(x){return x.replace(/^Annual fee: /,"");});}
+/* How many universities on Eduplan offer the same course (popularity among institutions). */
+function courseReach(p){if(!p.course_id)return null;var u={};allProgs().forEach(function(y){if(y.p.course_id===p.course_id)u[y.u.id]=1;});return Object.keys(u).length;}
+function cmpData(x){
+ var p=x.p,sch=progScholarships(p),best=null,mine=null,home=homePoint(),ct=campusTown(x);
+ sch.forEach(function(g){if(g.best!=null&&(best==null||g.best>best))best=g.best;});
+ if(RX.taken().length)RX.scholarships(campusRows().filter(function(r){return r.inst===x.u.id;})).forEach(function(s){if(s.hit&&(!mine||(s.hit.waiver||0)>(mine.waiver||0)))mine=s.hit;});
+ var fy=p.fee!=null&&p.years?Math.round(p.fee/p.years):null;
+ return {x:x,fee:p.fee!=null?Number(p.fee):null,perYear:fy,annual:annualOf(p),years:p.years!=null?Number(p.years):null,best:best,mine:mine,sch:sch,
+  km:home&&ct?kmBetween(home,ct.t):null,town:ct,reach:courseReach(p),careers:lines(p.careers).map(function(c){return c.replace(/^[•·*▪◦–-]\s*/,"");}),
+  badge:RX.taken().length?RX.badge(RX.match({spm:p.entry,uec:p.uec,olevel:p.olevel,stpm:p.stpm,other:p.entry_other})):null};
+}
+/* Winner of a row: lowest or highest value among the programmes that have one (needs at least 2 values). */
+function cmpWin(list,key,low){var v=list.filter(function(d){return d[key]!=null;});if(v.length<2)return null;
+ var w=v.reduce(function(a,b){return (low?b[key]<a[key]:b[key]>a[key])?b:a;});
+ return v.filter(function(d){return d[key]===w[key];}).length===v.length?null:w;}
+function cmpRow(icon,title,list,cell,note,txt){return '<section class="crow'+(txt?' txt':'')+'"><h3><span aria-hidden="true">'+icon+'</span>'+title+'</h3><div class="ccells n'+list.length+'">'+list.map(function(d,i){return '<div class="ccell" style="--i:'+i+';--h:'+CMP_HUE[i]+'"><span class="ctag" data-notr>'+(i+1)+' · '+esc(d.x.u.name)+'</span>'+cell(d,i)+'</div>';}).join("")+'</div>'+(note?'<p class="hint">'+note+'</p>':'')+'</section>';}
+function cmpMeter(v,max,low){var w=max?Math.max(6,Math.round(v/max*100)):0;return '<span class="cmeter'+(low?' low':'')+'" aria-hidden="true"><i style="--w:'+w+'%"></i></span>';}
+function crown(on,label){return on?'<span class="crown">👑 <span>'+label+'</span></span>':'';}
+function cnum(n,pre,suf){return '<b class="cnum">'+(pre?'<span>'+esc(pre)+'</span>':'')+'<span data-count="'+n+'" data-notr>'+esc(Number(n).toLocaleString("en-MY"))+'</span>'+(suf?'<span class="csuf">'+esc(suf)+'</span>':'')+'</b>';}
+var CMP_HUE=[199,262,24];
+function cmpCut(t,n){t=String(t||"");return t.length>n?t.slice(0,n-1).replace(/\s+\S*$/,"")+"…":t;}
+
+V.compare=function(){
+ var ids=(S.cmpIds||[]),list=ids.map(findProg).filter(Boolean);
+ if(list.length<2){
+  if(!UNIV.length)return '<section class="stack"><h1>Compare programmes</h1><p class="muted">Loading…</p></section>';
+  return '<section class="stack"><span class="eyebrow">Compare</span><h1>Compare programmes</h1><p class="lead">Save programmes you like, then tick 2 or 3 of them in My choices and tap Compare.</p>'+
+   '<div class="row"><a class="btn" href="#portfolio">Go to My choices '+ARROW+'</a><a class="btn ghost" href="#universities">Browse universities</a></div></section>';
+ }
+ var D2=list.map(cmpData),home=homePoint();
+ var wFee=cmpWin(D2,"fee",true),wYears=cmpWin(D2,"years",true),wKm=cmpWin(D2,"km",true),wSch=cmpWin(D2,"best",false),wReach=cmpWin(D2,"reach",false);
+ var maxFee=Math.max.apply(null,D2.map(function(d){return d.fee||0;})),maxYears=Math.max.apply(null,D2.map(function(d){return d.years||0;})),
+  maxKm=Math.max.apply(null,D2.map(function(d){return d.km||0;})),maxReach=Math.max.apply(null,D2.map(function(d){return d.reach||0;}));
+ var heads='<div class="cheads n'+D2.length+'">'+D2.map(function(d,i){var x=d.x,meta=[x.p.level,d.years!=null?years(d.years):""].filter(Boolean);
+   var wins=[d===wFee?'Lowest fee':'',d===wYears?'Shortest':'',d===wKm?'Nearest':'',d===wSch?'Biggest scholarship':''].filter(Boolean);
+   return '<article class="chead" style="--i:'+i+';--h:'+CMP_HUE[i]+'"><span class="cn" aria-hidden="true">'+(i+1)+'</span><span class="eyebrow">'+esc(x.u.name)+'</span><h2>'+esc(x.p.programme)+'</h2>'+
+    (meta.length?'<span class="meta">'+meta.map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>':'')+
+    (wins.length?'<span class="cwins">'+wins.map(function(w){return crown(true,esc(w));}).join("")+'</span>':'')+'</article>';}).join("")+'</div>';
+ var homeBox=home?'<p class="hint"><span>Distance measured from</span> '+(S.geo?'<b>your location</b>':'<b data-notr>'+esc(home[0])+'</b>')+' <button type="button" class="linkbtn" data-cmpact="home-change">Change</button></p>'
+  :'<div class="chome"><label for="cmp-home">Where do you live?</label>'+homeSelect("cmp-home")+'<button type="button" class="btn ghost sm" data-cmpact="geo"><span aria-hidden="true">📍</span><span>Use my location</span></button></div>'+(S.geoErr?'<p class="err" role="alert">'+esc(S.geoErr)+'</p>':'');
+ if(S.homeEdit&&home)homeBox='<div class="chome"><label for="cmp-home">Where do you live?</label>'+homeSelect("cmp-home")+'<button type="button" class="btn ghost sm" data-cmpact="geo"><span aria-hidden="true">📍</span><span>Use my location</span></button></div>';
+ var rows=
+  cmpRow("💰","Tuition fee (whole programme)",D2,function(d){
+   if(d.fee==null)return d.annual.length?'<span class="cval">'+d.annual.map(function(a){return '<span class="line">'+esc(a)+'</span>';}).join("")+'</span><span class="hint">per year</span>':'<span class="hint">To be confirmed</span>';
+   return crown(d===wFee,'Lowest')+cnum(d.fee,"RM ")+cmpMeter(d.fee,maxFee,d===wFee)+(d.perYear?'<span class="hint"><span>About</span> <span data-notr>'+esc(rm(d.perYear))+'</span> <span>a year</span></span>':'');},
+   'Fees from the universities\' own fee lists. Hostel, books and other costs are not included.')+
+  cmpRow("⏱️","Duration",D2,function(d){return d.years==null?'<span class="hint">Not listed</span>':crown(d===wYears,'Shortest')+cnum(d.years,"",d.years===1?" year":" years")+cmpMeter(d.years,maxYears,d===wYears);})+
+  cmpRow("📍","Location and distance from home",D2,function(d){var x=d.x,place=x.p.campus||x.p.place||"";
+   return '<span class="cval">'+(place?esc(place):'<span class="hint">To be confirmed</span>')+'</span>'+
+    (d.km!=null?crown(d===wKm,'Nearest')+cnum(d.km,"≈ "," km")+cmpMeter(d.km,maxKm,d===wKm)+(d.town&&d.town.approx?'<span class="hint"><span>Measured to the state capital:</span> <span data-notr>'+esc(d.town.t[0])+'</span></span>':''):'');},
+   home?'Straight-line distance between town centres; the road trip is longer.':'',true)+
+  '<div class="chomewrap">'+homeBox+'</div>'+
+  cmpRow("🎓","Scholarship",D2,function(d){
+   return (d.best!=null?crown(d===wSch,'Biggest')+cnum(d.best,"Up to ","%")+'<span class="hint">tuition waiver</span>'+cmpMeter(d.best,100,d===wSch):d.sch.length?'<span class="cval">'+esc(d.sch[0].name)+'</span>':'<span class="hint">No campus scholarship listed</span>')+
+    (d.mine?'<span class="pill ok"><span>With your results:</span> <b>'+esc(RX.awardText(d.mine))+'</b></span>':'');},
+   RX.taken().length?'':'<a href="#portfolio">Add your results</a> to see the scholarship you would get.')+
+  cmpRow("✅","Entry requirements (SPM)",D2,function(d){var l=lines(d.x.p.entry);
+   return (d.badge?'<span class="ematch '+d.badge[0]+'">'+esc(d.badge[1])+'</span>':'')+(l.length?'<ul class="clist">'+l.slice(0,5).map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul>'+(l.length>5?'<span class="hint">+'+(l.length-5)+'</span>':''):'<span class="hint">Not listed by the institution</span>')+
+    (d.x.p.english?'<span class="hint"><span>English:</span> '+esc(cmpCut(d.x.p.english,160))+'</span>':'');},RX.taken().length?'':'<a href="#portfolio">Add your results</a> to see if you meet them.',true)+
+  cmpRow("🔥","Popularity",D2,function(d){return d.reach==null?'<span class="hint">Not available</span>':crown(d===wReach,'Most offered')+cnum(d.reach,"",d.reach===1?" university":" universities")+cmpMeter(d.reach,maxReach,false);},
+   'How many universities on Eduplan offer the same course: a sign of how established and in demand it is.')+
+  cmpRow("🚀","Future careers",D2,function(d){return d.careers.length?'<span class="cchips">'+d.careers.slice(0,6).map(function(c){return '<span class="cchip">'+esc(c)+'</span>';}).join("")+'</span>':'<span class="hint">Not listed by the institution yet</span>';},"",true)+
+  cmpRow("🗓️","Intakes",D2,function(d){return d.x.p.intakes?'<span class="cval">'+esc(d.x.p.intakes)+'</span>':'<span class="hint">Not listed</span>';})+
+  '<section class="crow cact txt"><div class="ccells n'+D2.length+'">'+D2.map(function(d,i){return '<div class="ccell" style="--i:'+i+'"><a class="btn" href="#next/'+esc(d.x.p.id)+'">Choose this '+ARROW+'</a>'+
+   (d.x.p.url?'<a class="btn ghost sm" href="'+esc(d.x.p.url)+'" target="_blank" rel="noopener">Programme page</a>':'')+'</div>';}).join("")+'</div></section>';
+ var share="https://wa.me/?text="+encodeURIComponent("Eduplan comparison: "+D2.map(function(d){return d.x.p.programme+" ("+d.x.u.name+")";}).join(" vs ")+" "+location.href);
+ return '<div class="cmp"><section class="stack chero"><span class="eyebrow">Compare</span><h1>'+(D2.length===3?'3 programmes, side by side':'2 programmes, side by side')+'</h1>'+
+   '<p class="lead">Fees, time, distance, scholarships, entry requirements and careers in one view. 👑 marks the best in each row.</p>'+
+   '<div class="row"><a class="btn ghost sm" href="#portfolio">Change my choices</a><a class="btn ghost sm" href="'+esc(share)+'" target="_blank" rel="noopener">Share on WhatsApp</a></div></section>'+
+  heads+rows+'</div>';
+};
+/* Numbers count up when the comparison opens (skipped with reduced motion). */
+function cmpAnimate(){if(!motion)return;Array.prototype.forEach.call(app.querySelectorAll(".cmp [data-count]"),function(el,k){
+ var to=Number(el.getAttribute("data-count")),pre="",suf="",t0=null,dur=900,delay=250+k*40,dec=to%1?1:0;
+ function step(ts){if(t0==null)t0=ts+delay;var f=Math.min(1,Math.max(0,(ts-t0)/dur)),e=1-Math.pow(1-f,3);el.textContent=pre+(to*e).toLocaleString("en-MY",{maximumFractionDigits:dec,minimumFractionDigits:f<1?0:dec})+suf;if(f<1)requestAnimationFrame(step);}
+ el.textContent=pre+"0"+suf;requestAnimationFrame(step);});}
+document.addEventListener("change",function(ev){var t=ev.target;if(!t||!t.hasAttribute)return;
+ if(t.hasAttribute("data-cmp")){cmpToggle(t.getAttribute("data-cmp"));return;}
+ if(t.hasAttribute("data-home")){S.prof=S.prof||{};S.prof.home=t.value;S.geo=null;S.homeEdit=false;store("eduplan-profile",S.prof);pfTouch("profile");if(S.view==="compare")render(true);}});
+document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-cmpact]");if(!t)return;var a=t.getAttribute("data-cmpact");
+ if(a==="home-change"){S.homeEdit=true;S.geo=null;rerender("cmp-home");}
+ else if(a==="geo"){if(!navigator.geolocation){S.geoErr="This browser cannot share its location. Choose your home town instead.";return rerender();}
+  t.disabled=true;navigator.geolocation.getCurrentPosition(function(p){S.geo=[Math.round(p.coords.latitude*100)/100,Math.round(p.coords.longitude*100)/100];S.geoErr="";S.homeEdit=false;render(true);},
+   function(){S.geoErr="Location not shared. Choose your home town instead.";render(true);},{timeout:10000,maximumAge:600000});}});
 
 S.app=applyLoad();
 S.flow=sget("eduplan-flow")||null;
@@ -1380,8 +1513,9 @@ function route(){
   if(hit){if(S.app.v.prog!==hit.p.id){S.app.v.prog=hit.p.id;S.app.v.track="";}S.app.step=1;S.app.err={};S.app.complete=false;S.app.sent=null;applySave();r="apply";}
   else if(!pid||UNIV.length)r="apply";   /* before the sheet data arrives, keep the programme in the link */
  }
+ if(r==="compare"||r.indexOf("compare/")===0){S.cmpIds=r.slice(8).split(",").map(function(x){try{return decodeURIComponent(x);}catch(e){return x;}}).filter(Boolean).slice(0,CMP_MAX);}
  S.payStep=r==="pay/method"?"method":"plan";if(r==="pay/method")r="pay/method";
- view=r.indexOf("pay")===0&&/^pay(\/method)?$/.test(r)?"pay":r.indexOf("next")===0?"next":r.indexOf("apply")===0?"apply":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
+ view=r.indexOf("pay")===0&&/^pay(\/method)?$/.test(r)?"pay":r.indexOf("next")===0?"next":r.indexOf("apply")===0?"apply":r.indexOf("compare")===0?"compare":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
  if(!V[view])r=view="home";
  if(r!==h&&h)history.replaceState(null,"","#"+r);
  return view;
@@ -1412,7 +1546,7 @@ function render(keepScroll){
  else if(HOST&&HOST.locked&&HOST.locked(r))r="locked";
  S.view=r;
  app.innerHTML=V[r]();
- reveal();fsFilter();
+ reveal();fsFilter();if(r==="compare")cmpAnimate();
  var navKey={"guided":"","home":""}[r];
  if(navKey===undefined)navKey=r.indexOf("scholarships-")===0?"scholarships":r;
  Array.prototype.forEach.call(document.querySelectorAll("nav.main a"),function(a){if(a.getAttribute("data-nav")===navKey)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
@@ -1523,7 +1657,7 @@ function applyApi(d){
  var inst={},courses={};
  (d.institutions||[]).forEach(function(i){inst[i.institution_id]=i;});
  FAC.fields.forEach(function(f){f.courses.forEach(function(c){c.universities=[];courses[c.id]=c;});});
- UNIV=(d.institutions||[]).map(function(i){return {id:i.institution_id,name:i.short_name||i.name,fullName:i.name,type:i.type,place:[i.city,i.state].filter(Boolean).join(", "),
+ UNIV=(d.institutions||[]).map(function(i){return {id:i.institution_id,name:i.short_name||i.name,fullName:i.name,type:i.type,city:i.city,state:i.state,place:[i.city,i.state].filter(Boolean).join(", "),
   website:i.website,tour:/^https:\/\//i.test(i.virtual_tour_url||"")?i.virtual_tour_url:"",email:i.admissions_email,phone:i.admissions_phone,whatsapp:i.whatsapp,lastUpdated:i.last_updated,progs:[]};})
   .sort(function(a,b){return a.name<b.name?-1:1;});
  (d.programmes||[]).forEach(function(p){
