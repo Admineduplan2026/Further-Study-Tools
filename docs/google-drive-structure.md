@@ -4,6 +4,7 @@ Everything Eduplan keeps is in one private folder in My Drive, **Eduplan Databas
 
 ```
 Eduplan Databases/
+  Eduplan Control Panel                    publish / hide schools, programmes, scholarships with a tick
   1. School databases/                     (was "Eduplan School Data")
        master sheet "Eduplan School Data" (Foundation scholarships, FAQ, Lists)
        XMUM/, UTAR/, APU/ ...              one folder per school with its sheet
@@ -54,3 +55,25 @@ gateway sets it). Eduplan then automatically:
 
 Put the bank slip, or the payment provider's receipt, in the same folder so the proof stays together. Type the bank's
 or provider's transaction ID in **Transaction ID** before choosing *Paid* to have it on the record.
+
+## Eduplan Control Panel (publish with a tick)
+
+**Eduplan Control Panel** is a private spreadsheet in `Eduplan Databases` for the website owner. It lists every school
+sheet in `1. School databases`:
+
+| Tab | One row per | What you do |
+|---|---|---|
+| Schools | school (programmes, ready, published, scholarships, status, link to the sheet) | Tick **Publish**: the school goes on the website with every programme and scholarship whose Check starts with ✓. Untick: the whole school is hidden. |
+| Programmes | programme of every school | Tick or untick one programme. Publishing a programme publishes its school row too. |
+| Scholarships | campus scholarship tier | The same, one tier at a time. |
+| How to use | | Short instructions. |
+
+A tick writes **Published = Yes** (an untick **No**) into the school's own sheet, so the school sheets stay the only
+copy of the data. Rows that are not ready (Check without ✓) are refused with the reason in the Status column. The live
+website shows the change on its next load; the Claude preview pages follow at the daily sync.
+
+The lists are refreshed every morning at 7am and from the menu **Eduplan > Refresh lists** (also: Check data, Refresh
+website data now).
+
+Set up once: paste `dist/Eduplan-all.gs` into the Apps Script project, select **cpSetup**, **Run**, allow the
+permissions. The log shows the Control Panel's link. Running it again is safe.
