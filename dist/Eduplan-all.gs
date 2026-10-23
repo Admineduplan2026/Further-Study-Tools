@@ -1166,6 +1166,11 @@ function cpBook_() {
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('CP_SHEET_ID');
   var live = id && driveSheetLive_(id);   // Drive.gs
   if (live) return live;
+  var found = driveTop_().getFilesByName(CP_NAME);   // the panel already made in Drive
+  while (found.hasNext()) {
+    var f = found.next();
+    if (!f.isTrashed() && f.getMimeType() === MimeType.GOOGLE_SHEETS) { props.setProperty('CP_SHEET_ID', f.getId()); return SpreadsheetApp.openById(f.getId()); }
+  }
   var ss = SpreadsheetApp.create(CP_NAME);
   DriveApp.getFileById(ss.getId()).moveTo(driveTop_());
   ss.setSpreadsheetTimeZone(CP_TZ);

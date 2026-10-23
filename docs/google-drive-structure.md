@@ -75,5 +75,5 @@ website shows the change on its next load; the Claude preview pages follow at th
 The lists are refreshed every morning at 7am and from the menu **Eduplan > Refresh lists** (also: Check data, Refresh
 website data now).
 
-Set up once: paste `dist/Eduplan-all.gs` into the Apps Script project, select **cpSetup**, **Run**, allow the
+The spreadsheet already exists in `Eduplan Databases` (made 2026-10-23, empty lists). Set up once: paste `dist/Eduplan-all.gs` into the Apps Script project, select **cpSetup**, **Run**, allow the
 permissions. The log shows the Control Panel's link. Running it again is safe.
