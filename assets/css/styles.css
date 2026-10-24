@@ -760,3 +760,30 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
  .a4star{color:#c98a00}
  .a4foot{margin-top:10px;color:#555;font-size:9px}
 }
+/* Compare: table / cards switch and the accessible table view */
+.cview{display:inline-flex;align-self:flex-start;padding:4px;border-radius:999px;background:var(--soft);border:1px solid var(--line)}
+.cview button{font:inherit;font-size:14px;font-weight:600;padding:8px 16px;min-height:40px;border:0;border-radius:999px;background:none;color:var(--ink);cursor:pointer}
+.cview button[aria-pressed="true"]{background:var(--brand,#0b3a5c);color:#fff}
+.cview button:focus-visible{outline:3px solid var(--brand,#0b3a5c);outline-offset:2px}
+.ctwrap{position:relative;overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:16px;background:var(--bg);max-width:100%}
+.ctwrap:focus-visible{outline:3px solid var(--brand,#0b3a5c);outline-offset:2px}
+.ctable{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;font-size:14.5px;line-height:1.5}
+.ctwrap.n3 .ctable{min-width:600px}
+.ctable th,.ctable td{padding:12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line);overflow-wrap:anywhere;color:var(--ink)}
+.ctable tbody tr:last-child>*{border-bottom:0}
+.ctable thead th{border-top:6px solid hsl(var(--h) 60% 42%);background:hsl(var(--h) 70% 96%);font-weight:400;vertical-align:bottom}
+.ctable thead b{display:block;font-size:15px;line-height:1.3;margin:4px 0 2px}
+.ctable .a4n{display:inline-grid;place-items:center;width:24px;height:24px;margin-right:6px;border-radius:50%;background:hsl(var(--h) 60% 36%);color:#fff;font-size:13px;font-weight:700}
+.ctable .a4u{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+.ctable .a4l{display:block;font-size:12.5px;color:var(--muted)}
+.ctable th:first-child,.ctable td:first-child{position:sticky;left:0;z-index:1;width:120px;background:var(--soft);font-weight:600}
+.ctable tbody tr:nth-child(even) td{background:color-mix(in srgb,var(--soft) 40%,var(--bg))}
+.ctable small{font-size:12.5px;color:var(--muted)}
+.ctable .a4star{color:#9a6200}
+.ctable .btn{width:100%;justify-content:center}
+@media (max-width:640px){.ctable{font-size:13.5px}.ctable th,.ctable td{padding:10px 8px}.ctable th:first-child,.ctable td:first-child{width:108px;overflow-wrap:normal;hyphens:auto}
+ .ctable thead b{font-size:13.5px}.cview{align-self:stretch}.cview button{flex:1}}
+/* Cards on a phone: every row stacks the same way, each cell tagged with its number, university and programme */
+@media (max-width:640px){.ccells.n2,.ccells.n3{grid-template-columns:minmax(0,1fr)!important}.ccells .ctag{display:flex}.ccells.n3 .ccell{padding:12px}}
+.ctag{gap:6px;align-items:center;text-transform:none;letter-spacing:0;font-size:12px;line-height:1.3;max-width:100%}
+.ctag b{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.25)}

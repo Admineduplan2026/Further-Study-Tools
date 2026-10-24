@@ -1494,7 +1494,7 @@ function cmpData(x){
 function cmpWin(list,key,low){var v=list.filter(function(d){return d[key]!=null;});if(v.length<2)return [];
  var best=v.reduce(function(a,b){return (low?b[key]<a[key]:b[key]>a[key])?b:a;})[key],w=v.filter(function(d){return d[key]===best;});
  return w.length===v.length?[]:w;}
-function cmpRow(icon,title,list,cell,note,txt){return '<section class="crow'+(txt?' txt':'')+'"><h3><span aria-hidden="true">'+icon+'</span>'+title+'</h3><div class="ccells n'+list.length+'">'+list.map(function(d,i){return '<div class="ccell" style="--i:'+i+';--h:'+CMP_HUE[i]+'"><span class="ctag" data-notr>'+(i+1)+' · '+esc(d.x.u.name)+'</span>'+cell(d,i)+'</div>';}).join("")+'</div>'+(note?'<p class="hint">'+note+'</p>':'')+'</section>';}
+function cmpRow(icon,title,list,cell,note,txt){return '<section class="crow'+(txt?' txt':'')+'"><h3><span aria-hidden="true">'+icon+'</span>'+title+'</h3><div class="ccells n'+list.length+'">'+list.map(function(d,i){return '<div class="ccell" style="--i:'+i+';--h:'+CMP_HUE[i]+'"><span class="ctag"><b aria-hidden="true">'+(i+1)+'</b><span data-notr>'+esc(d.x.u.name)+' · '+esc(cmpCut(d.x.p.programme,48))+'</span></span>'+cell(d,i)+'</div>';}).join("")+'</div>'+(note?'<p class="hint">'+note+'</p>':'')+'</section>';}
 function cmpMeter(v,max,low){var w=max?Math.max(6,Math.round(v/max*100)):0;return '<span class="cmeter'+(low?' low':'')+'" aria-hidden="true"><i style="--w:'+w+'%"></i></span>';}
 function crown(on,label){return on?'<span class="crown">👑 <span>'+label+'</span></span>':'';}
 function cnum(n,pre,suf){return '<b class="cnum">'+(pre?'<span>'+esc(pre)+'</span>':'')+'<span data-count="'+n+'" data-notr>'+esc(Number(n).toLocaleString("en-MY"))+'</span>'+(suf?'<span class="csuf">'+esc(suf)+'</span>':'')+'</b>';}
@@ -1545,22 +1545,33 @@ V.compare=function(){
   cmpRow("🗓️","Intakes",D2,function(d){return d.x.p.intakes?'<span class="cval">'+esc(d.x.p.intakes)+'</span>':'<span class="hint">Not listed</span>';})+
   '<section class="crow cact txt"><div class="ccells n'+D2.length+'">'+D2.map(function(d,i){return '<div class="ccell" style="--i:'+i+'"><a class="btn" href="#next/'+esc(d.x.p.id)+'">Choose this '+ARROW+'</a>'+
    (d.x.p.url?'<a class="btn ghost sm" href="'+esc(d.x.p.url)+'" target="_blank" rel="noopener">Programme page</a>':'')+'</div>';}).join("")+'</div></section>';
+ var tableView=cmpView()==="table",W={fee:wFee,years:wYears,km:wKm,sch:wSch,reach:wReach};
+ var sw='<div class="cview" role="group" aria-label="Show the comparison as"><button type="button" data-cmpact="view-table" aria-pressed="'+tableView+'"><span aria-hidden="true">▦</span> <span>Table</span></button>'+
+  '<button type="button" data-cmpact="view-cards" aria-pressed="'+!tableView+'"><span aria-hidden="true">▤</span> <span>Cards</span></button></div>';
+ var body=tableView?'<div class="ctwrap n'+D2.length+'" role="region" aria-label="Comparison table, scroll sideways to see every programme" tabindex="0">'+
+   cmpTable(D2,W,"ctable","Comparison of "+D2.map(function(d){return d.x.p.programme+" at "+d.x.u.name;}).join(", "),true)+'</div>'+
+   '<p class="hint">★ = best in the row. '+(D2.length>2?'Scroll sideways on a phone to see every programme. ':'')+'Fees exclude hostel and books; distance is a straight line between town centres.</p><div class="chomewrap">'+homeBox+'</div>'
+  :heads+rows;
  var share="https://wa.me/?text="+encodeURIComponent("Eduplan comparison: "+D2.map(function(d){return d.x.p.programme+" ("+d.x.u.name+")";}).join(" vs ")+" "+location.href);
  return '<div class="cmp"><section class="stack chero"><span class="eyebrow">Compare</span><h1>'+(D2.length===3?'3 programmes, side by side':'2 programmes, side by side')+'</h1>'+
-   '<p class="lead">Fees, time, distance, scholarships, entry requirements and careers in one view. 👑 marks the best in each row.</p>'+
-   '<div class="row"><button type="button" class="btn sm cmpa4go" data-cmpact="a4">📄 <span>Save as A4 PDF</span></button><a class="btn ghost sm" href="#portfolio">Change my choices</a><a class="btn ghost sm" href="'+esc(share)+'" target="_blank" rel="noopener">Share on WhatsApp</a></div></section>'+
-  heads+rows+'</div>'+cmpA4(D2,{fee:wFee,years:wYears,km:wKm,sch:wSch,reach:wReach},home);
+   '<p class="lead">'+(tableView?'Fees, time, distance, scholarships, entry requirements and careers in one table. ★ marks the best in each row.':'Fees, time, distance, scholarships, entry requirements and careers in one view. 👑 marks the best in each row.')+'</p>'+
+   '<div class="row"><button type="button" class="btn sm cmpa4go" data-cmpact="a4">📄 <span>Save as A4 PDF</span></button><a class="btn ghost sm" href="#portfolio">Change my choices</a><a class="btn ghost sm" href="'+esc(share)+'" target="_blank" rel="noopener">Share on WhatsApp</a></div>'+sw+'</section>'+
+  body+'</div>'+cmpA4(D2,W,home);
 };
 /* The comparison as one A4 page (hidden on screen, the only thing printed): Save as A4 PDF opens the print window,
    where "Save as PDF" keeps it. Plain table, no animation, a star on the best of each row. */
 function cmpA4(D2,W,home){
  var v=idv(),today=new Date().toISOString().slice(0,10);
- function star(key,d){return W[key].indexOf(d)>=0?' <b class="a4star">★</b>':'';}
- function row(label,cell){return '<tr><th scope="row">'+label+'</th>'+D2.map(function(d){return '<td>'+cell(d)+'</td>';}).join("")+'</tr>';}
- var fit=D2.some(function(d){var c=progFac(d.x.p);return c&&fitScore(c);});
  return '<section class="a4sheet" aria-hidden="true"><header class="a4head"><img src="'+esc(window.EDUPLAN_LOGO||"assets/img/logo.png")+'" alt="Eduplan"><div><b>Programme comparison</b>'+
   '<span>'+(v?'<span data-notr>'+esc(v.name)+'</span> · ':'')+today+(home?' · <span>Distance from</span> <span data-notr>'+esc(S.geo?'my location':home[0])+'</span>':'')+'</span></div></header>'+
-  '<table class="a4t"><thead><tr><th></th>'+D2.map(function(d,i){return '<th scope="col"><span class="a4n">'+(i+1)+'</span><span class="a4u" data-notr>'+esc(d.x.u.name)+'</span><b>'+esc(d.x.p.programme)+'</b><span class="a4l">'+esc(d.x.p.level||"")+'</span></th>';}).join("")+'</tr></thead><tbody>'+
+  cmpTable(D2,W,"a4t","")+'<p class="a4foot">★ best in the row · Facts from each university\u2019s published information on Eduplan; distance is a straight line between town centres. Please confirm with the university before you apply. · Eduplan · WhatsApp '+WA_SHOW+'</p></section>';}
+/* The comparison as a real table (screen table view and the A4 sheet): a row per criterion, a column per programme,
+   header cells scoped for screen readers, ★ = best in the row (also said in words). */
+function cmpTable(D2,W,cls,caption,screen){
+ function star(key,d){return W[key].indexOf(d)>=0?' <b class="a4star" aria-hidden="true">★</b><span class="sr">best in this row</span>':'';}
+ function row(label,cell){return '<tr><th scope="row">'+label+'</th>'+D2.map(function(d){return '<td>'+cell(d)+'</td>';}).join("")+'</tr>';}
+ var fit=D2.some(function(d){var c=progFac(d.x.p);return c&&fitScore(c);});
+ return '<table class="'+cls+'">'+(caption?'<caption class="sr">'+caption+'</caption>':'')+'<thead><tr><td class="ctcorner"><span class="sr">Criterion</span></td>'+D2.map(function(d,i){return '<th scope="col" style="--h:'+CMP_HUE[i]+'"><span class="a4n" aria-hidden="true">'+(i+1)+'</span><span class="a4u" data-notr>'+esc(d.x.u.name)+'</span><b>'+esc(d.x.p.programme)+'</b><span class="a4l">'+esc(d.x.p.level||"")+'</span></th>';}).join("")+'</tr></thead><tbody>'+
   (fit?row("Your fit",function(d){var c=progFac(d.x.p),f=c&&fitScore(c);return f?f.pct+'% · '+esc(f.band[1]):'—';}):'')+
   row("Tuition fee",function(d){return d.fee!=null?esc(rm(d.fee))+star("fee",d)+(d.perYear?'<br><small>about '+esc(rm(d.perYear))+' a year</small>':''):d.annual.length?esc(d.annual.join("; "))+'<br><small>per year</small>':'<small>To be confirmed</small>';})+
   row("Duration",function(d){return d.years!=null?esc(years(d.years))+star("years",d):'—';})+
@@ -1572,7 +1583,10 @@ function cmpA4(D2,W,home){
   row("Popularity",function(d){return d.reach!=null?plural2(d.reach,"university","universities")+' offer it'+star("reach",d):'—';})+
   row("Careers",function(d){return d.careers.length?esc(d.careers.slice(0,5).join(", ")):'<small>Not listed</small>';})+
   row("Intakes",function(d){return esc(d.x.p.intakes||"—");})+
-  '</tbody></table><p class="a4foot">★ best in the row · Facts from each university\u2019s published information on Eduplan; distance is a straight line between town centres. Please confirm with the university before you apply. · Eduplan · WhatsApp '+WA_SHOW+'</p></section>';}
+  (screen?row('<span class="sr">Next step</span>',function(d){return '<a class="btn sm" href="#next/'+esc(d.x.p.id)+'">Choose this</a>';}):'')+
+  '</tbody></table>';}
+/* Table on phones, cards on wider screens, until the student picks one (kept in this browser). */
+function cmpView(){var v=null;try{v=localStorage.getItem("eduplan-cmpview");}catch(e){}return v||(window.matchMedia&&matchMedia("(max-width:640px)").matches?"table":"cards");}
 function plural2(n,one,many){return n+' '+(n===1?one:many);}
 /* Numbers count up when the comparison opens (skipped with reduced motion). */
 function cmpAnimate(){if(!motion)return;Array.prototype.forEach.call(app.querySelectorAll(".cmp [data-count],.fitres [data-count]"),function(el,k){
@@ -1586,6 +1600,7 @@ document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.targe
  if(a==="a4"){var sheet=app.querySelector(".a4sheet");if(!sheet)return;var root=document.createElement("div");root.id="printroot";root.innerHTML=sheet.outerHTML;document.body.appendChild(root);
   document.body.classList.add("printa4");var done=function(){document.body.classList.remove("printa4");if(root.parentNode)root.parentNode.removeChild(root);window.removeEventListener("afterprint",done);};
   window.addEventListener("afterprint",done);try{window.print();}catch(e){done();}setTimeout(function(){if(!window.matchMedia||!matchMedia("print").matches)done();},60000);return;}
+ if(a==="view-table"||a==="view-cards"){try{localStorage.setItem("eduplan-cmpview",a.slice(5));}catch(e){}render(false);var b=app.querySelector('[data-cmpact="'+a+'"]');if(b)b.focus();return;}
  if(a==="home-change"){S.homeEdit=true;S.geo=null;rerender("cmp-home");}
  else if(a==="geo"){if(!navigator.geolocation){S.geoErr="This browser cannot share its location. Choose your home town instead.";return rerender();}
   t.disabled=true;navigator.geolocation.getCurrentPosition(function(p){S.geo=[Math.round(p.coords.latitude*100)/100,Math.round(p.coords.longitude*100)/100];S.geoErr="";S.homeEdit=false;render(true);},
