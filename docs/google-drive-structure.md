@@ -4,7 +4,8 @@ Everything Eduplan keeps is in one private folder in My Drive, **Eduplan Databas
 
 ```
 Eduplan Databases/
-  Eduplan Control Panel                    publish / hide schools, programmes, scholarships with a tick
+  00 先看这里 · Start here                 one-page guide to these folders (Google Doc)
+  Eduplan Control Panel                    Overview 总览 first, then publish / hide with a tick
   1. School databases/                     (was "Eduplan School Data")
        master sheet "Eduplan School Data" (Foundation scholarships, FAQ, Lists)
        XMUM/, UTAR/, APU/ ...              one folder per school with its sheet
@@ -77,3 +78,11 @@ website data now).
 
 The spreadsheet already exists in `Eduplan Databases` (made 2026-10-23, empty lists). Set up once: paste `dist/Eduplan-all.gs` into the Apps Script project, select **cpSetup**, **Run**, allow the
 permissions. The log shows the Control Panel's link. Running it again is safe.
+
+### Overview 总览 tab
+
+The Control Panel opens on **Overview 总览**: the website's numbers (schools, programmes, scholarships, published or
+not), student counts (registered, applications, payment requests: numbers only, no names), a to-do list (schools ready to
+publish, schools missing information, payments waiting) and a link to every database with who may see it. It is
+rebuilt with the lists (Eduplan > Refresh lists, and every morning at 7am). Every list tab has bilingual headers and
+a filter on its header row for sorting and filtering.
