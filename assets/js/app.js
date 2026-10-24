@@ -504,13 +504,28 @@ function guideResult(r){
   '<div class="row"><a class="btn" href="#consultation" data-topic="I am not sure what to study" data-note="Interest quiz result: '+esc(names.join(", "))+(r.open?' (interests still open)':'')+'.">Book my free consultation</a><button type="button" class="btn ghost" id="guide-restart">Start again</button></div></section>';
 }
 
+/* Free consultation = a WhatsApp chat with Eduplan. Every "#consultation" link opens WhatsApp with a message that
+   carries the link's topic and note (data-topic / data-note); the #consultation page itself is one WhatsApp button.
+   The earlier request form stays at #consultform. */
+var WA_NUMBER="60182494757",WA_SHOW="018-249 4757";
+function waLink(topic,note){var v=idv(),lines=["Hi Eduplan, I would like to book a free consultation."];
+ if(v)lines.push("Name: "+v.name);if(topic)lines.push("Topic: "+topic);if(note)lines.push(note);
+ return "https://wa.me/"+WA_NUMBER+"?text="+encodeURIComponent(lines.join("\n"));}
+document.addEventListener("click",function(ev){var a=ev.target.closest&&ev.target.closest("a[href]");if(!a)return;
+ var h=a.getAttribute("href")||"";if(h!=="#consultation"&&!/#consultation$/.test(h))return;
+ ev.preventDefault();ev.stopPropagation();var url=waLink(a.getAttribute("data-topic"),a.getAttribute("data-note")),w=window.open(url,"_blank");if(w)w.opener=null;else location.href=url;},true);
 V.consultation=function(){
+ return '<section class="stack"><span class="eyebrow">Free Consultation</span><h1>Book a free consultation</h1><p class="lead">Chat with an Eduplan counsellor on WhatsApp. Tell us what you want to study, your results and your questions; we reply to arrange a time.</p>'+
+  '<div class="row"><a class="btn wa" href="'+esc(waLink())+'" target="_blank" rel="noopener"><span>Chat on WhatsApp</span> '+ARROW+'</a></div>'+
+  '<p class="hint">WhatsApp <b data-notr>'+WA_SHOW+'</b></p></section>';
+};
+V.consultform=function(){
  if(S.consDone){
   return '<section class="stack">'+(S.pick?flowStep("Ask more"):'')+'<span class="eyebrow">Free Consultation</span><h1>Your request is ready to send</h1><p class="lead">Copy the summary and send it to Eduplan by WhatsApp or email. A counsellor replies to arrange a time.</p></section>'+
   '<section class="panel" style="max-width:720px"><pre class="summary" id="cons-summary">'+esc(S.consDone)+'</pre>'+
   '<div class="row"><button type="button" class="btn" id="cons-copy">Copy summary</button><button type="button" class="btn ghost" id="cons-edit">Edit my answers</button></div>'+
   '<p class="muted" id="cons-copied" aria-live="polite"></p>'+
-  '<p class="muted">Send to: WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL].</p>'+
+  '<p class="muted">Send to: WhatsApp <a href="'+esc(waLink())+'" target="_blank" rel="noopener" data-notr>'+WA_SHOW+'</a>.</p>'+
   (findProg(S.pick)?'<div class="row"><a class="btn" href="#apply/'+esc(S.pick)+'">Continue to the application form '+ARROW+'</a></div>':'')+'</section>';
  }
  var c=S.cons,e=S.consErr||{},pr=S.prof||{},vid=idv();
@@ -858,7 +873,7 @@ V.stay=function(){
 /* When the application cannot be sent from this page: share to WhatsApp (phones), or copy / print and send the photos separately. */
 function applyFallback(){
  var share=navigator.canShare&&window.File;
- return '<section class="panel" style="max-width:760px"><h2>Send it yourself</h2><p class="muted">Send this summary and your document photos to Eduplan by WhatsApp [YOUR PHONE NUMBER] or email [YOUR EMAIL].</p>'+
+ return '<section class="panel" style="max-width:760px"><h2>Send it yourself</h2><p class="muted">Send this summary and your document photos to Eduplan by WhatsApp <a href="'+esc(waLink("Application"))+'" target="_blank" rel="noopener" data-notr>'+WA_SHOW+'</a>.</p>'+
   '<pre class="summary" id="apply-summary">'+esc(applySummary())+'</pre>'+
   '<div class="row noprint">'+(share?'<button type="button" class="btn" data-apply="share">Share with documents</button>':'')+
   '<button type="button" class="btn'+(share?' ghost':'')+'" data-apply="copy">Copy summary</button><button type="button" class="btn ghost" data-apply="print">Print or save as PDF</button></div>'+

@@ -7,6 +7,8 @@
 (function(){
 "use strict";
 var ZH={
+ /* Free consultation on WhatsApp */
+ "Chat with an Eduplan counsellor on WhatsApp. Tell us what you want to study, your results and your questions; we reply to arrange a time.":"在 WhatsApp 和 Eduplan 顾问聊聊。告诉我们你想读什么、你的成绩和问题，我们会回复并安排时间。","Chat on WhatsApp":"WhatsApp 聊天","Send this summary and your document photos to Eduplan by WhatsApp":"把这份摘要和文件照片通过 WhatsApp 发送给 Eduplan：","Send to: WhatsApp":"发送至 WhatsApp：","WhatsApp":"WhatsApp",
  /* Am I a good fit? (#fit) */
  "Am I a good fit?":"我适合吗？","For every faculty":"所有科系通用","Programmes you saved. Tick 2 or 3 and compare them side by side, or check how well you fit them.":"你收藏的课程。勾选 2 至 3 个并排比较，或测一测你适不适合。","See your fit again, or answer again":"再看一次结果，或重新作答","A few quick questions for each faculty you saved, then your fit in %":"针对你收藏的每个科系回答几道题，就能得出适合度百分比","Save the programmes you are thinking about first. This quiz then checks how well you fit their faculties.":"请先收藏你在考虑的课程，这个测验会检查你适不适合它们的科系。","Your saved programmes are foundation or general programmes. Take the 12-question interest quiz to find the faculty that suits you.":"你收藏的是预科或通用课程。做 12 题兴趣测验，找出适合你的科系。","Take the interest quiz":"做兴趣测验","Question":"题目","See my fit":"看我的适合度","Your answers:":"你的作答：","Your grades in key subjects:":"相关科目成绩：","to include your grades.":"，把成绩也算进去。","Strong signs":"适合的迹象","Think about":"需要想清楚的地方","Back to My choices":"回到我的选择","Answer again":"重新作答","Your fit":"你的适合度","Not answered for this faculty":"这个科系还没作答","From the Am I a good fit? quiz.":"来自「我适合吗？」测验。","Answer a few questions to add your fit to this comparison":"回答几道题，把你的适合度加进比较",
  /* Compare (#compare) and My choices */
