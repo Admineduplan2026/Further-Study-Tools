@@ -368,8 +368,35 @@ function trust(){
   '<div class="logos" aria-label="Partner institutions">'+D.inst.map(function(u){return '<span class="wm" title="'+esc(u.full)+'">'+esc(u.name)+'</span>';}).join("")+'</div>'+
   '<p class="hint">Programme facts come from each university’s published information. Please confirm details with the university before you apply.</p></section>';
 }
+/* Phone home (like a super-app): search bar and avatar, a service grid that scrolls sideways, two quick cards, a
+   scholarship banner and offer cards. Shown only on phones (lab.css .mapp); the desktop home is unchanged. */
+var MAPP_SVC=[["🎓","Universities","#universities",""],["📚","Faculties","#faculty",""],["🏆","Scholarships","","scholarship"],["🧭","Interest quiz","","guidance"],
+ ["⚖️","Compare","#portfolio",""],["🎯","Am I a good fit?","#fit",""],["💬","Free consultation","#consultation",""],["🤖","AI assistant","",""],
+ ["❤️","Saved","#saved",""],["🎒","Primary level","#primary",""],["🏅","Extra activities","#activities",""],["ℹ️","About us","#about",""]];
+function mapp(){
+ var em=S.session&&S.session.email,n=S.saved.length,w=D.sch.filter(function(x){return x.waiver!=null;}).map(function(x){return x.waiver;}),best=w.length?Math.max.apply(null,w):null;
+ var top={};D.sch.forEach(function(x){if(x.waiver!=null&&(!top[x.inst.id]||x.waiver>top[x.inst.id].w))top[x.inst.id]={w:x.waiver,u:x.inst};});
+ var deals=Object.keys(top).map(function(k){return top[k];}).sort(function(a,b){return b.w-a.w;}).slice(0,6);
+ function svc(x,i){var attr=x[3]?' data-mode="'+x[3]+'"':!x[2]?' data-act="ai"':'';
+  return (x[2]?'<a class="msvc" href="'+esc(mainLink(x[2]))+'"':'<button type="button" class="msvc"'+attr)+' style="--i:'+i+'"><span class="msi" aria-hidden="true">'+x[0]+'</span><span>'+esc(x[1])+'</span>'+(x[2]?'</a>':'</button>');}
+ return '<section class="mapp"><div class="mtop"><button type="button" class="mpill" data-act="msearch"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg><span>Search programmes</span></button>'+
+   '<a class="mav" href="'+esc(mainLink("#portfolio"))+'" aria-label="My portfolio">'+(em?'<span data-notr>'+esc(em.charAt(0).toUpperCase())+'</span>':'<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z"></path></svg>')+'</a></div>'+
+  '<p class="mhi">'+hello()+'</p>'+
+  '<div class="msvcs">'+MAPP_SVC.map(svc).join("")+'</div>'+
+  '<div class="mquick"><a class="mq1" href="'+esc(mainLink("#portfolio"))+'"><span><span class="hint">'+(RX.taken().length?'Your scholarships':'Add')+'</span><b>'+(RX.taken().length?'Scholarship tracker':'My exam results')+'</b></span><span class="mqi" aria-hidden="true">📝</span></a>'+
+   '<a class="mq1" href="#saved"><span><span class="hint">'+(n?plural(n,"programme","programmes")+' saved':'Save programmes')+'</span><b>My choices</b></span><span class="mqi" aria-hidden="true">⭐</span></a></div>'+
+  (best!=null?'<button type="button" class="mbanner" data-mode="scholarship"><span class="mbt"><b>Up to '+best+'% tuition waiver</b><span>Check the scholarships your results can get</span></span><span class="mbi" aria-hidden="true">🎓</span></button>':'')+
+  (deals.length?'<div class="mdeals">'+deals.map(function(d){return '<a class="mdeal" href="#scholarships-campus/'+esc(d.u.id.toLowerCase())+'"><b>Up to '+d.w+'% off tuition</b><span data-notr>'+esc(d.u.name)+'</span><span class="mdi" aria-hidden="true">🏫</span></a>';}).join("")+'</div>':'')+
+ '</section>';}
+/* Bottom tab bar on phones. */
+function mtabs(){var h=location.hash||"#home",n=S.saved.length;
+ function tab(href,icon,label,on){return '<a href="'+esc(mainLink(href))+'"'+(on?' aria-current="page"':'')+'><span class="mti" aria-hidden="true">'+icon+'</span><span>'+label+'</span></a>';}
+ return '<nav class="mtabs" aria-label="Main">'+tab("#home",'<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-3v9h-5v-6h-2v6H6v-9H3z"></path></svg>',"Home",/^#(home)?$/.test(h))+
+  tab("#universities",'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 10l9-6 9 6M5 10v9h14v-9M9 19v-5h6v5"></path></svg>',"Explore",/^#(universities|faculty|scholarships)/.test(h))+
+  tab("#saved",'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"></path></svg>'+(n?'<b class="mbadge">'+n+'</b>':''),"Saved",h==="#saved")+
+  tab("#portfolio",'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>',"Portfolio",/^#(portfolio|fit|compare)/.test(h))+'</nav>';}
 function home(){if(locked())return hero()+'<div class="page">'+continueRow()+popular()+trust()+'</div>';
- return hero()+'<div class="page">'+recommended()+popular()+schTracker()+continueRow()+(L.mode==="guidance"?'':offers())+trust()+'</div>';}   /* recommended first, then popular, then the rest */
+ return mapp()+hero()+'<div class="page">'+recommended()+popular()+schTracker()+continueRow()+(L.mode==="guidance"?'':offers())+trust()+'</div>';}   /* recommended first, then popular, then the rest */
 function resultsView(){
  var q=S.search,r=results(q);
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+
@@ -568,7 +595,8 @@ function route(){var h=(location.hash||"#home").slice(1);L.view=window.EDUPLAN_H
 function chrome(){
  S.saved=ls("eduplan-saved")||[];S.quiz=ls("eduplan-quiz")||S.quiz;S.session=ls("eduplan-session");if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
  var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"")+(L.info?modeInfo():"");if(lang)top.querySelector(".bar").appendChild(lang);
- helpBox.innerHTML=help();
+ helpBox.innerHTML=help()+mtabs();
+ document.body.classList.toggle("lab-home",L.view==="home");
 }
 if(window.EDUPLAN_HOST)window.EDUPLAN_HOST.rendered=function(){route();chrome();};
 function render(keep){
@@ -602,7 +630,8 @@ document.addEventListener("click",function(ev){
 
  /* Links into the main app's journey remember which route the student is on (its progress bar and Back button). */
  if(t.hasAttribute("data-lflow")){try{sessionStorage.setItem("eduplan-flow",t.getAttribute("data-lflow"));sessionStorage.setItem("eduplan-last",location.hash||"#home");}catch(e){}return;}
- if(t.hasAttribute("data-mode")){setMode(t.getAttribute("data-mode"));return;}
+ if(t.hasAttribute("data-mode")){var fromApp=!!t.closest(".mapp");setMode(t.getAttribute("data-mode"));
+  if(fromApp)setTimeout(function(){var h=document.querySelector(".hero .sbox");if(h)h.scrollIntoView({behavior:"smooth",block:"center"});},60);return;}
  /* Register / Sign in open the sign-in form on My portfolio; Visitor browses without searching. */
  if(t.hasAttribute("data-role")){var role=t.getAttribute("data-role");
   if(role==="visitor"){ls("eduplan-role","visitor");L.menu=false;go("home");render(true);return;}
@@ -627,6 +656,7 @@ document.addEventListener("click",function(ev){
   ["eduplan-session","eduplan-at","eduplan-saved","eduplan-quiz","eduplan-consult","eduplan-lab-search","eduplan-lab-sch","eduplan-lab-recent"].forEach(function(k){ls(k,null);});
   try{sessionStorage.removeItem("eduplan-apply");}catch(e){}
   S.session=null;S.saved=[];S.recent=[];S.quiz={step:0,answers:[]};S.search=JSON.parse(JSON.stringify(SEARCH0));S.sch=JSON.parse(JSON.stringify(SCH0));S.at={};S.serverApply=null;hadSearch=false;go("home");}
+ else if(act==="msearch"){var hs=document.querySelector(".hero .sbox");if(hs){hs.scrollIntoView({behavior:"smooth",block:"center"});var f=hs.querySelector("input,select");if(f)setTimeout(function(){f.focus({preventScroll:true});},350);}}
  else if(act==="ai"){L.help=false;render(true);window.dispatchEvent(new CustomEvent("eduplan:ask",{detail:{text:""}}));}
  else if(act==="clear-search"){S.search=JSON.parse(JSON.stringify(SEARCH0));ls("eduplan-lab-search",S.search);hadSearch=false;touch("search");render(true);}
  else if(act==="show-nofee"){L.showNoFee=true;render(true);}
