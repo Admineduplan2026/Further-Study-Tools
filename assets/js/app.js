@@ -1422,7 +1422,9 @@ V.portfolio=function(){
    :'<div class="row"><button type="button" class="btn ghost" data-pf="logout">Sign out</button><button type="button" class="btn ghost" data-pf="delete">Delete my portfolio</button></div>')+
   (PF.err?'<span class="err" role="alert">'+esc(PF.err)+'</span>':'')+
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
- return head+(PF.s?'':pfLogin())+
+ var nav='<nav class="pfnav" aria-label="Portfolio sections">'+[["pf-profile","👤","My profile"],["pf-results","📊","My results"],["pf-choices","⭐","My choices"],["pf-sch","🎓","Scholarships"],["pf-apply","📝","Application"],["pf-pay","💳","Payment"],["pf-cons","💬","Consultation"]]
+  .map(function(x){return '<button type="button" data-pfjump="'+x[0]+'"><span aria-hidden="true">'+x[1]+'</span><span>'+x[2]+'</span></button>';}).join("")+'</nav>';
+ return head+nav+(PF.s?'':pfLogin())+
   '<div class="pfgrid">'+pfCard("My profile",pfInterests(quiz)+'<h3>My details</h3>'+pfProfile(),"wide","👤","pf-profile")+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor(),"wide","📊","pf-results")+saved+
    pfCard("Scholarships for my results",pfScholarships(),"wide","🎓","pf-sch")+
    pfCard("Application",app2,"","📝","pf-apply")+pfCard("My payment",pfPayment(),"","💳","pf-pay")+pfCard("Free consultation",cons,"wide","💬","pf-cons")+'</div>'+
