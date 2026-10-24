@@ -1197,7 +1197,26 @@ V.gate=function(){
   '<ul class="gatelist">'+["Courses, fees and entry requirements from partner universities","Scholarships you can apply for","An AI study assistant and free counsellors","One application form for your chosen university"]
    .map(function(t,k){return '<li style="--i:'+k+'">'+esc(t)+'</li>';}).join("")+'</ul></div>'+pfLogin(true)+'</section>';
 };
-function pfCard(title,body,cls){return '<section class="panel pfcard'+(cls?' '+cls:'')+'"><h2>'+title+'</h2>'+body+'</section>';}
+function pfCard(title,body,cls,icon,id){return '<section class="panel pfcard'+(cls?' '+cls:'')+'"'+(id?' id="'+id+'"':'')+'><h2>'+(icon?'<span class="pfi" aria-hidden="true">'+icon+'</span>':'')+'<span>'+title+'</span></h2>'+body+'</section>';}
+/* Portfolio header: who is signed in, and how complete the portfolio is (each step links to its card). */
+function pfHero(){
+ var p=S.prof||{},em=PF.s&&PF.s.email,steps=[["pf-profile","Name verified with IC",!!idv()],["pf-ints","Interests chosen",(p.fields||[]).length>0||S.guide.step>=QUIZ.questions.length],
+  ["pf-choices","Programmes saved",SAVED.length>0],["pf-results","Results added",RX.taken().length>0],["pf-apply","Application started",!!(S.app.sent||applyProg())]];
+ var done=steps.filter(function(x){return x[2];}).length,pct=Math.round(done/steps.length*100),r=34,c=2*Math.PI*r;
+ return '<section class="pfhero"><div class="pfhbg" aria-hidden="true"><i></i><i></i></div>'+
+  '<div class="pfwho"><span class="pfav" aria-hidden="true" data-notr>'+esc(((idv()&&idv().name)||em||"E").charAt(0).toUpperCase())+'</span><div class="stack">'+
+   '<span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
+   (em?'<p class="pfmail"><span>Signed in as</span> <b data-notr>'+esc(em)+'</b></p>':'<p class="pfmail">Keep your saved programmes, quiz result and application in one place.</p>')+
+   '<span class="pill'+(idv()?' ok':'')+'">'+(idv()?'✓ Verified student':'Guest: verify your name with your IC in My profile')+'</span></div></div>'+
+  '<div class="pfdone"><span class="pfring"><svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="'+r+'" class="tr"/><circle cx="40" cy="40" r="'+r+'" class="pr" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+(c*(1-pct/100)).toFixed(1)+'" style="--c:'+c.toFixed(1)+'"/></svg><b data-notr>'+pct+'%</b></span>'+
+   '<div class="stack"><b>Portfolio complete</b><div class="pfsteps2">'+steps.map(function(x){return '<button type="button" class="pfstep'+(x[2]?' ok':'')+'" data-pfjump="'+x[0]+'">'+(x[2]?'✓':'○')+' <span>'+x[1]+'</span></button>';}).join("")+'</div></div></div></section>';}
+/* My interests: the top fields the student chose (My profile) and the interest quiz result, first in the portfolio. */
+function pfInterests(quiz){var f=((S.prof||{}).fields||[]).filter(function(c){return facField(c);});
+ return (f.length?'<p class="muted">Fields you chose:</p><div class="pfints">'+f.map(function(c,i){var x=facField(c);return '<a class="pfint" href="#faculty/'+esc(c)+'" style="--h:'+((Number(c)*33+190)%360)+';--i:'+i+'"><span class="pfn">'+esc(c)+'</span><b>'+esc(x.name)+'</b><span>'+esc(x.zh||"")+'</span></a>';}).join("")+'</div>'
+  :'<p class="muted">No fields chosen yet. Tick the fields you like in My profile, or take the interest quiz.</p>')+
+  '<button type="button" class="linkbtn" data-pfjump="pf-profile">Change my fields '+ARROW+'</button><h3>Interest quiz</h3>'+quiz;}
+document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-pfjump]");if(!t)return;var el=document.getElementById(t.getAttribute("data-pfjump"));
+ if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.remove("pfflash");void el.offsetWidth;el.classList.add("pfflash");}});
 /* Campus scholarships the student's saved results reach (or nearly reach), from the school sheets. */
 /* Campus scholarship tiers in the shape results.js reads. */
 function campusRows(){var t=schType("campus"),rows=[];
@@ -1372,17 +1391,14 @@ V.portfolio=function(){
   '<li><b>Verify your name with your IC.</b> AI reads the name on the front of your IC. We keep only your name and the last 4 digits.</li>'+
   '<li><b>Upload your results slip</b> (official SPM results or trial results). AI reads your grades and checks that the name on the slip is the same as on your IC.</li>'+
   '<li><b>Apply and get scholarships</b> with the same verified name, results and details.</li></ol></section>';
- var head='<section class="stack"><span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
-  '<p><span class="pill'+(idv()?' ok':'')+'">'+(idv()?'✓ Verified student':'Guest: verify your name with your IC in My profile')+'</span></p>'+
-  (PF.s?'<p class="lead">Signed in as <strong data-notr>'+esc(PF.s.email)+'</strong>. Everything you do on Eduplan is saved automatically.</p>'
-   :'<p class="lead">Keep your saved programmes, quiz result, consultation request and application in one place, and continue on any device.</p>')+'</section>';
+ var head=pfHero();
  /* Saved programmes */
  var saved=pfCard("My choices",SAVED.length?'<p class="muted">Programmes you saved. Tick 2 or 3 and compare them side by side, or check how well you fit them.</p>'+cmpBar()+'<a class="fitgo" href="#fit"><span class="fiti" aria-hidden="true">🎯</span><span class="fitt"><b>Am I a good fit?</b><span>'+(fitFields().length&&fitFields().every(function(c){return fitScore(c);})?'See your fit again, or answer again':'A few quick questions for each faculty you saved, then your fit in %')+'</span></span>'+ARROW+'</a>'+'<div class="pfsaved">'+SAVED.map(function(id){var x=findProg(id);
    if(!x)return '<div class="item"><span class="name" data-notr>'+esc(id)+'</span><span class="hint">'+(UNIV.length?'This programme is no longer listed.':'Loading…')+'</span><div class="row">'+saveBtn(id)+'</div></div>';
    return '<div class="item"><span class="eyebrow">'+esc(x.u.name)+'</span><span class="name">'+esc(x.p.programme)+'</span>'+
     '<span class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):""].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>'+
     fitPill(x.p)+cmpTick(id)+'<div class="row"><a class="btn" href="#next/'+esc(x.p.id)+'">Choose '+ARROW+'</a>'+saveBtn(id)+'</div></div>';}).join("")+'</div>'
-  :'<div class="empty">No saved programmes yet. Tap <strong>Save</strong> on a programme to keep it here, then compare 2 or 3 of them side by side.</div><div class="row"><a class="btn ghost" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div>',"wide");
+  :'<div class="empty">No saved programmes yet. Tap <strong>Save</strong> on a programme to keep it here, then compare 2 or 3 of them side by side.</div><div class="row"><a class="btn ghost" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div>',"wide","⭐","pf-choices");
  /* Interest quiz */
  var g=S.guide,n=QUIZ.questions.length,done=g.answers.filter(function(v){return v!=null;}).length,qr=g.step>=n?guidedScore(g.answers,g.tie):null,quiz;
  if(qr&&!qr.close)quiz='<p class="muted">Faculties that suit your interests:</p><div class="chips">'+qr.picks.map(function(c){return '<a class="chip" href="#faculty/'+esc(c)+'">'+esc(facLabel(c))+'</a>';}).join("")+'</div>'+
@@ -1407,8 +1423,9 @@ V.portfolio=function(){
   (PF.err?'<span class="err" role="alert">'+esc(PF.err)+'</span>':'')+
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
  return head+(PF.s?'':pfLogin())+
-  '<div class="pfgrid">'+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor())+
-   pfCard("Scholarships for my results",pfScholarships(),"wide")+saved+pfCard("My profile",pfProfile())+pfCard("Interest quiz",quiz)+pfCard("Free consultation",cons)+pfCard("Application",app2)+pfCard("My payment",pfPayment())+'</div>'+
+  '<div class="pfgrid">'+pfCard("My interests",pfInterests(quiz),"wide","🎯","pf-ints")+saved+
+   pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor(),"wide","📊","pf-results")+pfCard("Scholarships for my results",pfScholarships(),"wide","🎓","pf-sch")+
+   pfCard("My profile",pfProfile(),"","👤","pf-profile")+pfCard("Application",app2,"","📝","pf-apply")+pfCard("My payment",pfPayment(),"","💳","pf-pay")+pfCard("Free consultation",cons,"","💬","pf-cons")+'</div>'+
   (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
 };
 
