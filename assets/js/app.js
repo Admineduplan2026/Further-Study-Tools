@@ -506,12 +506,17 @@ function guideResult(r){
 
 /* Primary to secondary school, and extra activities: pages for the other stages a family plans (the rest of the
    website is the secondary school to university / college / TVET path). No data yet, so they say so and offer a counsellor. */
-function stagePage(eyebrow,title,lead,topic){
- return '<section class="stack"><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1><p class="lead">'+lead+'</p>'+
-  '<div class="note">This section is coming soon. A counsellor can already help you on WhatsApp.</div>'+
+function stagePage(kind,icon,eyebrow,title,lead,topic){
+ function step(n,t,d){return '<li style="--i:'+n+'"><span class="stn">'+n+'</span><b>'+t+'</b><span>'+d+'</span></li>';}
+ return '<section class="stage '+kind+'"><div class="stbg" aria-hidden="true"><i></i><i></i><i></i></div><span class="sticon" aria-hidden="true">'+icon+'</span>'+
+  '<span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1><p class="lead">'+lead+'</p><span class="soon"><i aria-hidden="true"></i>Coming soon</span></section>'+
+  '<section class="panel ststeps"><h2>We can already help you</h2><ol>'+
+   step(1,"Message us on WhatsApp","Tell us your child\u2019s stage and what you are looking for.")+
+   step(2,"A counsellor replies","Within 2 working days.")+
+   step(3,"Plan together","We go through the options with you and your family.")+'</ol>'+
   '<div class="row"><a class="btn wa" href="#consultation" data-topic="'+esc(topic)+'">Ask a counsellor '+ARROW+'</a><a class="btn ghost" href="#home">Secondary school to university, college or TVET</a></div></section>';}
-V.primary=function(){return stagePage("Primary level","Primary to secondary school","Choosing a secondary school after primary school.","Primary to secondary school");};
-V.activities=function(){return stagePage("Extra activities","Extra activities","Activities outside the classroom.","Extra activities");};
+V.primary=function(){return stagePage("st-primary","🎒","Primary level","Primary to secondary school","Choosing a secondary school after primary school.","Primary to secondary school");};
+V.activities=function(){return stagePage("st-activities","🏅","Extra activities","Extra activities","Activities outside the classroom.","Extra activities");};
 /* Free consultation = a WhatsApp chat with Eduplan. Every "#consultation" link opens WhatsApp with a message that
    carries the link's topic and note (data-topic / data-note); the #consultation page itself is one WhatsApp button.
    The earlier request form stays at #consultform. */

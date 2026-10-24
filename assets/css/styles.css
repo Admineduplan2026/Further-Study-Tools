@@ -558,3 +558,33 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 @media (max-width:640px){.fitcard{grid-template-columns:minmax(0,1fr);justify-items:center;text-align:center}.fitcard .stack{width:100%;text-align:left}.fitcard .stack>.eyebrow,.fitcard h2{text-align:center}}
 @media (prefers-reduced-motion:reduce){.fitcard,.fitring .pr,.fitgo .fiti,.fitq .opt,.fitq .fitqt{animation:none!important}}
 .btn.wa{background:#1fa855;border-color:#1fa855;color:#fff}.btn.wa:hover{background:#178a45;border-color:#178a45}
+
+/* ---------- Primary level and extra activities pages (stagePage in app.js) ---------- */
+.stage{position:relative;overflow:hidden;isolation:isolate;border-radius:28px;padding:48px 36px;color:#fff;display:flex;flex-direction:column;gap:12px;
+ background:linear-gradient(135deg,#0b3a5c,#0e5584 55%,#3b2a7a)}
+.stage.st-activities{background:linear-gradient(135deg,#5a1f4f,#a23b5c 55%,#e0732f)}
+.stage .eyebrow{color:#ffd9a8}
+.stage h1{color:#fff;max-width:18ch}
+.stage .lead{color:#dbe9f4}
+.stbg i{position:absolute;z-index:-1;border-radius:50%;filter:blur(50px);opacity:.5}
+.stbg i:nth-child(1){width:300px;height:300px;right:-60px;top:-80px;background:#ff9f6b}
+.stbg i:nth-child(2){width:240px;height:240px;left:-60px;bottom:-120px;background:#1fa3c9}
+.stbg i:nth-child(3){width:180px;height:180px;right:30%;bottom:-90px;background:#7b4bd8}
+.sticon{position:absolute;right:36px;top:50%;transform:translateY(-50%);font-size:110px;line-height:1;filter:drop-shadow(0 18px 30px rgba(0,0,0,.35))}
+.soon{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:999px;background:rgba(255,255,255,.16);font-size:14px;font-weight:500}
+.soon i{width:8px;height:8px;border-radius:50%;background:#ffd166;box-shadow:0 0 0 0 rgba(255,209,102,.7)}
+.ststeps ol{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.ststeps li{display:flex;flex-direction:column;gap:4px;padding:18px;border-radius:18px;background:#fff;border:1px solid var(--line)}
+.ststeps li b{font-size:16px}
+.ststeps li>span:last-child{font-size:14px;color:var(--muted)}
+.stn{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;margin-bottom:6px;color:#fff;font-weight:600;background:linear-gradient(135deg,#0a6ea8,#7b4bd8)}
+.motion .sticon{animation:stFloat 4s ease-in-out infinite}
+.motion .soon i{animation:stPulse 1.8s infinite}
+.motion .stage>*:not(.stbg):not(.sticon){animation:stIn .6s cubic-bezier(.2,.8,.2,1) both}
+.motion .ststeps li{animation:stIn .6s cubic-bezier(.2,.8,.2,1) both;animation-delay:calc(.2s + var(--i) * .12s)}
+@keyframes stFloat{0%,100%{transform:translateY(-50%) rotate(-4deg)}50%{transform:translateY(-58%) rotate(4deg)}}
+@keyframes stPulse{0%{box-shadow:0 0 0 0 rgba(255,209,102,.7)}100%{box-shadow:0 0 0 12px rgba(255,209,102,0)}}
+@keyframes stIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (max-width:720px){.stage{padding:32px 20px 120px}.sticon{top:auto;bottom:16px;right:20px;transform:none;font-size:72px}.ststeps ol{grid-template-columns:minmax(0,1fr)}
+ .motion .sticon{animation:none}}
+@media (prefers-reduced-motion:reduce){.sticon,.soon i,.stage>*,.ststeps li{animation:none!important}}

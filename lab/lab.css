@@ -439,3 +439,36 @@ body.introopen{overflow:hidden}
 .lvl.on>span:last-child{color:var(--muted);opacity:1}
 @media (max-width:560px){.levels{gap:6px}.lvl{padding:10px 8px}.lvl b{font-size:13px}.lvl>span:last-child{font-size:11.5px}}
 @media (prefers-reduced-motion:reduce){.lvl{transition:none}}
+
+/* ---------- Visual polish: animated hero, glowing stage cards, livelier home sections ---------- */
+.hero{position:relative;overflow:hidden;isolation:isolate}
+.hero::before,.hero::after{content:"";position:absolute;z-index:-1;border-radius:50%;filter:blur(70px);opacity:.55;pointer-events:none}
+.hero::before{width:520px;height:520px;left:-140px;top:-220px;background:#1fa3c9;animation:heroFloat 16s ease-in-out infinite alternate}
+.hero::after{width:460px;height:460px;right:-120px;bottom:-260px;background:#7b4bd8;animation:heroFloat 20s ease-in-out infinite alternate-reverse}
+.hero .hwrap{position:relative}
+.hero h1{background:linear-gradient(90deg,#fff 0%,#bfe6ff 45%,#ffd9a8 100%);-webkit-background-clip:text;background-clip:text;color:transparent;letter-spacing:-.01em}
+.motion .hero h1{animation:heroIn .7s cubic-bezier(.2,.8,.2,1) both}
+.motion .hero .lead{animation:heroIn .7s .25s cubic-bezier(.2,.8,.2,1) both}
+.motion .hero .sbox{animation:heroIn .8s .35s cubic-bezier(.2,.8,.2,1) both}
+@keyframes heroFloat{0%{transform:translate(0,0) scale(1)}100%{transform:translate(80px,60px) scale(1.15)}}
+@keyframes heroIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+
+.lvl{position:relative;overflow:hidden;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);box-shadow:0 10px 30px -18px rgba(0,0,0,.6)}
+.lvl .lvi{display:inline-grid;place-items:center;width:44px;height:44px;border-radius:14px;background:rgba(255,255,255,.14);font-size:24px;margin-bottom:6px;transition:transform .3s}
+.lvl:hover .lvi{transform:scale(1.12) rotate(-6deg)}
+.lvl::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.28) 50%,transparent 70%);transform:translateX(-120%);transition:transform .7s}
+.lvl:hover::after{transform:translateX(120%)}
+.lvl.on{box-shadow:0 0 0 3px rgba(255,217,168,.75),0 18px 40px -16px rgba(255,190,110,.65)}
+.lvl.on .lvi{background:linear-gradient(135deg,#ffd9a8,#ff9f6b)}
+.lvl.on::before{content:"✓";position:absolute;top:10px;right:12px;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(135deg,#ff9f6b,#e0407b)}
+.motion .lvl{animation:heroIn .6s cubic-bezier(.2,.8,.2,1) both}
+.motion .lvl:nth-child(1){animation-delay:.08s}.motion .lvl:nth-child(2){animation-delay:.16s}.motion .lvl:nth-child(3){animation-delay:.24s}
+
+.sh h2{position:relative;padding-bottom:6px}
+.sh h2::after{content:"";position:absolute;left:0;bottom:0;width:42px;height:4px;border-radius:4px;background:linear-gradient(90deg,var(--brand),#7b4bd8,#ff9f6b)}
+.pcard,.ccard,.dest,.major{transition:transform .25s cubic-bezier(.2,.8,.2,1),box-shadow .25s}
+.pcard:hover,.ccard:hover{transform:translateY(-4px);box-shadow:0 16px 34px -18px rgba(11,58,92,.45)}
+.dest:hover{transform:translateY(-4px)}
+.major:hover{transform:translateY(-4px) scale(1.01);box-shadow:0 18px 36px -18px rgba(0,0,0,.5)}
+@media (max-width:560px){.lvl .lvi{width:36px;height:36px;font-size:20px;border-radius:12px}.lvl.on::before{top:6px;right:6px;width:18px;height:18px;font-size:10px}}
+@media (prefers-reduced-motion:reduce){.hero::before,.hero::after,.hero h1,.hero .lead,.hero .sbox,.lvl,.lvl .lvi,.lvl::after{animation:none!important;transition:none!important}}

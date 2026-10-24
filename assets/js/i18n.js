@@ -9,6 +9,7 @@
 var ZH={
  /* Primary level and extra activities pages */
  "Primary level":"小学","Primary to secondary school":"小学升中学","Choosing a secondary school after primary school.":"小学毕业后，选择合适的中学。","Extra activities":"额外活动","Activities outside the classroom.":"课外活动。","This section is coming soon. A counsellor can already help you on WhatsApp.":"这部分即将推出。现在已经可以在 WhatsApp 请顾问帮忙。","Secondary school to university, college or TVET":"中学升大学、学院或 TVET",
+ "Coming soon":"即将推出","We can already help you":"现在就能帮你","Message us on WhatsApp":"在 WhatsApp 联系我们","Tell us your child’s stage and what you are looking for.":"告诉我们孩子目前的阶段和你在找什么。","A counsellor replies":"顾问回复","Within 2 working days.":"2 个工作日内。","Plan together":"一起规划","We go through the options with you and your family.":"我们和你及家人一起分析各种选择。",
  /* Free consultation on WhatsApp */
  "Chat with an Eduplan counsellor on WhatsApp. Tell us what you want to study, your results and your questions; we reply to arrange a time.":"在 WhatsApp 和 Eduplan 顾问聊聊。告诉我们你想读什么、你的成绩和问题，我们会回复并安排时间。","Chat on WhatsApp":"WhatsApp 聊天","Send this summary and your document photos to Eduplan by WhatsApp":"把这份摘要和文件照片通过 WhatsApp 发送给 Eduplan：","Send to: WhatsApp":"发送至 WhatsApp：","WhatsApp":"WhatsApp",
  /* Am I a good fit? (#fit) */
