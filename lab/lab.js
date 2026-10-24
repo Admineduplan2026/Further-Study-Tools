@@ -532,8 +532,8 @@ function detailSheet(){
 }
 function help(){
  return '<div class="help'+(L.help?" open":"")+'"><div class="hmenu" id="help-menu"'+(L.help?"":" hidden")+'>'+
-  '<button type="button" class="hitem" data-act="ai"><b>Ask the AI study assistant</b><span>Answers about courses, fees and scholarships</span></button>'+
-  '<a class="hitem" href="'+esc(mainLink("#consultation"))+'"><b>Book a free consultation</b><span>Chat with a counsellor on WhatsApp</span></a></div>'+
+  '<button type="button" class="hitem" data-act="ai"><b>Ask the online study assistant</b><span>Answers about courses, fees and scholarships</span></button>'+
+  '<a class="hitem" href="'+esc(mainLink("#consultation"))+'"><b>Ask the real-time free consultation</b><span>On WhatsApp · reply within 2 working days</span></a></div>'+
   '<button type="button" class="hfab" data-act="help" aria-expanded="'+L.help+'" aria-controls="help-menu"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.1-4.6A8 8 0 1 1 21 12z"></path></svg><span>Need help?</span></button></div>';
 }
 
