@@ -504,6 +504,14 @@ function guideResult(r){
   '<div class="row"><a class="btn" href="#consultation" data-topic="I am not sure what to study" data-note="Interest quiz result: '+esc(names.join(", "))+(r.open?' (interests still open)':'')+'.">Book my free consultation</a><button type="button" class="btn ghost" id="guide-restart">Start again</button></div></section>';
 }
 
+/* Primary to secondary school, and extra activities: pages for the other stages a family plans (the rest of the
+   website is the secondary school to university / college / TVET path). No data yet, so they say so and offer a counsellor. */
+function stagePage(eyebrow,title,lead,topic){
+ return '<section class="stack"><span class="eyebrow">'+eyebrow+'</span><h1>'+title+'</h1><p class="lead">'+lead+'</p>'+
+  '<div class="note">This section is coming soon. A counsellor can already help you on WhatsApp.</div>'+
+  '<div class="row"><a class="btn wa" href="#consultation" data-topic="'+esc(topic)+'">Ask a counsellor '+ARROW+'</a><a class="btn ghost" href="#home">Secondary school to university, college or TVET</a></div></section>';}
+V.primary=function(){return stagePage("Primary level","Primary to secondary school","Choosing a secondary school after primary school.","Primary to secondary school");};
+V.activities=function(){return stagePage("Extra activities","Extra activities","Activities outside the classroom.","Extra activities");};
 /* Free consultation = a WhatsApp chat with Eduplan. Every "#consultation" link opens WhatsApp with a message that
    carries the link's topic and note (data-topic / data-note); the #consultation page itself is one WhatsApp button.
    The earlier request form stays at #consultform. */

@@ -286,9 +286,17 @@ function lockBox(){var v=access()==="visitor";
  return '<div class="sbox lockbox"><div class="lockcopy"><span class="sl">'+(v?'You are browsing as a visitor':'How do you want to use Eduplan?')+'</span>'+
   '<p>'+(v?'Register or sign in to search by scholarship, interest or guidance, match scholarships to your results and save your progress.':'Register or sign in to search by scholarship, interest or guidance. Visitors can browse fields of study, faculties, courses and universities.')+'</p></div>'+
   (v?'<div class="row"><button type="button" class="btn" data-role="register">Register</button><button type="button" class="btn ghost" data-role="signin">Sign in</button></div>':roleCards())+'</div>';}
+/* Which stage the student is planning: everything else on the website is the secondary school to university / college /
+   TVET path; primary to secondary and extra activities have their own pages (#primary, #activities in app.js). */
+function levels(){
+ function lv(href,on,icon,t,d){return '<a class="lvl'+(on?' on':'')+'" href="'+esc(mainLink(href))+'"'+(on?' aria-current="page"':'')+'><span class="lvi" aria-hidden="true">'+icon+'</span><b>'+t+'</b><span>'+d+'</span></a>';}
+ return '<nav class="levels" aria-label="What are you planning?">'+
+  lv("#primary",false,"🎒","Primary level","Primary to secondary school")+
+  lv("#home",true,"🎓","Secondary level","Secondary school to university, college or TVET")+
+  lv("#activities",false,"🏅","Extra activities","Activities outside the classroom")+'</nav>';}
 function hero(){
  var lead={interest:"Search programmes from our partner universities.",scholarship:"Find the tuition waivers you can get with your results.",guidance:"Start from what you enjoy."}[L.mode];
- return '<section class="hero"><div class="hwrap"><h1>'+hello()+'</h1><p class="lead">'+(locked()?'Plan your studies in Malaysia: courses, universities and scholarships.':lead)+'</p>'+(locked()?lockBox():searchBox()+intsBar())+'</div></section>';
+ return '<section class="hero"><div class="hwrap"><h1>'+hello()+'</h1>'+levels()+'<p class="lead">'+(locked()?'Plan your studies in Malaysia: courses, universities and scholarships.':lead)+'</p>'+(locked()?lockBox():searchBox()+intsBar())+'</div></section>';
 }
 /* Scholarship tracker on the home page: the campus scholarships the exam results in My results qualify for
    (results.js), updated by itself when the results change. */
