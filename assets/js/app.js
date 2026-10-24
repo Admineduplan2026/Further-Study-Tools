@@ -833,14 +833,41 @@ function readUpload(file){
 }
 function filesTotal(){var t=0;Object.keys(S.app.files).forEach(function(k){S.app.files[k].forEach(function(f){t+=f.size;});});return t;}
 
+/* Ask more: the programme's details as folding sections (At a glance open), with Expand all / Collapse all. */
+function accItem(key,icon,title,hint,body,open){
+ return '<details class="acc"'+(open?' open':'')+' data-acc="'+key+'"><summary><span class="acci" aria-hidden="true">'+icon+'</span><span class="acct"><b>'+title+'</b>'+(hint?'<span class="hint">'+hint+'</span>':'')+'</span>'+
+  '<svg class="accv" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg></summary><div class="accb">'+body+'</div></details>';}
+function progAccordion(u,annual,notes){
+ var exams=ENTRY.filter(function(e){return lines(u[e[0]]).length;}),careers=lines(u.careers),blocks=lines(u.structure).filter(function(x){return /[:：]$/.test(x);}).length,sch=progScholarships(u);
+ var best=sch.reduce(function(m,g){return g.best!=null&&(m==null||g.best>m)?g.best:m;},null);
+ var facts='<dl class="facts">'+
+   (u.fee==null&&annual.length?'<dt>Tuition fee (per year)</dt><dd>'+annual.map(function(x){return '<span class="line">'+esc(x)+'</span>';}).join("")+'</dd>':
+   '<dt>Tuition fee (whole programme)</dt><dd>'+(u.fee!=null?esc(rm(u.fee)):'<span class="hint">To be confirmed</span>')+'</dd>')+
+   '<dt>Location</dt><dd>'+(u.campus||u.place?esc(u.campus||u.place):'<span class="hint">To be confirmed</span>')+'</dd>'+
+   (u.intakes?'<dt>Intakes</dt><dd>'+esc(u.intakes)+'</dd>':'')+(u.deadline?'<dt>Application deadline</dt><dd>'+esc(u.deadline)+'</dd>':'')+
+   (u.english?'<dt>English requirement</dt><dd>'+esc(u.english)+'</dd>':'')+(u.mqa?'<dt>MQA</dt><dd>'+esc(u.mqa)+'</dd>':'')+'</dl>';
+ return '<div class="accbar"><span class="hint">Tap a section to open it.</span><button type="button" class="linkbtn" data-accall>Expand all</button></div><div class="accs">'+
+  accItem("glance","📌","At a glance",u.fee!=null?esc(rm(u.fee)):"",(u.overview?'<p>'+esc(u.overview)+'</p>':'')+facts,true)+
+  accItem("entry","✅","Entry requirements",exams.length?esc(exams.map(function(e){return e[1];}).join(" · ")):"Not listed by the institution",entryMatch(u)+'<dl class="facts entry">'+ENTRY.map(function(e){var l=lines(u[e[0]]);
+   return '<dt>'+esc(e[1])+'</dt><dd>'+(l.length?l.map(entryLine).join(""):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>')+
+  accItem("structure","📚","Programme structure",blocks?blocks+(blocks===1?" part":" parts"):"",progStructure(u))+
+  (careers.length?accItem("careers","🚀","Career prospects",careers.length+(careers.length===1?" career":" careers"),'<ul class="pcareer">'+careers.map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul>'):'')+
+  accItem("scholarships","🎓","Scholarships",best!=null?"Up to "+best+"% tuition waiver":"",(sch.length?'<ul class="schlinks">'+sch.map(function(g){return '<li><a href="'+esc(g.href)+'"><span class="name">'+esc(g.name)+'</span>'+(g.best!=null?'<span class="pill brand">Up to '+g.best+'% tuition waiver</span>':'')+'</a></li>';}).join("")+'</ul>'
+    :'<p class="hint">No campus scholarship listed for this level yet.</p>')+'<a class="textlink" href="#scholarships-foundation">Other scholarships open to all students '+ARROW+'</a>')+
+  (notes.length?accItem("notes","📝","Notes","",notes.map(function(l){return '<p class="muted">'+esc(l)+'</p>';}).join("")):'')+'</div>'+
+  (u.url?'<a class="textlink" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'');}
+/* Expand all / Collapse all, and the button follows the sections the student opens one by one. */
+function accSync(box){var all=box.querySelectorAll("details.acc"),open=box.querySelectorAll("details.acc[open]").length,b=box.querySelector("[data-accall]");if(b)b.textContent=open===all.length?"Collapse all":"Expand all";}
+document.addEventListener("click",function(ev){var b=ev.target.closest&&ev.target.closest("[data-accall]");if(!b)return;var box=b.closest(".pinfo"),all=box.querySelectorAll("details.acc"),open=box.querySelectorAll("details.acc[open]").length===all.length;
+ Array.prototype.forEach.call(all,function(d){d.open=!open;});accSync(box);});
+document.addEventListener("toggle",function(ev){var d=ev.target;if(d&&d.classList&&d.classList.contains("acc")){var box=d.closest(".pinfo");if(box)accSync(box);}},true);
 /* details: the Ask more page also shows the programme's details inside the card. */
 function progSummary(x,details){
  var u=x.p,annual=lines(u.notes).filter(function(l){return /^Annual fee: /.test(l);}).map(function(l){return l.replace(/^Annual fee: /,"");}),notes=lines(u.notes).filter(function(l){return !/^Annual fee: /.test(l);});
  return '<div class="pickcard"><span class="eyebrow">'+esc(x.u.fullName||x.u.name)+'</span><h2>'+esc(x.p.programme)+'</h2>'+
   '<div class="meta">'+[x.p.level,x.p.years!=null?years(x.p.years):"",x.p.campus||x.u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>'+
   RX.payHtml({id:x.p.id,instId:x.u.id,inst:x.u.name,level:x.p.level,rows:campusRows(),fee:x.p.fee,annual:annual,years:x.p.years,port:"#portfolio",head:"h4"})+
-  (details?'<div class="pinfo">'+progInfo(u,annual)+(notes.length?'<div class="stack"><h4>Notes</h4>'+notes.map(function(l){return '<p class="muted">'+esc(l)+'</p>';}).join("")+'</div>':'')+
-   (u.url?'<a class="textlink" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'')+'</div>':'')+'</div>';
+  (details?'<div class="pinfo">'+progAccordion(u,annual,notes)+'</div>':'')+'</div>';
 }
 /* Ask more (#next/<id>): the step between choosing a programme and applying. */
 V.next=function(){
@@ -849,10 +876,10 @@ V.next=function(){
  var note="Interested in: "+x.p.programme+" ("+x.u.name+").";
  return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x,true)+'<div class="row">'+saveBtn(x.p.id)+'</div>'+
   '<h1>Any questions before you apply?</h1><p class="lead">Ask our AI study assistant, talk to a counsellor for free, or go straight to the application form.</p></section>'+
-  '<section class="grid">'+
-   '<button type="button" class="item pick" data-ask="'+esc("I am interested in "+x.p.programme+" at "+x.u.name+". ")+'"><span class="name">Ask the AI study assistant</span><span class="desc">Quick answers about fees, entry requirements and scholarships, any time.</span><span class="textlink">Open the chat '+ARROW+'</span></button>'+
-   '<a class="item pick" href="#consultation" data-topic="Choosing a university" data-note="'+esc(note)+'"><span class="name">Book a free consultation</span><span class="desc">A counsellor goes through your options with you and your family.</span><span class="textlink">Book a time '+ARROW+'</span></a>'+
-   '<a class="item pick" href="#apply/'+esc(x.p.id)+'"><span class="name">I am ready to apply</span><span class="desc">Fill in one form and upload your documents. About 10 minutes.</span><span class="textlink">Start the application '+ARROW+'</span></a>'+
+  '<section class="grid askcards">'+
+   '<button type="button" class="item pick ask-ai" data-ask="'+esc("I am interested in "+x.p.programme+" at "+x.u.name+". ")+'"><span class="aski" aria-hidden="true">🤖</span><span class="name">Ask the AI study assistant</span><span class="desc">Quick answers about fees, entry requirements and scholarships, any time.</span><span class="textlink">Open the chat '+ARROW+'</span></button>'+
+   '<a class="item pick ask-wa" href="#consultation" data-topic="Choosing a university" data-note="'+esc(note)+'"><span class="aski" aria-hidden="true">💬</span><span class="name">Book a free consultation</span><span class="desc">A counsellor goes through your options with you and your family.</span><span class="textlink">Book a time '+ARROW+'</span></a>'+
+   '<a class="item pick ask-go" href="#apply/'+esc(x.p.id)+'"><span class="aski" aria-hidden="true">🚀</span><span class="name">I am ready to apply</span><span class="desc">Fill in one form and upload your documents. About 10 minutes.</span><span class="textlink">Start the application '+ARROW+'</span></a>'+
   '</section>';
 };
 
