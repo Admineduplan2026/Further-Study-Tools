@@ -653,7 +653,8 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .pfi{flex:none;display:inline-grid;place-items:center;width:42px;height:42px;border-radius:14px;font-size:21px;background:linear-gradient(135deg,#e3f1fa,#efe9fb)}
 .pfgrid .pfcard{background:#fff;border:1px solid var(--line);box-shadow:0 14px 34px -26px rgba(11,58,92,.5);scroll-margin-top:110px;transition:box-shadow .3s}
 .pfcard.pfflash{box-shadow:0 0 0 3px var(--brand),0 14px 34px -26px rgba(11,58,92,.5)}
-#pf-ints{background:linear-gradient(160deg,#fff 45%,#fff4ea)}
+#pf-profile{background:linear-gradient(160deg,#fff 45%,#fff4ea)}
+#pf-profile h3{margin-top:6px}
 #pf-choices{background:linear-gradient(160deg,#fff 45%,#eef6fc)}
 .pfints{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
 .pfint{position:relative;display:flex;flex-direction:column;gap:2px;padding:16px;border-radius:18px;color:#fff;text-decoration:none;min-height:110px;overflow:hidden;
@@ -661,7 +662,7 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .pfint:hover{transform:translateY(-4px);box-shadow:0 18px 30px -18px rgba(0,0,0,.5)}
 .pfint .pfn{position:absolute;right:12px;bottom:-6px;font-size:54px;font-weight:700;opacity:.2;line-height:1}
 .pfint b{font-size:16px;margin-top:auto}.pfint>span:last-child{font-size:13px;opacity:.85}
-#pf-ints h3{margin-top:6px}
+
 .motion .pfhero>*{animation:stIn .6s cubic-bezier(.2,.8,.2,1) both}.motion .pfdone{animation-delay:.15s!important}
 .motion .pfring .pr{animation:pfDraw 1.3s .3s cubic-bezier(.2,.8,.2,1) both}
 @keyframes pfDraw{from{stroke-dashoffset:var(--c)}}

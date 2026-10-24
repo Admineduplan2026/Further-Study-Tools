@@ -1200,7 +1200,7 @@ V.gate=function(){
 function pfCard(title,body,cls,icon,id){return '<section class="panel pfcard'+(cls?' '+cls:'')+'"'+(id?' id="'+id+'"':'')+'><h2>'+(icon?'<span class="pfi" aria-hidden="true">'+icon+'</span>':'')+'<span>'+title+'</span></h2>'+body+'</section>';}
 /* Portfolio header: who is signed in, and how complete the portfolio is (each step links to its card). */
 function pfHero(){
- var p=S.prof||{},em=PF.s&&PF.s.email,steps=[["pf-profile","Name verified with IC",!!idv()],["pf-ints","Interests chosen",(p.fields||[]).length>0||S.guide.step>=QUIZ.questions.length],
+ var p=S.prof||{},em=PF.s&&PF.s.email,steps=[["pf-profile","Name verified with IC",!!idv()],["pf-profile","Interests chosen",(p.fields||[]).length>0||S.guide.step>=QUIZ.questions.length],
   ["pf-choices","Programmes saved",SAVED.length>0],["pf-results","Results added",RX.taken().length>0],["pf-apply","Application started",!!(S.app.sent||applyProg())]];
  var done=steps.filter(function(x){return x[2];}).length,pct=Math.round(done/steps.length*100),r=34,c=2*Math.PI*r;
  return '<section class="pfhero"><div class="pfhbg" aria-hidden="true"><i></i><i></i></div>'+
@@ -1212,9 +1212,9 @@ function pfHero(){
    '<div class="stack"><b>Portfolio complete</b><div class="pfsteps2">'+steps.map(function(x){return '<button type="button" class="pfstep'+(x[2]?' ok':'')+'" data-pfjump="'+x[0]+'">'+(x[2]?'✓':'○')+' <span>'+x[1]+'</span></button>';}).join("")+'</div></div></div></section>';}
 /* My interests: the top fields the student chose (My profile) and the interest quiz result, first in the portfolio. */
 function pfInterests(quiz){var f=((S.prof||{}).fields||[]).filter(function(c){return facField(c);});
- return (f.length?'<p class="muted">Fields you chose:</p><div class="pfints">'+f.map(function(c,i){var x=facField(c);return '<a class="pfint" href="#faculty/'+esc(c)+'" style="--h:'+((Number(c)*33+190)%360)+';--i:'+i+'"><span class="pfn">'+esc(c)+'</span><b>'+esc(x.name)+'</b><span>'+esc(x.zh||"")+'</span></a>';}).join("")+'</div>'
+ return '<h3>My interests</h3>'+(f.length?'<p class="muted">Fields you chose:</p><div class="pfints">'+f.map(function(c,i){var x=facField(c);return '<a class="pfint" href="#faculty/'+esc(c)+'" style="--h:'+((Number(c)*33+190)%360)+';--i:'+i+'"><span class="pfn">'+esc(c)+'</span><b>'+esc(x.name)+'</b><span>'+esc(x.zh||"")+'</span></a>';}).join("")+'</div>'
   :'<p class="muted">No fields chosen yet. Tick the fields you like in My profile, or take the interest quiz.</p>')+
-  '<button type="button" class="linkbtn" data-pfjump="pf-profile">Change my fields '+ARROW+'</button><h3>Interest quiz</h3>'+quiz;}
+  '<p class="hint">Change your fields under My details below.</p><h3>Interest quiz</h3>'+quiz;}
 document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-pfjump]");if(!t)return;var el=document.getElementById(t.getAttribute("data-pfjump"));
  if(el){el.scrollIntoView({behavior:"smooth",block:"start"});el.classList.remove("pfflash");void el.offsetWidth;el.classList.add("pfflash");}});
 /* Campus scholarships the student's saved results reach (or nearly reach), from the school sheets. */
@@ -1378,7 +1378,7 @@ function pfProfile(){var p=S.prof||{},fi=p.fields||[];
   '<div class="field"><label for="pr-home">Your home town <span class="hint">(optional)</span></label>'+homeSelect("pr-home")+'<span class="hint">Used to show how far each university is from home when you compare programmes.</span></div>'+
   '<div class="field"><label for="pr-region">Where would you like to study? <span class="hint">(optional)</span></label><select id="pr-region" data-prof="region"><option value="">Anywhere in Malaysia</option>'+MY_STATES.map(function(x){return '<option'+(p.region===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
   (FAC.fields.length?'<fieldset class="field pfset"><legend class="legend">Fields you are interested in <span class="hint">(optional)</span></legend><div class="chips">'+FAC.fields.filter(function(f){return f.code!=="00";}).map(function(f){return '<label class="chip pchk"><input type="checkbox" data-proff="'+esc(f.code)+'"'+(fi.indexOf(f.code)>=0?' checked':'')+'> '+esc(f.name)+'</label>';}).join("")+'</div></fieldset>':'')+
-  '</div><p class="hint">Exam results are kept in My results above. Saved as you type'+(PF.s?' to your portfolio':' in this browser')+'.</p>';}
+  '</div><p class="hint">Exam results are kept in My results below. Saved as you type'+(PF.s?' to your portfolio':' in this browser')+'.</p>';}
 document.addEventListener("change",function(ev){var t=ev.target;if(!t||!t.closest||!t.closest("#pf-prof"))return;S.prof=S.prof||{};
  if(t.hasAttribute("data-proff")){var c=t.getAttribute("data-proff"),a=(S.prof.fields||[]).filter(function(x){return x!==c;});if(t.checked)a.push(c);S.prof.fields=a;}
  else if(t.hasAttribute("data-prof"))S.prof[t.getAttribute("data-prof")]=t.value.trim();
@@ -1423,9 +1423,9 @@ V.portfolio=function(){
   (PF.err?'<span class="err" role="alert">'+esc(PF.err)+'</span>':'')+
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
  return head+(PF.s?'':pfLogin())+
-  '<div class="pfgrid">'+pfCard("My interests",pfInterests(quiz),"wide","🎯","pf-ints")+saved+
-   pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor(),"wide","📊","pf-results")+pfCard("Scholarships for my results",pfScholarships(),"wide","🎓","pf-sch")+
-   pfCard("My profile",pfProfile(),"","👤","pf-profile")+pfCard("Application",app2,"","📝","pf-apply")+pfCard("My payment",pfPayment(),"","💳","pf-pay")+pfCard("Free consultation",cons,"","💬","pf-cons")+'</div>'+
+  '<div class="pfgrid">'+pfCard("My profile",pfInterests(quiz)+'<h3>My details</h3>'+pfProfile(),"wide","👤","pf-profile")+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor(),"wide","📊","pf-results")+saved+
+   pfCard("Scholarships for my results",pfScholarships(),"wide","🎓","pf-sch")+
+   pfCard("Application",app2,"","📝","pf-apply")+pfCard("My payment",pfPayment(),"","💳","pf-pay")+pfCard("Free consultation",cons,"wide","💬","pf-cons")+'</div>'+
   (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
 };
 
