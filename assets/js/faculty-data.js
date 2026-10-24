@@ -33,7 +33,7 @@ window.EDUPLAN_FACULTIES={
     {code:"04",name:"Business, administration and law",zh:"商业、管理与法律",courses:[
       {id:"business-management",name:"Business / Perniagaan、Management / Pengurusan",desc:"企业管理、市场营销、人力资源",universities:[]},
       {id:"accountancy",name:"Accountancy / Perakaunan",desc:"会计",universities:[]},
-      {id:"finance-banking",name:"Finance & Banking / Kewangan",desc:"金融、银行、伊斯兰金融",universities:[]},
+      {id:"finance-banking",name:"Finance / Kewangan",desc:"所有金融课程：金融与投资、银行与金融、伊斯兰金融、金融科技、精算等",universities:[]},
       {id:"law",name:"Faculty of Law / Fakulti Undang-undang",desc:"法律，包括 Syariah Law",universities:[]}
     ]},
     {code:"05",name:"Natural sciences, mathematics and statistics",zh:"自然科学、数学与统计",courses:[

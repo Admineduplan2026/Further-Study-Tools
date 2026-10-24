@@ -47,6 +47,7 @@ var SHEETS = {
 var KEY_ROW = 2;      // row holding the API keys
 var FIRST_ROW = 4;    // first data row
 var CACHE_KEY = 'eduplan-api-v2';
+var FINANCE_RE = /financ|banking|investment|fintech|actuarial/i;   // programme names listed under the Finance course too
 var FRESH_SECONDS = 30;       // how often the folder's last-edit times are re-checked
 var CACHE_SECONDS = 21600;    // cached JSON is kept up to 6 hours, but replaced as soon as a sheet changes
 
@@ -298,6 +299,9 @@ function buildEduplanData(values, formatDate, generatedAt) {
         if (courseIds[l]) { if (p.also_course_ids.indexOf(courseIds[l]) < 0 && courseIds[l] !== p.course_id) p.also_course_ids.push(courseIds[l]); }
         else skipped.push({ sheet: p._sheet, row: p._row, reason: 'also_in_courses "' + l + '" is not in the Lists sheet (the programme is still shown under its main course)' });
       });
+      // The Finance course gathers every finance programme (finance and investment, banking, fintech, actuarial ...),
+      // also those whose main course is business or accountancy. Pre-university routes are left out.
+      if (FINANCE_RE.test(p.programme_name || '') && !/^Pre-university/i.test(p.level || '') && p.course_id !== 'finance-banking' && p.also_course_ids.indexOf('finance-banking') < 0) p.also_course_ids.push('finance-banking');
       delete p.also_in_courses;
       if (p.course_id) { programmes.push(p); return; }
       skipped.push({ sheet: p._sheet, row: p._row, reason: 'course "' + p.course + '" is not in the Lists sheet' });
