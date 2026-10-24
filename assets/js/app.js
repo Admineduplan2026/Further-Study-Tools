@@ -311,19 +311,31 @@ function schUniList(t){
 var SCH_QUALS=["SPM","IGCSE","O-Level","UEC","STPM","A-Level"],SCH_PREU=["Foundation","Matriculation","Diploma"],SCH_SECONDARY=["SPM","IGCSE","O-Level"],
  SCH_LEVELS=[["foundation","Foundation"],["undergraduate","Undergraduate"]];
 function schLevel(r){var a=r.applies||"";return /^foundation/i.test(a)?"foundation":/^undergraduate/i.test(a)?"undergraduate":/^postgraduate/i.test(a)?"postgraduate":"";}
-function schPanel(g,opt){
+function schPanel(g,opt,open){
  var tr=g.tiers,spm=tr.every(function(r){return /^SPM /.test(r.result);}),waiver=tr.every(function(r){return r.waiver!=null;}),
   all=tr.map(function(r){return lines(r.conditions);}),
   cond=uniq([].concat.apply([],all)).filter(function(c){return all.every(function(l){return l.indexOf(c)>=0;});}),
   applies=uniq(tr.map(function(r){return r.applies;}).filter(Boolean)),dl=uniq(tr.map(function(r){return r.deadline;}).filter(Boolean));
- var byLevel=opt&&opt.head&&applies.length===1;
- return '<section class="panel">'+(byLevel?'<span class="eyebrow">'+esc(g.name)+'</span><h2>'+esc(applies[0])+'</h2>':'<h2>'+esc(g.name||"Scholarship tiers")+'</h2>')+
+ var byLevel=opt&&opt.head&&applies.length===1,w=tr.filter(function(r){return r.waiver!=null;}).map(function(r){return r.waiver;}),best=w.length?Math.max.apply(null,w):null;
+ var hint=[tr.length+(tr.length===1?" tier":" tiers"),best!=null?"up to "+best+"% tuition waiver":""].filter(Boolean).join(" · ");
+ return accItem("sch","🎓",esc(byLevel?applies[0]:g.name||"Scholarship tiers"),esc(hint),(byLevel&&g.name?'<span class="eyebrow">'+esc(g.name)+'</span>':'')+
  '<table class="tiers"><thead><tr><th scope="col">'+esc(opt&&opt.head||(spm?'SPM result':'Eligibility'))+'</th><th scope="col">'+(waiver?'Tuition waiver':'Award')+'</th></tr></thead><tbody>'+
   tr.map(function(r,k){var own=all[k].filter(function(c){return cond.indexOf(c)<0;});
    return '<tr><td>'+esc(opt&&opt.head?r.min||r.result:r.result)+own.map(function(c){return '<br><span class="hint">'+esc(c)+'</span>';}).join("")+'</td><td>'+(r.waiver==null&&r.amount==null?'<span class="hint">'+esc(schTierCell(r))+'</span>':'<span class="big">'+esc(schTierCell(r))+'</span>')+'</td></tr>';}).join("")+'</tbody></table>'+
  facts([["Applies to",byLevel?"":applies.join("; ")],["Application deadline",dl.join("; ")]])+
- (cond.length?'<h3>Conditions</h3>'+reqList(cond):'')+'</section>';
+ (cond.length?'<h3>Conditions</h3>'+reqList(cond):''),open);
 }
+/* Folding scholarship sections with Expand all; the first one starts open. */
+function schAccs(groups,opt){return '<div class="accwrap"><div class="accbar"><span class="hint">Tap a scholarship to see its tiers and conditions.</span><button type="button" class="linkbtn" data-accall>Expand all</button></div><div class="accs">'+
+ groups.map(function(g,i){return schPanel(g,opt,i===0);}).join("")+'</div></div>';}
+/* Universities whose tiers carry no study level: pick a qualification (SPM, O-Level, UEC ...) to see its tiers only. */
+function schByQual(u){
+ var qk=function(r){return r.qual&&r.qual!=="Other"?r.qual:"Others";},quals=uniq(u.tiers.map(qk)).sort(function(a,b){var i=SCH_QUALS.indexOf(a),j=SCH_QUALS.indexOf(b);return (i<0?99:i)-(j<0?99:j)||(a<b?-1:1);});
+ if(quals.length<2)return schAccs(schGroupBy(u.tiers));
+ var q=quals.indexOf(S.schQ)>=0?S.schQ:quals[0];
+ return '<section class="panel"><h2>Find your scholarship</h2><h3>Your qualification</h3><div class="chips qchips" role="group" aria-label="Qualification">'+
+  quals.map(function(x){return '<button type="button" class="chip" data-schq="'+esc(x)+'" aria-pressed="'+(x===q)+'">'+esc(x)+'</button>';}).join("")+'</div></section>'+
+  '<div aria-live="polite">'+schAccs(schGroupBy(u.tiers.filter(function(r){return qk(r)===q;})),q==="Others"?null:{head:q+" result"})+'</div>';}
 function schGroupBy(tiers){var g={},order=[];tiers.forEach(function(r){var k=(r.scheme||"")+"|"+(r.applies||"");if(!g[k]){g[k]={name:r.scheme||"",tiers:[]};order.push(k);}g[k].tiers.push(r);});return order.map(function(k){return g[k];});}
 /* Three tabs: Foundation and Undergraduate (by qualification and result), and Others for awards that are not tied to a
    study level or a result (grants, sports, talent, financial aid ...). */
@@ -335,7 +347,7 @@ function schFilter(u){
  var q=quals.indexOf(S.schQ)>=0?S.schQ:quals[0],L=levels.some(function(l){return l[0]===S.schL;})?S.schL:"foundation",lv=levels.filter(function(l){return l[0]===L;})[0];
  var tabs='<h3>Study level</h3><div class="chips" role="group" aria-label="Study level">'+levels.map(function(l){return '<button type="button" class="chip" data-schl="'+l[0]+'" aria-pressed="'+(l[0]===L)+'">'+l[1]+'</button>';}).join("")+'</div>';
  if(L==="others")return '<section class="panel"><h2>Find your scholarship</h2>'+tabs+'<p class="muted">Other scholarships, grants and financial aid at '+esc(u.name)+'.</p></section>'+
-  '<div aria-live="polite">'+schGroupBy(others).map(function(g){return schPanel(g);}).join("")+'</div>';
+  '<div aria-live="polite">'+schAccs(schGroupBy(others))+'</div>';
  var rows=staged.filter(function(r){return schLevel(r)===L&&r.qual===q;}),preu=false;
  if(!rows.length&&L==="undergraduate"&&SCH_SECONDARY.indexOf(q)>=0){rows=staged.filter(function(r){return schLevel(r)===L&&SCH_PREU.indexOf(r.qual)>=0;});preu=rows.length>0;}
  var head=preu?"Result":q+" result";
@@ -343,7 +355,7 @@ function schFilter(u){
   '<h3>Your qualification</h3><div class="chips" role="group" aria-label="Qualification">'+quals.map(function(x){return '<button type="button" class="chip" data-schq="'+esc(x)+'" aria-pressed="'+(x===q)+'">'+esc(x)+'</button>';}).join("")+'</div>'+tabs+'</section>'+
  '<div aria-live="polite">'+
  (preu?'<div class="empty">'+esc(q)+' holders start a degree after Foundation, Matriculation or Diploma. At undergraduate level the scholarship is based on that result. <button type="button" class="chip" data-schl="foundation">See Foundation level for '+esc(q)+'</button></div>':'')+
- (rows.length?schGroupBy(rows).map(function(g){return schPanel(g,{head:head});}).join("")
+ (rows.length?schAccs(schGroupBy(rows),{head:head})
   :'<div class="empty">'+esc(u.name)+'’s scholarship table lists no '+esc(lv?lv[1]:L)+' programme award for '+esc(q)+'. <button type="button" class="chip" data-schl="'+(L==="foundation"?"undergraduate":"foundation")+'">See '+(L==="foundation"?"Undergraduate":"Foundation")+' level</button></div>')+
  '</div>';
 }
@@ -351,7 +363,7 @@ function schDetails(t,u){
  var site=u.website||(u.tiers.filter(function(r){return r.url;})[0]||{}).url;
  return schHead(4,t,"#scholarships-"+esc(t.id))+'<h1>'+esc(u.name)+'</h1>'+(u.fullName&&u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':'')+
  ((u.type||u.place)?'<div class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</div>':'')+'</section>'+
- (u.tiers.some(schLevel)?schFilter(u):schGroupBy(u.tiers).map(function(g){return schPanel(g);}).join(""))+
+ (u.tiers.some(schLevel)?schFilter(u):schByQual(u))+
  '<section class="panel">'+facts([["Last updated",u.lastUpdated]])+
   '<div class="row">'+(site?'<a class="btn" href="'+esc(site)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'<span class="hint">Official website link to be added.</span>')+'</div>'+SCH_NOTE+'</section>'+
  '<section class="panel"><h2>Next: choose your programme at '+esc(u.name)+'</h2><p class="muted">Not sure which tier you reach? A counsellor can check with you.</p>'+
@@ -858,9 +870,9 @@ function progAccordion(u,annual,notes){
   (u.url?'<a class="textlink" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'');}
 /* Expand all / Collapse all, and the button follows the sections the student opens one by one. */
 function accSync(box){var all=box.querySelectorAll("details.acc"),open=box.querySelectorAll("details.acc[open]").length,b=box.querySelector("[data-accall]");if(b)b.textContent=open===all.length?"Collapse all":"Expand all";}
-document.addEventListener("click",function(ev){var b=ev.target.closest&&ev.target.closest("[data-accall]");if(!b)return;var box=b.closest(".pinfo"),all=box.querySelectorAll("details.acc"),open=box.querySelectorAll("details.acc[open]").length===all.length;
+document.addEventListener("click",function(ev){var b=ev.target.closest&&ev.target.closest("[data-accall]");if(!b)return;var box=b.closest(".pinfo,.accwrap"),all=box.querySelectorAll("details.acc"),open=box.querySelectorAll("details.acc[open]").length===all.length;
  Array.prototype.forEach.call(all,function(d){d.open=!open;});accSync(box);});
-document.addEventListener("toggle",function(ev){var d=ev.target;if(d&&d.classList&&d.classList.contains("acc")){var box=d.closest(".pinfo");if(box)accSync(box);}},true);
+document.addEventListener("toggle",function(ev){var d=ev.target;if(d&&d.classList&&d.classList.contains("acc")){var box=d.closest(".pinfo,.accwrap");if(box)accSync(box);}},true);
 /* details: the Ask more page also shows the programme's details inside the card. */
 function progSummary(x,details){
  var u=x.p,annual=lines(u.notes).filter(function(l){return /^Annual fee: /.test(l);}).map(function(l){return l.replace(/^Annual fee: /,"");}),notes=lines(u.notes).filter(function(l){return !/^Annual fee: /.test(l);});
