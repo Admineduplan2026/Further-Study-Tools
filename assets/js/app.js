@@ -511,10 +511,14 @@ var WA_NUMBER="60182494757",WA_SHOW="018-249 4757";
 function waLink(topic,note){var v=idv(),lines=["Hi Eduplan, I would like to book a free consultation."];
  if(v)lines.push("Name: "+v.name);if(topic)lines.push("Topic: "+topic);if(note)lines.push(note);
  return "https://wa.me/"+WA_NUMBER+"?text="+encodeURIComponent(lines.join("\n"));}
-document.addEventListener("click",function(ev){var a=ev.target.closest&&ev.target.closest("a[href]");if(!a)return;
- var h=a.getAttribute("href")||"";if(h!=="#consultation"&&!/#consultation$/.test(h))return;
- ev.preventDefault();ev.stopPropagation();var url=waLink(a.getAttribute("data-topic"),a.getAttribute("data-note")),w=window.open(url,"_blank");if(w)w.opener=null;else location.href=url;},true);
+/* Every consultation link becomes a real WhatsApp link (wa.me opens the app on phones), also the ones the host page
+   (lab.js) and the AI chat draw later. */
+function waLinks(root){Array.prototype.forEach.call((root||document).querySelectorAll('a[href="#consultation"],a[href$="/#consultation"]'),function(a){
+ a.setAttribute("href",waLink(a.getAttribute("data-topic"),a.getAttribute("data-note")));a.setAttribute("target","_blank");a.setAttribute("rel","noopener");});}
+if(window.MutationObserver)new MutationObserver(function(){waLinks();}).observe(document.documentElement,{childList:true,subtree:true});
+document.addEventListener("DOMContentLoaded",function(){waLinks();});
 V.consultation=function(){
+ if(pfLive()&&!S.waSent){S.waSent=true;location.href=waLink();}   /* opened by address or the menu: straight to WhatsApp */
  return '<section class="stack"><span class="eyebrow">Free Consultation</span><h1>Book a free consultation</h1><p class="lead">Chat with an Eduplan counsellor on WhatsApp. Tell us what you want to study, your results and your questions; we reply to arrange a time.</p>'+
   '<div class="row"><a class="btn wa" href="'+esc(waLink())+'" target="_blank" rel="noopener"><span>Chat on WhatsApp</span> '+ARROW+'</a></div>'+
   '<p class="hint">WhatsApp <b data-notr>'+WA_SHOW+'</b></p></section>';
