@@ -50,7 +50,7 @@ window.EDUPLAN_ZH_EXTRA={text:{
  "Programme structure":"课程结构","Career prospects":"就业前景","The institution has not listed the programme structure yet.":"院校尚未列出课程结构。","See the programme page":"查看课程网页",
  "Save your subject grades in":"在","to check the tiers based on points, averages or grade sets.":"保存各科成绩，即可核对以积分、平均绩点或等级组合计算的级别。",
  "Tuition fee":"学费","Intakes":"开课月份","Location":"地点","English requirement":"英语要求","Scholarship":"奖学金","Entry requirements":"入学条件","Notes":"备注","Not listed by the institution":"院校未列出","Programme page":"课程网页","To be confirmed":"待确认",
- "Need help?":"需要帮助？","Ask the AI study assistant":"问 AI 升学助手","Answers about courses, fees and scholarships":"解答课程、学费和奖学金问题","WhatsApp a counsellor":"WhatsApp 联系顾问",
+ "Need help?":"需要帮助？","Ask the AI study assistant":"问 AI 升学助手","Answers about courses, fees and scholarships":"解答课程、学费和奖学金问题","Chat with a counsellor on WhatsApp":"在 WhatsApp 和顾问聊天",
  "The WhatsApp number will be added soon.":"WhatsApp 号码即将公布。","A counsellor calls you back":"顾问会回电给你",
  "Save programme":"收藏课程","Remove from saved":"取消收藏","Close":"关闭","Search mode":"搜索模式","Fees are shown in Malaysian ringgit":"学费以马币显示"
 },patterns:[
