@@ -150,7 +150,7 @@ V.universities=function(){
  if(x)return S.uni.level?uniLevelPage(x,S.uni.level):uniPage(x);
  return '<section class="stack">'+uniStepper(1)+'<div><a class="btn ghost" href="'+(S.flow==="scholarships"?esc(sget("eduplan-schback")||"#scholarships"):"#home")+'">Back</a></div>'+
  '<span class="eyebrow">Universities</span><h1>Partner universities and colleges</h1><p class="lead">Choose a university to see its programmes by level: foundation, undergraduate and postgraduate.</p></section>'+
- (UNIV.length?'<section class="grid">'+UNIV.map(function(u){var n=uniScholarships(u);
+ (UNIV.length?'<section class="grid unigrid">'+UNIV.map(function(u){var n=uniScholarships(u);
   return '<a class="item pick" href="#universities/'+esc(u.id.toLowerCase())+'"><span class="name">'+esc(u.name)+'</span>'+(u.fullName!==u.name?'<span class="desc">'+esc(u.fullName)+'</span>':'')+
    '<span class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>'+
    '<span class="meta"><span class="pill brand">'+u.progs.length+' programme'+(u.progs.length===1?'':'s')+'</span>'+(n?'<span class="pill ok">'+n+' scholarship'+(n===1?'':'s')+'</span>':'')+'</span>'+
@@ -237,7 +237,7 @@ function facNav(ps){
 /* Scholarship-based: Page 1 is the entry button, Page 2 picks the type, Page 3 shows that type.
    Page 3 is only reachable after a type is chosen on Page 2 (see route()). */
 function stepper(names,step){
- return '<ol class="stepper" aria-label="Progress">'+names.map(function(n,k){var cur=k+1===step;return '<li'+(cur?' aria-current="step"':(k+1<step?' class="done"':''))+'><span aria-hidden="true">'+(k+1)+'</span>Page '+(k+1)+': '+esc(n)+'</li>';}).join("")+'</ol>';
+ return '<ol class="stepper" aria-label="Progress">'+names.map(function(n,k){var cur=k+1===step;return '<li'+(cur?' aria-current="step"':(k+1<step?' class="done"':''))+'><span aria-hidden="true">'+(k+1)+'</span><span class="stl">Page '+(k+1)+': '+esc(n)+'</span></li>';}).join("")+'</ol>';
 }
 /* Scholarship pages: 1 home card, 2 type, 3 choosing a scholarship and its requirements (both pages), then universities (4) and programmes (5). */
 function schStepper(step){return stepper(FLOWS.scholarships,Math.min(step,3));}
@@ -381,7 +381,7 @@ V.faculty=function(){
  if(f)return facCourses(f);
  return '<section class="stack">'+stepper(FAC_STEPS,1)+'<div><a class="btn ghost" href="#home">Back</a></div>'+
  '<span class="eyebrow">Option 2 · Interest based</span><h1>Choose a faculty</h1><p class="lead">Pick the field you are interested in to see its courses.</p></section>'+
- '<section class="grid">'+FAC.fields.map(function(f){return '<a class="item pick" href="#faculty/'+esc(f.code)+'"><span class="big">'+esc(f.code)+'</span><span class="name">'+esc(f.name)+'</span><span class="desc">'+esc(f.zh)+'</span><span class="hint">'+f.courses.length+' course'+(f.courses.length===1?'':'s')+'</span></a>';}).join("")+'</section>';
+ '<section class="grid facgrid">'+FAC.fields.map(function(f){return '<a class="item pick" style="--h:'+((Number(f.code)*33+190)%360)+'" href="#faculty/'+esc(f.code)+'"><span class="big">'+esc(f.code)+'</span><span class="name">'+esc(f.name)+'</span><span class="desc">'+esc(f.zh)+'</span><span class="hint">'+f.courses.length+' course'+(f.courses.length===1?'':'s')+'</span></a>';}).join("")+'</section>';
 };
 /* "1 university · 3 programmes" for a course card, empty when no programme is listed yet. */
 function facCount(c){
