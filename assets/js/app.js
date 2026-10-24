@@ -1548,9 +1548,32 @@ V.compare=function(){
  var share="https://wa.me/?text="+encodeURIComponent("Eduplan comparison: "+D2.map(function(d){return d.x.p.programme+" ("+d.x.u.name+")";}).join(" vs ")+" "+location.href);
  return '<div class="cmp"><section class="stack chero"><span class="eyebrow">Compare</span><h1>'+(D2.length===3?'3 programmes, side by side':'2 programmes, side by side')+'</h1>'+
    '<p class="lead">Fees, time, distance, scholarships, entry requirements and careers in one view. 👑 marks the best in each row.</p>'+
-   '<div class="row"><a class="btn ghost sm" href="#portfolio">Change my choices</a><a class="btn ghost sm" href="'+esc(share)+'" target="_blank" rel="noopener">Share on WhatsApp</a></div></section>'+
-  heads+rows+'</div>';
+   '<div class="row"><button type="button" class="btn sm cmpa4go" data-cmpact="a4">📄 <span>Save as A4 PDF</span></button><a class="btn ghost sm" href="#portfolio">Change my choices</a><a class="btn ghost sm" href="'+esc(share)+'" target="_blank" rel="noopener">Share on WhatsApp</a></div></section>'+
+  heads+rows+'</div>'+cmpA4(D2,{fee:wFee,years:wYears,km:wKm,sch:wSch,reach:wReach},home);
 };
+/* The comparison as one A4 page (hidden on screen, the only thing printed): Save as A4 PDF opens the print window,
+   where "Save as PDF" keeps it. Plain table, no animation, a star on the best of each row. */
+function cmpA4(D2,W,home){
+ var v=idv(),today=new Date().toISOString().slice(0,10);
+ function star(key,d){return W[key].indexOf(d)>=0?' <b class="a4star">★</b>':'';}
+ function row(label,cell){return '<tr><th scope="row">'+label+'</th>'+D2.map(function(d){return '<td>'+cell(d)+'</td>';}).join("")+'</tr>';}
+ var fit=D2.some(function(d){var c=progFac(d.x.p);return c&&fitScore(c);});
+ return '<section class="a4sheet" aria-hidden="true"><header class="a4head"><img src="'+esc(window.EDUPLAN_LOGO||"assets/img/logo.png")+'" alt="Eduplan"><div><b>Programme comparison</b>'+
+  '<span>'+(v?'<span data-notr>'+esc(v.name)+'</span> · ':'')+today+(home?' · <span>Distance from</span> <span data-notr>'+esc(S.geo?'my location':home[0])+'</span>':'')+'</span></div></header>'+
+  '<table class="a4t"><thead><tr><th></th>'+D2.map(function(d,i){return '<th scope="col"><span class="a4n">'+(i+1)+'</span><span class="a4u" data-notr>'+esc(d.x.u.name)+'</span><b>'+esc(d.x.p.programme)+'</b><span class="a4l">'+esc(d.x.p.level||"")+'</span></th>';}).join("")+'</tr></thead><tbody>'+
+  (fit?row("Your fit",function(d){var c=progFac(d.x.p),f=c&&fitScore(c);return f?f.pct+'% · '+esc(f.band[1]):'—';}):'')+
+  row("Tuition fee",function(d){return d.fee!=null?esc(rm(d.fee))+star("fee",d)+(d.perYear?'<br><small>about '+esc(rm(d.perYear))+' a year</small>':''):d.annual.length?esc(d.annual.join("; "))+'<br><small>per year</small>':'<small>To be confirmed</small>';})+
+  row("Duration",function(d){return d.years!=null?esc(years(d.years))+star("years",d):'—';})+
+  row("Location",function(d){return esc(d.x.p.campus||d.x.p.place||"—")+(d.km!=null?'<br><small>≈ '+d.km+' km from home</small>'+star("km",d):'');})+
+  row("Scholarship",function(d){return (d.best!=null?'Up to '+d.best+'% tuition waiver'+star("sch",d):'<small>No campus scholarship listed</small>')+(d.mine?'<br><small>With my results: '+esc(RX.awardText(d.mine))+'</small>':'');})+
+  row("Entry requirements",function(d){var l=[],ex="";ENTRY.some(function(e){var x=lines(d.x.p[e[0]]);if(x.length){l=x;ex=e[1];return true;}return false;});
+   return (ex?'<small><b>'+esc(ex)+'</b></small><br>'+l.slice(0,4).map(function(x){return esc(x.replace(/^[•·*▪◦–-]\s*/,""));}).join('<br>')+(l.length>4?'<br><small>+'+(l.length-4)+' more</small>':''):'<small>Not listed</small>')+
+    (d.x.p.english?'<br><small>English: '+esc(cmpCut(d.x.p.english,90))+'</small>':'');})+
+  row("Popularity",function(d){return d.reach!=null?plural2(d.reach,"university","universities")+' offer it'+star("reach",d):'—';})+
+  row("Careers",function(d){return d.careers.length?esc(d.careers.slice(0,5).join(", ")):'<small>Not listed</small>';})+
+  row("Intakes",function(d){return esc(d.x.p.intakes||"—");})+
+  '</tbody></table><p class="a4foot">★ best in the row · Facts from each university\u2019s published information on Eduplan; distance is a straight line between town centres. Please confirm with the university before you apply. · Eduplan · WhatsApp '+WA_SHOW+'</p></section>';}
+function plural2(n,one,many){return n+' '+(n===1?one:many);}
 /* Numbers count up when the comparison opens (skipped with reduced motion). */
 function cmpAnimate(){if(!motion)return;Array.prototype.forEach.call(app.querySelectorAll(".cmp [data-count],.fitres [data-count]"),function(el,k){
  var to=Number(el.getAttribute("data-count")),pre="",suf="",t0=null,dur=900,delay=250+k*40,dec=to%1?1:0;
@@ -1560,6 +1583,9 @@ document.addEventListener("change",function(ev){var t=ev.target;if(!t||!t.hasAtt
  if(t.hasAttribute("data-cmp")){cmpToggle(t.getAttribute("data-cmp"));return;}
  if(t.hasAttribute("data-home")){S.prof=S.prof||{};S.prof.home=t.value;S.geo=null;S.homeEdit=false;store("eduplan-profile",S.prof);pfTouch("profile");if(S.view==="compare")render(true);}});
 document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-cmpact]");if(!t)return;var a=t.getAttribute("data-cmpact");
+ if(a==="a4"){var sheet=app.querySelector(".a4sheet");if(!sheet)return;var root=document.createElement("div");root.id="printroot";root.innerHTML=sheet.outerHTML;document.body.appendChild(root);
+  document.body.classList.add("printa4");var done=function(){document.body.classList.remove("printa4");if(root.parentNode)root.parentNode.removeChild(root);window.removeEventListener("afterprint",done);};
+  window.addEventListener("afterprint",done);try{window.print();}catch(e){done();}setTimeout(function(){if(!window.matchMedia||!matchMedia("print").matches)done();},60000);return;}
  if(a==="home-change"){S.homeEdit=true;S.geo=null;rerender("cmp-home");}
  else if(a==="geo"){if(!navigator.geolocation){S.geoErr="This browser cannot share its location. Choose your home town instead.";return rerender();}
   t.disabled=true;navigator.geolocation.getCurrentPosition(function(p){S.geo=[Math.round(p.coords.latitude*100)/100,Math.round(p.coords.longitude*100)/100];S.geoErr="";S.homeEdit=false;render(true);},

@@ -12,6 +12,7 @@ var ZH={
  "Coming soon":"即将推出","We can already help you":"现在就能帮你","Message us on WhatsApp":"在 WhatsApp 联系我们","Tell us your child’s stage and what you are looking for.":"告诉我们孩子目前的阶段和你在找什么。","A counsellor replies":"顾问回复","Within 2 working days.":"2 个工作日内。","Plan together":"一起规划","We go through the options with you and your family.":"我们和你及家人一起分析各种选择。",
  /* My portfolio header and interests */
  "My interests":"我的兴趣","Consultation":"咨询","My details":"我的资料详情","Change your fields under My details below.":"可在下方“我的资料详情”更改科系。","Fields you chose:":"你选择的科系：","No fields chosen yet. Tick the fields you like in My profile, or take the interest quiz.":"还没有选择科系。在“我的资料”勾选喜欢的科系，或做兴趣测验。","Change my fields":"更改我的科系","Portfolio complete":"档案完成度","Name verified with IC":"已用身份证验证姓名","Interests chosen":"已选兴趣","Programmes saved":"已收藏课程","Results added":"已填成绩","Application started":"已开始申请",
+ "Save as A4 PDF":"保存为 A4 PDF","Programme comparison":"课程比较","Distance from":"距离计算起点：","Careers":"未来出路",
  /* Ask more: folding sections */
  "Tap a scholarship to see its tiers and conditions.":"点击奖学金即可查看各级别和条件。",
  "Tap a section to open it.":"点击各部分即可展开。","At a glance":"概览",
@@ -265,6 +266,7 @@ var ZH={
 };
 var LEVEL={Foundation:"预科",Undergraduate:"本科",Postgraduate:"研究生"};
 var ZH_PATTERNS=[
+ [/^(\d+) universit(?:y|ies) offer it$/,"$1 所大学开设"],[/^≈ (\d+) km from home$/,"离家约 $1 公里"],[/^about (RM [\d,.]+) a year$/,"约每年 $1"],[/^With my results: (.+)$/,"以我的成绩：$1"],
  [/^(\d+) tiers?(?: · up to (\d+)% tuition waiver)?$/,function(m){return m[1]+" 个级别"+(m[2]?" · 最高 "+m[2]+"% 学费减免":"");}],
  [/^(\d+) parts?$/,"$1 个部分"],[/^(\d+) careers?$/,"$1 种出路"],
  [/^(\d+) quick questions about what studying and working in (this faculty|these faculties) is really like\. Answer honestly: there are no wrong answers\.$/,function(m){return m[1]+" 道简短问题，了解"+(m[2]==="this faculty"?"这个科系":"这些科系")+"的学习和工作实际情况。请诚实作答，没有对错。";}],
