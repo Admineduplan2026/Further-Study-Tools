@@ -495,17 +495,34 @@ function menu(){
   item("#privacy","Privacy, cookies and security","No cookies or tracking. What this browser keeps")+
   '</nav>';
 }
+/* Partner institutions, programmes and scholarship options on Eduplan; demo institutions are not counted. */
+function siteStats(){function real(u){return !/^demo/i.test(u.id)&&!/\(demo\)/i.test(u.name);}
+ var unis=D.inst.filter(function(u){return u.progs&&real(u);}).length;
+ return [[unis,"partner institutions"],[D.progs.filter(function(p){return real(p.inst);}).length,"programmes"],
+  [D.sch.filter(function(x){return real(x.inst);}).length+D.fnd.length,"scholarship options"]].filter(function(x){return x[0]>0;});}
+/* About us motion: blocks rise in as they scroll into view, numbers count up (nothing moves with reduced motion). */
+function aboutFx(){
+ var root=document.documentElement,still=!root.classList.contains("motion")||!window.IntersectionObserver;
+ var els=app.querySelectorAll(".rv");if(still){Array.prototype.forEach.call(els,function(e){e.classList.add("in");});return;}
+ var io=new IntersectionObserver(function(es){es.forEach(function(e){if(!e.isIntersecting)return;e.target.classList.add("in");io.unobserve(e.target);
+  Array.prototype.forEach.call(e.target.querySelectorAll("[data-count]"),function(n){var to=Number(n.getAttribute("data-count")),t0=null;
+   function step(ts){if(t0==null)t0=ts;var f=Math.min(1,(ts-t0)/1200),v=Math.round(to*(1-Math.pow(1-f,3)));n.textContent=v.toLocaleString("en-MY");if(f<1)requestAnimationFrame(step);}
+   n.textContent="0";requestAnimationFrame(step);});});},{rootMargin:"0px 0px -10% 0px"});
+ Array.prototype.forEach.call(els,function(e){io.observe(e);});}
+var VP_ICON=["🤝","💰","🧭"],JR_ICON=["🔍","⚖️","🎓","🏁"];
 function aboutView(){
  var A=window.EDUPLAN_ABOUT;if(!A)return '<div class="page"><div class="empty">About us is not available.</div></div>';
  var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
  var go={"#faculty":'data-mode="interest"',"#universities":'data-mode="interest"',"#scholarships":'data-mode="scholarship"'};
- function tl(label,rows){return rows&&rows.length?'<div class="tl2"><h3>'+esc(label)+'</h3><ol>'+rows.map(function(r){return '<li><b>'+esc(r.title)+'</b><span>'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';}
- return '<section class="hero about"><div class="hwrap"><span class="ok3">About us</span><h1>We lead students to the right place to study</h1>'+
-  '<p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></div></section>'+
-  '<div class="page"><div class="pgrid"><section class="box"><span class="pinst">Our vision</span><p class="lbig">'+esc(A.vision)+'</p><ul class="vp">'+A.points.map(function(v){return '<li><b>'+esc(v[0])+'</b><span>'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
-  '<section class="box"><span class="pinst">Our mission</span><p class="lbig">'+esc(A.mission)+'</p><ol class="jr">'+A.journey.map(function(j){var g=go[j[2]];
-   return '<li>'+(g?'<button type="button" class="jlink" '+g+'>':'<a class="jlink" href="'+esc(mainLink(j[2]))+'">')+'<b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span>'+(g?'</button>':'</a>')+'</li>';}).join("")+'</ol></section></div>'+
-  '<section class="sec"><div class="sh"><h2>Meet our founder</h2></div><div class="lfounder">'+(photo?'<img src="'+esc(photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan">':'')+
+ function tl(label,rows){return rows&&rows.length?'<div class="tl2"><h3>'+esc(label)+'</h3><ol>'+rows.map(function(r,i){return '<li style="--i:'+i+'"><b>'+esc(r.title)+'</b><span>'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';}
+ var st=siteStats();
+ return '<section class="hero about"><div class="afloat" aria-hidden="true"><i>🎓</i><i>📚</i><i>🏆</i><i>✈️</i></div><div class="hwrap"><span class="ok3">About us</span><h1>We lead students to the right place to study</h1>'+
+  '<p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
+  (st.length?'<div class="astats rv">'+st.map(function(x,i){return '<div style="--i:'+i+'"><b data-count="'+x[0]+'" data-notr>'+x[0].toLocaleString("en-MY")+'</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+'</div></section>'+
+  '<div class="page"><div class="pgrid"><section class="box avision rv"><span class="pinst">Our vision</span><p class="lbig">'+esc(A.vision)+'</p><ul class="vp">'+A.points.map(function(v,i){return '<li style="--i:'+i+'"><span class="vpi" aria-hidden="true">'+(VP_ICON[i]||"⭐")+'</span><b>'+esc(v[0])+'</b><span>'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
+  '<section class="box amission rv"><span class="pinst">Our mission</span><p class="lbig">'+esc(A.mission)+'</p><ol class="jr">'+A.journey.map(function(j,i){var g=go[j[2]];
+   return '<li style="--i:'+i+'"><span class="jri" aria-hidden="true">'+(JR_ICON[i]||"⭐")+'</span>'+(g?'<button type="button" class="jlink" '+g+'>':'<a class="jlink" href="'+esc(mainLink(j[2]))+'">')+'<b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span>'+(g?'</button>':'</a>')+'</li>';}).join("")+'</ol></section></div>'+
+  '<section class="sec"><div class="sh"><h2>Meet our founder</h2></div><div class="lfounder rv">'+(photo?'<span class="fphoto"><img src="'+esc(photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan"></span>':'')+
    '<div class="fbody"><span class="pinst">'+esc(f.role)+'</span><h3>'+esc(f.name)+'</h3><p class="muted">'+esc(f.bio)+'</p>'+
    '<div class="pact">'+(f.facebook?'<a class="btn ghost sm" href="'+esc(f.facebook)+'" target="_blank" rel="noopener">Facebook</a>':'')+'<a class="btn sm" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div></div>'+
    '<div class="fcv">'+tl("Career",f.career)+tl("Education",f.education)+'</div></div></section>'+trust()+'</div>';
@@ -561,6 +578,7 @@ function render(keep){
  if(L.view==="results"&&locked())L.view="home";
  app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():home();
  sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
+ if(L.view==="about")aboutFx();
  if(!keep)window.scrollTo(0,0);
 }
 function go(view){if(location.hash==="#"+view)render();else location.hash="#"+view;}
@@ -737,9 +755,7 @@ function intro(){
  try{if(sessionStorage.getItem("eduplan-intro")){if(!account())interests();return;}}catch(e){}
  var A=window.EDUPLAN_ABOUT;if(!A||/^#(privacy|portfolio)/.test(location.hash))return;
  var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
- function real(u){return !/^demo/i.test(u.id)&&!/\(demo\)/i.test(u.name);}   /* demo institutions are not counted */
- var unis=D.inst.filter(function(u){return u.progs&&real(u);}).length,stats=[[unis,"partner institutions"],[D.progs.filter(function(p){return real(p.inst);}).length,"programmes"],
-  [D.sch.filter(function(x){return real(x.inst);}).length+D.fnd.length,"scholarship options"]].filter(function(x){return x[0]>0;});
+ var stats=siteStats();
  var d=document.createElement("div");d.className="intro";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","intro-h");
  d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
   '<img class="ilogo" src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan">'+
