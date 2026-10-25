@@ -194,6 +194,7 @@ function idFirst(){return '<p class="hint rxid">The name on your results slip mu
 function slipBox(id,e){var x=R.exams[id],v=x&&x.v,ok=has(id);
  var shown=!ok?'':'<div class="rxver"><span class="rxbadge">✓ Verified by AI from your '+(v.kind==="Trial"?'trial':'official')+' results slip · '+esc(day(v.at))+'</span>'+
   (v.name?'<span class="hint">Name on the slip: <span data-notr>'+esc(v.name)+'</span>'+(v.icMatch?' <span class="pill ok">✓ Matches your IC</span>':'')+'</span>':'')+
+  (v.listed&&v.listed>grades(id).length?'<p class="ematch miss" role="alert"><span>Only</span> <b data-notr>'+grades(id).length+' / '+v.listed+'</b> <span>subjects could be read from this photo. Upload a straight, sharp photo of the whole slip to read all of them.</span></p>':'')+
   (e.cgpa?'<p class="rxsum"><strong>CGPA '+esc(x.cgpa)+'</strong></p>':'<ul class="rxlist">'+grades(id).map(function(sg){return '<li><span>'+esc(sg[0])+'</span><b data-notr>'+esc(sg[1])+'</b></li>';}).join("")+'</ul>')+
   '<p class="hint">These grades come from your slip and cannot be typed in or changed here. Upload a new slip to replace them, for example when your official results come out. If something was read wrongly, ask a counsellor.</p></div>';
 if(live()&&!session())return shown+'<p class="hint">'+(ok?'':'Your '+esc(e.id)+' results are read from your results slip by AI, so they cannot be typed in. ')+'<a href="#portfolio">Sign in</a> to upload your slip.</p>';
@@ -207,9 +208,9 @@ if(live()&&!session())return shown+'<p class="hint">'+(ok?'':'Your '+esc(e.id)+'
    Claude in the artifact. Either way the grades are checked against the exam's grade list and then locked. */
 var SLIP_PROMPT="You read a Malaysian student's exam results slip for Eduplan, a study guidance service. Read exactly what is printed; never guess. "+
  "Reply with JSON only: {\"is_results_slip\":boolean,\"exam\":\"SPM|UEC|STPM|IGCSE|O-Level|A-Level|Foundation|Matriculation|Diploma|Other\",\"slip_kind\":\"official|trial|unclear\","+
- "\"candidate_name\":string,\"year\":string,\"subjects\":[{\"subject\":string,\"grade\":string}],\"cgpa\":number|null,\"problems\":string}. "+
+ "\"candidate_name\":string,\"year\":string,\"subjects\":[{\"subject\":string,\"grade\":string}],\"subject_count\":number,\"cgpa\":number|null,\"problems\":string}. "+
  "is_results_slip is true only for a results slip, statement or transcript of an exam. slip_kind official = results from the examining body, including the official SPM slip headed KEMENTERIAN PENDIDIKAN / LEMBAGA PEPERIKSAAN, SIJIL PELAJARAN MALAYSIA TAHUN <year>, with NAMA, ANGKA GILIRAN, grades with their descriptions (CEMERLANG TERTINGGI ...) and LAYAK MENDAPAT SIJIL, even as a photo, scan or printout; trial = a school's own trial, mock or end-of-year report (PEPERIKSAAN PERCUBAAN, TRIAL, a school as issuer, marks or class position). "+
- "Give every subject with the grade exactly as printed (SPM: A+, A, A-, B+, B, C+, C, D, E, G, TH), subject names in English. cgpa only for foundation, matriculation or diploma transcripts. Leave out any grade you cannot read with certainty and say so in problems.";
+ "Give every subject with the grade exactly as printed (SPM: A+, A, A-, B+, B, C+, C, D, E, G, TH), subject names in English. subject_count = how many subjects the slip lists (SPM: JUMLAH MATA PELAJARAN), 0 if unknown. The grades are a column on the right in the same order as the subject rows; in an angled photo the column can look shifted, so pair the 1st grade with the 1st subject and so on; grade descriptions confirm grades (CEMERLANG TERTINGGI A+, CEMERLANG TINGGI A, CEMERLANG A-, KEPUJIAN TERTINGGI B+, KEPUJIAN TINGGI B, KEPUJIAN ATAS C+, KEPUJIAN C, LULUS ATAS D, LULUS E, GAGAL G). cgpa only for foundation, matriculation or diploma transcripts. Leave out a subject only when its grade cannot be read or paired, and say so in problems.";
 function useSlip(id,kind,r,signed){var e=exam(id);
  if(!r||!r.is_results_slip)return {error:"not_slip"};
  if(r.exam!==id)return {error:"wrong_exam"};
@@ -218,7 +219,7 @@ function useSlip(id,kind,r,signed){var e=exam(id);
  if(!ic)return {error:"id_first"};
  if(!onSlip)return {error:"no_name"};
  if(!sameName(onSlip,ic.name))return {error:"name_mismatch",found:onSlip};
- var x={v:{kind:kind,at:Date.now(),name:onSlip.slice(0,120),year:String(r.year||"").slice(0,20),icMatch:true}};
+ var x={v:{kind:kind,at:Date.now(),name:onSlip.slice(0,120),year:String(r.year||"").slice(0,20),icMatch:true}};var lc=Math.round(Number(r.subject_count)||0);if(lc>0&&lc<=20)x.v.listed=lc;
  if(e.cgpa){var c=Number(r.cgpa);if(!(c>=0&&c<=4))return {error:"unreadable"};x.cgpa=Math.round(c*100)/100;}
  else{x.g=(r.subjects||[]).map(function(t){return [String(t.subject||"").trim().slice(0,80),String(t.grade||"").trim().toUpperCase()];})
    .filter(function(t){return t[0]&&e.grades.indexOf(t[1])>-1;});if(!x.g.length)return {error:"unreadable"};}
@@ -252,7 +253,7 @@ function readSlipFile(id,file,kind){UI.err="";UI.kind=kind;UI.cur=id;
  var rd=new FileReader();rd.onload=function(){var data=String(rd.result).split(",")[1]||"";UI.busy=true;save();
   fetch(window.EDUPLAN_API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"results_read",token:ss.token,exam:id,kind:kind,idv:icName(),file:{type:file.type,data:data}})})
    .then(function(r){return r.json();}).then(function(d){if(!d||!d.ok)return fail(d&&d.error,d&&d.found);
-    var x={v:{kind:d.kind,at:d.at,sig:d.sig,name:d.name||"",year:d.year||"",icMatch:true}};if(d.g)x.g=d.g;if(d.cgpa!=null)x.cgpa=d.cgpa;done(x);})
+    var x={v:{kind:d.kind,at:d.at,sig:d.sig,name:d.name||"",year:d.year||"",icMatch:true}};if(d.listed)x.v.listed=d.listed;if(d.g)x.g=d.g;if(d.cgpa!=null)x.cgpa=d.cgpa;done(x);})
    .catch(function(){fail("net");});};
  rd.readAsDataURL(file);}
 function readSlip(id){var f=document.getElementById("rx-file"),k=document.getElementById("rx-kind");readFile(id,f&&f.files&&f.files[0],k?k.value:"Official");}

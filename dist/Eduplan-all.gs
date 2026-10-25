@@ -1851,7 +1851,9 @@ var RESULTS_SYSTEM = [
   '- cgpa: only for foundation, matriculation or diploma transcripts, the final or latest cumulative GPA; otherwise null.',
   '- candidate_name and year as printed, or "" when not shown.',
   '- problems: anything unreadable, cut off, edited-looking or inconsistent; "" when there is none.',
-  'If a grade cannot be read with certainty, leave that subject out and say so in problems.'
+  '- subject_count: how many subjects the slip says the student took (for SPM the JUMLAH MATA PELAJARAN line, e.g. SEPULUH = 10), or the number of subject rows; 0 if you cannot tell.',
+  'Reading the table: subjects are rows (KOD, NAMA MATA PELAJARAN) and the grades are a column on the right (GRED), in the same order from top to bottom. In a photo taken at an angle the grade column can look shifted up or down against the subject names: pair the 1st grade with the 1st subject, the 2nd with the 2nd and so on. When the number of grades equals the number of subjects, record every subject this way. A grade description next to the grade (CEMERLANG TERTINGGI = A+, CEMERLANG TINGGI = A, CEMERLANG = A-, KEPUJIAN TERTINGGI = B+, KEPUJIAN TINGGI = B, KEPUJIAN ATAS = C+, KEPUJIAN = C, LULUS ATAS = D, LULUS = E, GAGAL = G) confirms the grade.',
+  'Only when a grade itself cannot be read, or the grades and subjects cannot be paired, leave that subject out and say so in problems.'
 ].join('\n');
 
 var RESULTS_TOOL = {
@@ -1866,6 +1868,7 @@ var RESULTS_TOOL = {
       candidate_name: { type: 'string' },
       year: { type: 'string' },
       subjects: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { subject: { type: 'string' }, grade: { type: 'string' } }, required: ['subject', 'grade'] } },
+      subject_count: { type: 'integer' },
       cgpa: { anyOf: [{ type: 'number' }, { type: 'null' }] },
       problems: { type: 'string' }
     },
@@ -1944,7 +1947,7 @@ function resultsReadFile_(email, exam, kind, type, data, icName) {
     model: props.getProperty('RESULTS_MODEL') || RESULTS_DEFAULT_MODEL,
     max_tokens: 8000,  // room for the model's thinking before the JSON
     system: RESULTS_SYSTEM,
-    output_config: { effort: 'low', format: { type: 'json_schema', schema: RESULTS_TOOL.input_schema } },  // Opus 5.5 refuses a forced tool_choice
+    output_config: { effort: 'medium', format: { type: 'json_schema', schema: RESULTS_TOOL.input_schema } },  // Opus 5.5 refuses a forced tool_choice
     messages: [{ role: 'user', content: [block, { type: 'text', text: 'The student says this is their ' + kind.toLowerCase() + ' ' + exam + ' results. Read it.' }] }]
   };
   var res;
@@ -1985,13 +1988,15 @@ function resultsReadFile_(email, exam, kind, type, data, icName) {
       .filter(function (s) { return s[0] && grades.indexOf(s[1]) > -1 && s[1] !== 'TH'; });
     if (!g.length) return { error: 'unreadable', problems: String(r.problems || '').slice(0, 300) };
     x.g = g;
+    var listed = Math.round(Number(r.subject_count) || 0);
+    if (listed > g.length && listed <= 20) x.listed = listed;  // fewer grades read than the slip lists: the website asks for a clearer photo
   } else {
     var c = Number(r.cgpa);
     if (!(c >= 0 && c <= 4)) return { error: 'unreadable', problems: String(r.problems || '').slice(0, 300) };
     x.cgpa = Math.round(c * 100) / 100;
   }
   x.sig = resultsSign_(email, exam, x);
-  return { ok: true, exam: exam, kind: kind, at: x.at, g: x.g || null, cgpa: x.cgpa == null ? null : x.cgpa, sig: x.sig,
+  return { ok: true, exam: exam, kind: kind, at: x.at, g: x.g || null, listed: x.listed || null, cgpa: x.cgpa == null ? null : x.cgpa, sig: x.sig,
     name: accountCell_(r.candidate_name, 120), year: accountCell_(r.year, 20), problems: String(r.problems || '').slice(0, 300) };
 }
 
