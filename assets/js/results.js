@@ -298,7 +298,7 @@ function editor(fixed){
  var list=taken(),id=fixed||UI.cur||(list[0]||"SPM"),e=exam(id);if(!e)return "";
  UI.cur=id;
  if(locked()){var tb=fixed?'':'<div class="rxtabs" role="group" aria-label="Exam">'+EXAMS.map(function(x){return '<button type="button" class="chip" data-rx-exam="'+esc(x.id)+'" aria-pressed="'+(x.id===id)+'">'+esc(x.label||x.id)+(has(x.id)?' ✓':'')+'</button>';}).join("")+'</div>';
-  return '<div class="rx" id="rx">'+tb+slipBox(id,e)+(has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';}
+  return '<div class="rx" id="rx">'+tb+(has(id)&&!e.cgpa?tally(id,e):'')+slipBox(id,e)+(has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';}
  var tabs=fixed?'':'<div class="rxtabs" role="group" aria-label="Exam">'+EXAMS.map(function(x){return '<button type="button" class="chip" data-rx-exam="'+esc(x.id)+'" aria-pressed="'+(x.id===id)+'">'+esc(x.label||x.id)+(has(x.id)?' ✓':'')+'</button>';}).join("")+'</div>';
  var body;
  if(e.cgpa){var c=R.exams[id]&&R.exams[id].cgpa;
