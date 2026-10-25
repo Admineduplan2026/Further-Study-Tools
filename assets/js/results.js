@@ -311,7 +311,7 @@ function editor(fixed){
      '<select class="rxadd" data-rx-add="'+esc(g)+'" aria-label="Add a subject with grade '+esc(g)+'"><option value="">+ Add subject</option>'+free.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join("")+
      '<option value="__other">Other subject…</option></select>')+'</div></div>';}).join("")+'</div>';}
  var sum=has(id)?(e.cgpa?'<p class="rxsum"><strong>'+esc(e.id)+':</strong> '+esc(summary(id))+'</p>':tally(id,e)):'';
- return '<div class="rx" id="rx">'+tabs+(AI.ok===null?'':'<p class="hint">Preview: type your results here to try the website. On the live Eduplan website, results are read from your results slip by AI and cannot be typed in.</p>')+body+sum+
+ return '<div class="rx" id="rx">'+tabs+sum+(AI.ok===null?'':'<p class="hint">Preview: type your results here to try the website. On the live Eduplan website, results are read from your results slip by AI and cannot be typed in.</p>')+body+
   (has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';
 }
 function refocus(sel){var el=document.querySelector(sel);if(el)el.focus();}
