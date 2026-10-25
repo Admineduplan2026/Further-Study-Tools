@@ -64,6 +64,14 @@ function aCount(id){var e=exam(id);return e&&!e.cgpa&&has(id)?countIn(id,e.a):nu
 /* Short summary: "8 A+ · 1 A · 1 B" or "CGPA 3.50". */
 function summary(id){var e=exam(id);if(!e||!has(id))return "";if(e.cgpa)return "CGPA "+R.exams[id].cgpa;
  return e.grades.map(function(g){var n=countIn(id,[g]);return n?n+" "+g:"";}).filter(Boolean).join(" · ");}
+/* Result conclusion: how many subjects at every grade of the exam (grades with none are dimmed), then the totals. */
+function tally(id,e){var all=grades(id).length,ci=e.grades.indexOf(e.credit),pi=e.grades.indexOf(e.pass);
+ var cr=grades(id).filter(function(s){var k=e.grades.indexOf(s[1]);return k>=0&&k<=ci;}).length,ps=grades(id).filter(function(s){var k=e.grades.indexOf(s[1]);return k>=0&&k<=pi;}).length;
+ return '<section class="rxtally" aria-labelledby="rxt-h"><h3 id="rxt-h"><span>Result conclusion</span> · <span data-notr>'+esc(e.id)+'</span></h3>'+
+  '<ul class="rxtg">'+e.grades.map(function(g){var n=countIn(id,[g]);return '<li class="'+(n?'on':'')+'"><b data-notr>'+n+'</b><span data-notr>'+esc(g)+'</span></li>';}).join("")+'</ul>'+
+  '<p class="rxtt"><span><b data-notr>'+all+'</b> <span>subjects</span></span><span><b data-notr>'+aCount(id)+'</b> <span>A grades</span> <span class="hint" data-notr>('+esc(e.a.join(", "))+')</span></span>'+
+  (ci>=0?'<span><b data-notr>'+cr+'</b> <span>credits</span> <span class="hint">(<span data-notr>'+esc(e.credit)+'</span> <span>or better</span>)</span></span>':'')+
+  (pi>=0?'<span><b data-notr>'+ps+'</b> <span>passes</span></span>':'')+'</p></section>';}
 /* Plain text for the application: one subject per line. */
 function text(id){var e=exam(id);if(!e||!has(id))return "";var v=R.exams[id].v,vt=v?"\nVerified by AI from the "+(v.kind==="Trial"?"trial":"official")+" results slip ("+day(v.at)+")":"";if(e.cgpa)return "CGPA "+R.exams[id].cgpa+vt;
  return grades(id).slice().sort(function(a,b){return e.grades.indexOf(a[1])-e.grades.indexOf(b[1]);}).map(function(s){return s[0]+" "+s[1];}).join("\n")+vt;}
@@ -302,7 +310,7 @@ function editor(fixed){
     (UI.other===g?'<span class="rxother"><input id="rx-other" type="text" placeholder="Subject name" aria-label="Other subject with grade '+esc(g)+'"><button type="button" class="btn sm" data-rx-otherok="'+esc(g)+'">Add</button></span>':
      '<select class="rxadd" data-rx-add="'+esc(g)+'" aria-label="Add a subject with grade '+esc(g)+'"><option value="">+ Add subject</option>'+free.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join("")+
      '<option value="__other">Other subject…</option></select>')+'</div></div>';}).join("")+'</div>';}
- var sum=has(id)?'<p class="rxsum"><strong>'+esc(e.id)+':</strong> '+esc(summary(id))+(e.cgpa?'':' · <strong>'+aCount(id)+' A'+(aCount(id)===1?'':'s')+'</strong>')+'</p>':'';
+ var sum=has(id)?(e.cgpa?'<p class="rxsum"><strong>'+esc(e.id)+':</strong> '+esc(summary(id))+'</p>':tally(id,e)):'';
  return '<div class="rx" id="rx">'+tabs+(AI.ok===null?'':'<p class="hint">Preview: type your results here to try the website. On the live Eduplan website, results are read from your results slip by AI and cannot be typed in.</p>')+body+sum+
   (has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';
 }
