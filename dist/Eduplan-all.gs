@@ -1547,7 +1547,7 @@ var ID_TOOL = {
   name: 'record_id',
   description: 'Record what the identity document shows.',
   input_schema: {
-    type: 'object',
+    type: 'object', additionalProperties: false,
     properties: {
       is_id_document: { type: 'boolean' },
       card_type: { type: 'string', enum: ['MyKad', 'MyKid', 'passport', 'other'] },
@@ -1590,10 +1590,9 @@ function idReadFile_(email, type, data) {
     : { type: 'image', source: { type: 'base64', media_type: type, data: data } };
   var request = {
     model: props.getProperty('RESULTS_MODEL') || RESULTS_DEFAULT_MODEL,
-    max_tokens: 1000,
+    max_tokens: 4000,  // room for the model's thinking before the JSON
     system: ID_SYSTEM,
-    tools: [ID_TOOL],
-    tool_choice: { type: 'tool', name: 'record_id' },
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: ID_TOOL.input_schema } },  // Opus 5.5 refuses a forced tool_choice
     messages: [{ role: 'user', content: [block, { type: 'text', text: 'The student says this is their identity card. Read it.' }] }]
   };
   var res;
@@ -1613,7 +1612,11 @@ function idReadFile_(email, type, data) {
     console.error('Claude API ' + status + ': ' + res.getContentText().slice(0, 500));
     return { error: status === 429 || status === 529 || status >= 500 ? 'busy' : 'not_configured' };
   }
-  var r = (out.content || []).filter(function (b) { return b.type === 'tool_use'; }).map(function (b) { return b.input; })[0];
+  var r = null;
+  if (out.stop_reason !== 'max_tokens' && out.stop_reason !== 'refusal') {
+    try { r = JSON.parse((out.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('')); } catch (err) { r = null; }
+  }
+  if (!r) return { error: 'unreadable' };
   return idCheck_(email, r);
 }
 
@@ -1853,15 +1856,15 @@ var RESULTS_TOOL = {
   name: 'record_results',
   description: 'Record what the results slip shows.',
   input_schema: {
-    type: 'object',
+    type: 'object', additionalProperties: false,
     properties: {
       is_results_slip: { type: 'boolean' },
       exam: { type: 'string', enum: ['SPM', 'UEC', 'STPM', 'IGCSE', 'O-Level', 'A-Level', 'Foundation', 'Matriculation', 'Diploma', 'Other'] },
       slip_kind: { type: 'string', enum: ['official', 'trial', 'unclear'] },
       candidate_name: { type: 'string' },
       year: { type: 'string' },
-      subjects: { type: 'array', items: { type: 'object', properties: { subject: { type: 'string' }, grade: { type: 'string' } }, required: ['subject', 'grade'] } },
-      cgpa: { type: ['number', 'null'] },
+      subjects: { type: 'array', items: { type: 'object', additionalProperties: false, properties: { subject: { type: 'string' }, grade: { type: 'string' } }, required: ['subject', 'grade'] } },
+      cgpa: { anyOf: [{ type: 'number' }, { type: 'null' }] },
       problems: { type: 'string' }
     },
     required: ['is_results_slip', 'exam', 'slip_kind', 'subjects', 'problems']
@@ -1937,10 +1940,9 @@ function resultsReadFile_(email, exam, kind, type, data, icName) {
     : { type: 'image', source: { type: 'base64', media_type: type, data: data } };
   var request = {
     model: props.getProperty('RESULTS_MODEL') || RESULTS_DEFAULT_MODEL,
-    max_tokens: 2000,
+    max_tokens: 8000,  // room for the model's thinking before the JSON
     system: RESULTS_SYSTEM,
-    tools: [RESULTS_TOOL],
-    tool_choice: { type: 'tool', name: 'record_results' },
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: RESULTS_TOOL.input_schema } },  // Opus 5.5 refuses a forced tool_choice
     messages: [{ role: 'user', content: [block, { type: 'text', text: 'The student says this is their ' + kind.toLowerCase() + ' ' + exam + ' results. Read it.' }] }]
   };
   var res;
@@ -1960,7 +1962,10 @@ function resultsReadFile_(email, exam, kind, type, data, icName) {
     console.error('Claude API ' + status + ': ' + res.getContentText().slice(0, 500));
     return { error: status === 429 || status === 529 || status >= 500 ? 'busy' : 'not_configured' };
   }
-  var r = (out.content || []).filter(function (b) { return b.type === 'tool_use'; }).map(function (b) { return b.input; })[0];
+  var r = null;
+  if (out.stop_reason !== 'max_tokens' && out.stop_reason !== 'refusal') {
+    try { r = JSON.parse((out.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('')); } catch (err) { r = null; }
+  }
   if (!r) return { error: 'unreadable' };
 
   // Checks on what Claude read: the right document, the exam chosen, and grades that exist for that exam.
@@ -2017,6 +2022,14 @@ function aiCheck() {
     payload: JSON.stringify({ model: model, max_tokens: 10, messages: [{ role: 'user', content: 'Reply with the word OK.' }] })
   });
   console.log('Claude API ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 400));
+  // The same JSON answer format that reading an IC or a results slip uses.
+  res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+    method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+    payload: JSON.stringify({ model: model, max_tokens: 2000, output_config: { effort: 'low', format: { type: 'json_schema', schema: { type: 'object', additionalProperties: false, properties: { ok: { type: 'boolean' } }, required: ['ok'] } } },
+      messages: [{ role: 'user', content: 'Answer with ok set to true.' }] })
+  });
+  console.log('JSON answer test ' + res.getResponseCode() + (res.getResponseCode() === 200 ? ' (IC and results slip reading will work)' : '') + ': ' + res.getContentText().slice(0, 400));
 }
 
 /* ===== Stats.gs ===== */
