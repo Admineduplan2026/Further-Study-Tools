@@ -208,7 +208,7 @@ if(live()&&!session())return shown+'<p class="hint">'+(ok?'':'Your '+esc(e.id)+'
 var SLIP_PROMPT="You read a Malaysian student's exam results slip for Eduplan, a study guidance service. Read exactly what is printed; never guess. "+
  "Reply with JSON only: {\"is_results_slip\":boolean,\"exam\":\"SPM|UEC|STPM|IGCSE|O-Level|A-Level|Foundation|Matriculation|Diploma|Other\",\"slip_kind\":\"official|trial|unclear\","+
  "\"candidate_name\":string,\"year\":string,\"subjects\":[{\"subject\":string,\"grade\":string}],\"cgpa\":number|null,\"problems\":string}. "+
- "is_results_slip is true only for a results slip, statement or transcript of an exam. slip_kind official = results from the examining body (for example the Lembaga Peperiksaan SPM slip); trial = a school trial or mock exam report. "+
+ "is_results_slip is true only for a results slip, statement or transcript of an exam. slip_kind official = results from the examining body, including the official SPM slip headed KEMENTERIAN PENDIDIKAN / LEMBAGA PEPERIKSAAN, SIJIL PELAJARAN MALAYSIA TAHUN <year>, with NAMA, ANGKA GILIRAN, grades with their descriptions (CEMERLANG TERTINGGI ...) and LAYAK MENDAPAT SIJIL, even as a photo, scan or printout; trial = a school's own trial, mock or end-of-year report (PEPERIKSAAN PERCUBAAN, TRIAL, a school as issuer, marks or class position). "+
  "Give every subject with the grade exactly as printed (SPM: A+, A, A-, B+, B, C+, C, D, E, G, TH), subject names in English. cgpa only for foundation, matriculation or diploma transcripts. Leave out any grade you cannot read with certainty and say so in problems.";
 function useSlip(id,kind,r,signed){var e=exam(id);
  if(!r||!r.is_results_slip)return {error:"not_slip"};
