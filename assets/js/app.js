@@ -426,6 +426,19 @@ function progStructure(u){
  return '<div class="pstruct">'+groups.map(function(g){return '<div class="psb">'+(g.h?'<b>'+esc(g.h)+'</b>':'')+(g.items.length?'<ul>'+g.items.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>':'')+'</div>';}).join("")+'</div>';
 }
 /* fold: the university pages list many programmes, so each card starts closed and opens to show the details. */
+/* Future pathway and careers: the next study step for the level, a professional step for some courses, and the careers.
+   The institution's own career list comes first; without one, Eduplan's general guide for the course (career-data.js),
+   always labelled as general. */
+function careerData(){return window.EDUPLAN_CAREERS||{careers:{},pro:{},next:{}};}  /* read at draw time */
+function careerList(cid,text){var own=lines(text).map(function(x){return x.replace(/^[•·*▪◦–-]\s*/,"");});
+ if(own.length)return {list:own,general:false};var g=(careerData().careers[cid]||[]).map(function(c){return c[0];});return {list:g,general:g.length>0};}
+function pathway(cid,level,text){var c=careerList(cid,text),C=careerData(),nx=C.next[level],pro=C.pro[cid],pre=/^Pre-university/.test(level||"");
+ if(!c.list.length&&!nx&&!pro)return "";
+ return '<div class="pway">'+(nx?'<div class="pwstep"><span class="pwi" aria-hidden="true">🎓</span><div><b>Your next study step</b><p>'+esc(nx[0])+'</p></div></div>':'')+
+  (pro&&!pre?'<div class="pwstep"><span class="pwi" aria-hidden="true">🏅</span><div><b>Professional step</b><p>'+esc(pro[0])+'</p></div></div>':'')+
+  (c.list.length?'<div class="pwstep"><span class="pwi" aria-hidden="true">💼</span><div><b>'+(c.general?'Common careers':'Careers listed by the institution')+'</b><ul class="pcareer pwjobs">'+c.list.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>'+
+   (c.general?'<p class="hint">General guide by Eduplan: common careers for this field, not a list from the institution.</p>':'')+'</div></div>':'')+'</div>';}
+window.EDUPLAN_PATHWAY=pathway;
 /* The programme's own details (overview, key facts, entry requirements, structure, careers): shared by the programme cards and the Ask more page. */
 function progInfo(u,annual){
  return ''+
@@ -439,7 +452,7 @@ function progInfo(u,annual){
   '<div class="stack"><h4>Entry requirements</h4>'+entryMatch(u)+'<dl class="facts entry">'+ENTRY.map(function(e){var l=lines(u[e[0]]);
    return '<dt>'+esc(e[1])+'</dt><dd>'+(l.length?l.map(entryLine).join(""):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl></div>'+
   '<div class="stack"><h4>Programme structure</h4>'+progStructure(u)+'</div>'+
-  (lines(u.careers).length?'<div class="stack"><h4>Career prospects</h4><ul class="pcareer">'+lines(u.careers).map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul></div>':'');
+  (function(h){return h?'<div class="stack"><h4>Future pathway and careers</h4>'+h+'</div>':'';})(pathway(u.course_id,u.level,u.careers));
 }
 function progCard(u,fold){
  var sch=progScholarships(u),meta=[u.level,u.years!=null?years(u.years):"",u.mode].filter(Boolean);
@@ -863,7 +876,7 @@ function progAccordion(u,annual,notes){
   accItem("entry","✅","Entry requirements",exams.length?esc(exams.map(function(e){return e[1];}).join(" · ")):"Not listed by the institution",entryMatch(u)+'<dl class="facts entry">'+ENTRY.map(function(e){var l=lines(u[e[0]]);
    return '<dt>'+esc(e[1])+'</dt><dd>'+(l.length?l.map(entryLine).join(""):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>')+
   accItem("structure","📚","Programme structure",blocks?blocks+(blocks===1?" part":" parts"):"",progStructure(u))+
-  (careers.length?accItem("careers","🚀","Career prospects",careers.length+(careers.length===1?" career":" careers"),'<ul class="pcareer">'+careers.map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul>'):'')+
+  (function(h,c){return h?accItem("careers","🚀","Future pathway and careers",c.list.length?c.list.length+(c.list.length===1?" career":" careers")+(c.general?" (general guide)":""):"",h):'';})(pathway(u.course_id,u.level,u.careers),careerList(u.course_id,u.careers))+
   accItem("scholarships","🎓","Scholarships",best!=null?"Up to "+best+"% tuition waiver":"",(sch.length?'<ul class="schlinks">'+sch.map(function(g){return '<li><a href="'+esc(g.href)+'"><span class="name">'+esc(g.name)+'</span>'+(g.best!=null?'<span class="pill brand">Up to '+g.best+'% tuition waiver</span>':'')+'</a></li>';}).join("")+'</ul>'
     :'<p class="hint">No campus scholarship listed for this level yet.</p>')+'<a class="textlink" href="#scholarships-foundation">Other scholarships open to all students '+ARROW+'</a>')+
   (notes.length?accItem("notes","📝","Notes","",notes.map(function(l){return '<p class="muted">'+esc(l)+'</p>';}).join("")):'')+'</div>'+
@@ -1486,7 +1499,7 @@ function cmpData(x){
  if(RX.taken().length)RX.scholarships(campusRows().filter(function(r){return r.inst===x.u.id;})).forEach(function(s){if(s.hit&&(!mine||(s.hit.waiver||0)>(mine.waiver||0)))mine=s.hit;});
  var fy=p.fee!=null&&p.years?Math.round(p.fee/p.years):null;
  return {x:x,fee:p.fee!=null?Number(p.fee):null,perYear:fy,annual:annualOf(p),years:p.years!=null?Number(p.years):null,best:best,mine:mine,sch:sch,
-  km:home&&ct?kmBetween(home,ct.t):null,town:ct,reach:courseReach(p),careers:lines(p.careers).map(function(c){return c.replace(/^[•·*▪◦–-]\s*/,"");}),
+  km:home&&ct?kmBetween(home,ct.t):null,town:ct,reach:courseReach(p),careers:careerList(p.course_id,p.careers).list,careersGeneral:careerList(p.course_id,p.careers).general,
   badge:RX.taken().length?RX.badge(RX.match({spm:p.entry,uec:p.uec,olevel:p.olevel,stpm:p.stpm,other:p.entry_other})):null};
 }
 /* Winner of a row: lowest or highest value among the programmes that have one (needs at least 2 values). */
@@ -1541,7 +1554,7 @@ V.compare=function(){
     (d.x.p.english?'<span class="hint"><span>English:</span> '+esc(cmpCut(d.x.p.english,160))+'</span>':'');},RX.taken().length?'':'<a href="#portfolio">Add your results</a> to see if you meet them.',true)+
   cmpRow("🔥","Popularity",D2,function(d){return d.reach==null?'<span class="hint">Not available</span>':crown(wReach.indexOf(d)>=0,'Most offered')+cnum(d.reach,"",d.reach===1?" university":" universities")+cmpMeter(d.reach,maxReach,false);},
    'How many universities on Eduplan offer the same course: a sign of how established and in demand it is.')+
-  cmpRow("🚀","Future careers",D2,function(d){return d.careers.length?'<span class="cchips">'+d.careers.slice(0,6).map(function(c){return '<span class="cchip">'+esc(c)+'</span>';}).join("")+'</span>':'<span class="hint">Not listed by the institution yet</span>';},"",true)+
+  cmpRow("🚀","Future careers",D2,function(d){return d.careers.length?'<span class="cchips">'+d.careers.slice(0,6).map(function(c){return '<span class="cchip">'+esc(c)+'</span>';}).join("")+'</span>'+(d.careersGeneral?'<span class="hint">(general guide)</span>':''):'<span class="hint">Not listed by the institution yet</span>';},"",true)+
   cmpRow("🗓️","Intakes",D2,function(d){return d.x.p.intakes?'<span class="cval">'+esc(d.x.p.intakes)+'</span>':'<span class="hint">Not listed</span>';})+
   '<section class="crow cact txt"><div class="ccells n'+D2.length+'">'+D2.map(function(d,i){return '<div class="ccell" style="--i:'+i+'"><a class="btn" href="#next/'+esc(d.x.p.id)+'">Choose this '+ARROW+'</a>'+
    (d.x.p.url?'<a class="btn ghost sm" href="'+esc(d.x.p.url)+'" target="_blank" rel="noopener">Programme page</a>':'')+'</div>';}).join("")+'</div></section>';
@@ -1581,7 +1594,7 @@ function cmpTable(D2,W,cls,caption,screen){
    return (ex?'<small><b>'+esc(ex)+'</b></small><br>'+l.slice(0,4).map(function(x){return esc(x.replace(/^[•·*▪◦–-]\s*/,""));}).join('<br>')+(l.length>4?'<br><small>+'+(l.length-4)+' more</small>':''):'<small>Not listed</small>')+
     (d.x.p.english?'<br><small>English: '+esc(cmpCut(d.x.p.english,90))+'</small>':'');})+
   row("Popularity",function(d){return d.reach!=null?plural2(d.reach,"university","universities")+' offer it'+star("reach",d):'—';})+
-  row("Careers",function(d){return d.careers.length?esc(d.careers.slice(0,5).join(", ")):'<small>Not listed</small>';})+
+  row("Careers",function(d){return d.careers.length?d.careers.slice(0,5).map(function(c){return '<span>'+esc(c)+'</span>';}).join(", ")+(d.careersGeneral?' <small>(general guide)</small>':''):'<small>Not listed</small>';})+
   row("Intakes",function(d){return esc(d.x.p.intakes||"—");})+
   (screen?row('<span class="sr">Next step</span>',function(d){return '<a class="btn sm" href="#next/'+esc(d.x.p.id)+'">Choose this</a>';}):'')+
   '</tbody></table>';}

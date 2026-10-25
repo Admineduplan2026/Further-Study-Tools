@@ -798,3 +798,10 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .rxtt{display:flex;flex-wrap:wrap;gap:6px 20px;margin:0;font-size:15px}
 .rxtt b{font-size:18px}
 @media (max-width:640px){.rxtg{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}.rxtg li{padding:8px 2px}.rxtg li b{font-size:20px}}
+/* Future pathway and careers (programme details, Ask more, Lab detail sheet) */
+.pway{display:flex;flex-direction:column;gap:12px}
+.pwstep{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--soft)}
+.pwstep b{display:block;margin-bottom:2px}
+.pwstep p{margin:0}
+.pwi{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:#fff;font-size:18px}
+.pwjobs{margin:4px 0 6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px 18px}
