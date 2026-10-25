@@ -537,15 +537,76 @@ function aboutFx(){
    n.textContent="0";requestAnimationFrame(step);});});},{rootMargin:"0px 0px -10% 0px"});
  Array.prototype.forEach.call(els,function(e){io.observe(e);});}
 var VP_ICON=["🤝","💰","🧭"],JR_ICON=["🔍","⚖️","🎓","🏁"];
+/* About us hero background: drifting dots joined by lines when close (a still picture with reduced motion). */
+function aboutNet(){var c=app.querySelector(".anet");if(!c||!c.getContext)return;var x=c.getContext("2d"),P=[],W=0,H=0,dpr=Math.min(2,window.devicePixelRatio||1),moving=document.documentElement.classList.contains("motion");
+ function size(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);}
+ size();var n=Math.round(Math.min(90,W*H/9000));for(var i=0;i<n;i++)P.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.6+.8,h:Math.random()<.5?190:265});
+ function draw(){if(!c.isConnected)return;if(c.clientWidth!==W||c.clientHeight!==H)size();x.clearRect(0,0,W,H);
+  for(var i=0;i<P.length;i++){var a=P[i];if(moving){a.x+=a.vx;a.y+=a.vy;if(a.x<0||a.x>W)a.vx*=-1;if(a.y<0||a.y>H)a.vy*=-1;}
+   for(var j=i+1;j<P.length;j++){var b=P[j],dx=a.x-b.x,dy=a.y-b.y,d=dx*dx+dy*dy;if(d<13000){x.strokeStyle="rgba(94,234,212,"+(.28*(1-d/13000)).toFixed(3)+")";x.lineWidth=.7;x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();}}
+   x.fillStyle="hsla("+a.h+",90%,70%,.9)";x.beginPath();x.arc(a.x,a.y,a.r,0,7);x.fill();}
+  if(moving)requestAnimationFrame(draw);}
+ draw();}
+/* Catch your future: a 30-second game. Catch the Eduplan tools that fall (each one tells you a fact about Eduplan),
+   miss the time-wasters. Arrow keys, the on-screen buttons or dragging move the basket. Facts come from the site itself. */
+function gameFacts(){var st=siteStats(),pg=st.filter(function(x){return x[1]==="programmes";})[0];
+ return [["🎓","Scholarships","Eduplan shows the campus scholarship your results qualify for."],
+  ["📚","Programmes",pg?pg[0]+" programmes from partner institutions in one place.":"Programmes from partner institutions in one place."],
+  ["⚖️","Compare","Compare 2 or 3 programmes side by side: fees, distance, scholarships and careers."],
+  ["🎯","Am I a good fit?","A short quiz gives your fit percentage for a faculty."],
+  ["💬","Free consultation","Ask a counsellor on WhatsApp; we reply within 2 working days."],
+  ["🆓","Free for students","Eduplan's service is free of charge for students."],
+  ["🪪","Verified results","Your grades are read from your results slip, so your applications are accurate."]];}
+var GAME_BAD=[["⏰","Missed deadline"],["🌀","Guesswork"]];
+function gameBox(){return '<section class="sec agame rv" id="agame" aria-labelledby="agame-h"><div class="gcard"><div class="ghead"><span class="axpill dark"><i aria-hidden="true"></i><span>Mini game</span></span>'+
+  '<h2 id="agame-h">Catch your future</h2><p class="muted">Catch the Eduplan tools as they fall and learn what each one does. Miss ⏰ and 🌀: deadlines and guesswork cost you points. 30 seconds.</p></div>'+
+  '<div class="gstage"><canvas class="gcv" tabindex="0" aria-label="Game area. Use the left and right arrow keys to move the basket."></canvas>'+
+  '<div class="ghud" aria-hidden="true"><span>⭐ <b class="gsc" data-notr>0</b></span><span>⏱️ <b class="gtm" data-notr>30</b></span></div>'+
+  '<div class="gover" data-g="start"><b class="gbig">🧺</b><p>Move with ← → or drag. Ready?</p><button type="button" class="axgo" data-act="gstart">▶ <span>Start the game</span></button></div></div>'+
+  '<div class="gpad"><button type="button" class="gbtn" data-gmove="-1" aria-label="Move left">◀</button><button type="button" class="gbtn" data-gmove="1" aria-label="Move right">▶</button></div>'+
+  '<p class="gfact" role="status" aria-live="polite"></p><div class="gfound"></div></div></section>';}
+var G=null;
+function gameStart(){var c=app.querySelector(".gcv");if(!c)return;var stage=c.parentNode,ov=stage.querySelector(".gover"),x=c.getContext("2d"),dpr=Math.min(2,window.devicePixelRatio||1),facts=gameFacts();
+ var W=c.clientWidth,H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);
+ G={c:c,x:x,W:W,H:H,bx:W/2,dir:0,items:[],score:0,t0:performance.now(),last:performance.now(),spawn:0,got:{},facts:facts,on:true};
+ ov.hidden=true;app.querySelector(".gfound").innerHTML="";app.querySelector(".gfact").textContent="";c.focus({preventScroll:true});requestAnimationFrame(gameTick);}
+function gameTick(now){var g=G;if(!g||!g.on)return;if(!g.c.isConnected){G=null;return;}
+ var dt=Math.min(50,now-g.last),x=g.x,W=g.W,H=g.H,left=Math.max(0,30-Math.floor((now-g.t0)/1000));g.last=now;
+ g.bx=Math.max(34,Math.min(W-34,g.bx+g.dir*dt*.55));g.spawn-=dt;
+ if(g.spawn<=0){var bad=Math.random()<.28,it=bad?GAME_BAD[Math.floor(Math.random()*GAME_BAD.length)]:g.facts[Math.floor(Math.random()*g.facts.length)];
+  g.items.push({e:it[0],it:it,bad:bad,x:24+Math.random()*(W-48),y:-20,v:.12+Math.random()*.1+(30-left)*.004});g.spawn=520+Math.random()*420;}
+ x.clearRect(0,0,W,H);
+ for(var i=g.items.length-1;i>=0;i--){var o=g.items[i];o.y+=o.v*dt;x.font="30px serif";x.textAlign="center";x.textBaseline="middle";x.fillText(o.e,o.x,o.y);
+  if(o.y>H-58&&o.y<H-20&&Math.abs(o.x-g.bx)<40){g.items.splice(i,1);
+   if(o.bad){g.score=Math.max(0,g.score-2);gameMsg('<span data-notr>−2 · '+o.it[0]+'</span> <span>'+esc(o.it[1])+'</span>');}else{g.score+=1;if(!g.got[o.it[1]]){g.got[o.it[1]]=1;gameMsg('<span aria-hidden="true">'+o.it[0]+'</span> <b>'+esc(o.it[1])+'</b> <span>'+esc(o.it[2])+'</span>');}}
+   app.querySelector(".gsc").textContent=g.score;}else if(o.y>H+30)g.items.splice(i,1);}
+ x.font="40px serif";x.fillText("🧺",g.bx,H-34);
+ app.querySelector(".gtm").textContent=left;
+ if(left<=0)return gameEnd();requestAnimationFrame(gameTick);}
+function gameMsg(h){var el=app.querySelector(".gfact");if(el)el.innerHTML=h;}
+function gameEnd(){var g=G;g.on=false;var ov=app.querySelector(".gover"),n=Object.keys(g.got).length;
+ ov.innerHTML='<b class="gbig">🏆 <span data-notr>'+g.score+'</span></b><p><span>You found</span> <b data-notr>'+n+' / '+g.facts.length+'</b> <span>Eduplan tools.</span></p><button type="button" class="axgo" data-act="gstart">↻ <span>Play again</span></button>';ov.hidden=false;
+ app.querySelector(".gfound").innerHTML='<h3>What Eduplan does for you</h3><ul>'+g.facts.map(function(f){var ok=g.got[f[1]];return '<li class="'+(ok?'ok':'')+'"><span class="gi" aria-hidden="true">'+f[0]+'</span><span><b>'+esc(f[1])+'</b> '+(ok?'':'<span class="pill">Not caught</span>')+'<br><span class="muted">'+esc(f[2])+'</span></span></li>';}).join("")+'</ul>'+
+  '<div class="pact"><button type="button" class="btn sm" data-mode="interest">Start exploring</button><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div>';
+ var b=ov.querySelector("button");if(b)b.focus({preventScroll:true});}
+document.addEventListener("keydown",function(e){if(!G||!G.on||e.target!==G.c)return;if(e.key==="ArrowLeft"||e.key==="ArrowRight"){G.dir=e.key==="ArrowLeft"?-1:1;e.preventDefault();}});
+document.addEventListener("keyup",function(e){if(G&&(e.key==="ArrowLeft"||e.key==="ArrowRight"))G.dir=0;});
+document.addEventListener("pointerdown",function(e){var b=e.target.closest&&e.target.closest("[data-gmove]");if(b&&G){G.dir=Number(b.getAttribute("data-gmove"));e.preventDefault();}
+ else if(G&&G.on&&e.target===G.c){G.drag=true;var r=G.c.getBoundingClientRect();G.bx=e.clientX-r.left;}});
+document.addEventListener("pointermove",function(e){if(G&&G.drag){var r=G.c.getBoundingClientRect();G.bx=e.clientX-r.left;}});
+["pointerup","pointercancel"].forEach(function(t){document.addEventListener(t,function(){if(G){G.dir=0;G.drag=false;}});});
 function aboutView(){
  var A=window.EDUPLAN_ABOUT;if(!A)return '<div class="page"><div class="empty">About us is not available.</div></div>';
  var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
  var go={"#faculty":'data-mode="interest"',"#universities":'data-mode="interest"',"#scholarships":'data-mode="scholarship"'};
  function tl(label,rows){return rows&&rows.length?'<div class="tl2"><h3>'+esc(label)+'</h3><ol>'+rows.map(function(r,i){return '<li style="--i:'+i+'"><b>'+esc(r.title)+'</b><span>'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';}
  var st=siteStats();
- return '<section class="hero about"><div class="afloat" aria-hidden="true"><i>🎓</i><i>📚</i><i>🏆</i><i>✈️</i></div><div class="hwrap"><span class="ok3">About us</span><h1>We lead students to the right place to study</h1>'+
+ return '<section class="hero about ax"><canvas class="anet" aria-hidden="true"></canvas><i class="aglow g1" aria-hidden="true"></i><i class="aglow g2" aria-hidden="true"></i><i class="aglow g3" aria-hidden="true"></i>'+
+  '<div class="hwrap axin"><span class="axpill"><i aria-hidden="true"></i><span>About us</span></span><h1><span class="axl1">Every student deserves</span><span class="axl2">the right place to study.</span></h1>'+
   '<p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
-  (st.length?'<div class="astats rv">'+st.map(function(x,i){return '<div style="--i:'+i+'"><b data-count="'+x[0]+'" data-notr>'+x[0].toLocaleString("en-MY")+'</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+'</div></section>'+
+  '<div class="axbtns"><button type="button" class="axgo" data-act="agame">🎮 <span>Play the Eduplan game</span></button><button type="button" class="axghost" data-mode="interest"><span>Start exploring</span></button></div>'+
+  (st.length?'<div class="astats rv">'+st.map(function(x,i){return '<div style="--i:'+i+'"><b data-count="'+x[0]+'" data-notr>'+x[0].toLocaleString("en-MY")+'</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+
+  '<span class="axmouse" aria-hidden="true"><i></i></span></div></section>'+gameBox()+
   '<div class="page"><div class="pgrid"><section class="box avision rv"><span class="pinst">Our vision</span><p class="lbig">'+esc(A.vision)+'</p><ul class="vp">'+A.points.map(function(v,i){return '<li style="--i:'+i+'"><span class="vpi" aria-hidden="true">'+(VP_ICON[i]||"⭐")+'</span><b>'+esc(v[0])+'</b><span>'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
   '<section class="box amission rv"><span class="pinst">Our mission</span><p class="lbig">'+esc(A.mission)+'</p><ol class="jr">'+A.journey.map(function(j,i){var g=go[j[2]];
    return '<li style="--i:'+i+'"><span class="jri" aria-hidden="true">'+(JR_ICON[i]||"⭐")+'</span>'+(g?'<button type="button" class="jlink" '+g+'>':'<a class="jlink" href="'+esc(mainLink(j[2]))+'">')+'<b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span>'+(g?'</button>':'</a>')+'</li>';}).join("")+'</ol></section></div>'+
@@ -606,7 +667,7 @@ function render(keep){
  if(L.view==="results"&&locked())L.view="home";
  app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():home();
  sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
- if(L.view==="about")aboutFx();
+ if(L.view==="about"){aboutFx();aboutNet();}
  if(!keep)window.scrollTo(0,0);
 }
 function go(view){if(location.hash==="#"+view)render();else location.hash="#"+view;}
@@ -649,6 +710,8 @@ document.addEventListener("click",function(ev){
  var act=t.getAttribute("data-act");if(!act)return;
  if(act==="close"){L.detail=null;render(true);}
  else if(act==="home")go("home");
+ else if(act==="agame"){var ag=document.getElementById("agame");if(ag){ag.scrollIntoView({behavior:"smooth",block:"start"});var sb=ag.querySelector('[data-act="gstart"]');if(sb)setTimeout(function(){sb.focus({preventScroll:true});},500);}}
+ else if(act==="gstart")gameStart();
  else if(act==="help"){L.help=!L.help;L.menu=false;render(true);}
  else if(act==="info"){L.info=!L.info;L.menu=false;L.help=false;render(true);var f=document.querySelector(L.info?".infoitem":".info");if(f)f.focus();}
  else if(act==="menu"){L.menu=!L.menu;L.help=false;L.info=false;render(true);var m=document.querySelector(".menu .mitem");if(L.menu&&m)m.focus();else{var bb=top.querySelector(".burger");if(bb)bb.focus();}}

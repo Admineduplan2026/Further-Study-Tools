@@ -1,5 +1,7 @@
 /* Chinese text for Eduplan Lab (used by assets/js/i18n.js). Add new lab sentences here, exactly as written in lab.js. */
 window.EDUPLAN_ZH_EXTRA={text:{
+ "Missed deadline":"错过截止日期","Guesswork":"乱猜",
+ "Every student deserves":"每个学生都值得","the right place to study.":"找到最适合的学府。","Play the Eduplan game":"玩 Eduplan 小游戏","Start exploring":"开始探索","Mini game":"小游戏","Catch your future":"接住你的未来","Catch the Eduplan tools as they fall and learn what each one does. Miss ⏰ and 🌀: deadlines and guesswork cost you points. 30 seconds.":"接住掉下来的 Eduplan 工具，认识每一项的用处。避开 ⏰ 和 🌀：错过截止日期和乱猜都会扣分。限时 30 秒。","Move with ← → or drag. Ready?":"用 ← → 键或手指拖动篮子。准备好了吗？","Start the game":"开始游戏","Play again":"再玩一次","You found":"你找到了","Eduplan tools.":"项 Eduplan 工具。","What Eduplan does for you":"Eduplan 能为你做什么","Not caught":"未接到","Move left":"向左","Move right":"向右","Programmes":"课程","Free for students":"学生免费","Verified results":"核实成绩","Eduplan shows the campus scholarship your results qualify for.":"Eduplan 会显示你的成绩可获得的校内奖学金。","Programmes from partner institutions in one place.":"合作院校的课程，一站看齐。","Compare 2 or 3 programmes side by side: fees, distance, scholarships and careers.":"并排比较 2 至 3 个课程：学费、距离、奖学金和出路。","A short quiz gives your fit percentage for a faculty.":"简短测验，算出你对某个科系的适合度百分比。","Ask a counsellor on WhatsApp; we reply within 2 working days.":"在 WhatsApp 询问顾问，2 个工作日内回复。","Eduplan's service is free of charge for students.":"Eduplan 的服务对学生完全免费。","Your grades are read from your results slip, so your applications are accurate.":"成绩直接从成绩单读取，报名资料准确无误。",
  "Eduplan Lab: a trial page. The main Eduplan website is unchanged.":"Eduplan Lab：试验页面，原本的 Eduplan 网站保持不变。",
  "Where does your study journey start?":"升学从哪里出发？","How to use this website":"如何使用此网站","How to use Eduplan":"如何使用 Eduplan",
  "This website looks at your study path in three ways. Choose the one that fits you; you can switch at any time.":"此网站运用了三种不同的面向，协助你了解自身的升学途径。选择适合你的一种，随时可以切换。",
@@ -54,6 +56,7 @@ window.EDUPLAN_ZH_EXTRA={text:{
  "The WhatsApp number will be added soon.":"WhatsApp 号码即将公布。","A counsellor calls you back":"顾问会回电给你",
  "Save programme":"收藏课程","Remove from saved":"取消收藏","Close":"关闭","Search mode":"搜索模式","Fees are shown in Malaysian ringgit":"学费以马币显示"
 },patterns:[
+ [/^(\d+) programmes from partner institutions in one place\.$/,function(m){return "合作院校的 "+m[1]+" 个课程，一站看齐。";}],
  [/^Up to (\d+)% off tuition$/,"学费最高减免 $1%"],[/^(\d+) programmes? saved$/,"已收藏 $1 个课程"],
  [/^(\d) of 3 chosen$/,"已选择 $1 / 3"],[/^Your interest: (.+)$/,function(m){return "符合你的兴趣："+(window.EDUPLAN_ZH_EXTRA.text[m[1]]||m[1]);}],[/^(\d)\. (.+)$/,function(m){return m[1]+". "+(window.EDUPLAN_ZH_EXTRA.text[m[2]]||m[2]);}],
  [/^Your scholarship: (\d+)% tuition waiver$/,"你的奖学金：$1% 学费减免"],[/^Your scholarship: (RM [\d,]+)$/,"你的奖学金：$1"],
