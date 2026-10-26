@@ -260,7 +260,7 @@ function readSlip(id){var f=document.getElementById("rx-file"),k=document.getEle
 /* Name check (Identity.gs): Claude reads the front of the student's MyKad / MyKid / passport. Only the name and the
    last 4 characters of the number are kept; the photo and the full number are not. Resolves {v} or {error}. */
 var ID_PROMPT="You read the front of an identity document for EDUPLAN, a study guidance service in Malaysia, to confirm the student's name. "+
- "Reply with JSON only: {\"is_id_document\":boolean,\"card_type\":\"MyKad|MyKid|passport|other\",\"name\":string,\"id_number\":string,\"address\":string,\"postcode\":string,\"town\":string,\"state\":string,\"problems\":string}. "+
+ "Reply with JSON only: {\"is_id_document\":boolean,\"card_type\":\"MyKad|MyKid|passport|other\",\"name\":string,\"id_number\":string,\"address\":string,\"postcode\":string,\"town\":string,\"state\":string,\"religion\":string,\"problems\":string}. religion = the religion printed on the card (ISLAM on a Muslim MyKad), \"\" if none. "+
  "address = the address lines printed on a MyKad or MyKid without postcode, town and state, joined with \", \"; postcode = the 5 digits; town = the town after it; state = the state at the end (Johor, Kedah, Kelantan, Kuala Lumpur, Labuan, Melaka, Negeri Sembilan, Pahang, Penang, Perak, Perlis, Putrajaya, Sabah, Sarawak, Selangor or Terengganu); \"\" when not printed. "+
  "is_id_document is true only for the front of a Malaysian MyKad or MyKid, or the photo page of a passport. name: the holder's full name exactly as printed. "+
  "id_number: the IC number (000000-00-0000) or passport number exactly as printed. Leave a field \"\" if you cannot read it with certainty.";
@@ -269,7 +269,13 @@ function idCheck(r){if(!r||!r.is_id_document||r.card_type==="other")return {erro
  if(name.length<3||name.length>120)return {error:"unreadable"};
  if(r.card_type==="passport"){if(!/^[A-Z0-9]{6,12}$/.test(num))return {error:"unreadable"};}
  else if(!(m=num.match(/^(\d{2})(\d{2})(\d{2})\d{6}$/))||+m[2]<1||+m[2]>12||+m[3]<1||+m[3]>31)return {error:"unreadable"};
- var form={};if(r.card_type!=="passport"){form.gender=(+num.slice(-1))%2?"Male":"Female";var pc=String(r.postcode||"").replace(/\D/g,"");if(/^\d{5}$/.test(pc))form.postcode=pc;
+var IDPOB={1:"Johor",2:"Kedah",3:"Kelantan",4:"Melaka",5:"Negeri Sembilan",6:"Pahang",7:"Penang",8:"Perak",9:"Perlis",10:"Selangor",11:"Terengganu",12:"Sabah",13:"Sarawak",14:"Kuala Lumpur",15:"Labuan",16:"Putrajaya",
+ 21:"Johor",22:"Johor",23:"Johor",24:"Johor",25:"Kedah",26:"Kedah",27:"Kedah",28:"Kelantan",29:"Kelantan",30:"Melaka",31:"Negeri Sembilan",59:"Negeri Sembilan",32:"Pahang",33:"Pahang",34:"Penang",35:"Penang",
+ 36:"Perak",37:"Perak",38:"Perak",39:"Perak",40:"Perlis",41:"Selangor",42:"Selangor",43:"Selangor",44:"Selangor",45:"Terengganu",46:"Terengganu",47:"Sabah",48:"Sabah",49:"Sabah",50:"Sarawak",51:"Sarawak",
+ 52:"Sarawak",53:"Sarawak",54:"Kuala Lumpur",55:"Kuala Lumpur",56:"Kuala Lumpur",57:"Kuala Lumpur",58:"Labuan"};
+ var form={ic:r.card_type==="passport"?num:num.slice(0,6)+"-"+num.slice(6,8)+"-"+num.slice(8)};if(r.card_type!=="passport"){form.gender=(+num.slice(-1))%2?"Male":"Female";
+  var yy=+num.slice(0,2),cy=new Date().getFullYear()%100;form.dob=(yy>cy?"19":"20")+num.slice(0,2)+"-"+num.slice(2,4)+"-"+num.slice(4,6);if(IDPOB[+num.slice(6,8)])form.pob=IDPOB[+num.slice(6,8)];
+  form.nationality="Malaysian";form.residence="Malaysia";if(/^islam$/i.test(String(r.religion||"").trim()))form.religion="Islam";var pc=String(r.postcode||"").replace(/\D/g,"");if(/^\d{5}$/.test(pc))form.postcode=pc;
   if(r.address)form.address=String(r.address).replace(/\s+/g," ").trim().slice(0,300);if(r.town)form.town=String(r.town).trim().slice(0,80);if(r.state)form.state=String(r.state).trim();}
  return {v:{name:name,last4:num.slice(-4),at:Date.now(),type:r.card_type},form:form};}
 function readId(file){

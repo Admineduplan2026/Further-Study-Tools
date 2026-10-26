@@ -945,7 +945,8 @@ V.apply=function(){
  var a=S.app,n=APPLY_STEPS.length,pr=S.prof||{};
  /* Empty fields start from My profile and the signed-in email; the student checks them against the IC. */
  var f=pr.icform||{},pre={name_en:pr.idv&&pr.idv.name,mobile:pr.phone,email:PF.s&&PF.s.email,
-  gender:f.gender,addr:f.address,postcode:f.postcode,town:f.town,state:f.state,country:f.gender?"Malaysia":""},ch=false;   /* name, address and gender read from the IC */
+  ic:f.ic,dob:f.dob,a_pob:f.pob,gender:f.gender,nationality:f.nationality,residence:f.residence,religion:f.religion,
+  addr:f.address,postcode:f.postcode,town:f.town,state:f.state,country:f.gender?"Malaysia":""},ch=false;   /* everything that can be read from the IC */
  Object.keys(pre).forEach(function(k){if(!a.v[k]&&pre[k]){a.v[k]=pre[k];ch=true;}});if(ch)applySave();
  return '<section class="stack">'+flowStep("Apply")+'<span class="eyebrow">Apply with EDUPLAN</span><h1>Application form</h1>'+
   '<p class="lead">One form for your university application. It takes about 10 minutes. '+(PF.s?'Your answers are saved to your portfolio as you type.':'Your answers stay on this device until you close the tab. <a href="#portfolio">Sign in</a> to save them and continue later.')+'</p></section>'+
@@ -1409,7 +1410,7 @@ function idBox(){var v=idv();
  if(!RX.canRead())return '<p class="hint">Verifying your name with your IC works on the live EDUPLAN website.</p>';
  if(S.idBusy)return '<p class="note" role="status">Reading your IC… This takes up to a minute.</p>';
  return '<div class="idup"><label class="btn idbtn">🪪 Verify my name with my IC<input type="file" accept="'+(RX.live()?'image/*,application/pdf':'image/*')+'" capture="environment" data-idfile hidden></label>'+
-  '<span class="hint">Take a photo of the front of your IC (MyKad or MyKid; international students: passport photo page). AI reads your name, and from a MyKad or MyKid also your address, postcode and gender (from the last digit: odd male, even female) to fill in your application form for you. We keep your name and the last 4 digits of the number; the photo is not stored.</span>'+
+  '<span class="hint">Take a photo of the front of your IC (MyKad or MyKid; international students: passport photo page). AI reads your name, and from a MyKad or MyKid also your IC number, date of birth, place of birth, gender (from the last digit: odd male, even female), address and postcode, to fill in your application form for you. We keep your name and the last 4 digits of the number; the photo is not stored.</span>'+
   (S.idErr?'<span class="err" role="alert">'+esc(S.idErr)+'</span>':'')+'</div>';}
 document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute("data-idfile"))return;var file=t.files&&t.files[0];if(!file)return;
  S.idBusy=true;S.idErr="";rerender();
@@ -1424,7 +1425,7 @@ function pfProfile(){var p=S.prof||{},fi=p.fields||[];
   '<div class="field"><span class="legend">Your name</span>'+idBox()+'</div>'+
   '<div class="field"><label for="pr-phone">WhatsApp number <span class="hint">(optional)</span></label><input id="pr-phone" data-prof="phone" type="tel" autocomplete="tel" placeholder="012-345 6789" value="'+esc(p.phone||"")+'"><span class="hint">For counsellor follow-ups and deadline reminders.</span></div>'+
   '<div class="field"><label for="pr-status">Where are you now? <span class="hint">(optional)</span></label><select id="pr-status" data-prof="status"><option value="">Choose</option>'+PROF_STATUS.map(function(x){return '<option'+(p.status===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
-  '<div class="field"><label for="pr-home">Your home town <span class="hint">(optional)</span></label>'+homeSelect("pr-home")+'<span class="hint">Used to show how far each university is from home when you compare programmes.</span></div>'+
+  '<div class="field"><label for="pr-home">Your postcode <span class="hint">(optional)</span></label>'+homeSelect("pr-home")+'<span class="hint">Used to show how far each university is from home when you compare programmes.</span></div>'+
   '<div class="field"><label for="pr-region">Where would you like to study? <span class="hint">(optional)</span></label><select id="pr-region" data-prof="region"><option value="">Anywhere in Malaysia</option>'+MY_STATES.map(function(x){return '<option'+(p.region===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
   (FAC.fields.length?'<fieldset class="field pfset"><legend class="legend">Fields you are interested in <span class="hint">(optional)</span></legend><div class="chips">'+FAC.fields.filter(function(f){return f.code!=="00";}).map(function(f){return '<label class="chip pchk"><input type="checkbox" data-proff="'+esc(f.code)+'"'+(fi.indexOf(f.code)>=0?' checked':'')+'> '+esc(f.name)+'</label>';}).join("")+'</div></fieldset>':'')+
   '</div><p class="hint">Exam results are kept in My results below. Saved as you type'+(PF.s?' to your portfolio':' in this browser')+'.</p>';}
@@ -1513,9 +1514,25 @@ function campusTown(x){
 }
 function kmBetween(a,b){var r=Math.PI/180,dl=(b[1]-a[1])*r,dn=(b[2]-a[2])*r,h=Math.sin(dl/2)*Math.sin(dl/2)+Math.cos(a[1]*r)*Math.cos(b[1]*r)*Math.sin(dn/2)*Math.sin(dn/2);return Math.round(12742*Math.asin(Math.sqrt(h)));}
 /* The student's home: a town chosen in My profile, or this device's location for this visit only (never saved). */
-function homePoint(){if(S.geo)return ["your location",S.geo[0],S.geo[1]];return town(S.prof&&S.prof.home);}
-function homeSelect(id){var h=S.prof&&S.prof.home||"",states={};TOWNS.forEach(function(t){var s=t[3]||"Outside Malaysia";(states[s]=states[s]||[]).push(t[0]);});
- return '<select id="'+id+'" data-home><option value="">Choose your home town</option>'+Object.keys(states).sort().map(function(s){return '<optgroup label="'+esc(s)+'">'+states[s].map(function(n){return '<option'+(h===n?' selected':'')+'>'+esc(n)+'</option>';}).join("")+'</optgroup>';}).join("")+'</select>';}
+/* Malaysian postcodes [from, to, nearest town in TOWNS]: the first digits give the area, so the town centre is approximate. */
+var PC_TOWN=[[1000,2999,"Kangar"],[5000,7999,"Alor Setar"],[8000,8099,"Sungai Petani"],[8100,8199,"Bedong"],[8200,9999,"Sungai Petani"],
+ [10000,11899,"George Town"],[11900,11999,"Bayan Lepas"],[12000,13999,"Butterworth"],[14000,14999,"Bukit Mertajam"],[15000,18999,"Kota Bharu"],[20000,24999,"Kuala Terengganu"],
+ [25000,26999,"Kuantan"],[27000,28699,"Temerloh"],[28700,28799,"Bentong"],[28800,29999,"Temerloh"],[30000,31899,"Ipoh"],[31900,31999,"Kampar"],[32000,32599,"Sitiawan"],[32600,32699,"Seri Iskandar"],
+ [32700,32999,"Sitiawan"],[33000,34999,"Taiping"],[35000,35999,"Kampar"],[36000,36999,"Teluk Intan"],[39000,39999,"Ipoh"],[40000,40999,"Shah Alam"],[41000,42999,"Klang"],
+ [43000,43299,"Kajang"],[43300,43399,"Seri Kembangan"],[43400,43499,"Kajang"],[43500,43599,"Semenyih"],[43600,43699,"Bangi"],[43700,43799,"Kajang"],[43800,43999,"Sepang"],[44000,45999,"Rawang"],
+ [46000,46999,"Petaling Jaya"],[47000,47099,"Kota Damansara"],[47100,47199,"Puchong"],[47200,47499,"Petaling Jaya"],[47500,47699,"Subang Jaya"],[47700,47799,"Petaling Jaya"],[47800,47899,"Kota Damansara"],
+ [47900,47999,"Petaling Jaya"],[48000,48999,"Rawang"],[49000,49999,"Bentong"],[50000,52999,"Kuala Lumpur"],[53000,53399,"Setapak"],[53400,55999,"Kuala Lumpur"],[56000,56199,"Cheras"],[56200,56999,"Kuala Lumpur"],
+ [57000,57199,"Bukit Jalil"],[57200,60999,"Kuala Lumpur"],[62000,62999,"Putrajaya"],[63000,63999,"Cyberjaya"],[64000,64999,"Sepang"],[68000,68999,"Kuala Lumpur"],[69000,69999,"Bentong"],
+ [70000,70999,"Seremban"],[71000,71099,"Port Dickson"],[71100,71799,"Seremban"],[71800,71899,"Nilai"],[71900,73999,"Seremban"],[75000,78999,"Melaka"],[79000,79999,"Iskandar Puteri"],[80000,80999,"Johor Bahru"],
+ [81000,81099,"Kulai"],[81100,81299,"Johor Bahru"],[81300,81399,"Skudai"],[81400,81999,"Johor Bahru"],[82000,83999,"Batu Pahat"],[84000,84999,"Muar"],[85000,85999,"Segamat"],[86000,86999,"Kluang"],
+ [87000,87999,"Labuan"],[88000,89999,"Kota Kinabalu"],[90000,90999,"Sandakan"],[91000,91999,"Tawau"],[93000,95999,"Kuching"],[96000,96999,"Sibu"],[97000,97999,"Bintulu"],[98000,98999,"Miri"]];
+function pcTown(pc){pc=String(pc||"").replace(/\D/g,"");if(pc.length!==5)return null;var n=+pc;for(var i=0;i<PC_TOWN.length;i++)if(n>=PC_TOWN[i][0]&&n<=PC_TOWN[i][1])return town(PC_TOWN[i][2]);return null;}
+/* The student's postcode (typed in My profile or read from the IC); a town chosen before stays as a fallback. */
+function homePC(){var p=S.prof||{};return p.postcode||(p.icform&&p.icform.postcode)||"";}
+function homePoint(){if(S.geo)return ["your location",S.geo[0],S.geo[1]];var t=pcTown(homePC());return t?[homePC()+" ("+t[0]+")",t[1],t[2],t[3]]:town(S.prof&&S.prof.home);}
+function homeSelect(id){var pc=homePC(),t=pcTown(pc);
+ return '<input id="'+id+'" type="text" inputmode="numeric" maxlength="5" pattern="[0-9]{5}" autocomplete="postal-code" placeholder="e.g. 43000" value="'+esc(pc)+'" data-home-pc>'+
+  '<span class="hint" id="'+id+'-near">'+(t?'<span>Near</span> <span data-notr>'+esc(t[0]+(t[3]?", "+t[3]:""))+'</span>':pc?'<span>Postcode not found. Check the 5 digits.</span>':'')+'</span>';}
 function cmpSave(){CMP=CMP.filter(function(id){return SAVED.indexOf(id)>=0;});store("eduplan-compare",CMP);}
 function cmpHref(ids){return "#compare/"+ids.map(encodeURIComponent).join(",");}
 /* The picker in My choices: tick 2 or 3 saved programmes, then Compare. */
@@ -1567,8 +1584,8 @@ V.compare=function(){
     (meta.length?'<span class="meta">'+meta.map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>':'')+
     (wins.length?'<span class="cwins">'+wins.map(function(w){return crown(true,esc(w));}).join("")+'</span>':'')+'</article>';}).join("")+'</div>';
  var homeBox=home?'<p class="hint"><span>Distance measured from</span> '+(S.geo?'<b>your location</b>':'<b data-notr>'+esc(home[0])+'</b>')+' <button type="button" class="linkbtn" data-cmpact="home-change">Change</button></p>'
-  :'<div class="chome"><label for="cmp-home">Where do you live?</label>'+homeSelect("cmp-home")+'<button type="button" class="btn ghost sm" data-cmpact="geo"><span aria-hidden="true">📍</span><span>Use my location</span></button></div>'+(S.geoErr?'<p class="err" role="alert">'+esc(S.geoErr)+'</p>':'');
- if(S.homeEdit&&home)homeBox='<div class="chome"><label for="cmp-home">Where do you live?</label>'+homeSelect("cmp-home")+'<button type="button" class="btn ghost sm" data-cmpact="geo"><span aria-hidden="true">📍</span><span>Use my location</span></button></div>';
+  :'<div class="chome"><label for="cmp-home">Your postcode</label>'+homeSelect("cmp-home")+'<button type="button" class="btn ghost sm" data-cmpact="geo"><span aria-hidden="true">📍</span><span>Use my location</span></button></div>'+(S.geoErr?'<p class="err" role="alert">'+esc(S.geoErr)+'</p>':'');
+ if(S.homeEdit&&home)homeBox='<div class="chome"><label for="cmp-home">Your postcode</label>'+homeSelect("cmp-home")+'<button type="button" class="btn ghost sm" data-cmpact="geo"><span aria-hidden="true">📍</span><span>Use my location</span></button></div>';
  var anyFit=D2.some(function(d){var c=progFac(d.x.p);return c&&fitScore(c);});
  var rows=(anyFit?cmpRow("🎯","Your fit",D2,function(d){var c=progFac(d.x.p),f=c&&fitScore(c);return f?'<span class="fitpill '+f.cls+'"><span>'+esc(f.band[1])+'</span></span>'+cnum(f.pct,"","%")+cmpMeter(f.pct,100,f.cls==="ok"):'<span class="hint">Not answered for this faculty</span>';},'From the Am I a good fit? quiz.'):'<a class="fitgo" href="#fit"><span class="fiti" aria-hidden="true">🎯</span><span class="fitt"><b>Am I a good fit?</b><span>Answer a few questions to add your fit to this comparison</span></span>'+ARROW+'</a>')+
   cmpRow("💰","Tuition fee (whole programme)",D2,function(d){
@@ -1644,16 +1661,18 @@ function cmpAnimate(){if(!motion)return;Array.prototype.forEach.call(app.querySe
  el.textContent=pre+"0"+suf;requestAnimationFrame(step);});}
 document.addEventListener("change",function(ev){var t=ev.target;if(!t||!t.hasAttribute)return;
  if(t.hasAttribute("data-cmp")){cmpToggle(t.getAttribute("data-cmp"));return;}
- if(t.hasAttribute("data-home")){S.prof=S.prof||{};S.prof.home=t.value;S.geo=null;S.homeEdit=false;store("eduplan-profile",S.prof);pfTouch("profile");if(S.view==="compare")render(true);}});
+ if(t.hasAttribute("data-home-pc")){var pc=String(t.value||"").replace(/\D/g,"").slice(0,5);S.prof=S.prof||{};
+  if(pc.length===5&&!pcTown(pc)){var nb=document.getElementById(t.id+"-near");if(nb)nb.textContent="Postcode not found. Check the 5 digits.";return;}
+  S.prof.postcode=pc;S.geo=null;S.homeEdit=false;store("eduplan-profile",S.prof);pfTouch("profile");if(S.view==="compare")render(true);else rerender();}});
 document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-cmpact]");if(!t)return;var a=t.getAttribute("data-cmpact");
  if(a==="a4"){var sheet=app.querySelector(".a4sheet");if(!sheet)return;var root=document.createElement("div");root.id="printroot";root.innerHTML=sheet.outerHTML;document.body.appendChild(root);
   document.body.classList.add("printa4");var done=function(){document.body.classList.remove("printa4");if(root.parentNode)root.parentNode.removeChild(root);window.removeEventListener("afterprint",done);};
   window.addEventListener("afterprint",done);try{window.print();}catch(e){done();}setTimeout(function(){if(!window.matchMedia||!matchMedia("print").matches)done();},60000);return;}
  if(a==="view-table"||a==="view-cards"){try{localStorage.setItem("eduplan-cmpview",a.slice(5));}catch(e){}render(false);var b=app.querySelector('[data-cmpact="'+a+'"]');if(b)b.focus();return;}
  if(a==="home-change"){S.homeEdit=true;S.geo=null;rerender("cmp-home");}
- else if(a==="geo"){if(!navigator.geolocation){S.geoErr="This browser cannot share its location. Choose your home town instead.";return rerender();}
+ else if(a==="geo"){if(!navigator.geolocation){S.geoErr="This browser cannot share its location. Type your postcode instead.";return rerender();}
   t.disabled=true;navigator.geolocation.getCurrentPosition(function(p){S.geo=[Math.round(p.coords.latitude*100)/100,Math.round(p.coords.longitude*100)/100];S.geoErr="";S.homeEdit=false;render(true);},
-   function(){S.geoErr="Location not shared. Choose your home town instead.";render(true);},{timeout:10000,maximumAge:600000});}});
+   function(){S.geoErr="Location not shared. Type your postcode instead.";render(true);},{timeout:10000,maximumAge:600000});}});
 
 /* ---------- Am I a good fit? (#fit): a short quiz for the faculties of the saved programmes ----------
    Questions and points are in fit-data.js. The fit percentage per faculty is the answers (70%) and the grades in the

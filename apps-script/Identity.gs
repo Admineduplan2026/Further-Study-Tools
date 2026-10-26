@@ -5,12 +5,19 @@
  * The website POSTs {"action":"id_verify","token":"...","file":{"type":"image/jpeg"|...,"data":"<base64>"}} to /exec.
  * The student must be signed in (Account.gs). Only the name and the last 4 digits of the IC (or passport) number are
  * kept, signed with RESULTS_SECRET (Results.gs) together with the student's email; the photo and the full number are
- * never stored. The address, postcode, town, state and gender (from the last digit) are also returned, only to fill in
- * the application form, where the student can still change them. Account.gs keeps the name check in the portfolio's profile only when its signature is valid, so a name
+ * never stored. The IC number, date of birth and state of birth (from the number), gender (from the last digit), address,
+ * postcode, town, state and religion (when printed) are also returned, only to fill in the application form, where the
+ * student can still change them. Account.gs keeps the name check in the portfolio's profile only when its signature is valid, so a name
  * typed in the browser does not count. Uses ANTHROPIC_API_KEY and the daily limit of Results.gs (RESULTS_DAILY_LIMIT).
  */
 
 var ID_STATES = ['Johor', 'Kedah', 'Kelantan', 'Kuala Lumpur', 'Labuan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Penang', 'Perak', 'Perlis', 'Putrajaya', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu'];
+
+/* State of birth from digits 7-8 of a MyKad / MyKid number (National Registration Department codes). */
+var ID_POB = {1:'Johor',2:'Kedah',3:'Kelantan',4:'Melaka',5:'Negeri Sembilan',6:'Pahang',7:'Penang',8:'Perak',9:'Perlis',10:'Selangor',11:'Terengganu',12:'Sabah',13:'Sarawak',14:'Kuala Lumpur',15:'Labuan',16:'Putrajaya',
+  21:'Johor',22:'Johor',23:'Johor',24:'Johor',25:'Kedah',26:'Kedah',27:'Kedah',28:'Kelantan',29:'Kelantan',30:'Melaka',31:'Negeri Sembilan',59:'Negeri Sembilan',32:'Pahang',33:'Pahang',34:'Penang',35:'Penang',
+  36:'Perak',37:'Perak',38:'Perak',39:'Perak',40:'Perlis',41:'Selangor',42:'Selangor',43:'Selangor',44:'Selangor',45:'Terengganu',46:'Terengganu',47:'Sabah',48:'Sabah',49:'Sabah',50:'Sarawak',51:'Sarawak',
+  52:'Sarawak',53:'Sarawak',54:'Kuala Lumpur',55:'Kuala Lumpur',56:'Kuala Lumpur',57:'Kuala Lumpur',58:'Labuan'};
 
 var ID_SYSTEM = [
   'You read the front of an identity document for Eduplan, a study guidance service in Malaysia, to confirm the student\'s name.',
@@ -21,6 +28,7 @@ var ID_SYSTEM = [
   '- id_number: the IC number (12 digits, written 000000-00-0000) or the passport number, exactly as printed.',
   '- address: the address lines printed on a MyKad or MyKid, without the postcode, town and state, lines joined with ", "; "" for a passport.',
   '- postcode: the 5-digit postcode in the address; town: the town or city after it; state: the state at the end, written as one of: ' + ID_STATES.join(', ') + '. "" when not printed.',
+  '- religion: the religion printed on the card (a MyKad shows ISLAM for Muslims), "" when none is printed.',
   '- problems: anything unreadable, covered, edited-looking or inconsistent; "" when there is none.',
   'If the name or number cannot be read with certainty, leave it "" and say so in problems.'
 ].join('\n');
@@ -39,9 +47,10 @@ var ID_TOOL = {
       postcode: { type: 'string' },
       town: { type: 'string' },
       state: { type: 'string' },
+      religion: { type: 'string' },
       problems: { type: 'string' }
     },
-    required: ['is_id_document', 'card_type', 'name', 'id_number', 'address', 'postcode', 'town', 'state', 'problems']
+    required: ['is_id_document', 'card_type', 'name', 'id_number', 'address', 'postcode', 'town', 'state', 'religion', 'problems']
   }
 };
 
@@ -121,9 +130,15 @@ function idCheck_(email, r) {
   v.sig = idSign_(email, v);
   // For the application form only (the student can still change them there): the address on a MyKad / MyKid, and
   // the gender from the last digit of the IC number (odd = male, even = female). Not part of the signature.
-  var form = {};
+  var form = { ic: r.card_type === 'passport' ? num : num.slice(0, 6) + '-' + num.slice(6, 8) + '-' + num.slice(8) };
   if (r.card_type !== 'passport') {
     form.gender = (+num.slice(-1)) % 2 ? 'Male' : 'Female';
+    // Date of birth (YYMMDD) and state of birth (digits 7-8) from the number; Malaysian citizen.
+    var yy = +num.slice(0, 2), cy = new Date().getFullYear() % 100;
+    form.dob = (yy > cy ? '19' : '20') + num.slice(0, 2) + '-' + num.slice(2, 4) + '-' + num.slice(4, 6);
+    if (ID_POB[+num.slice(6, 8)]) form.pob = ID_POB[+num.slice(6, 8)];
+    form.nationality = 'Malaysian'; form.residence = 'Malaysia';
+    if (/^islam$/i.test(String(r.religion || '').trim())) form.religion = 'Islam';
     var pc = String(r.postcode || '').replace(/\D/g, '');
     if (/^\d{5}$/.test(pc)) form.postcode = pc;
     if (r.address) form.address = accountCell_(String(r.address).replace(/\s+/g, ' ').trim(), 300);
