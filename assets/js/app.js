@@ -1405,7 +1405,11 @@ function sameNameApp(a,b){function k(s){return String(s||"").toUpperCase().repla
 function idv(){var v=S.prof&&S.prof.idv;return v&&v.name&&(!RX.live()||v.sig)?v:null;}
 function idBox(){var v=idv();
  if(v)return '<div class="idok"><span class="idbadge">✓ Verified with your IC</span><b data-notr>'+esc(v.name)+'</b><span class="hint">'+(v.type==="passport"?'Passport':'IC')+' ending ••••'+esc(v.last4)+'</span>'+
-  (function(f){return f&&(f.address||f.gender)?'<span class="hint">'+(f.gender?'<span>'+esc(f.gender)+'</span>':'')+(f.address?' · <span data-notr>'+esc([f.address,[f.postcode,f.town].filter(Boolean).join(" "),f.state].filter(Boolean).join(", "))+'</span>':'')+'</span><span class="hint">Filled in on your application form for you.</span>':'';})((S.prof||{}).icform)+'</div>';
+  (function(f){return f&&(f.address||f.gender||f.dob)?'<dl class="facts idread">'+(f.dob?'<dt>Date of birth</dt><dd data-notr>'+esc(f.dob)+'</dd>':'')+(f.pob?'<dt>Place of birth</dt><dd>'+esc(f.pob)+'</dd>':'')+
+   (f.gender?'<dt>Gender</dt><dd>'+esc(f.gender)+'</dd>':'')+(f.address?'<dt>Address</dt><dd data-notr>'+esc([f.address,[f.postcode,f.town].filter(Boolean).join(" "),f.state].filter(Boolean).join(", "))+'</dd>':'')+'</dl>'+
+   '<span class="hint">Filled in on your application form for you. Please check them; if anything is wrong, upload a sharper photo below.</span>':'';})((S.prof||{}).icform)+
+  (RX.canRead()&&!S.idBusy?'<label class="btn ghost sm idbtn">🪪 <span>Upload my IC again</span><input type="file" accept="'+(RX.live()?'image/*,application/pdf':'image/*')+'" capture="environment" data-idfile hidden></label>':'')+
+  (S.idBusy?'<p class="note" role="status">Reading your IC… This takes up to a minute.</p>':'')+(S.idErr?'<span class="err" role="alert">'+esc(S.idErr)+'</span>':'')+'</div>';
  if(RX.live()&&!PF.s)return '<p class="hint"><a href="#portfolio">Sign in</a>, then verify your name with a photo of your IC.</p>';
  if(!RX.canRead())return '<p class="hint">Verifying your name with your IC works on the live EDUPLAN website.</p>';
  if(S.idBusy)return '<p class="note" role="status">Reading your IC… This takes up to a minute.</p>';

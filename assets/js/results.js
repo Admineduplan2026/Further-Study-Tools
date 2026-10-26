@@ -174,7 +174,7 @@ function badge(m){if(!m)return null;
 var MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 function day(t){var d=new Date(t);return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear();}
 function session(){try{var x=JSON.parse(localStorage.getItem("eduplan-session"));return x&&x.token&&x.exp>Date.now()?x:null;}catch(e){return null;}}
-var RX_ERR={id_not_configured:"Reading IC photos is not available yet. Please ask a counsellor.",id_first:"Verify your name with your IC first (My portfolio, My profile). The name on your results slip must match your IC.",
+var RX_ERR={id_unreadable:"Your IC could not be read clearly enough. Take a straight, sharp photo of the front of your IC, without glare, with the whole card in view.",id_not_configured:"Reading IC photos is not available yet. Please ask a counsellor.",id_first:"Verify your name with your IC first (My portfolio, My profile). The name on your results slip must match your IC.",
  no_name:"Your name could not be read on this slip. Upload a clear photo that shows your name and your grades.",
  name_mismatch:"The name on this slip does not match the name on your IC. Upload your own results slip.",not_id:"This does not look like the front of an IC (MyKad or MyKid) or a passport photo page. Take a clear photo of the front of your IC.",not_slip:"This does not look like a results slip. Upload a clear photo or PDF of your results slip.",
  wrong_exam:"This slip is for a different exam. Choose the right exam above, or upload the right slip.",
@@ -260,7 +260,7 @@ function readSlip(id){var f=document.getElementById("rx-file"),k=document.getEle
 /* Name check (Identity.gs): Claude reads the front of the student's MyKad / MyKid / passport. Only the name and the
    last 4 characters of the number are kept; the photo and the full number are not. Resolves {v} or {error}. */
 var ID_PROMPT="You read the front of an identity document for EDUPLAN, a study guidance service in Malaysia, to confirm the student's name. "+
- "Reply with JSON only: {\"is_id_document\":boolean,\"card_type\":\"MyKad|MyKid|passport|other\",\"name\":string,\"id_number\":string,\"address\":string,\"postcode\":string,\"town\":string,\"state\":string,\"religion\":string,\"problems\":string}. religion = the religion printed on the card (ISLAM on a Muslim MyKad), \"\" if none. "+
+ "Reply with JSON only: {\"is_id_document\":boolean,\"card_type\":\"MyKad|MyKid|passport|other\",\"name\":string,\"id_number\":string,\"address\":string,\"postcode\":string,\"town\":string,\"state\":string,\"religion\":string,\"printed_gender\":\"LELAKI|PEREMPUAN|\",\"problems\":string}. id_number on a MyKad is the large 6-2-4 digit number at the top left; read it digit by digit (0/6/8/9, 1/7, 3/5 look alike) and leave it \"\" if any digit is unclear. printed_gender = LELAKI or PEREMPUAN printed under WARGANEGARA. religion = the religion printed on the card (ISLAM on a Muslim MyKad), \"\" if none. "+
  "address = the address lines printed on a MyKad or MyKid without postcode, town and state, joined with \", \"; postcode = the 5 digits; town = the town after it; state = the state at the end (Johor, Kedah, Kelantan, Kuala Lumpur, Labuan, Melaka, Negeri Sembilan, Pahang, Penang, Perak, Perlis, Putrajaya, Sabah, Sarawak, Selangor or Terengganu); \"\" when not printed. "+
  "is_id_document is true only for the front of a Malaysian MyKad or MyKid, or the photo page of a passport. name: the holder's full name exactly as printed. "+
  "id_number: the IC number (000000-00-0000) or passport number exactly as printed. Leave a field \"\" if you cannot read it with certainty.";
@@ -273,6 +273,7 @@ var IDPOB={1:"Johor",2:"Kedah",3:"Kelantan",4:"Melaka",5:"Negeri Sembilan",6:"Pa
  21:"Johor",22:"Johor",23:"Johor",24:"Johor",25:"Kedah",26:"Kedah",27:"Kedah",28:"Kelantan",29:"Kelantan",30:"Melaka",31:"Negeri Sembilan",59:"Negeri Sembilan",32:"Pahang",33:"Pahang",34:"Penang",35:"Penang",
  36:"Perak",37:"Perak",38:"Perak",39:"Perak",40:"Perlis",41:"Selangor",42:"Selangor",43:"Selangor",44:"Selangor",45:"Terengganu",46:"Terengganu",47:"Sabah",48:"Sabah",49:"Sabah",50:"Sarawak",51:"Sarawak",
  52:"Sarawak",53:"Sarawak",54:"Kuala Lumpur",55:"Kuala Lumpur",56:"Kuala Lumpur",57:"Kuala Lumpur",58:"Labuan"};
+ if(r.card_type!=="passport"&&r.printed_gender&&((+num.slice(-1))%2?"LELAKI":"PEREMPUAN")!==r.printed_gender)return {error:"unreadable"};
  var form={ic:r.card_type==="passport"?num:num.slice(0,6)+"-"+num.slice(6,8)+"-"+num.slice(8)};if(r.card_type!=="passport"){form.gender=(+num.slice(-1))%2?"Male":"Female";
   var yy=+num.slice(0,2),cy=new Date().getFullYear()%100;form.dob=(yy>cy?"19":"20")+num.slice(0,2)+"-"+num.slice(2,4)+"-"+num.slice(4,6);if(IDPOB[+num.slice(6,8)])form.pob=IDPOB[+num.slice(6,8)];
   form.nationality="Malaysian";form.residence="Malaysia";if(/^islam$/i.test(String(r.religion||"").trim()))form.religion="Islam";var pc=String(r.postcode||"").replace(/\D/g,"");if(/^\d{5}$/.test(pc))form.postcode=pc;
@@ -280,7 +281,7 @@ var IDPOB={1:"Johor",2:"Kedah",3:"Kelantan",4:"Melaka",5:"Negeri Sembilan",6:"Pa
  return {v:{name:name,last4:num.slice(-4),at:Date.now(),type:r.card_type},form:form};}
 function readId(file){
  if(!file)return Promise.resolve({error:"bad_request"});
- return shrink(file).then(readIdFile).then(function(r){if(r&&r.error==="not_configured")r.error="id_not_configured";return r;});}
+ return shrink(file).then(readIdFile).then(function(r){if(r&&r.error==="not_configured")r.error="id_not_configured";if(r&&r.error==="unreadable")r.error="id_unreadable";return r;});}
 function readIdFile(file){
  if(file.size>5*1024*1024)return Promise.resolve({error:"too_large"});
  if(!live()){if(!AI.sm||!/^image\//.test(file.type))return Promise.resolve({error:AI.sm?"bad_request":"not_configured"});

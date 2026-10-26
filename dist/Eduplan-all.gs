@@ -1558,7 +1558,8 @@ var ID_SYSTEM = [
   '- is_id_document: true only for the front of a Malaysian MyKad or MyKid, or the photo page of a passport. False for anything else (a results slip, a student card, a screenshot of text, a drawing).',
   '- card_type: MyKad, MyKid, passport or other.',
   '- name: the holder\'s full name exactly as printed.',
-  '- id_number: the IC number (12 digits, written 000000-00-0000) or the passport number, exactly as printed.',
+  '- id_number: the IC number or the passport number, exactly as printed. On a MyKad or MyKid it is the large number at the top left, under KAD PENGENALAN MALAYSIA, printed as 6-2-4 digits (000000-00-0000). Read it digit by digit and check each one again: 0, 6, 8 and 9, 1 and 7, 3 and 5 look alike in photos. Never guess a digit; if one is unclear, leave id_number "" and say so in problems.',
+  '- printed_gender: the gender word printed on a MyKad or MyKid, under WARGANEGARA: LELAKI or PEREMPUAN; "" if none (passport).',
   '- address: the address lines printed on a MyKad or MyKid, without the postcode, town and state, lines joined with ", "; "" for a passport.',
   '- postcode: the 5-digit postcode in the address; town: the town or city after it; state: the state at the end, written as one of: ' + ID_STATES.join(', ') + '. "" when not printed.',
   '- religion: the religion printed on the card (a MyKad shows ISLAM for Muslims), "" when none is printed.',
@@ -1581,9 +1582,10 @@ var ID_TOOL = {
       town: { type: 'string' },
       state: { type: 'string' },
       religion: { type: 'string' },
+      printed_gender: { type: 'string', enum: ['LELAKI', 'PEREMPUAN', ''] },
       problems: { type: 'string' }
     },
-    required: ['is_id_document', 'card_type', 'name', 'id_number', 'address', 'postcode', 'town', 'state', 'religion', 'problems']
+    required: ['is_id_document', 'card_type', 'name', 'id_number', 'address', 'postcode', 'town', 'state', 'religion', 'printed_gender', 'problems']
   }
 };
 
@@ -1620,7 +1622,7 @@ function idReadFile_(email, type, data) {
     model: props.getProperty('RESULTS_MODEL') || RESULTS_DEFAULT_MODEL,
     max_tokens: 4000,  // room for the model's thinking before the JSON
     system: ID_SYSTEM,
-    output_config: { effort: 'low', format: { type: 'json_schema', schema: ID_TOOL.input_schema } },  // Opus 5.5 refuses a forced tool_choice
+    output_config: { effort: 'high', format: { type: 'json_schema', schema: ID_TOOL.input_schema } },  // the 12 digits must be exact  // Opus 5.5 refuses a forced tool_choice
     messages: [{ role: 'user', content: [block, { type: 'text', text: 'The student says this is their identity card. Read it.' }] }]
   };
   var res;
@@ -1659,6 +1661,8 @@ function idCheck_(email, r) {
     var m = num.match(/^(\d{2})(\d{2})(\d{2})\d{6}$/);
     if (!m || +m[2] < 1 || +m[2] > 12 || +m[3] < 1 || +m[3] > 31) return { error: 'unreadable' };
   }
+  // Check: the last digit of the number is odd for LELAKI and even for PEREMPUAN. A mismatch means a digit was misread.
+  if (r.card_type !== 'passport' && r.printed_gender && ((+num.slice(-1)) % 2 ? 'LELAKI' : 'PEREMPUAN') !== r.printed_gender) return { error: 'unreadable' };
   var v = { name: accountCell_(name, 120), last4: num.slice(-4), at: Date.now(), type: r.card_type };
   v.sig = idSign_(email, v);
   // For the application form only (the student can still change them there): the address on a MyKad / MyKid, and
