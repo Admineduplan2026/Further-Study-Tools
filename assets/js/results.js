@@ -1,4 +1,4 @@
-/* Eduplan "My results": the student's exam results, kept until they change them, and the matching that uses them.
+/* EDUPLAN "My results": the student's exam results, kept until they change them, and the matching that uses them.
    - Stored in this browser as "eduplan-results" and in the student's portfolio as the section "results".
    - Scholarships use the number of A grades (and A+ / A* for tiers that count only those).
    - Programmes use the entry requirements in the school sheets, written one rule per line (docs/entry-requirements.md).
@@ -181,9 +181,9 @@ var RX_ERR={id_not_configured:"Reading IC photos is not available yet. Please as
  not_official:"This looks like a trial or school report, not the official results. Choose Trial results, or upload the official slip.",
  unreadable:"The grades could not be read clearly. Upload a sharper photo with the whole slip in view.",
  too_large:"The file is larger than 5 MB. Upload a smaller photo or PDF.",signed_out:"Please sign in again, then upload your slip.",
- server:"Eduplan's server had a problem. Please try again in a few minutes. If it keeps happening, please tell Eduplan.",
+ server:"EDUPLAN's server had a problem. Please try again in a few minutes. If it keeps happening, please tell EDUPLAN.",
  daily_limit:"Too many slips were checked today. Please try again tomorrow, or ask a counsellor.",busy:"The checker is busy. Please try again in a minute.",
- not_configured:"Reading results slips is not available yet. Please ask a counsellor.",net:"Could not reach Eduplan. Check your connection and try again.",bad_request:"Choose a photo (JPG, PNG) or PDF of your slip."};
+ not_configured:"Reading results slips is not available yet. Please ask a counsellor.",net:"Could not reach EDUPLAN. Check your connection and try again.",bad_request:"Choose a photo (JPG, PNG) or PDF of your slip."};
 /* The name verified from the student's IC (My profile; signed by Identity.gs on the live website), or null. */
 function icName(){try{var p=JSON.parse(localStorage.getItem("eduplan-profile"))||{},v=p.idv;return v&&v.name&&(!live()||v.sig)?v:null;}catch(e){return null;}}
 /* The same name, ignoring case, punctuation, spacing and word order (as Results.gs resultsSameName_). */
@@ -204,9 +204,9 @@ if(live()&&!session())return shown+'<p class="hint">'+(ok?'':'Your '+esc(e.id)+'
   '<div class="field"><label for="rx-kind">Which results slip?</label><select id="rx-kind"><option value="Official"'+(UI.kind!=="Trial"?' selected':'')+'>Official results</option><option value="Trial"'+(UI.kind==="Trial"?' selected':'')+'>Trial results (school trial exam)</option></select></div>'+
   '<div class="field"><label for="rx-file">Photo or PDF of the slip</label><input id="rx-file" type="file" accept="'+(live()?'image/jpeg,image/png,image/webp,application/pdf':'image/*')+'" capture="environment"><span class="hint">Max 5 MB. AI reads your grades; the slip itself is not stored.</span></div>'+
   (UI.err?'<p class="err" role="alert">'+esc(UI.err)+'</p>':'')+'<div class="row"><button type="button" class="btn" data-rx-read="'+esc(id)+'">Read my results</button></div></div>';}
-/* Reads a results slip: on the live website through Eduplan's server (signed, Results.gs); in the preview through
+/* Reads a results slip: on the live website through EDUPLAN's server (signed, Results.gs); in the preview through
    Claude in the artifact. Either way the grades are checked against the exam's grade list and then locked. */
-var SLIP_PROMPT="You read a Malaysian student's exam results slip for Eduplan, a study guidance service. Read exactly what is printed; never guess. "+
+var SLIP_PROMPT="You read a Malaysian student's exam results slip for EDUPLAN, a study guidance service. Read exactly what is printed; never guess. "+
  "Reply with JSON only: {\"is_results_slip\":boolean,\"exam\":\"SPM|UEC|STPM|IGCSE|O-Level|A-Level|Foundation|Matriculation|Diploma|Other\",\"slip_kind\":\"official|trial|unclear\","+
  "\"candidate_name\":string,\"year\":string,\"subjects\":[{\"subject\":string,\"grade\":string}],\"subject_count\":number,\"cgpa\":number|null,\"problems\":string}. "+
  "is_results_slip is true only for a results slip, statement or transcript of an exam. slip_kind official = results from the examining body, including the official SPM slip headed KEMENTERIAN PENDIDIKAN / LEMBAGA PEPERIKSAAN, SIJIL PELAJARAN MALAYSIA TAHUN <year>, with NAMA, ANGKA GILIRAN, grades with their descriptions (CEMERLANG TERTINGGI ...) and LAYAK MENDAPAT SIJIL, even as a photo, scan or printout; trial = a school's own trial, mock or end-of-year report (PEPERIKSAAN PERCUBAAN, TRIAL, a school as issuer, marks or class position). "+
@@ -259,7 +259,7 @@ function readSlipFile(id,file,kind){UI.err="";UI.kind=kind;UI.cur=id;
 function readSlip(id){var f=document.getElementById("rx-file"),k=document.getElementById("rx-kind");readFile(id,f&&f.files&&f.files[0],k?k.value:"Official");}
 /* Name check (Identity.gs): Claude reads the front of the student's MyKad / MyKid / passport. Only the name and the
    last 4 characters of the number are kept; the photo and the full number are not. Resolves {v} or {error}. */
-var ID_PROMPT="You read the front of an identity document for Eduplan, a study guidance service in Malaysia, to confirm the student's name. "+
+var ID_PROMPT="You read the front of an identity document for EDUPLAN, a study guidance service in Malaysia, to confirm the student's name. "+
  "Reply with JSON only: {\"is_id_document\":boolean,\"card_type\":\"MyKad|MyKid|passport|other\",\"name\":string,\"id_number\":string,\"problems\":string}. "+
  "is_id_document is true only for the front of a Malaysian MyKad or MyKid, or the photo page of a passport. name: the holder's full name exactly as printed. "+
  "id_number: the IC number (000000-00-0000) or passport number exactly as printed. Leave a field \"\" if you cannot read it with certainty.";
@@ -312,7 +312,7 @@ function editor(fixed){
      '<select class="rxadd" data-rx-add="'+esc(g)+'" aria-label="Add a subject with grade '+esc(g)+'"><option value="">+ Add subject</option>'+free.map(function(s){return '<option value="'+esc(s)+'">'+esc(s)+'</option>';}).join("")+
      '<option value="__other">Other subject…</option></select>')+'</div></div>';}).join("")+'</div>';}
  var sum=has(id)?(e.cgpa?'<p class="rxsum"><strong>'+esc(e.id)+':</strong> '+esc(summary(id))+'</p>':tally(id,e)):'';
- return '<div class="rx" id="rx">'+tabs+sum+(AI.ok===null?'':'<p class="hint">Preview: type your results here to try the website. On the live Eduplan website, results are read from your results slip by AI and cannot be typed in.</p>')+body+
+ return '<div class="rx" id="rx">'+tabs+sum+(AI.ok===null?'':'<p class="hint">Preview: type your results here to try the website. On the live EDUPLAN website, results are read from your results slip by AI and cannot be typed in.</p>')+body+
   (has(id)&&!fixed?'<div class="row"><button type="button" class="btn ghost sm" data-rx-remove="'+esc(id)+'">Remove my '+esc(e.id)+' results</button></div>':'')+'</div>';
 }
 function refocus(sel){var el=document.querySelector(sel);if(el)el.focus();}

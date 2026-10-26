@@ -1,7 +1,7 @@
-"""Build the Eduplan Lab artifact page (one self-contained HTML file) from lab/ and the shared assets.
+"""Build the EDUPLAN Lab artifact page (one self-contained HTML file) from lab/ and the shared assets.
 Usage: python3 tools/build-lab-artifact.py <out-base.html> [--official]   (run from the repo root)
---official builds the official Eduplan artifact from the same files: title "Eduplan" and the main site's notice bar
-instead of the "Eduplan Lab: a trial page" bar.
+--official builds the official EDUPLAN artifact from the same files: title "EDUPLAN" and the main site's notice bar
+instead of the "EDUPLAN Lab: a trial page" bar.
 Then put the sheet data in with: node tools/sync-artifact.js <sheet-values.json> <out-base.html> <out.html>"""
 import sys,base64,re
 def uri(path,mime):return "data:"+mime+";base64,"+base64.b64encode(open(path,"rb").read()).decode()
@@ -26,6 +26,6 @@ assert "EDUPLAN_SHEET_DATA=" not in js
 # Images the main app references ("assets/img/....jpg") are inlined, as in tools/build-artifact.py.
 MIME={"jpg":"jpeg","jpeg":"jpeg","png":"png","webp":"webp"}
 js=re.sub(r'"(assets/img/[\w./-]+\.(jpg|jpeg|png|webp))"',lambda m:'"'+uri(m.group(1),"image/"+MIME[m.group(2)])+'"',js)
-out=('<title>'+("Eduplan" if official else "Eduplan Lab")+'</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap">\n'
+out=('<title>'+("EDUPLAN" if official else "EDUPLAN Lab")+'</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600&display=swap">\n'
  '<style>\n'+css+'\n</style>\n'+body+'\n<script>\n'+js+'\n</script>\n')
 open(sys.argv[1],"w").write(out)

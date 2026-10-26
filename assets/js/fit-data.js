@@ -1,4 +1,4 @@
-/* Eduplan "Am I a good fit?" quiz (#fit), for the faculties of the programmes a student saved.
+/* EDUPLAN "Am I a good fit?" quiz (#fit), for the faculties of the programmes a student saved.
    Every faculty (same codes as faculty-data.js) has 5 questions about what studying and working in it is really like,
    and everyone answers the 2 common questions. Each option: [English, 中文, points 0-3]; 3 = a strong sign of fit.
    The options are deliberately not in points order. Points are never shown to students.

@@ -7,7 +7,7 @@ var UNIS=[
  {id:"c",name:"Sample College C",city:"Johor Bahru",fields:["biz","hosp","comm"],hostel:"Partner hostel, 10 minutes by shuttle",rent:520},
  {id:"d",name:"Sample University D",city:"Selangor",fields:["design","comm","cs"],hostel:"On-campus hostel",rent:480},
  {id:"e",name:"Sample College E",city:"Kuching",fields:["edu","biz","hosp"],hostel:"On-campus hostel",rent:300},
- {id:"f",name:"Sample University F",city:"Kuala Lumpur",fields:["law","biz","edu"],hostel:"No hostel. Eduplan helps you find a rented room nearby",rent:null}
+ {id:"f",name:"Sample University F",city:"Kuala Lumpur",fields:["law","biz","edu"],hostel:"No hostel. EDUPLAN helps you find a rented room nearby",rent:null}
 ];
 /* Interest quiz: questions, options and faculty points are in assets/js/quiz-data.js. */
 var QUIZ=window.EDUPLAN_QUIZ||{questions:[],rules:{}};
@@ -65,7 +65,7 @@ V.home=function(){return ''+
   '<a class="tool t2" href="#faculty"><span class="k">Option 2 · Interest based</span><span class="t">From Interest to Career: Courses Matched to You in any field</span><span class="go">Match my interests '+ARROW+'</span></a>'+
   '<a class="tool t3" href="#guided"><span class="k">Option 3 · Guidance based</span><span class="t">From "I Don\'t Know" to "I\'m Enrolled", One Step at a Time</span><span class="go">Start the 12 questions '+ARROW+'</span></a>'+
  '</div><div><a class="textlink" href="#faculty">Others: browse all faculties '+ARROW+'</a></div></section>'+
- '<section class="section"><h2>How Eduplan works</h2><div class="threeup">'+
+ '<section class="section"><h2>How EDUPLAN works</h2><div class="threeup">'+
   '<div class="stack"><span class="n">Step 1</span><h3>Tell us where you are</h3><p class="muted">Pick the tool that fits you: you need funding, you know what you like, or you are not sure yet.</p></div>'+
   '<div class="stack"><span class="n">Step 2</span><h3>See your matches</h3><p class="muted">Get a short list of courses, universities and scholarships that fit your answers.</p></div>'+
   '<div class="stack"><span class="n">Step 3</span><h3>Talk to a counsellor</h3><p class="muted">Book a free consultation. We guide you from application to registration.</p></div>'+
@@ -73,10 +73,10 @@ V.home=function(){return ''+
 };
 /* About Us: founder profile, from his Facebook profile. photo is an image path (empty shows a placeholder); honours are shown as pills. */
 var FOUNDER={name:"Jason Ng Jiann Sheng, PJM",role:"Founder & CEO",photo:"assets/img/founder.jpg",
- bio:"Founder and CEO of Eduplan, where he has led student guidance as Chief Education Advisor since May 2020. He has worked in higher education recruitment and student guidance since 2015, at BERJAYA University College, Xiamen University Malaysia and FSI Center 升学情报.",
+ bio:"Founder and CEO of EDUPLAN, where he has led student guidance as Chief Education Advisor since May 2020. He has worked in higher education recruitment and student guidance since 2015, at BERJAYA University College, Xiamen University Malaysia and FSI Center 升学情报.",
  honours:[],
  career:[
-  {title:"Chief Education Advisor",org:"Eduplan",when:"May 2020 – Present"},
+  {title:"Chief Education Advisor",org:"EDUPLAN",when:"May 2020 – Present"},
   {title:"Manager",org:"FSI Center 升学情报",when:"Oct 2017 – Apr 2020",place:"Kajang, Malaysia"},
   {title:"Student Recruitment",org:"Xiamen University Malaysia",when:"Jul 2016 – Sep 2017",place:"Sepang"},
   {title:"Sales/Marketing",org:"BERJAYA University College",when:"Dec 2015 – Jul 2016",place:"Kuala Lumpur"}],
@@ -87,7 +87,7 @@ function timeline(label,rows){
   return '<li data-reveal style="--i:'+k+'"><span class="tl-title">'+esc(r.title)+'</span><span class="tl-org">'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';
 }
 function founderCard(f){
- return '<div class="founder"><div class="avatar">'+(f.photo?'<img src="'+esc(asset(f.photo))+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan">'
+ return '<div class="founder"><div class="avatar">'+(f.photo?'<img src="'+esc(asset(f.photo))+'" alt="'+esc(f.name)+', '+esc(f.role)+' of EDUPLAN">'
    :'<svg viewBox="0 0 24 24" width="56" height="56" aria-hidden="true"><circle cx="12" cy="8" r="4" fill="currentColor"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="currentColor"/></svg>')+'</div>'+
   '<div class="stack"><span class="eyebrow">'+esc(f.role)+'</span><h3 class="fname">'+esc(f.name)+'</h3>'+
   (f.honours&&f.honours.length?'<div class="meta">'+f.honours.map(function(h){return '<span class="pill brand">'+esc(h)+'</span>';}).join("")+'</div>':'')+
@@ -103,7 +103,7 @@ var VISION_POINTS=[["Most trusted in Malaysia","A local advisor students and par
 var JOURNEY=[["Discover","Find the field of study you aspire to","#faculty"],["Compare","See the courses and universities that offer it","#universities"],
  ["Fund","Check the scholarships you qualify for","#scholarships"],["Enrol","We guide you all the way to registration","#consultation"]];
 V.about=function(){return ''+
- '<section class="stack" data-reveal><span class="eyebrow">About Us</span><h1>We lead students to the right place to study</h1><p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></section>'+
+ '<section class="stack" data-reveal><span class="eyebrow">About Us</span><h1>We lead students to the right place to study</h1><p class="lead">EDUPLAN is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p></section>'+
  '<section class="vision" data-reveal><span class="eyebrow">Our vision</span><p class="mission-text">'+esc(VISION)+'</p>'+
   '<ul class="vpoints">'+VISION_POINTS.map(function(v,k){return '<li style="--i:'+k+'"><span class="vt">'+esc(v[0])+'</span><span class="vd">'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
  '<section class="mission" data-reveal><span class="eyebrow">Our mission</span><p class="mission-text">'+esc(MISSION)+'</p>'+
@@ -427,7 +427,7 @@ function progStructure(u){
 }
 /* fold: the university pages list many programmes, so each card starts closed and opens to show the details. */
 /* Future pathway and careers: the next study step for the level, a professional step for some courses, and the careers.
-   The institution's own career list comes first; without one, Eduplan's general guide for the course (career-data.js),
+   The institution's own career list comes first; without one, EDUPLAN's general guide for the course (career-data.js),
    always labelled as general. */
 function careerData(){return window.EDUPLAN_CAREERS||{careers:{},pro:{},next:{}};}  /* read at draw time */
 function careerList(cid,text){var own=lines(text).map(function(x){return x.replace(/^[•·*▪◦–-]\s*/,"");});
@@ -437,7 +437,7 @@ function pathway(cid,level,text){var c=careerList(cid,text),C=careerData(),nx=C.
  return '<div class="pway">'+(nx?'<div class="pwstep"><span class="pwi" aria-hidden="true">🎓</span><div><b>Your next study step</b><p>'+esc(nx[0])+'</p></div></div>':'')+
   (pro&&!pre?'<div class="pwstep"><span class="pwi" aria-hidden="true">🏅</span><div><b>Professional step</b><p>'+esc(pro[0])+'</p></div></div>':'')+
   (c.list.length?'<div class="pwstep"><span class="pwi" aria-hidden="true">💼</span><div><b>'+(c.general?'Common careers':'Careers listed by the institution')+'</b><ul class="pcareer pwjobs">'+c.list.map(function(x){return '<li>'+esc(x)+'</li>';}).join("")+'</ul>'+
-   (c.general?'<p class="hint">General guide by Eduplan: common careers for this field, not a list from the institution.</p>':'')+'</div></div>':'')+'</div>';}
+   (c.general?'<p class="hint">General guide by EDUPLAN: common careers for this field, not a list from the institution.</p>':'')+'</div></div>':'')+'</div>';}
 window.EDUPLAN_PATHWAY=pathway;
 /* The programme's own details (overview, key facts, entry requirements, structure, careers): shared by the programme cards and the Ask more page. */
 function progInfo(u,annual){
@@ -542,11 +542,11 @@ function stagePage(kind,icon,eyebrow,title,lead,topic){
   '<div class="row"><a class="btn wa" href="#consultation" data-topic="'+esc(topic)+'">Ask a counsellor '+ARROW+'</a><a class="btn ghost" href="#home">Secondary school to university, college or TVET</a></div></section>';}
 V.primary=function(){return stagePage("st-primary","🎒","Primary level","Primary to secondary school","Choosing a secondary school after primary school.","Primary to secondary school");};
 V.activities=function(){return stagePage("st-activities","🏅","Extra activities","Extra activities","Activities outside the classroom.","Extra activities");};
-/* Free consultation = a WhatsApp chat with Eduplan. Every "#consultation" link opens WhatsApp with a message that
+/* Free consultation = a WhatsApp chat with EDUPLAN. Every "#consultation" link opens WhatsApp with a message that
    carries the link's topic and note (data-topic / data-note); the #consultation page itself is one WhatsApp button.
    The earlier request form stays at #consultform. */
 var WA_NUMBER="60182494757",WA_SHOW="018-249 4757";
-function waLink(topic,note){var v=idv(),lines=["Hi Eduplan, I would like to book a free consultation."];
+function waLink(topic,note){var v=idv(),lines=["Hi EDUPLAN, I would like to book a free consultation."];
  if(v)lines.push("Name: "+v.name);if(topic)lines.push("Topic: "+topic);if(note)lines.push(note);
  return "https://wa.me/"+WA_NUMBER+"?text="+encodeURIComponent(lines.join("\n"));}
 /* Every consultation link becomes a real WhatsApp link (wa.me opens the app on phones), also the ones the host page
@@ -557,13 +557,13 @@ if(window.MutationObserver)new MutationObserver(function(){waLinks();}).observe(
 document.addEventListener("DOMContentLoaded",function(){waLinks();});
 V.consultation=function(){
  if(pfLive()&&!S.waSent){S.waSent=true;location.href=waLink();}   /* opened by address or the menu: straight to WhatsApp */
- return '<section class="stack"><span class="eyebrow">Free Consultation</span><h1>Book a free consultation</h1><p class="lead">Chat with an Eduplan counsellor on WhatsApp. Tell us what you want to study, your results and your questions; we reply to arrange a time.</p>'+
+ return '<section class="stack"><span class="eyebrow">Free Consultation</span><h1>Book a free consultation</h1><p class="lead">Chat with an EDUPLAN counsellor on WhatsApp. Tell us what you want to study, your results and your questions; we reply to arrange a time.</p>'+
   '<div class="row"><a class="btn wa" href="'+esc(waLink())+'" target="_blank" rel="noopener"><span>Chat on WhatsApp</span> '+ARROW+'</a></div>'+
   '<p class="hint">WhatsApp <b data-notr>'+WA_SHOW+'</b></p></section>';
 };
 V.consultform=function(){
  if(S.consDone){
-  return '<section class="stack">'+(S.pick?flowStep("Ask more"):'')+'<span class="eyebrow">Free Consultation</span><h1>Your request is ready to send</h1><p class="lead">Copy the summary and send it to Eduplan by WhatsApp or email. A counsellor replies to arrange a time.</p></section>'+
+  return '<section class="stack">'+(S.pick?flowStep("Ask more"):'')+'<span class="eyebrow">Free Consultation</span><h1>Your request is ready to send</h1><p class="lead">Copy the summary and send it to EDUPLAN by WhatsApp or email. A counsellor replies to arrange a time.</p></section>'+
   '<section class="panel" style="max-width:720px"><pre class="summary" id="cons-summary">'+esc(S.consDone)+'</pre>'+
   '<div class="row"><button type="button" class="btn" id="cons-copy">Copy summary</button><button type="button" class="btn ghost" id="cons-edit">Edit my answers</button></div>'+
   '<p class="muted" id="cons-copied" aria-live="polite"></p>'+
@@ -596,7 +596,7 @@ V.consultform=function(){
    Every route ends the same way once a programme is chosen:
      #next/<programme_id>  Ask more (AI assistant or free consultation, or go straight to the form)
      #apply                the application form, with document uploads
-     #stay                 accommodation help, then the application is sent to Eduplan
+     #stay                 accommodation help, then the application is sent to EDUPLAN
    S.flow remembers which route the student came from, so these pages show that route's progress bar.
    Answers are kept in sessionStorage only (they include NRIC numbers) and uploaded files only in memory. */
 function flowStep(name){var f=FLOWS[S.flow];if(!f)return "";var i=f.indexOf(name);return i<0?"":stepper(f,i+1);}
@@ -756,7 +756,7 @@ function applyStep(n){
  var age=applyAge(v.dob),xm=x&&x.u.id==="XMUM";
  return agroup("Upload your documents",'<div class="field full"><span class="hint">Take a clear photo of each document, or choose a PDF. Each file can be up to 5 MB. Files stay on this page until you send your application, so add them again if you reload.'+
    (xm?' XMUM scholarship and study grant form: <a href="http://www.xmu.edu.my/14698/list.htm" target="_blank" rel="noopener">xmu.edu.my</a>.':'')+'</span></div>'+UPLOADS.map(uploadBox).join(""))+
-  agroup("Declaration",acheck("decl","I declare that the information in this application is true, correct and complete. I understand that the university may change or withdraw a decision made on incorrect or incomplete information. I agree that Eduplan keeps my application and documents and shares them with the university to process this application, as set out in their personal data protection notices.")+
+  agroup("Declaration",acheck("decl","I declare that the information in this application is true, correct and complete. I understand that the university may change or withdraw a decision made on incorrect or incomplete information. I agree that EDUPLAN keeps my application and documents and shares them with the university to process this application, as set out in their personal data protection notices.")+
    (age!==null&&age<18?'<div class="field full"><span class="hint">You are under 18, so your parent or legal guardian must also agree.</span></div>'+
     acheck("decl_g","I am the applicant’s parent or legal guardian. I consent to this application and understand that the university’s fees and charges are payable by the dates it sets.")+
     af("decl_g_name","Parent / guardian name",{full:true}):''));
@@ -820,7 +820,7 @@ function applySummary(){
  else if(sfm){sec(sfm.id+" application form");row("Applied to "+sfm.id+" before",v.u_prev==="Yes"?"Yes ("+(v.u_id||"")+")":v.u_prev);
   for(var pi=1;pi<=5;pi++){var pd=v["u_pref"+pi]&&sfDegree(sfm,v["u_pref"+pi]);if(pd)row("Degree choice "+pi,pd[0]+" ("+pd[1]+")");}
   row("Preferred campus",v.u_campus);row("Good physical and mental health",v.u_health==="No"?"No: "+(v.u_health_info||""):v.u_health);}
- sec("Personal details");row("Name (as on NRIC/passport)",String(v.name_en||"").toUpperCase());row("Name verified with IC",idv()&&sameNameApp(idv().name,v.name_en)?"Yes, by Eduplan (IC ending "+idv().last4+")":"No");row("Chinese name",v.name_zh);row("NRIC / passport no.",v.ic);row("Date of birth",v.dob);
+ sec("Personal details");row("Name (as on NRIC/passport)",String(v.name_en||"").toUpperCase());row("Name verified with IC",idv()&&sameNameApp(idv().name,v.name_en)?"Yes, by EDUPLAN (IC ending "+idv().last4+")":"No");row("Chinese name",v.name_zh);row("NRIC / passport no.",v.ic);row("Date of birth",v.dob);
  row("Gender",v.gender);row("Marital status",v.marital);row("Race",v.race);row("Religion",v.religion);row("Nationality",v.nationality);row("Country of permanent residence",v.residence);
  sec("Contact details");row("Mobile",v.mobile);row("Email",v.email);row("Home telephone",v.tel);
  row("Correspondence address",[v.addr,v.postcode+" "+v.town,v.state,v.country].join(", ").replace(/\s*\n\s*/g,", "));
@@ -913,7 +913,7 @@ V.apply=function(){
  /* Empty fields start from My profile and the signed-in email; the student checks them against the IC. */
  var pre={name_en:pr.idv&&pr.idv.name,mobile:pr.phone,email:PF.s&&PF.s.email},ch=false;
  Object.keys(pre).forEach(function(k){if(!a.v[k]&&pre[k]){a.v[k]=pre[k];ch=true;}});if(ch)applySave();
- return '<section class="stack">'+flowStep("Apply")+'<span class="eyebrow">Apply with Eduplan</span><h1>Application form</h1>'+
+ return '<section class="stack">'+flowStep("Apply")+'<span class="eyebrow">Apply with EDUPLAN</span><h1>Application form</h1>'+
   '<p class="lead">One form for your university application. It takes about 10 minutes. '+(PF.s?'Your answers are saved to your portfolio as you type.':'Your answers stay on this device until you close the tab. <a href="#portfolio">Sign in</a> to save them and continue later.')+'</p></section>'+
   '<section class="panel" style="max-width:760px"><div class="formstep"><span>Part '+a.step+' of '+n+': '+esc(APPLY_STEPS[a.step-1])+'</span><span class="bar" aria-hidden="true"><i style="width:'+Math.round(a.step/n*100)+'%"></i></span></div>'+
   '<form class="fields" id="apply-form" novalidate>'+applyStep(a.step)+
@@ -924,25 +924,25 @@ V.apply=function(){
 /* Accommodation (#stay), then send. */
 V.stay=function(){
  var a=S.app,v=a.v;
- var head='<section class="stack">'+flowStep("Accommodation")+'<span class="eyebrow">Apply with Eduplan</span>';
+ var head='<section class="stack">'+flowStep("Accommodation")+'<span class="eyebrow">Apply with EDUPLAN</span>';
  if(a.sent)return head+'<h1>Application sent</h1><p class="lead">Thank you. Your reference number is <strong>'+esc(a.sent)+'</strong>. A counsellor will contact you about signatures, the application fee and the next steps.</p></section>'+
   '<section class="panel" style="max-width:760px"><h2>Next: pay your tuition fees</h2><p class="muted">Choose to pay per semester or in full, then your payment method (FPX, Touch \'n Go eWallet or PayPal).</p>'+
   '<div class="row"><a class="btn" href="#pay">Pay tuition fees '+ARROW+'</a><button type="button" class="btn ghost" data-apply="clear">Start a new application</button><a class="btn ghost" href="#home">Back to home</a></div></section>';
  if(!a.complete)return head+'<h1>Finish your application first</h1><p class="lead">Accommodation help is the last step of the application.</p><div class="row"><a class="btn" href="#apply">Go to the application form</a></div></section>';
  var x=applyProg();
- return head+'<h1>Do you need help with accommodation?</h1><p class="lead">Eduplan can help you find a hostel or a room near '+esc(x?x.u.name:"your campus")+'.</p></section>'+
+ return head+'<h1>Do you need help with accommodation?</h1><p class="lead">EDUPLAN can help you find a hostel or a room near '+esc(x?x.u.name:"your campus")+'.</p></section>'+
   '<section class="panel" style="max-width:760px"><form class="fields" id="stay-form" novalidate>'+
    agroup("Accommodation",af("acc","Do you need accommodation help?",{opts:[["Yes","Yes, please help me"],["No","No, I have arranged it"]],first:"Choose",rerender:true,full:true})+
     (v.acc==="Yes"?af("acc_type","Type",{opts:["On-campus hostel","Rented room near campus","Not sure yet"],first:"Choose"})+af("acc_room","Room",{opts:["Single room","Shared room","No preference"],first:"Choose"})+
      af("acc_budget","Budget per month (RM)",{opt:true,mode:"numeric"})+af("acc_move","Move-in month",{type:"month",opt:true})+af("acc_notes","Anything else",{area:true,rows:2,full:true,opt:true}):''))+
-   '<div class="row"><button type="button" class="btn ghost" data-apply="edit">Back to the form</button><button type="submit" class="btn" id="stay-send"'+(a.sending?' disabled':'')+'>'+(a.sending?'Sending…':'Send my application to Eduplan')+'</button></div>'+
+   '<div class="row"><button type="button" class="btn ghost" data-apply="edit">Back to the form</button><button type="submit" class="btn" id="stay-send"'+(a.sending?' disabled':'')+'>'+(a.sending?'Sending…':'Send my application to EDUPLAN')+'</button></div>'+
    '<p class="muted" id="stay-msg" aria-live="polite">'+(a.sendMsg?esc(a.sendMsg):'')+'</p>'+
   '</form></section>'+(a.fallback?applyFallback():'');
 };
 /* When the application cannot be sent from this page: share to WhatsApp (phones), or copy / print and send the photos separately. */
 function applyFallback(){
  var share=navigator.canShare&&window.File;
- return '<section class="panel" style="max-width:760px"><h2>Send it yourself</h2><p class="muted">Send this summary and your document photos to Eduplan by WhatsApp <a href="'+esc(waLink("Application"))+'" target="_blank" rel="noopener" data-notr>'+WA_SHOW+'</a>.</p>'+
+ return '<section class="panel" style="max-width:760px"><h2>Send it yourself</h2><p class="muted">Send this summary and your document photos to EDUPLAN by WhatsApp <a href="'+esc(waLink("Application"))+'" target="_blank" rel="noopener" data-notr>'+WA_SHOW+'</a>.</p>'+
   '<pre class="summary" id="apply-summary">'+esc(applySummary())+'</pre>'+
   '<div class="row noprint">'+(share?'<button type="button" class="btn" data-apply="share">Share with documents</button>':'')+
   '<button type="button" class="btn'+(share?' ghost':'')+'" data-apply="copy">Copy summary</button><button type="button" class="btn ghost" data-apply="print">Print or save as PDF</button></div>'+
@@ -967,7 +967,7 @@ function applyFormData(){var sf=schoolForm(),v=S.app.v;if(!sf)return null;
   name:String(v.name_en||"").toUpperCase(),ic:v.ic||"",nationality:v.nationality||"",dob:v.dob||"",gender:v.gender||"",
   address:[v.addr,v.town].filter(Boolean).join(", "),postcode:v.postcode||"",state:v.state||"",mobile:v.mobile||"",email:v.email||"",race:v.race||"",religion:v.religion||"",
   guardian:v.g_name||"",relation:v.g_rel||"",guardianMobile:v.g_mobile||"",guardianEmail:v.g_email||"",intake:v.intake||""};}
-/* Sends to the Apps Script (apps-script/Apply.gs), which stores the application in Eduplan's private Google Drive. */
+/* Sends to the Apps Script (apps-script/Apply.gs), which stores the application in EDUPLAN's private Google Drive. */
 function applySend(){
  var a=S.app,url=window.EDUPLAN_API_URL,files=[];
  Object.keys(a.files).forEach(function(k){a.files[k].forEach(function(f){files.push({doc:k==="results"&&a.v.h_status?"results-"+a.v.h_status.toLowerCase():k,name:f.name,type:f.type,data:f.data});});});
@@ -985,7 +985,7 @@ function applySend(){
 /* ---------- My portfolio: sign in with an emailed code, and autosave ----------
    Saved programmes, the interest quiz and the consultation request are kept in this browser (localStorage) and the
    application in this tab (sessionStorage), signed in or not. Once the student signs in (#portfolio), every change is
-   also saved to their portfolio on Eduplan's server (apps-script/Account.gs), so they can continue on any device.
+   also saved to their portfolio on EDUPLAN's server (apps-script/Account.gs), so they can continue on any device.
    Each section (saved, quiz, consult, apply) has its own "changed at" time; the newer copy wins when devices differ.
    Uploaded documents are never saved in the portfolio. Signing out removes the student's details from this browser. */
 S.prof=store("eduplan-profile")||{};
@@ -993,15 +993,15 @@ var PF_KEY="eduplan-session",PF_AT="eduplan-at",PF_SECTIONS=["saved","quiz","con
 var PF={s:store(PF_KEY),at:store(PF_AT)||{},step:"email",email:"",consent:false,msg:"",err:"",busy:false,dirty:false,saving:false,timer:null,loaded:0,del:false};
 if(PF.s&&!(PF.s.token&&PF.s.exp>Date.now()))PF.s=null;
 /* The website opens with the sign-in page (pfGate). Guests are let in only when sign-in cannot work: the artifact
-   preview, or Eduplan's daily email limit reached / server unreachable (PF.guestOk), so students are never locked out. */
+   preview, or EDUPLAN's daily email limit reached / server unreachable (PF.guestOk), so students are never locked out. */
 PF.guest=sget("eduplan-guest")==="1";
 var SAVED=store("eduplan-saved")||[];
 var PF_ERR={bad_email:"Enter an email like name@example.com.",consent:"Please tick to agree first.",code:"Enter the 6-digit code from the email.",
  wait:"A code was sent less than a minute ago. Check your inbox and spam folder, or wait a minute and ask again.",
  too_many:"Too many codes were asked for this email. Please try again in a few hours.",daily_limit:"Sign-in is very busy today. Please try again tomorrow.",
- bad_code:"That code is not right. Use the latest code Eduplan emailed you.",expired:"This code has expired. Ask for a new code.",
- busy:"Eduplan is busy right now. Please try again in a moment.",net:"Eduplan could not be reached. Check your connection and try again in a few minutes.",
- server:"Eduplan's server had a problem. Please try again in a few minutes. If it keeps happening, please tell Eduplan.",
+ bad_code:"That code is not right. Use the latest code EDUPLAN emailed you.",expired:"This code has expired. Ask for a new code.",
+ busy:"EDUPLAN is busy right now. Please try again in a moment.",net:"EDUPLAN could not be reached. Check your connection and try again in a few minutes.",
+ server:"EDUPLAN's server had a problem. Please try again in a few minutes. If it keeps happening, please tell EDUPLAN.",
  bad_request:"Something went wrong. Please try again."};
 var STAR='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg>';
 
@@ -1055,7 +1055,7 @@ function pfFlush(keep){
  pfPost({action:"account_save",token:PF.s.token,data:pfDoc()},keep).then(function(d){
   PF.saving=false;
   if(d&&d.error==="signed_out")return pfSignedOut();
-  if(d&&d.error==="too_large")return pfStatus("Your portfolio is too large to save. Please contact Eduplan.",true);
+  if(d&&d.error==="too_large")return pfStatus("Your portfolio is too large to save. Please contact EDUPLAN.",true);
   if(!d||!d.ok)throw new Error("net");
   if(pfUse(d.data)&&S.view==="portfolio")rerender();
   if(PF.dirty)PF.timer=setTimeout(pfFlush,1500);else pfStatus("Saved to your portfolio");
@@ -1158,7 +1158,7 @@ function pfAction(act){
  if(act==="delete-yes"){if(!PF.s)return;PF.busy=true;rerender();
   pfPost({action:"account_delete",token:PF.s.token}).then(function(d){PF.busy=false;
    if(!d||!(d.ok||d.error==="signed_out"))throw new Error("net");
-   pfForget();PF.msg="Your portfolio was deleted. Applications you already sent stay with Eduplan so a counsellor can process them.";rerender();window.scrollTo(0,0);
+   pfForget();PF.msg="Your portfolio was deleted. Applications you already sent stay with EDUPLAN so a counsellor can process them.";rerender();window.scrollTo(0,0);
   }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender();});}
 }
 function quizSave(){store("eduplan-quiz",S.guide);pfTouch("quiz");}
@@ -1178,14 +1178,14 @@ function toggleSave(id){
 function pfAsk(){return '<div class="pfask"><span class="sl">To sign in we only ask for</span><ul>'+
   '<li><b>Your email</b><span>Your account; we send the sign-in code and reminders here.</span></li>'+
   '<li><b>A one-time code</b><span>Proves the email is yours. No password to remember.</span></li>'+
-  '<li><b>Your agreement</b><span>To how Eduplan uses your portfolio (Malaysia’s Personal Data Protection Act 2010).</span></li></ul>'+
+  '<li><b>Your agreement</b><span>To how EDUPLAN uses your portfolio (Malaysia’s Personal Data Protection Act 2010).</span></li></ul>'+
   '<p class="hint">Everything else is optional, or asked only when you apply. We never ask for a password or card details. <a href="#privacy">What we ask for, and when</a></p></div>';}
 function pfLogin(gate){
  var err=PF.err?'<span class="err" id="pf-err">'+esc(PF.err)+'</span>':'',inv=PF.err?' aria-invalid="true" aria-describedby="pf-err"':'',dis=PF.busy?' disabled':'';
  var msg=PF.msg?'<p class="note" role="status">'+esc(PF.msg)+'</p>':'';
  var guest=gate&&PF.guestOk?'<div class="row"><button type="button" class="btn ghost" data-pf="guest">Continue without signing in</button></div>':'';
  if(!pfLive()){var pm=sget("eduplan-pfmode"),member=HOST&&HOST.locked&&!HOST.locked("guided");
-  return '<section class="panel pflogin"><h2>'+(pm==="register"?'Register':'Sign in')+'</h2><p class="muted">Registering and signing in work on the live Eduplan website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+pfAsk()+
+  return '<section class="panel pflogin"><h2>'+(pm==="register"?'Register':'Sign in')+'</h2><p class="muted">Registering and signing in work on the live EDUPLAN website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+pfAsk()+
   (gate||(pm&&!member)?'<p class="muted">Tap below to try everything a member can do in this preview.</p><div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';}
  if(PF.step==="code")return '<section class="panel pflogin"><h2>Enter your code</h2>'+msg+
   '<form class="fields" id="pf-code-form" novalidate><div class="field"><label for="pf-code">6-digit code</label>'+
@@ -1198,14 +1198,14 @@ function pfLogin(gate){
   '<form class="fields" id="pf-email-form" novalidate><div class="field"><label for="pf-email">Email</label>'+
   '<input id="pf-email" type="email" autocomplete="email" value="'+esc(PF.email)+'"'+(PF.err&&PF.err!==PF_ERR.consent?inv:'')+'>'+(PF.err&&PF.err!==PF_ERR.consent?err:'')+
   '<span class="hint">No password needed. Each time you sign in, we email you a 6-digit code.</span></div>'+
-  '<div class="field"><label class="check"><input type="checkbox" id="pf-consent"'+(PF.consent?' checked':'')+(PF.err===PF_ERR.consent?inv:'')+'><span>I agree that Eduplan keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only Eduplan staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+(PF.err===PF_ERR.consent?err:'')+'</div>'+
+  '<div class="field"><label class="check"><input type="checkbox" id="pf-consent"'+(PF.consent?' checked':'')+(PF.err===PF_ERR.consent?inv:'')+'><span>I agree that EDUPLAN keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only EDUPLAN staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+(PF.err===PF_ERR.consent?err:'')+'</div>'+
   '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Sending…':'Email me a code')+'</button></div></form>'+
   (mode==="register"?'<p class="hint">Already have an account? <button type="button" class="linkbtn" data-role="signin">Sign in</button></p>':mode==="signin"?'<p class="hint">First time here? <button type="button" class="linkbtn" data-role="register">Register</button></p>':'')+guest+'</section>';
 }
 /* The first page of the website until the student signs in. The page they asked for opens after signing in. */
 V.gate=function(){
  var intro=!PF.gateShown;PF.gateShown=true;   /* animate only the first time it appears */
- return '<section class="gate'+(intro?' intro':'')+'"><div class="gatecopy stack"><span class="eyebrow">Welcome to Eduplan</span><h1>Find your course, university and scholarship</h1>'+
+ return '<section class="gate'+(intro?' intro':'')+'"><div class="gatecopy stack"><span class="eyebrow">Welcome to EDUPLAN</span><h1>Find your course, university and scholarship</h1>'+
   '<p class="lead">Sign in with your email to start. It is free, there is no password, and your progress is saved so you can continue on any device.</p>'+
   '<ul class="gatelist">'+["Courses, fees and entry requirements from partner universities","Scholarships you can apply for","An AI study assistant and free counsellors","One application form for your chosen university"]
    .map(function(t,k){return '<li style="--i:'+k+'">'+esc(t)+'</li>';}).join("")+'</ul></div>'+pfLogin(true)+'</section>';
@@ -1218,7 +1218,7 @@ function pfHero(){
  var done=steps.filter(function(x){return x[2];}).length,pct=Math.round(done/steps.length*100),r=34,c=2*Math.PI*r;
  return '<section class="pfhero"><div class="pfhbg" aria-hidden="true"><i></i><i></i></div>'+
   '<div class="pfwho"><span class="pfav" aria-hidden="true" data-notr>'+esc(((idv()&&idv().name)||em||"E").charAt(0).toUpperCase())+'</span><div class="stack">'+
-   '<span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your Eduplan portfolio':'Save your progress')+'</h1>'+
+   '<span class="eyebrow">My portfolio</span><h1>'+(PF.s?'Your EDUPLAN portfolio':'Save your progress')+'</h1>'+
    (em?'<p class="pfmail"><span>Signed in as</span> <b data-notr>'+esc(em)+'</b></p>':'<p class="pfmail">Keep your saved programmes, quiz result and application in one place.</p>')+
    '<span class="pill'+(idv()?' ok':'')+'">'+(idv()?'✓ Verified student':'Guest: verify your name with your IC in My profile')+'</span></div></div>'+
   '<div class="pfdone"><span class="pfring"><svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="'+r+'" class="tr"/><circle cx="40" cy="40" r="'+r+'" class="pr" stroke-dasharray="'+c.toFixed(1)+'" stroke-dashoffset="'+(c*(1-pct/100)).toFixed(1)+'" style="--c:'+c.toFixed(1)+'"/></svg><b data-notr>'+pct+'%</b></span>'+
@@ -1237,7 +1237,7 @@ function campusRows(){var t=schType("campus"),rows=[];
  return rows;}
 function pfScholarships(){
  var rows=campusRows();
- if(!RX.taken().length)return '<p class="muted">Add your exam results above. Eduplan then lists the campus scholarships your results qualify for.</p>';
+ if(!RX.taken().length)return '<p class="muted">Add your exam results above. EDUPLAN then lists the campus scholarships your results qualify for.</p>';
  var list=RX.scholarships(rows),yes=list.filter(function(s){return s.hit;}),near=list.filter(function(s){return !s.hit;});
  function item(s){return '<div class="item"><span class="eyebrow">'+esc(s.instName)+'</span><span class="name">'+esc(s.name)+'</span>'+(s.applies?'<span class="hint">'+esc(s.applies)+'</span>':'')+
    (s.hit?'<span class="pill ok">'+esc(RX.awardText(s.hit))+'</span><span class="hint">With your '+esc(s.exam)+' results</span>':'')+
@@ -1248,7 +1248,7 @@ function pfScholarships(){
   (near.length?'<h3>Almost there</h3><div class="pfsaved">'+near.map(item).join("")+'</div>':'');
 }
 /* Privacy, cookies and security (#privacy). Everything here describes what the code does: no cookies, browser storage
-   for progress, the portfolio and applications on Eduplan's Google account (apps-script/Account.gs, Apply.gs). */
+   for progress, the portfolio and applications on EDUPLAN's Google account (apps-script/Account.gs, Apply.gs). */
 var STORE_ROWS=[
  ["Language","eduplan-lang","English or 中文","Until you change it"],
  ["My results","eduplan-results","Your exam subjects and grades","Until you remove them or clear this browser"],
@@ -1262,9 +1262,9 @@ var STORE_ROWS=[
  ["Application in progress","eduplan-apply","The application form you are filling in","Until you close the tab"],
  ["AI assistant","eduplan-chat","Your latest chat messages","Until you close the tab"],
  ["Visit counted","eduplan-visit","A mark that this tab's visit was counted, so it is counted once","Until you close the tab"]];
-/* ---------- Payment (#pay, #pay/method): tuition to Eduplan, per semester or in full ----------
+/* ---------- Payment (#pay, #pay/method): tuition to EDUPLAN, per semester or in full ----------
    The amount is the programme's tuition minus the scholarship the student chose (results.js). Per semester assumes
-   2 semesters a year; the university's fee schedule decides the real amounts, which Eduplan confirms before charging.
+   2 semesters a year; the university's fee schedule decides the real amounts, which EDUPLAN confirms before charging.
    The server (Payments.gs) records the request and, once a gateway is connected, returns its checkout page. */
 var PAY_KEY="eduplan-pay";S.pay=store(PAY_KEY)||{};
 var PAY_METHODS=[["fpx","FPX online banking","Pay from your Malaysian bank account"],["tng","Touch 'n Go eWallet","Pay with the TNG eWallet app"],["paypal","PayPal","Pay with a PayPal account or card"]];
@@ -1287,18 +1287,18 @@ V.pay=function(){var q=payQuote(),step=S.payStep;
   '<section class="panel" style="max-width:760px">'+sum+'<fieldset class="picks"><legend class="hint">Choose a payment plan.</legend>'+
    '<label class="pickr"><input type="radio" name="payplan" data-payplan="semester"'+(S.pay.plan==="semester"?' checked':'')+'><span><b>Per semester (instalments)</b><span>'+esc(rm(q.sem))+' a semester × '+q.n+' semesters</span><span class="hint">Pay each semester before it starts.</span></span></label>'+
    '<label class="pickr"><input type="radio" name="payplan" data-payplan="full"'+(S.pay.plan==="full"?' checked':'')+'><span><b>Full payment</b><span>'+esc(rm(q.total))+' once</span><span class="hint">Pay the whole programme now.</span></span></label></fieldset>'+
-   '<p class="hint">Estimate for '+(q.base.est?'the yearly fee × duration':'the whole programme')+', 2 semesters a year. The university\'s fee schedule decides the exact amounts and dates; Eduplan confirms the amount with you before you pay.</p>'+
+   '<p class="hint">Estimate for '+(q.base.est?'the yearly fee × duration':'the whole programme')+', 2 semesters a year. The university\'s fee schedule decides the exact amounts and dates; EDUPLAN confirms the amount with you before you pay.</p>'+
    '<div class="row"><a class="btn'+(S.pay.plan?'':' disabled')+'" href="#pay/method"'+(S.pay.plan?'':' aria-disabled="true" tabindex="-1"')+' data-paynext>Choose payment method '+ARROW+'</a></div></section>';
  if(!S.pay.plan){location.hash="#pay";return '';}
  var due=payDue(q),done=S.pay.ref&&S.pay.prog===x.p.id&&S.pay.status;
  return head+'<h1>Choose a payment method</h1>'+card+'</section>'+
   '<section class="panel" style="max-width:760px"><dl class="paytot"><dt>Plan</dt><dd>'+(S.pay.plan==="semester"?'Per semester (instalments)':'Full payment')+' <a class="hint" href="#pay">Change</a></dd>'+
    '<dt>Amount due now</dt><dd><b>'+esc(rm(due))+'</b>'+(S.pay.plan==="semester"?' <span class="hint">(semester 1 of '+q.n+')</span>':'')+'</dd></dl>'+
-   '<fieldset class="picks"><legend class="hint">Choose how to pay. You will be taken to the payment provider\'s own page to pay; Eduplan never sees your bank or card details.</legend>'+
+   '<fieldset class="picks"><legend class="hint">Choose how to pay. You will be taken to the payment provider\'s own page to pay; EDUPLAN never sees your bank or card details.</legend>'+
    PAY_METHODS.map(function(m){return '<label class="pickr"><input type="radio" name="paymethod" data-paymethod="'+m[0]+'"'+(S.pay.method===m[0]?' checked':'')+'><span><b>'+esc(m[1])+'</b><span class="hint">'+esc(m[2])+'</span></span></label>';}).join("")+'</fieldset>'+
    (S.payErr?'<p class="err" role="alert">'+esc(S.payErr)+'</p>':'')+
    (done?'<div class="note" role="status">Payment request <strong data-notr>'+esc(S.pay.ref)+'</strong> is recorded. Online payment is not open yet: a counsellor will send you the payment details for '+esc(rm(due))+'.</div>':'')+
-   (!pfLive()?'<p class="hint">Online payment works on the live Eduplan website. This preview shows the steps only.</p>':!PF.s?'<p class="hint"><a href="#portfolio">Sign in</a> to pay, so the payment is linked to your application.</p>':'')+
+   (!pfLive()?'<p class="hint">Online payment works on the live EDUPLAN website. This preview shows the steps only.</p>':!PF.s?'<p class="hint"><a href="#portfolio">Sign in</a> to pay, so the payment is linked to your application.</p>':'')+
    '<div class="row"><button type="button" class="btn" data-paygo'+(!S.pay.method||S.payBusy||!pfLive()||!PF.s?' disabled':'')+'>'+(S.payBusy?'Please wait…':'Continue to payment '+ARROW)+'</button><a class="btn ghost" href="#pay">Back</a></div></section>';
 };
 function payGo(){var q=payQuote();if(!q||!q.base||!S.pay.plan||!S.pay.method||!PF.s)return;S.payBusy=true;S.payErr="";rerender();
@@ -1306,7 +1306,7 @@ function payGo(){var q=payQuote();if(!q||!q.base||!S.pay.plan||!S.pay.method||!P
   if(d&&d.ok&&d.url){S.pay.ref=d.ref;S.pay.status="redirected";paySave();location.href=d.url;return;}
   if(d&&d.ok){S.pay.ref=d.ref;S.pay.status="requested";S.pay.at=Date.now();paySave();}
   else S.payErr=d&&d.error==="signed_out"?"Please sign in again.":"Could not start the payment. Please try again, or ask a counsellor.";
-  rerender();}).catch(function(){S.payBusy=false;S.payErr="Could not reach Eduplan. Check your connection and try again.";rerender();});}
+  rerender();}).catch(function(){S.payBusy=false;S.payErr="Could not reach EDUPLAN. Check your connection and try again.";rerender();});}
 document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribute)return;
  if(t.hasAttribute("data-payplan")){S.pay.plan=t.getAttribute("data-payplan");S.pay.ref=null;S.pay.status=null;paySave();rerender();}
  if(t.hasAttribute("data-paymethod")){S.pay.method=t.getAttribute("data-paymethod");paySave();rerender();}});
@@ -1323,46 +1323,46 @@ function pfPayment(){var q=payQuote();
 /* Lab: scholarship pages and the interest quiz are for members; visitors are asked to register or sign in. */
 V.locked=function(){
  return '<section class="stack"><span class="eyebrow">Members only</span><h1>Register or sign in to continue</h1>'+
-  '<p class="lead">Searching by scholarship, interest or guidance is for Eduplan members. It is free: register once with your email, no password needed.</p>'+
+  '<p class="lead">Searching by scholarship, interest or guidance is for EDUPLAN members. It is free: register once with your email, no password needed.</p>'+
   '<ul class="reqlist"><li>Match scholarships to your exam results</li><li>Take the interest quiz and get faculties that suit you</li><li>Save programmes and continue on any device</li></ul>'+
   '<div class="row"><button type="button" class="btn" data-role="register">Register</button><button type="button" class="btn ghost" data-role="signin">Sign in</button></div>'+
   '<p class="hint">Visitors can still browse:</p><div class="row"><a class="btn ghost" href="#faculty">Faculties and courses</a><a class="btn ghost" href="#universities">Universities</a></div></section>';
 };
 V.privacy=function(){
  return '<section class="stack"><span class="eyebrow">Privacy and security</span><h1>Privacy, cookies and security</h1>'+
-  '<p class="lead">How Eduplan keeps your information safe, what is stored in your browser and what is sent to Eduplan.</p></section>'+
- '<section class="panel"><h2>Cookies</h2><ul class="reqlist"><li>Eduplan does not use cookies.</li><li>There are no advertising or tracking cookies, and no analytics tools from other companies on this website.</li><li>Eduplan counts visits anonymously: how many visits each day, whether the visitor was signed in, and which route (interest, scholarship or guidance) was open. No cookie, IP address or other identifier is kept.</li>'+
+  '<p class="lead">How EDUPLAN keeps your information safe, what is stored in your browser and what is sent to EDUPLAN.</p></section>'+
+ '<section class="panel"><h2>Cookies</h2><ul class="reqlist"><li>EDUPLAN does not use cookies.</li><li>There are no advertising or tracking cookies, and no analytics tools from other companies on this website.</li><li>EDUPLAN counts visits anonymously: how many visits each day, whether the visitor was signed in, and which route (interest, scholarship or guidance) was open. No cookie, IP address or other identifier is kept.</li>'+
   '<li>To remember your progress, the website uses your browser’s own storage (local storage and session storage). It stays on your device and is not sent anywhere unless you sign in or submit a form.</li></ul></section>'+
  '<section class="panel"><h2>What this browser keeps</h2><div class="tablewrap"><table class="ptable"><thead><tr><th scope="col">What</th><th scope="col">Contents</th><th scope="col">Kept</th></tr></thead><tbody>'+
   STORE_ROWS.map(function(r){return '<tr><td><b>'+esc(r[0])+'</b><span class="hint" data-notr>'+esc(r[1])+'</span></td><td>'+esc(r[2])+'</td><td>'+esc(r[3])+'</td></tr>';}).join("")+'</tbody></table></div>'+
-  '<div class="row"><button type="button" class="btn ghost" data-act="privacy-clear">Clear Eduplan data from this browser</button></div>'+
+  '<div class="row"><button type="button" class="btn ghost" data-act="privacy-clear">Clear EDUPLAN data from this browser</button></div>'+
   '<p class="hint">This removes everything above from this browser and signs you out here. A portfolio saved to your account stays there; delete it from My portfolio.</p>'+
-  (sget("eduplan-cleared")?'<p class="ematch ok" role="status">Eduplan data was cleared from this browser.</p>':'')+'</section>'+
+  (sget("eduplan-cleared")?'<p class="ematch ok" role="status">EDUPLAN data was cleared from this browser.</p>':'')+'</section>'+
  '<section class="panel"><h2>What we ask for, and when</h2><ol class="tiers3">'+
   '<li><b>To sign in</b><span>Only your email, a one-time code sent to it, and your agreement to this notice. No password.</span></li>'+
   '<li><b>In My profile (optional)</b><span>Your name, WhatsApp number, where you are in your studies, your exam results and the fields and places you are interested in. You can skip any of them; the website works without them.</span></li>'+
   '<li><b>To book a free consultation</b><span>A photo of the front of your IC (or passport photo page) so AI can confirm your name. We keep only your name and the last 4 digits of the number; the photo and the full number are not stored. Without it you browse as a guest.</span></li>'+
   '<li><b>When you apply</b><span>Your full name as on your IC, IC number, date of birth, address, documents and, for students under 18, a parent or guardian’s details. Some universities’ own forms also ask for things like religion or health; these are asked only on that university’s form. Before your application goes to the university, you are asked to agree to it.</span></li></ol>'+
   '<p class="muted"><b>We never ask for:</b> a password, bank or card numbers (you pay on the payment provider’s own page: FPX, Touch ’n Go or PayPal), or your IC number when you sign in. Your full IC number is asked only on the application form.</p></section>'+
- '<section class="panel"><h2>What is sent to Eduplan</h2><ul class="reqlist">'+
-  '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, profile, consultation request and application details are saved to Eduplan’s Google account so you can continue on any device. Eduplan also keeps when you registered, signed in, signed out and last used the website.</li>'+
-  '<li><b>Applications:</b> your form and documents are kept in a private folder that only Eduplan staff can open, and are shared with the university you apply to so it can process your application.</li>'+
-  '<li><b>AI study assistant:</b> your messages are sent through Eduplan’s server to Anthropic’s Claude to write the reply. Please do not type your IC number, phone number or other personal details in the chat.</li>'+
-  '<li><b>Results slip:</b> when you upload it in My results, it is sent through Eduplan’s server to Anthropic’s Claude to read your subjects and grades. The slip itself is not stored; only the grades are kept, with a mark that they were read from your slip.</li>'+
-  '<li><b>Consultation requests:</b> sent to Eduplan so a counsellor can contact you.</li></ul></section>'+
+ '<section class="panel"><h2>What is sent to EDUPLAN</h2><ul class="reqlist">'+
+  '<li><b>My portfolio (only when you sign in):</b> your saved programmes, quiz result, results, profile, consultation request and application details are saved to EDUPLAN’s Google account so you can continue on any device. EDUPLAN also keeps when you registered, signed in, signed out and last used the website.</li>'+
+  '<li><b>Applications:</b> your form and documents are kept in a private folder that only EDUPLAN staff can open, and are shared with the university you apply to so it can process your application.</li>'+
+  '<li><b>AI study assistant:</b> your messages are sent through EDUPLAN’s server to Anthropic’s Claude to write the reply. Please do not type your IC number, phone number or other personal details in the chat.</li>'+
+  '<li><b>Results slip:</b> when you upload it in My results, it is sent through EDUPLAN’s server to Anthropic’s Claude to read your subjects and grades. The slip itself is not stored; only the grades are kept, with a mark that they were read from your slip.</li>'+
+  '<li><b>Consultation requests:</b> sent to EDUPLAN so a counsellor can contact you.</li></ul></section>'+
  '<section class="panel"><h2>How your account is protected</h2><ul class="reqlist">'+
   '<li>No passwords: you sign in with a 6-digit code sent to your email. The code works for 10 minutes and allows 5 tries.</li>'+
-  '<li>You stay signed in for 30 days. Eduplan’s server keeps only a scrambled (hashed) copy of your sign-in token.</li>'+
-  '<li>Signing out ends the sign-in on Eduplan’s server and removes your details from this browser. Please sign out on a shared computer.</li>'+
-  '<li>The website and Eduplan’s server talk over an encrypted connection (HTTPS).</li>'+
-  '<li>Eduplan’s service keys are kept on the server, never in the website.</li></ul></section>'+
+  '<li>You stay signed in for 30 days. EDUPLAN’s server keeps only a scrambled (hashed) copy of your sign-in token.</li>'+
+  '<li>Signing out ends the sign-in on EDUPLAN’s server and removes your details from this browser. Please sign out on a shared computer.</li>'+
+  '<li>The website and EDUPLAN’s server talk over an encrypted connection (HTTPS).</li>'+
+  '<li>EDUPLAN’s service keys are kept on the server, never in the website.</li></ul></section>'+
  '<section class="panel"><h2>Your choices</h2><ul class="reqlist">'+
   '<li>Use the website without signing in: your progress then stays in this browser only.</li>'+
   '<li>Delete your portfolio at any time from <a href="#portfolio">My portfolio</a>.</li>'+
-  '<li>Under Malaysia’s Personal Data Protection Act 2010 you may ask to see or correct your personal data. <a href="#consultation">Contact Eduplan</a>.</li></ul></section>';
+  '<li>Under Malaysia’s Personal Data Protection Act 2010 you may ask to see or correct your personal data. <a href="#consultation">Contact EDUPLAN</a>.</li></ul></section>';
 };
 /* My profile (second layer): optional details asked after sign-in, never required. Name and WhatsApp fill in the
-   consultation and application forms when they are empty; status and interests help Eduplan's counsellors. */
+   consultation and application forms when they are empty; status and interests help EDUPLAN's counsellors. */
 /* Verified name: read from the student's IC by AI (Identity.gs; in the preview by Claude in the page). Students without
    it are guests: they can browse but not book a free consultation. */
 function sameNameApp(a,b){function k(s){return String(s||"").toUpperCase().replace(/[^A-Z\u00C0-\u024F\u4E00-\u9FFF]+/g," ").trim().split(/\s+/).filter(Boolean).sort().join(" ");}return !!k(a)&&k(a)===k(b);}
@@ -1370,7 +1370,7 @@ function idv(){var v=S.prof&&S.prof.idv;return v&&v.name&&(!RX.live()||v.sig)?v:
 function idBox(){var v=idv();
  if(v)return '<div class="idok"><span class="idbadge">✓ Verified with your IC</span><b data-notr>'+esc(v.name)+'</b><span class="hint">'+(v.type==="passport"?'Passport':'IC')+' ending ••••'+esc(v.last4)+'</span></div>';
  if(RX.live()&&!PF.s)return '<p class="hint"><a href="#portfolio">Sign in</a>, then verify your name with a photo of your IC.</p>';
- if(!RX.canRead())return '<p class="hint">Verifying your name with your IC works on the live Eduplan website.</p>';
+ if(!RX.canRead())return '<p class="hint">Verifying your name with your IC works on the live EDUPLAN website.</p>';
  if(S.idBusy)return '<p class="note" role="status">Reading your IC… This takes up to a minute.</p>';
  return '<div class="idup"><label class="btn idbtn">🪪 Verify my name with my IC<input type="file" accept="'+(RX.live()?'image/*,application/pdf':'image/*')+'" capture="environment" data-idfile hidden></label>'+
   '<span class="hint">Take a photo of the front of your IC (MyKad or MyKid; international students: passport photo page). AI reads your name. We keep only your name and the last 4 digits of the number; the photo is not stored.</span>'+
@@ -1430,7 +1430,7 @@ V.portfolio=function(){
   '<p class="hint">Uploaded documents are not kept in your portfolio. Add them again before you send your application.</p>';
  else app2='<p class="muted">Not started. Choose a programme first, then tap <strong>Choose this programme</strong>.</p>';
  var acct=PF.s?'<section class="panel pfcard"><h2>Account</h2><p class="muted">Status: <span id="pf-sync">'+(PF.dirty||PF.saving?'Saving…':'Saved to your portfolio')+'</span></p>'+
-  (PF.del?'<div class="empty"><strong>Delete your portfolio?</strong> Your saved programmes, quiz result, consultation request and unsent application will be deleted from Eduplan. Applications you already sent are not affected.</div>'+
+  (PF.del?'<div class="empty"><strong>Delete your portfolio?</strong> Your saved programmes, quiz result, consultation request and unsent application will be deleted from EDUPLAN. Applications you already sent are not affected.</div>'+
    '<div class="row"><button type="button" class="btn" id="pf-del-yes" data-pf="delete-yes"'+(PF.busy?' disabled':'')+'>Yes, delete my portfolio</button><button type="button" class="btn ghost" data-pf="keep">Keep it</button></div>'
    :'<div class="row"><button type="button" class="btn ghost" data-pf="logout">Sign out</button><button type="button" class="btn ghost" data-pf="delete">Delete my portfolio</button></div>')+
   (PF.err?'<span class="err" role="alert">'+esc(PF.err)+'</span>':'')+
@@ -1438,7 +1438,7 @@ V.portfolio=function(){
  var nav='<nav class="pfnav" aria-label="Portfolio sections">'+[["pf-profile","👤","My profile"],["pf-results","📊","My results"],["pf-choices","⭐","My choices"],["pf-sch","🎓","Scholarships"],["pf-apply","📝","Application"],["pf-pay","💳","Payment"],["pf-cons","💬","Consultation"]]
   .map(function(x){return '<button type="button" data-pfjump="'+x[0]+'"><span aria-hidden="true">'+x[1]+'</span><span>'+x[2]+'</span></button>';}).join("")+'</nav>';
  return head+nav+(PF.s?'':pfLogin())+
-  '<div class="pfgrid">'+pfCard("My profile",pfInterests(quiz)+'<h3>My details</h3>'+pfProfile(),"wide","👤","pf-profile")+pfCard("My results",'<p class="muted">Add your exam results once. Eduplan keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor(),"wide","📊","pf-results")+saved+
+  '<div class="pfgrid">'+pfCard("My profile",pfInterests(quiz)+'<h3>My details</h3>'+pfProfile(),"wide","👤","pf-profile")+pfCard("My results",'<p class="muted">Add your exam results once. EDUPLAN keeps them until you change them, and uses them to show which programmes and scholarships you qualify for.</p>'+RX.editor(),"wide","📊","pf-results")+saved+
    pfCard("Scholarships for my results",pfScholarships(),"wide","🎓","pf-sch")+
    pfCard("Application",app2,"","📝","pf-apply")+pfCard("My payment",pfPayment(),"","💳","pf-pay")+pfCard("Free consultation",cons,"wide","💬","pf-cons")+'</div>'+
   (PF.s?'':(pfLive()?'<p class="hint">Until you sign in, these are kept in this browser only.</p>':''))+acct;
@@ -1447,7 +1447,7 @@ V.portfolio=function(){
 /* ---------- Compare (#compare/ID,ID,ID): 2 or 3 saved programmes side by side ----------
    The student ticks programmes in My choices (portfolio), then Compare. Every number comes from the school sheets;
    distance is a straight line between town centres (TOWNS) and the popularity row counts how many universities on
-   Eduplan offer the same course. Nothing here is estimated beyond that. */
+   EDUPLAN offer the same course. Nothing here is estimated beyond that. */
 var CMP_MAX=3,CMP=store("eduplan-compare")||[];
 /* Town centres [name, latitude, longitude, state]: home towns to choose from, and where campuses are. */
 var TOWNS=[["Kuala Lumpur",3.139,101.687,"W.P. Kuala Lumpur"],["Setapak",3.200,101.720,"W.P. Kuala Lumpur"],["Cheras",3.100,101.740,"W.P. Kuala Lumpur"],["Bukit Jalil",3.058,101.692,"W.P. Kuala Lumpur"],
@@ -1491,7 +1491,7 @@ function cmpTick(id){var on=CMP.indexOf(id)>=0,full=!on&&CMP.length>=CMP_MAX;
 function cmpToggle(id){var i=CMP.indexOf(id);if(i>=0)CMP.splice(i,1);else if(CMP.length<CMP_MAX)CMP.push(id);store("eduplan-compare",CMP);rerender();}
 
 function annualOf(p){return lines(p.notes).filter(function(x){return /^Annual fee: /.test(x);}).map(function(x){return x.replace(/^Annual fee: /,"");});}
-/* How many universities on Eduplan offer the same course (popularity among institutions). */
+/* How many universities on EDUPLAN offer the same course (popularity among institutions). */
 function courseReach(p){if(!p.course_id)return null;var u={};allProgs().forEach(function(y){if(y.p.course_id===p.course_id)u[y.u.id]=1;});return Object.keys(u).length;}
 function cmpData(x){
  var p=x.p,sch=progScholarships(p),best=null,mine=null,home=homePoint(),ct=campusTown(x);
@@ -1553,7 +1553,7 @@ V.compare=function(){
    return (ex?'<span class="pill">'+esc(ex)+'</span>':'')+(d.badge?'<span class="ematch '+d.badge[0]+'">'+esc(d.badge[1])+'</span>':'')+(l.length?'<ul class="clist">'+l.slice(0,5).map(function(x){return '<li>'+esc(x.replace(/^[•·*▪◦–-]\s*/,""))+'</li>';}).join("")+'</ul>'+(l.length>5?'<span class="hint">+'+(l.length-5)+'</span>':''):'<span class="hint">Not listed by the institution</span>')+
     (d.x.p.english?'<span class="hint"><span>English:</span> '+esc(cmpCut(d.x.p.english,160))+'</span>':'');},RX.taken().length?'':'<a href="#portfolio">Add your results</a> to see if you meet them.',true)+
   cmpRow("🔥","Popularity",D2,function(d){return d.reach==null?'<span class="hint">Not available</span>':crown(wReach.indexOf(d)>=0,'Most offered')+cnum(d.reach,"",d.reach===1?" university":" universities")+cmpMeter(d.reach,maxReach,false);},
-   'How many universities on Eduplan offer the same course: a sign of how established and in demand it is.')+
+   'How many universities on EDUPLAN offer the same course: a sign of how established and in demand it is.')+
   cmpRow("🚀","Future careers",D2,function(d){return d.careers.length?'<span class="cchips">'+d.careers.slice(0,6).map(function(c){return '<span class="cchip">'+esc(c)+'</span>';}).join("")+'</span>'+(d.careersGeneral?'<span class="hint">(general guide)</span>':''):'<span class="hint">Not listed by the institution yet</span>';},"",true)+
   cmpRow("🗓️","Intakes",D2,function(d){return d.x.p.intakes?'<span class="cval">'+esc(d.x.p.intakes)+'</span>':'<span class="hint">Not listed</span>';})+
   '<section class="crow cact txt"><div class="ccells n'+D2.length+'">'+D2.map(function(d,i){return '<div class="ccell" style="--i:'+i+'"><a class="btn" href="#next/'+esc(d.x.p.id)+'">Choose this '+ARROW+'</a>'+
@@ -1565,7 +1565,7 @@ V.compare=function(){
    cmpTable(D2,W,"ctable","Comparison of "+D2.map(function(d){return d.x.p.programme+" at "+d.x.u.name;}).join(", "),true)+'</div>'+
    '<p class="hint">★ = best in the row. '+(D2.length>2?'Scroll sideways on a phone to see every programme. ':'')+'Fees exclude hostel and books; distance is a straight line between town centres.</p><div class="chomewrap">'+homeBox+'</div>'
   :heads+rows;
- var share="https://wa.me/?text="+encodeURIComponent("Eduplan comparison: "+D2.map(function(d){return d.x.p.programme+" ("+d.x.u.name+")";}).join(" vs ")+" "+location.href);
+ var share="https://wa.me/?text="+encodeURIComponent("EDUPLAN comparison: "+D2.map(function(d){return d.x.p.programme+" ("+d.x.u.name+")";}).join(" vs ")+" "+location.href);
  return '<div class="cmp"><section class="stack chero"><span class="eyebrow">Compare</span><h1>'+(D2.length===3?'3 programmes, side by side':'2 programmes, side by side')+'</h1>'+
    '<p class="lead">'+(tableView?'Fees, time, distance, scholarships, entry requirements and careers in one table. ★ marks the best in each row.':'Fees, time, distance, scholarships, entry requirements and careers in one view. 👑 marks the best in each row.')+'</p>'+
    '<div class="row"><button type="button" class="btn sm cmpa4go" data-cmpact="a4">📄 <span>Save as A4 PDF</span></button><a class="btn ghost sm" href="#portfolio">Change my choices</a><a class="btn ghost sm" href="'+esc(share)+'" target="_blank" rel="noopener">Share on WhatsApp</a></div>'+sw+'</section>'+
@@ -1575,9 +1575,9 @@ V.compare=function(){
    where "Save as PDF" keeps it. Plain table, no animation, a star on the best of each row. */
 function cmpA4(D2,W,home){
  var v=idv(),today=new Date().toISOString().slice(0,10);
- return '<section class="a4sheet" aria-hidden="true"><header class="a4head"><img src="'+esc(window.EDUPLAN_LOGO||"assets/img/logo.png")+'" alt="Eduplan"><div><b>Programme comparison</b>'+
+ return '<section class="a4sheet" aria-hidden="true"><header class="a4head"><img src="'+esc(window.EDUPLAN_LOGO||"assets/img/logo.png")+'" alt="EDUPLAN"><div><b>Programme comparison</b>'+
   '<span>'+(v?'<span data-notr>'+esc(v.name)+'</span> · ':'')+today+(home?' · <span>Distance from</span> <span data-notr>'+esc(S.geo?'my location':home[0])+'</span>':'')+'</span></div></header>'+
-  cmpTable(D2,W,"a4t","")+'<p class="a4foot">★ best in the row · Facts from each university\u2019s published information on Eduplan; distance is a straight line between town centres. Please confirm with the university before you apply. · Eduplan · WhatsApp '+WA_SHOW+'</p></section>';}
+  cmpTable(D2,W,"a4t","")+'<p class="a4foot">★ best in the row · Facts from each university\u2019s published information on EDUPLAN; distance is a straight line between town centres. Please confirm with the university before you apply. · EDUPLAN · WhatsApp '+WA_SHOW+'</p></section>';}
 /* The comparison as a real table (screen table view and the A4 sheet): a row per criterion, a column per programme,
    header cells scoped for screen readers, ★ = best in the row (also said in words). */
 function cmpTable(D2,W,cls,caption,screen){
@@ -1808,11 +1808,11 @@ app.addEventListener("click",function(ev){
   else if(act==="add-eng"){A.eng=Math.min(3,A.eng+1);applySave();rerender("ap-en"+A.eng+"_type");}
   else if(act==="edit"){A.fallback=false;A.sendMsg="";location.hash="#apply";}
   else if(act==="rmfile"){var fp=t.getAttribute("data-file").split(":");(A.files[fp[0]]||[]).splice(Number(fp[1]),1);rerender("ap-f_"+fp[0]);}
-  else if(act==="share"){navigator.share({title:"Eduplan application",text:applySummary(),files:applyFilesForShare()}).catch(function(){});}
+  else if(act==="share"){navigator.share({title:"EDUPLAN application",text:applySummary(),files:applyFilesForShare()}).catch(function(){});}
   else if(act==="clear"){try{sessionStorage.removeItem(APPLY_KEY);}catch(e){}S.app=applyLoad();applySave();location.hash="#apply";}
   else if(act==="print")window.print();
   else if(act==="copy"){var out=document.getElementById("apply-copied"),fb=function(){var pre=document.getElementById("apply-summary"),rg=document.createRange();rg.selectNodeContents(pre);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(rg);out.textContent="The summary is selected. Press Ctrl+C (or long-press on a phone) to copy it.";};
-   try{navigator.clipboard.writeText(applySummary()).then(function(){out.textContent="Copied. Paste it into WhatsApp or an email to Eduplan.";},fb);}catch(e){fb();}}
+   try{navigator.clipboard.writeText(applySummary()).then(function(){out.textContent="Copied. Paste it into WhatsApp or an email to EDUPLAN.";},fb);}catch(e){fb();}}
   return;}
  if(t.hasAttribute("data-jump")){var g=app.querySelector('.facgroup[data-fac="'+t.getAttribute("data-jump")+'"]');if(g){var hd=document.querySelector("header.site"),off=(hd&&getComputedStyle(hd).position==="sticky"?hd.offsetHeight:0)+12;
   window.scrollTo({top:g.getBoundingClientRect().top+window.pageYOffset-off,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});var sm=g.querySelector("summary");if(sm)sm.focus({preventScroll:true});}return;}
@@ -1829,7 +1829,7 @@ app.addEventListener("click",function(ev){
  if(t.id==="cons-edit"){S.consDone=null;rerender("cons-name");return;}
  if(t.id==="cons-copy"){var txt=S.consDone,out=document.getElementById("cons-copied");
   var fallback=function(){var pre=document.getElementById("cons-summary"),rg=document.createRange();rg.selectNodeContents(pre);var sel=window.getSelection();sel.removeAllRanges();sel.addRange(rg);out.textContent="The summary is selected. Press Ctrl+C (or long-press on a phone) to copy it.";};
-  try{navigator.clipboard.writeText(txt).then(function(){out.textContent="Copied. Paste it into WhatsApp or an email to Eduplan.";},fallback);}catch(e){fallback();}
+  try{navigator.clipboard.writeText(txt).then(function(){out.textContent="Copied. Paste it into WhatsApp or an email to EDUPLAN.";},fallback);}catch(e){fallback();}
   return;}
 });
 app.addEventListener("submit",function(ev){
@@ -1855,7 +1855,7 @@ app.addEventListener("submit",function(ev){
  S.consErr=e;
  var first=Object.keys(e)[0];
  if(first){rerender(first);return;}
- S.consDone=["Eduplan free consultation request","","Name: "+c["cons-name"].trim()+(idv()?" (verified with "+(idv().type==="passport"?"passport":"IC")+" ending "+idv().last4+")":""),"Phone: "+c["cons-phone"].trim(),"Email: "+(em||"-"),"Latest qualification: "+(c["cons-qual"]||"SPM"),"Topic: "+(c["cons-topic"]||"Scholarships"),"Notes: "+((c["cons-msg"]||"").trim()||"-")].join("\n");
+ S.consDone=["EDUPLAN free consultation request","","Name: "+c["cons-name"].trim()+(idv()?" (verified with "+(idv().type==="passport"?"passport":"IC")+" ending "+idv().last4+")":""),"Phone: "+c["cons-phone"].trim(),"Email: "+(em||"-"),"Latest qualification: "+(c["cons-qual"]||"SPM"),"Topic: "+(c["cons-topic"]||"Scholarships"),"Notes: "+((c["cons-msg"]||"").trim()||"-")].join("\n");
  rerender("cons-copy");window.scrollTo(0,0);
 });
 

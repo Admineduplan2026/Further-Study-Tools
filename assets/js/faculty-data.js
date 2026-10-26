@@ -1,4 +1,4 @@
-/* Eduplan faculty data: the only place to add or change faculties, courses and universities.
+/* EDUPLAN faculty data: the only place to add or change faculties, courses and universities.
    Shape: field (00-10) -> courses -> universities.
    - name and desc are shown exactly as written; desc is the Chinese note in brackets.
    - universities: list the institutions that offer the course, e.g. {name:"UTAR", note:"Kampar campus"}.

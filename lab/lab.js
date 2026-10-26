@@ -1,4 +1,4 @@
-/* Eduplan Lab: a trial home page for signed-in students, laid out like a travel-booking site.
+/* EDUPLAN Lab: a trial home page for signed-in students, laid out like a travel-booking site.
    One main action per page: search. The mode switch (top left) changes what the search box asks:
      interest     what to study, where, level, budget, intake  -> programme results
      scholarship  qualification, study level, university      -> scholarship results
@@ -209,12 +209,12 @@ var MODE_INFO=[["scholarship","Scholarship based","Built around scholarships: a 
  ["guidance","Guidance based","12 reviewed key questions guide students to a clear direction for their studies."]];
 function modeInfo(){
  return '<div class="mscrim" data-act="info"></div><section class="infopop" id="mode-info" role="dialog" aria-labelledby="mode-info-h">'+
-  '<h2 id="mode-info-h">How to use Eduplan</h2><p class="muted">This website looks at your study path in three ways. Choose the one that fits you; you can switch at any time.</p>'+
+  '<h2 id="mode-info-h">How to use EDUPLAN</h2><p class="muted">This website looks at your study path in three ways. Choose the one that fits you; you can switch at any time.</p>'+
   '<ol class="infolist">'+MODE_INFO.map(function(m){return '<li><button type="button" class="infoitem" data-mode="'+m[0]+'">'+ICONS[m[0]]+'<span><b>'+esc(m[1])+'</b><span>'+esc(m[2])+'</span></span></button></li>';}).join("")+'</ol></section>';
 }
 function topbar(){
  var n=S.saved.length,a=applyState(),em=S.session&&S.session.email;
- return '<div class="bar"><a class="logo" href="#home" aria-label="Eduplan home"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan"></a>'+
+ return '<div class="bar"><a class="logo" href="#home" aria-label="EDUPLAN home"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN"></a>'+
   '<div class="modewrap"><span class="mqrow"><span class="mq" id="mode-q">Where does your study journey start?</span>'+
    '<button type="button" class="info" data-act="info" aria-expanded="'+L.info+'" aria-controls="mode-info" aria-label="How to use this website">!</button></span>'+
   '<div class="modes" role="radiogroup" aria-labelledby="mode-q">'+MODES.map(function(m){return '<button type="button" role="radio" data-mode="'+m[0]+'" aria-checked="'+(shownMode()===m[0])+'">'+ICONS[m[0]]+'<span>'+esc(m[1])+'</span></button>';}).join("")+'</div></div>'+
@@ -227,7 +227,7 @@ function topbar(){
   '</nav><button type="button" class="burger" data-act="menu" aria-expanded="'+L.menu+'" aria-controls="lab-menu" aria-label="Menu">'+
    '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button></div>';
 }
-function hello(){var em=S.session&&S.session.email;return em?'Welcome back, <span data-notr>'+esc(em.split("@")[0])+'</span>':'Welcome to Eduplan';}
+function hello(){var em=S.session&&S.session.email;return em?'Welcome back, <span data-notr>'+esc(em.split("@")[0])+'</span>':'Welcome to EDUPLAN';}
 function searchBox(){
  if(L.mode==="scholarship"){var q=S.sch,unis=uniq(D.sch.map(function(s){return s.inst;}));
   return '<form class="sbox" id="sch-form" novalidate><div class="sfields four">'+
@@ -274,16 +274,16 @@ function quizBox(){
    Sign-in needs the live website; in a preview (the published artifact) "Continue to the preview" counts as a member. */
 function preview(){return !!window.EDUPLAN_SHEET_DATA||!window.EDUPLAN_API_URL;}
 function access(){if(S.session)return "member";var r=ls("eduplan-role");return r==="preview"&&preview()?"member":r==="visitor"?"visitor":"new";}
-function locked(){return window.EDUPLAN_MEMBERS_ONLY===true&&access()!=="member";}   /* off until Eduplan turns it on (lab-config.js) */
+function locked(){return window.EDUPLAN_MEMBERS_ONLY===true&&access()!=="member";}   /* off until EDUPLAN turns it on (lab-config.js) */
 window.EDUPLAN_HOST.locked=function(view){return locked()&&/^(guided|scholarships|results)/.test(String(view||""));};
 function roleCards(){
  function c(role,title,sub,cls){return '<button type="button" class="rolec'+(cls?' '+cls:'')+'" data-role="'+role+'"><b>'+esc(title)+'</b><span>'+esc(sub)+'</span></button>';}
- return '<div class="roles" role="group" aria-label="How do you want to use Eduplan?">'+
+ return '<div class="roles" role="group" aria-label="How do you want to use EDUPLAN?">'+
   c("register","Register","First time here? Create a free account in one minute.","main")+
   c("signin","Sign in","Already have an account? Sign in with your email.")+
   c("visitor","Visitor","Just looking? Browse fields of study, faculties, courses and universities.")+'</div>';}
 function lockBox(){var v=access()==="visitor";
- return '<div class="sbox lockbox"><div class="lockcopy"><span class="sl">'+(v?'You are browsing as a visitor':'How do you want to use Eduplan?')+'</span>'+
+ return '<div class="sbox lockbox"><div class="lockcopy"><span class="sl">'+(v?'You are browsing as a visitor':'How do you want to use EDUPLAN?')+'</span>'+
   '<p>'+(v?'Register or sign in to search by scholarship, interest or guidance, match scholarships to your results and save your progress.':'Register or sign in to search by scholarship, interest or guidance. Visitors can browse fields of study, faculties, courses and universities.')+'</p></div>'+
   (v?'<div class="row"><button type="button" class="btn" data-role="register">Register</button><button type="button" class="btn ghost" data-role="signin">Sign in</button></div>':roleCards())+'</div>';}
 /* Which stage the student is planning: everything else on the website is the secondary school to university / college /
@@ -301,7 +301,7 @@ function hero(){
 /* Scholarship tracker on the home page: the campus scholarships the exam results in My results qualify for
    (results.js), updated by itself when the results change. */
 function schTracker(){var port=esc(mainLink("#portfolio"));
- if(!RX.taken().length)return '<section class="sec"><div class="sh"><h2>Scholarship tracker</h2></div><div class="lnote"><a href="'+port+'">Add your exam results</a> in My portfolio, and Eduplan tracks which scholarships you qualify for.</div></section>';
+ if(!RX.taken().length)return '<section class="sec"><div class="sh"><h2>Scholarship tracker</h2></div><div class="lnote"><a href="'+port+'">Add your exam results</a> in My portfolio, and EDUPLAN tracks which scholarships you qualify for.</div></section>';
  var rows=D.sch.filter(function(s){return s.qual&&s.qual!=="Other";}).map(function(s){return {inst:s.inst.id,instName:s.inst.name,name:s.name,applies:s.applies,qual:s.qual,min:s.min,waiver:s.waiver,amount:s.amount};});
  return '<section class="sec"><div class="sh"><h2>Scholarship tracker</h2><a class="hint" href="'+port+'">See my scholarships '+ARROW+'</a></div>'+RX.trackerHtml(RX.scholarships(rows))+'</section>';}
 function continueRow(){
@@ -362,7 +362,7 @@ function recommended(){
 }
 function trust(){
  var mqa=D.progs.filter(function(p){return p.mqa;}).length,unis=D.inst.length,sch=D.sch.length+D.fnd.length;
- return '<section class="sec trust"><div class="sh"><h2>Why students plan with Eduplan</h2></div><div class="stats">'+
+ return '<section class="sec trust"><div class="sh"><h2>Why students plan with EDUPLAN</h2></div><div class="stats">'+
   [[unis,"partner universities and colleges"],[D.progs.length,"programmes listed"],[mqa,"programmes with an MQA reference"],[sch,"scholarship options"]].map(function(s){return '<div class="stat"><b>'+s[0]+'</b><span>'+esc(s[1])+'</span></div>';}).join("")+
   '<div class="stat"><b>Free</b><span>counselling for students and parents</span></div></div>'+
   '<div class="logos" aria-label="Partner institutions">'+D.inst.map(function(u){return '<span class="wm" title="'+esc(u.full)+'">'+esc(u.name)+'</span>';}).join("")+'</div>'+
@@ -522,7 +522,7 @@ function menu(){
   item("#privacy","Privacy, cookies and security","No cookies or tracking. What this browser keeps")+
   '</nav>';
 }
-/* Partner institutions, programmes and scholarship options on Eduplan; demo institutions are not counted. */
+/* Partner institutions, programmes and scholarship options on EDUPLAN; demo institutions are not counted. */
 function siteStats(){function real(u){return !/^demo/i.test(u.id)&&!/\(demo\)/i.test(u.name);}
  var unis=D.inst.filter(function(u){return u.progs&&real(u);}).length;
  return [[unis,"partner institutions"],[D.progs.filter(function(p){return real(p.inst);}).length,"programmes"],
@@ -547,19 +547,19 @@ function aboutNet(){var c=app.querySelector(".anet");if(!c||!c.getContext)return
    x.fillStyle="hsla("+a.h+",90%,70%,.9)";x.beginPath();x.arc(a.x,a.y,a.r,0,7);x.fill();}
   if(moving)requestAnimationFrame(draw);}
  draw();}
-/* Catch your future: a 30-second game. Catch the Eduplan tools that fall (each one tells you a fact about Eduplan),
+/* Catch your future: a 30-second game. Catch the EDUPLAN tools that fall (each one tells you a fact about EDUPLAN),
    miss the time-wasters. Arrow keys, the on-screen buttons or dragging move the basket. Facts come from the site itself. */
 function gameFacts(){var st=siteStats(),pg=st.filter(function(x){return x[1]==="programmes";})[0];
- return [["🎓","Scholarships","Eduplan shows the campus scholarship your results qualify for."],
+ return [["🎓","Scholarships","EDUPLAN shows the campus scholarship your results qualify for."],
   ["📚","Programmes",pg?pg[0]+" programmes from partner institutions in one place.":"Programmes from partner institutions in one place."],
   ["⚖️","Compare","Compare 2 or 3 programmes side by side: fees, distance, scholarships and careers."],
   ["🎯","Am I a good fit?","A short quiz gives your fit percentage for a faculty."],
   ["💬","Free consultation","Ask a counsellor on WhatsApp; we reply within 2 working days."],
-  ["🆓","Free for students","Eduplan's service is free of charge for students."],
+  ["🆓","Free for students","EDUPLAN's service is free of charge for students."],
   ["🪪","Verified results","Your grades are read from your results slip, so your applications are accurate."]];}
 var GAME_BAD=[["⏰","Missed deadline"],["🌀","Guesswork"]];
 function gameBox(){return '<section class="sec agame rv" id="agame" aria-labelledby="agame-h"><div class="gcard"><div class="ghead"><span class="axpill dark"><i aria-hidden="true"></i><span>Mini game</span></span>'+
-  '<h2 id="agame-h">Catch your future</h2><p class="muted">Catch the Eduplan tools as they fall and learn what each one does. Miss ⏰ and 🌀: deadlines and guesswork cost you points. 30 seconds.</p></div>'+
+  '<h2 id="agame-h">Catch your future</h2><p class="muted">Catch the EDUPLAN tools as they fall and learn what each one does. Miss ⏰ and 🌀: deadlines and guesswork cost you points. 30 seconds.</p></div>'+
   '<div class="gstage"><canvas class="gcv" tabindex="0" aria-label="Game area. Use the left and right arrow keys to move the basket."></canvas>'+
   '<div class="ghud" aria-hidden="true"><span>⭐ <b class="gsc" data-notr>0</b></span><span>⏱️ <b class="gtm" data-notr>30</b></span></div>'+
   '<div class="gover" data-g="start"><b class="gbig">🧺</b><p>Move with ← → or drag. Ready?</p><button type="button" class="axgo" data-act="gstart">▶ <span>Start the game</span></button></div></div>'+
@@ -585,8 +585,8 @@ function gameTick(now){var g=G;if(!g||!g.on)return;if(!g.c.isConnected){G=null;r
  if(left<=0)return gameEnd();requestAnimationFrame(gameTick);}
 function gameMsg(h){var el=app.querySelector(".gfact");if(el)el.innerHTML=h;}
 function gameEnd(){var g=G;g.on=false;var ov=app.querySelector(".gover"),n=Object.keys(g.got).length;
- ov.innerHTML='<b class="gbig">🏆 <span data-notr>'+g.score+'</span></b><p><span>You found</span> <b data-notr>'+n+' / '+g.facts.length+'</b> <span>Eduplan tools.</span></p><button type="button" class="axgo" data-act="gstart">↻ <span>Play again</span></button>';ov.hidden=false;
- app.querySelector(".gfound").innerHTML='<h3>What Eduplan does for you</h3><ul>'+g.facts.map(function(f){var ok=g.got[f[1]];return '<li class="'+(ok?'ok':'')+'"><span class="gi" aria-hidden="true">'+f[0]+'</span><span><b>'+esc(f[1])+'</b> '+(ok?'':'<span class="pill">Not caught</span>')+'<br><span class="muted">'+esc(f[2])+'</span></span></li>';}).join("")+'</ul>'+
+ ov.innerHTML='<b class="gbig">🏆 <span data-notr>'+g.score+'</span></b><p><span>You found</span> <b data-notr>'+n+' / '+g.facts.length+'</b> <span>EDUPLAN tools.</span></p><button type="button" class="axgo" data-act="gstart">↻ <span>Play again</span></button>';ov.hidden=false;
+ app.querySelector(".gfound").innerHTML='<h3>What EDUPLAN does for you</h3><ul>'+g.facts.map(function(f){var ok=g.got[f[1]];return '<li class="'+(ok?'ok':'')+'"><span class="gi" aria-hidden="true">'+f[0]+'</span><span><b>'+esc(f[1])+'</b> '+(ok?'':'<span class="pill">Not caught</span>')+'<br><span class="muted">'+esc(f[2])+'</span></span></li>';}).join("")+'</ul>'+
   '<div class="pact"><button type="button" class="btn sm" data-mode="interest">Start exploring</button><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div>';
  var b=ov.querySelector("button");if(b)b.focus({preventScroll:true});}
 document.addEventListener("keydown",function(e){if(!G||!G.on||e.target!==G.c)return;if(e.key==="ArrowLeft"||e.key==="ArrowRight"){G.dir=e.key==="ArrowLeft"?-1:1;e.preventDefault();}});
@@ -603,14 +603,14 @@ function aboutView(){
  var st=siteStats();
  return '<section class="hero about ax"><canvas class="anet" aria-hidden="true"></canvas><i class="aglow g1" aria-hidden="true"></i><i class="aglow g2" aria-hidden="true"></i><i class="aglow g3" aria-hidden="true"></i>'+
   '<div class="hwrap axin"><span class="axpill"><i aria-hidden="true"></i><span>About us</span></span><h1><span class="axl1">Every student deserves</span><span class="axl2">the right place to study.</span></h1>'+
-  '<p class="lead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
-  '<div class="axbtns"><button type="button" class="axgo" data-act="agame">🎮 <span>Play the Eduplan game</span></button><button type="button" class="axghost" data-mode="interest"><span>Start exploring</span></button></div>'+
+  '<p class="lead">EDUPLAN is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
+  '<div class="axbtns"><button type="button" class="axgo" data-act="agame">🎮 <span>Play the EDUPLAN game</span></button><button type="button" class="axghost" data-mode="interest"><span>Start exploring</span></button></div>'+
   (st.length?'<div class="astats rv">'+st.map(function(x,i){return '<div style="--i:'+i+'"><b data-count="'+x[0]+'" data-notr>'+x[0].toLocaleString("en-MY")+'</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+
   '<span class="axmouse" aria-hidden="true"><i></i></span></div></section>'+gameBox()+
   '<div class="page"><div class="pgrid"><section class="box avision rv"><span class="pinst">Our vision</span><p class="lbig">'+esc(A.vision)+'</p><ul class="vp">'+A.points.map(function(v,i){return '<li style="--i:'+i+'"><span class="vpi" aria-hidden="true">'+(VP_ICON[i]||"⭐")+'</span><b>'+esc(v[0])+'</b><span>'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
   '<section class="box amission rv"><span class="pinst">Our mission</span><p class="lbig">'+esc(A.mission)+'</p><ol class="jr">'+A.journey.map(function(j,i){var g=go[j[2]];
    return '<li style="--i:'+i+'"><span class="jri" aria-hidden="true">'+(JR_ICON[i]||"⭐")+'</span>'+(g?'<button type="button" class="jlink" '+g+'>':'<a class="jlink" href="'+esc(mainLink(j[2]))+'">')+'<b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span>'+(g?'</button>':'</a>')+'</li>';}).join("")+'</ol></section></div>'+
-  '<section class="sec"><div class="sh"><h2>Meet our founder</h2></div><div class="lfounder rv">'+(photo?'<span class="fphoto"><img src="'+esc(photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of Eduplan"></span>':'')+
+  '<section class="sec"><div class="sh"><h2>Meet our founder</h2></div><div class="lfounder rv">'+(photo?'<span class="fphoto"><img src="'+esc(photo)+'" alt="'+esc(f.name)+', '+esc(f.role)+' of EDUPLAN"></span>':'')+
    '<div class="fbody"><span class="pinst">'+esc(f.role)+'</span><h3>'+esc(f.name)+'</h3><p class="muted">'+esc(f.bio)+'</p>'+
    '<div class="pact">'+(f.facebook?'<a class="btn ghost sm" href="'+esc(f.facebook)+'" target="_blank" rel="noopener">Facebook</a>':'')+'<a class="btn sm" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div></div>'+
    '<div class="fcv">'+tl("Career",f.career)+tl("Education",f.education)+'</div></div></section>'+trust()+'</div>';
@@ -788,7 +788,7 @@ function account(){
  function E(k){return (AC&&AC.errors[k])||"Something went wrong. Please try again.";}
  function draw(focus){
   var err=function(at){return st.err&&st.errAt===at?'<span class="err" id="ia-err" role="alert">'+esc(st.err)+'</span>':'';},dis=st.busy?' disabled':'';
-  var form=!live?'<p class="iam">Signing in works on the live Eduplan website. In this preview you can try everything as a guest.</p>'+
+  var form=!live?'<p class="iam">Signing in works on the live EDUPLAN website. In this preview you can try everything as a guest.</p>'+
     '<div class="row"><button type="button" class="btn" data-onb="guest">Continue to the preview</button></div>'
    :st.step==="code"?'<form class="fields" data-iaform="code" novalidate><p class="iam" role="status">'+esc(st.msg)+'</p>'+
     '<div class="field"><label for="ia-code">6-digit code</label><input id="ia-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+(st.errAt==="code"?' aria-invalid="true" aria-describedby="ia-err"':'')+'>'+err("code")+
@@ -798,7 +798,7 @@ function account(){
    :'<form class="fields" data-iaform="email" novalidate>'+
     '<div class="field"><label for="ia-email">Email</label><input id="ia-email" type="email" autocomplete="email" value="'+esc(st.email)+'"'+(st.errAt==="email"?' aria-invalid="true" aria-describedby="ia-err"':'')+'>'+err("email")+
     '<span class="hint">No password needed. We email you a 6-digit code. New here? This creates your free account.</span></div>'+
-    '<div class="field"><label class="check"><input type="checkbox" id="ia-consent"'+(st.consent?' checked':'')+'><span>I agree that Eduplan keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only Eduplan staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+err("consent")+'</div>'+
+    '<div class="field"><label class="check"><input type="checkbox" id="ia-consent"'+(st.consent?' checked':'')+'><span>I agree that EDUPLAN keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only EDUPLAN staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+err("consent")+'</div>'+
     '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Sending…':'Email me a code')+'</button></div>'+
     '<p class="hint"><a href="#privacy" data-ia="privacy">What we ask for, and when</a></p></form>';
   var box=d.querySelector(".iform");
@@ -851,10 +851,10 @@ function intro(){
  var stats=siteStats();
  var d=document.createElement("div");d.className="intro";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","intro-h");
  d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
-  '<img class="ilogo" src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="Eduplan">'+
+  '<img class="ilogo" src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN">'+
   '<span class="ieye">Step 1 of 3 · About us</span>'+
   '<h1 id="intro-h"><span>We lead students to the right place to study</span></h1>'+
-  '<p class="ilead">Eduplan is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
+  '<p class="ilead">EDUPLAN is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
   '<ol class="ijr">'+A.journey.map(function(j,i){return '<li style="--i:'+i+'"><b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span></li>';}).join("")+'</ol>'+
   (stats.length?'<div class="istats">'+stats.map(function(x){return '<div><b data-count="'+x[0]+'">0</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+
   '<div class="ifounder">'+(photo?'<img src="'+esc(photo)+'" alt="">':'')+'<div><b>'+esc(f.name)+'</b><span>'+esc(f.role)+'</span><span>Guiding students since 2015</span></div></div>'+
@@ -873,7 +873,7 @@ function intro(){
 if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);
 render();
 syncLoad();
-/* One anonymous visit per browser tab for Eduplan's overview (apps-script/Stats.gs): signed in or guest, and the
+/* One anonymous visit per browser tab for EDUPLAN's overview (apps-script/Stats.gs): signed in or guest, and the
    route. No cookie, no identifier; the preview does not count. */
 try{if(API&&window.fetch&&!PREVIEW&&!sessionStorage.getItem("eduplan-visit")){sessionStorage.setItem("eduplan-visit","1");post({action:"visit",member:!!S.session,mode:L.mode}).catch(function(){});}}catch(e){}
 intro();

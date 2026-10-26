@@ -1,4 +1,4 @@
-/* Eduplan interest quiz ("Not sure yet? Start here").
+/* EDUPLAN interest quiz ("Not sure yet? Start here").
    12 questions, one answer each. Every option adds points to faculties 00-10 (same codes as faculty-data.js),
    e.g. {"06":3} adds 3 points to 06 ICT. The points are never shown to students.
    Question 12 carries the most weight (4 points): it is the student's own choice without money or parents

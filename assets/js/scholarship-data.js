@@ -1,4 +1,4 @@
-/* Eduplan scholarship data: the only place to add or change scholarships.
+/* EDUPLAN scholarship data: the only place to add or change scholarships.
    Shape: type -> scholarships (with requirements) or universities (with tuition waiver tiers).
    - kind "requirements": each item is one option (A, B, C...). Set name and requirements to null
      for a slot that is still to be added; it is shown as "coming soon" and cannot be selected.

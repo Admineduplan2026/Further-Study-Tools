@@ -1,11 +1,11 @@
-/* About Us content for Eduplan Lab: the same facts as the main site's About page
+/* About Us content for EDUPLAN Lab: the same facts as the main site's About page
    (copied from assets/js/app.js: FOUNDER, MISSION, VISION, VISION_POINTS, JOURNEY). Change both when the facts change. */
 window.EDUPLAN_ABOUT=(function(){
 var FOUNDER={name:"Jason Ng Jiann Sheng, PJM",role:"Founder & CEO",photo:"assets/img/founder.jpg",
- bio:"Founder and CEO of Eduplan, where he has led student guidance as Chief Education Advisor since May 2020. He has worked in higher education recruitment and student guidance since 2015, at BERJAYA University College, Xiamen University Malaysia and FSI Center 升学情报.",
+ bio:"Founder and CEO of EDUPLAN, where he has led student guidance as Chief Education Advisor since May 2020. He has worked in higher education recruitment and student guidance since 2015, at BERJAYA University College, Xiamen University Malaysia and FSI Center 升学情报.",
  honours:[],
  career:[
-  {title:"Chief Education Advisor",org:"Eduplan",when:"May 2020 – Present"},
+  {title:"Chief Education Advisor",org:"EDUPLAN",when:"May 2020 – Present"},
   {title:"Manager",org:"FSI Center 升学情报",when:"Oct 2017 – Apr 2020",place:"Kajang, Malaysia"},
   {title:"Student Recruitment",org:"Xiamen University Malaysia",when:"Jul 2016 – Sep 2017",place:"Sepang"},
   {title:"Sales/Marketing",org:"BERJAYA University College",when:"Dec 2015 – Jul 2016",place:"Kuala Lumpur"}],

@@ -1,5 +1,5 @@
-/* Eduplan career guide: common careers for each course (course_id from faculty-data.js) and the usual next study step
-   for each level. General guidance written by Eduplan, shown only where the institution has not listed its own career
+/* EDUPLAN career guide: common careers for each course (course_id from faculty-data.js) and the usual next study step
+   for each level. General guidance written by EDUPLAN, shown only where the institution has not listed its own career
    prospects, and always labelled as a general guide. Each entry is [English, Chinese]. Load after lab-zh.js and before
    app.js: the Chinese text is added to the translations here. */
 window.EDUPLAN_CAREERS={
@@ -78,7 +78,7 @@ window.EDUPLAN_CAREERS={
  Object.keys(C.careers).forEach(function(k){C.careers[k].forEach(add);});
  Object.keys(C.pro).forEach(function(k){add(C.pro[k]);});Object.keys(C.next).forEach(function(k){add(C.next[k]);});
  [["Future pathway and careers","升学路径与未来职业"],["Your next study step","下一步升学"],["Common careers","常见职业"],["Professional step","专业资格"],
-  ["Careers listed by the institution","院校列出的职业"],["General guide by Eduplan: common careers for this field, not a list from the institution.","Eduplan 整理的一般指南：此领域的常见职业，并非院校提供的名单。"],
+  ["Careers listed by the institution","院校列出的职业"],["General guide by EDUPLAN: common careers for this field, not a list from the institution.","EDUPLAN 整理的一般指南：此领域的常见职业，并非院校提供的名单。"],
   ["(general guide)","（一般指南）"]].forEach(add);
  x.patterns=x.patterns||[];x.patterns.push([/^(\d+) careers?( \(general guide\))?$/,function(m){return m[1]+" 个职业"+(m[2]?"（一般指南）":"");}]);
 })(window.EDUPLAN_CAREERS);

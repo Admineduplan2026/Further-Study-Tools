@@ -1,4 +1,4 @@
-/* Eduplan AI study assistant: the chat bubble at the bottom right of every page.
+/* EDUPLAN AI study assistant: the chat bubble at the bottom right of every page.
    Answers come from Claude, grounded in the school data (assets/js/chat-knowledge.js):
    - on the live website, through the Apps Script /exec URL (apps-script/Chat.gs keeps the API key);
    - inside a Claude artifact, through the artifact's own "sample" capability with the embedded snapshot.
@@ -77,9 +77,9 @@ var SEND='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="cu
 
 var root=document.createElement("div");root.className="chat";
 root.innerHTML=
- '<button type="button" class="chatfab" aria-expanded="false" aria-controls="chat-panel">'+ICON+'<span>Ask Eduplan</span></button>'+
- '<section class="chatpanel" id="chat-panel" role="dialog" aria-label="Eduplan study assistant" hidden>'+
-  '<header class="chathead"><div><strong>Eduplan study assistant</strong><span>AI answers from Eduplan’s course and scholarship data</span></div>'+
+ '<button type="button" class="chatfab" aria-expanded="false" aria-controls="chat-panel">'+ICON+'<span>Ask EDUPLAN</span></button>'+
+ '<section class="chatpanel" id="chat-panel" role="dialog" aria-label="EDUPLAN study assistant" hidden>'+
+  '<header class="chathead"><div><strong>EDUPLAN study assistant</strong><span>AI answers from EDUPLAN’s course and scholarship data</span></div>'+
    '<button type="button" class="chaticon" data-chat="close" aria-label="Close chat">'+CLOSE+'</button></header>'+
   '<div class="chatlog" aria-live="polite"></div>'+
   '<form class="chatform"><label class="sr" for="chat-input">Your question</label>'+

@@ -1,4 +1,4 @@
-/* School application forms (Eduplan apply page, apps-script/Apply.gs).
+/* School application forms (EDUPLAN apply page, apps-script/Apply.gs).
    When a student applies to one of these schools, the application form asks the school's own questions as well, and
    Apply.gs saves a copy of the application in the school's own form layout, filled in.
    UTAR: "Student Application Form (Foundation Programmes leading to Bachelor Honours Degree Programmes)", the version
