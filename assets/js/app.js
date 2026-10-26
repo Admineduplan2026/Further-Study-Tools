@@ -661,7 +661,6 @@ function sfAllGroup(sf){var v=S.app.v,deg=!/^(Foundation|Foundation-ODL|APIIT Ce
  return agroup(esc(sf.id)+" application form",
   '<div class="field full"><span class="hint">'+esc(sf.id)+' '+esc(sf.f.title)+': these questions are on '+esc(sf.id)+'&#39;s own form. Level of study: '+esc(deg?"Degree":sfLevel(sf))+(sfSpecialism(sf)?' · Specialism: '+esc(sfSpecialism(sf)):'')+'.</span></div>'+
   af("a_title","Title",{opts:sf.f.titles,first:"Choose",rerender:true})+(v.a_title==="Others"?af("a_title_other","Title (other)"):'')+
-  af("a_pob","Place of birth (city / state)",{opt:true})+
   (deg?af("a_level","Level of study",{opts:[["Degree Level 1","Degree Level 1"],["Degree Level 2","Degree Level 2 (direct entry with a diploma)"]],first:"Choose"}):'')+
   af("a_med","Do you have any special or medical condition that needs the university's attention?",{opts:["No","Yes"],first:"Choose",rerender:true,full:true})+
   (v.a_med==="Yes"?af("a_med_info","Which condition? ("+sf.f.conditions.join(", ")+")",{area:true,rows:2,full:true}):'')+
@@ -737,11 +736,12 @@ function applyStep(n){
  }
  if(n===2){var iv=idv();if(iv&&S.app.v.name_en!==iv.name){S.app.v.name_en=iv.name;applySave();}}
  if(n===2)return agroup("Personal details",
+   (idv()&&!((S.prof||{}).icform||{}).ic?'<div class="field full"><p class="ematch miss"><span>Your IC was verified before EDUPLAN could fill in the form from it.</span> <a href="#portfolio">Upload your IC again in My portfolio</a> <span>to fill in your IC number, date of birth, place of birth, gender and address here.</span></p></div>':'')+
    (idv()?'<div class="field full"><label for="ap-name_en">Full name (as on NRIC/passport)</label><input id="ap-name_en" name="name_en" value="'+esc(idv().name)+'" readonly aria-readonly="true">'+
     '<span class="hint">✓ From your IC (verified). Your results slip and scholarship use the same name.</span></div>'
    :af("name_en","Full name (as on NRIC/passport)",{full:true,auto:"name",hint:"In capital letters, exactly as on your IC, for example TAN WEI MING. Verify your name with your IC in My portfolio to fill it in for you."}))+
    af("name_zh","Chinese name",{opt:true})+af("ic","NRIC / passport no.",{hint:"Example: 080101-14-1234"})+
-   af("dob","Date of birth",{type:"date",auto:"bday"})+af("gender","Gender",{opts:["Male","Female"],first:"Choose"})+
+   af("dob","Date of birth",{type:"date",auto:"bday"})+af("a_pob","Place of birth (state)",{opt:true})+af("gender","Gender",{opts:["Male","Female"],first:"Choose"})+
    af("marital","Marital status",{opts:["Single","Married"],first:"Choose"})+af("race","Race")+af("religion","Religion")+
    af("nationality","Nationality")+af("residence","Country of permanent residence"));
  if(n===3)return agroup("Contact details",
@@ -833,7 +833,7 @@ function applySummary(){
  function row(label,val){val=String(val==null?"":val).trim();if(val)L.push(label+": "+val);}
  L.push("EDUPLAN APPLICATION");
  sec("Programme");row("University",x?(x.u.fullName||x.u.name):"");row("Programme",x?x.p.programme:"");row("Level",x?x.p.level:"");row("Academic track",v.track);row("Intake",v.intake);
- var sfm=schoolForm();if(sfm&&sfm.all){sec(sfm.id+" application form");row("Title",v.a_title==="Others"?v.a_title_other:v.a_title);row("Place of birth",v.a_pob);
+ var sfm=schoolForm();if(sfm&&sfm.all){sec(sfm.id+" application form");row("Title",v.a_title==="Others"?v.a_title_other:v.a_title);
   row("Level of study",sfLevel(sfm));row("Specialism",sfSpecialism(sfm));row("Parent / guardian NRIC / passport no.",v.a_g_ic);
   row("Special or medical condition",v.a_med==="Yes"?"Yes: "+(v.a_med_info||""):v.a_med);row("History of mental or psychiatric conditions",v.a_mental==="Yes"?"Yes: "+(v.a_mental_info||""):v.a_mental);
   row("Condition that may affect coping with studies",v.a_cope);
@@ -842,7 +842,7 @@ function applySummary(){
   for(var pi=1;pi<=5;pi++){var pd=v["u_pref"+pi]&&sfDegree(sfm,v["u_pref"+pi]);if(pd)row("Degree choice "+pi,pd[0]+" ("+pd[1]+")");}
   row("Preferred campus",v.u_campus);row("Good physical and mental health",v.u_health==="No"?"No: "+(v.u_health_info||""):v.u_health);}
  sec("Personal details");row("Name (as on NRIC/passport)",String(v.name_en||"").toUpperCase());row("Name verified with IC",idv()&&sameNameApp(idv().name,v.name_en)?"Yes, by EDUPLAN (IC ending "+idv().last4+")":"No");row("Chinese name",v.name_zh);row("NRIC / passport no.",v.ic);row("Date of birth",v.dob);
- row("Gender",v.gender);row("Marital status",v.marital);row("Race",v.race);row("Religion",v.religion);row("Nationality",v.nationality);row("Country of permanent residence",v.residence);
+ row("Place of birth",v.a_pob);row("Gender",v.gender);row("Marital status",v.marital);row("Race",v.race);row("Religion",v.religion);row("Nationality",v.nationality);row("Country of permanent residence",v.residence);
  sec("Contact details");row("Mobile",v.mobile);row("Email",v.email);row("Home telephone",v.tel);
  row("Correspondence address",[v.addr,v.postcode+" "+v.town,v.state,v.country].join(", ").replace(/\s*\n\s*/g,", "));
  row("Permanent address",v.perm_same?"Same as correspondence address":[v.p_addr,v.p_postcode+" "+v.p_town,v.p_state,v.p_country].join(", ").replace(/\s*\n\s*/g,", "));row("Home telephone (permanent)",v.perm_same?"":v.p_tel);
