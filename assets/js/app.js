@@ -165,6 +165,7 @@ function uniMeta(u){return '<div class="meta">'+[u.type,u.place].filter(Boolean)
 /* Campus banner: the institution's campus photo (CAMPUS_PHOTOS, files in assets/img/campus) or an animated
    background, plus a button for its 3D virtual tour (Institutions "virtual_tour_url"). Tour sites usually refuse
    to be embedded in other pages, so the tour opens in a new tab. */
+var API_DONE=!(window.EDUPLAN_API_URL&&window.fetch&&!window.EDUPLAN_SHEET_DATA);  /* true once the live sheet data has arrived (or failed) */
 var CAMPUS_PHOTOS={xmum:"assets/img/campus/xmum.jpg",utar:"assets/img/campus/utar.jpg",apu:"assets/img/campus/apu.jpg"};
 function asset(p){return p&&HOST&&HOST.assetBase&&!/^(data:|https?:)/.test(p)?HOST.assetBase+p:p;}
 function uniPhoto(u){return asset(CAMPUS_PHOTOS[String(u.id).toLowerCase()]||"");}
@@ -915,12 +916,24 @@ function progSummary(x,details){
   RX.payHtml({id:x.p.id,instId:x.u.id,inst:x.u.name,level:x.p.level,rows:campusRows(),fee:x.p.fee,annual:annual,years:x.p.years,port:"#portfolio",head:"h4"})+
   (details?'<div class="pinfo">'+progAccordion(u,annual,notes)+'</div>':'')+'</div>';
 }
+/* Share link of a programme: opens its Ask more page straight away (no welcome screens), from where the student applies. */
+function progLink(id){return (window.EDUPLAN_SITE_URL||location.href.split("#")[0])+"#next/"+encodeURIComponent(id);}
+function shareBox(x){var url=progLink(x.p.id),msg=x.p.programme+" ("+x.u.name+") on EDUPLAN: "+url;
+ return '<div class="sharebox"><span class="sl">🔗 <span>Share this programme</span></span><div class="shrow"><input type="text" readonly value="'+esc(url)+'" aria-label="Link to this programme" id="share-url">'+
+  '<button type="button" class="btn sm" data-share="copy">Copy link</button><a class="btn ghost sm" href="https://wa.me/?text='+encodeURIComponent(msg)+'" target="_blank" rel="noopener">WhatsApp</a></div>'+
+  '<p class="hint" role="status" id="share-st">Anyone who opens this link goes straight to this programme and can apply from here.</p></div>';}
+document.addEventListener("click",function(ev){var b=ev.target.closest&&ev.target.closest('[data-share="copy"]');if(!b)return;var i=document.getElementById("share-url"),st=document.getElementById("share-st");
+ function ok(){if(st)st.textContent="Link copied. Paste it in WhatsApp, Instagram or anywhere.";}
+ function old(){i.select();try{document.execCommand("copy");ok();}catch(e){}}
+ if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(i.value).then(ok,old);else old();});
 /* Ask more (#next/<id>): the step between choosing a programme and applying. */
 V.next=function(){
- var x=findProg(S.pick);
+ var x=findProg(S.pick),wait=/^#next\/./.test(location.hash)&&!findProg(decodeURIComponent(location.hash.slice(6)));
+ if(wait&&!API_DONE)return '<section class="stack"><h1>Opening the programme…</h1><p class="muted">Loading…</p></section>';
+ if(wait)x=null;
  if(!x)return '<section class="stack"><h1>Choose a programme first</h1><p class="lead">Find a programme by faculty, university or scholarship, then come back here.</p><div class="row"><a class="btn" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div></section>';
  var note="Interested in: "+x.p.programme+" ("+x.u.name+").";
- return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x,true)+'<div class="row">'+saveBtn(x.p.id)+'</div>'+
+ return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x,true)+shareBox(x)+'<div class="row">'+saveBtn(x.p.id)+'</div>'+
   '<h1>Any questions before you apply?</h1><p class="lead">Ask our AI study assistant, talk to a counsellor for free, or go straight to the application form.</p></section>'+
   '<section class="grid askcards">'+
    '<button type="button" class="item pick ask-ai" data-ask="'+esc("I am interested in "+x.p.programme+" at "+x.u.name+". ")+'"><span class="aski" aria-hidden="true">🤖</span><span class="name">Ask the AI study assistant</span><span class="desc">Quick answers about fees, entry requirements and scholarships, any time.</span><span class="textlink">Open the chat '+ARROW+'</span></button>'+
@@ -1709,7 +1722,7 @@ S.pick=sget("eduplan-pick")||null;
 /* ---------- Router ---------- */
 var app=document.getElementById("app");
 function route(){
- var h=(location.hash||"#home").slice(1),r=h,view;
+ var h=(location.hash||"#home").slice(1),r=h,view,keepHash=false;
  if(r==="scholarship-match")r="scholarships";
  if(r==="courses"||r==="interest-match")r="faculty";
  S.schUni=S.schItem=null;
@@ -1734,8 +1747,8 @@ function route(){
  }
  if(r.indexOf("next/")===0){
   var nx=findProg(r.split("/")[1]);
-  if(nx){S.pick=nx.p.id;sset("eduplan-pick",S.pick);r="next";}
-  else if(UNIV.length)r="next";
+  if(nx){S.pick=nx.p.id;sset("eduplan-pick",S.pick);r="next";keepHash=true;}  /* the address keeps the programme, so it can be shared */
+  else if(UNIV.length){r="next";keepHash=true;}  /* the live data may still be loading: keep the programme in the address */
  }
  if(r==="apply"||r.indexOf("apply/")===0){
   var pid=r.split("/")[1],hit=pid?allProgs().filter(function(x){return String(x.p.id).toLowerCase()===pid.toLowerCase();})[0]:null;
@@ -1747,7 +1760,7 @@ function route(){
  S.payStep=r==="pay/method"?"method":"plan";if(r==="pay/method")r="pay/method";
  view=r.indexOf("pay")===0&&/^pay(\/method)?$/.test(r)?"pay":r.indexOf("next")===0?"next":r.indexOf("apply")===0?"apply":r.indexOf("compare")===0?"compare":r.indexOf("faculty/")===0?"faculty":r.indexOf("universities/")===0?"universities":r.indexOf("scholarships-")===0?r.split("/")[0]:r;
  if(!V[view])r=view="home";
- if(r!==h&&h)history.replaceState(null,"","#"+r);
+ if(r!==h&&h&&!keepHash)history.replaceState(null,"","#"+r);
  return view;
 }
 /* Scroll reveal for [data-reveal] blocks. Without IntersectionObserver, or with reduced motion, everything is shown at once. */
@@ -1925,7 +1938,7 @@ render(false);
 pfStart();
 if(window.EDUPLAN_API_URL&&window.fetch){
  fetch(window.EDUPLAN_API_URL).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
-  .then(function(d){if(applyApi(d))render(true);})
-  .catch(function(){/* keep the local data */});
+  .then(function(d){API_DONE=true;if(applyApi(d))render(true);else render(true);})
+  .catch(function(){API_DONE=true;render(true);/* keep the local data */});
 }
 })();

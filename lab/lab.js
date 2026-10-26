@@ -846,6 +846,7 @@ function account(){
  return true;}
 window.addEventListener("eduplan:signedin",function(){S.session=ls("eduplan-session");});
 function intro(){
+ if(/^#(next\/|compare\/)/.test(location.hash))return;   /* a shared programme or comparison link opens that page straight away */
  try{if(sessionStorage.getItem("eduplan-intro")){if(!account())interests();return;}}catch(e){}
  var A=window.EDUPLAN_ABOUT;if(!A||/^#(privacy|portfolio)/.test(location.hash))return;
  var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
