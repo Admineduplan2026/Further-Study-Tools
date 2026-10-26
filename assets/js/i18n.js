@@ -424,9 +424,10 @@ if(nav){
  var box=document.createElement("div");box.className="lang";box.setAttribute("role","group");box.setAttribute("aria-label","Language / 语言");box.setAttribute("data-notr","");
  box.innerHTML='<button type="button" data-lang="en" lang="en">EN</button><button type="button" data-lang="zh" lang="zh-Hans">中文</button>';
  nav.appendChild(box);
- box.addEventListener("click",function(ev){var b=ev.target.closest("button[data-lang]");if(!b||b.getAttribute("data-lang")===lang)return;
-  lang=b.getAttribute("data-lang");try{localStorage.setItem("eduplan-lang",lang);}catch(e){}
-  apply();});
 }
+/* Any EN / 中文 switch on the page (the header, and the opening screens in lab/lab.js). */
+document.addEventListener("click",function(ev){var b=ev.target.closest&&ev.target.closest(".lang button[data-lang]");if(!b||b.getAttribute("data-lang")===lang)return;
+ lang=b.getAttribute("data-lang");try{localStorage.setItem("eduplan-lang",lang);}catch(e){}
+ apply();});
 apply();
 })();

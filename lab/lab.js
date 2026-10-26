@@ -763,12 +763,16 @@ function myInts(){var p=ls("eduplan-profile")||{};return (p.fields||[]).filter(f
    so the interests step is never skipped. */
 function intFacs(){var all=FAC.fields.filter(function(f){return f.code!=="00";}),has=all.filter(function(f){return D.progs.some(function(p){return p.fac===f;});});
  return has.length?has:all;}
+/* EN / 中文 at the top right of the opening screens, before the header is reachable (i18n.js handles the click). */
+function langBox(){var zh=false;try{zh=localStorage.getItem("eduplan-lang")==="zh";}catch(e){}
+ return '<div class="lang ilang" role="group" aria-label="Language / 语言" data-notr><button type="button" data-lang="en" lang="en" aria-pressed="'+!zh+'">EN</button>'+
+  '<button type="button" data-lang="zh" lang="zh-Hans" aria-pressed="'+zh+'">中文</button></div>';}
 function interests(){
  var skipped=false;try{skipped=!!sessionStorage.getItem("eduplan-ints-skip");}catch(e){}
  if(skipped||myInts().length>=3||/^#(privacy|portfolio)/.test(location.hash)||document.querySelector(".ipick")||!intFacs().length)return false;
  var pick=myInts().slice(0,3),d=document.createElement("div");d.className="intro ipick";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","ipick-h");
  function draw(){
-  d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
+  d.innerHTML=langBox()+'<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
    '<span class="ieye">Step 3 of 3 · Your interests</span><h1 id="ipick-h"><span>What are your top 3 interests?</span></h1>'+
    '<p class="ilead">Choose three fields of study, in order: your first choice first. We use them to suggest courses and universities for you.</p>'+
    '<div class="ipgrid" role="group" aria-label="Fields of study">'+intFacs().map(function(f){var k=pick.indexOf(f.code);
@@ -814,7 +818,7 @@ function account(){
     '<p class="hint"><a href="#privacy" data-ia="privacy">What we ask for, and when</a></p></form>';
   var box=d.querySelector(".iform");
   if(box){box.classList.add("still");box.innerHTML=form;}   /* only the form changes: no replayed animation */
-  else d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
+  else d.innerHTML=langBox()+'<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
    '<span class="ieye">Step 2 of 3 · Sign in</span><h1 id="iacct-h"><span>Sign in or register</span></h1>'+
    '<p class="ilead">Your results, saved programmes and applications are kept in My portfolio, so you can continue on any device.</p>'+
    '<div class="iform">'+form+'</div>'+
@@ -862,7 +866,7 @@ function intro(){
  var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");
  var stats=siteStats();
  var d=document.createElement("div");d.className="intro";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","intro-h");
- d.innerHTML='<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
+ d.innerHTML=langBox()+'<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
   '<img class="ilogo" src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN">'+
   '<span class="ieye">Step 1 of 3 · About us</span>'+
   '<h1 id="intro-h"><span>We lead students to the right place to study</span></h1>'+
@@ -880,7 +884,8 @@ function intro(){
  function done(){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}d.classList.add("out");
   setTimeout(function(){d.remove();if(!account()&&!interests()){document.body.classList.remove("introopen");var m=document.querySelector("main,#app");if(m&&m.focus)m.focus({preventScroll:true});}},still?0:450);}
  btn.addEventListener("click",done);
- d.addEventListener("keydown",function(ev){if(ev.key==="Tab"){ev.preventDefault();btn.focus();}});   /* keep focus on the cover */
+ d.addEventListener("keydown",function(ev){if(ev.key!=="Tab")return;ev.preventDefault();   /* keep focus on the cover: language buttons and Continue */
+  var f=[].slice.call(d.querySelectorAll("button")),i=f.indexOf(document.activeElement);f[(i+(ev.shiftKey?-1:1)+f.length)%f.length].focus();});
 }
 if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);
 render();

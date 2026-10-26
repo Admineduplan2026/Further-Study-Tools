@@ -361,6 +361,9 @@ label.mine input{width:18px;height:18px;accent-color:var(--brand)}
 @media (prefers-reduced-motion:reduce){.lockbox.nudge{animation:none}}
 /* Cover: animated About us when the website opens */
 body.introopen{overflow:hidden}
+.intro .ilang{position:absolute;top:max(14px,env(safe-area-inset-top));right:16px;z-index:3;background:rgba(255,255,255,.96);border-color:transparent;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.intro .ilang button{color:#334}
+.intro .ilang button[aria-pressed="true"]{background:#0b3a5c;color:#fff}
 .intro{position:fixed;inset:0;z-index:100;overflow-y:auto;color:#fff;background:linear-gradient(135deg,#0b3a5c,#0a6ea8 55%,#0e5584);background-size:200% 200%;animation:igrad 12s ease infinite;display:flex;align-items:flex-start;justify-content:center;padding:max(24px,env(safe-area-inset-top)) 16px 32px}
 .intro.out{animation:iout .45s ease forwards}
 .iblobs i{position:fixed;border-radius:50%;filter:blur(40px);opacity:.35;pointer-events:none}
