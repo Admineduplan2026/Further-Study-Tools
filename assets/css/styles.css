@@ -825,3 +825,20 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .sharebox .sl{font-weight:600}
 .shrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .shrow input{flex:1 1 260px;min-width:0;min-height:42px;font-size:14px;background:#fff}
+/* Ask more: animated Apply now button beside Save */
+.applyrow{align-items:center}
+.btn.applygo{position:relative;overflow:hidden;border:0;color:#fff;font-size:16px;font-weight:600;padding:0 28px;
+ background:linear-gradient(90deg,#7b4bd8,#e0407b,#ff9f6b,#7b4bd8);background-size:300% 100%;box-shadow:0 10px 26px -8px rgba(224,64,123,.55)}
+.btn.applygo:hover{transform:translateY(-2px);box-shadow:0 16px 34px -10px rgba(224,64,123,.7)}
+.btn.applygo::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.45) 50%,transparent 70%);transform:translateX(-120%)}
+.btn.applygo .agi{display:inline-block}
+.btn.applygo:focus-visible{outline:3px solid #7b4bd8;outline-offset:3px}
+.motion .btn.applygo{animation:agFlow 6s linear infinite,agPulse 2.4s ease-in-out infinite}
+.motion .btn.applygo::after{animation:agShine 3s ease-in-out infinite}
+.motion .btn.applygo .agi{animation:agRocket 2.4s ease-in-out infinite}
+@keyframes agFlow{to{background-position:300% 0}}
+@keyframes agPulse{0%,100%{box-shadow:0 10px 26px -8px rgba(224,64,123,.55)}50%{box-shadow:0 10px 34px -4px rgba(123,75,216,.6)}}
+@keyframes agShine{0%,55%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+@keyframes agRocket{0%,100%{transform:translate(0,0)}50%{transform:translate(2px,-3px) rotate(-8deg)}}
+@media (prefers-reduced-motion:reduce){.btn.applygo,.btn.applygo::after,.btn.applygo .agi{animation:none!important}}
+@media (max-width:640px){.applyrow .btn.applygo{flex:1 1 auto;justify-content:center}.applyrow .hint{flex-basis:100%}}

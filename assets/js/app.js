@@ -933,13 +933,12 @@ V.next=function(){
  if(wait)x=null;
  if(!x)return '<section class="stack"><h1>Choose a programme first</h1><p class="lead">Find a programme by faculty, university or scholarship, then come back here.</p><div class="row"><a class="btn" href="#faculty">Browse faculties</a><a class="btn ghost" href="#universities">Browse universities</a></div></section>';
  var note="Interested in: "+x.p.programme+" ("+x.u.name+").";
- return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x,true)+shareBox(x)+'<div class="row">'+saveBtn(x.p.id)+'</div>'+
+ return '<section class="stack">'+flowStep("Ask more")+'<div><a class="btn ghost" href="'+esc(sget("eduplan-last")||"#universities")+'">Back</a></div><span class="eyebrow">Your choice</span>'+progSummary(x,true)+shareBox(x)+'<div class="row applyrow">'+saveBtn(x.p.id)+'<a class="btn applygo" href="#apply/'+esc(x.p.id)+'"><span class="agi" aria-hidden="true">🚀</span><span>Apply now</span>'+ARROW+'</a><span class="hint">One form and your documents · about 10 minutes</span></div>'+
   '<h1>Any questions before you apply?</h1><p class="lead">Ask our AI study assistant, talk to a counsellor for free, or go straight to the application form.</p></section>'+
   '<section class="grid askcards">'+
    '<button type="button" class="item pick ask-ai" data-ask="'+esc("I am interested in "+x.p.programme+" at "+x.u.name+". ")+'"><span class="aski" aria-hidden="true">🤖</span><span class="name">Ask the AI study assistant</span><span class="desc">Quick answers about fees, entry requirements and scholarships, any time.</span><span class="textlink">Open the chat '+ARROW+'</span></button>'+
    '<a class="item pick ask-wa" href="#consultation" data-topic="Choosing a university" data-note="'+esc(note)+'"><span class="aski" aria-hidden="true">💬</span><span class="name">Book a free consultation</span><span class="desc">A counsellor goes through your options with you and your family.</span><span class="textlink">Book a time '+ARROW+'</span></a>'+
-   '<a class="item pick ask-go" href="#apply/'+esc(x.p.id)+'"><span class="aski" aria-hidden="true">🚀</span><span class="name">I am ready to apply</span><span class="desc">Fill in one form and upload your documents. About 10 minutes.</span><span class="textlink">Start the application '+ARROW+'</span></a>'+
-  '</section>';
+   '</section>';
 };
 
 V.apply=function(){
