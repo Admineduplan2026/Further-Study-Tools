@@ -213,6 +213,9 @@ function buildFromSheets_() {
 
 /* ---------------- Pure transform (no Google services; tested outside Apps Script) ---------------- */
 
+/* true: the demo schools (DEMO...) are left out of the website, the artifacts and the AI assistant. false shows them again. */
+var HIDE_DEMO_SCHOOLS = true;
+
 function buildEduplanData(values, formatDate, generatedAt) {
   var skipped = [];
   formatDate = formatDate || function (d) { return d.toISOString().slice(0, 10); };
@@ -321,6 +324,13 @@ function buildEduplanData(values, formatDate, generatedAt) {
   var faq = read('faq', values.faq, '');
 
   function strip(list) { return list.map(function (x) { delete x._row; delete x._sheet; return x; }); }
+  // Demo schools (institution_id starting with DEMO, made up for testing) stay in Drive but are not published.
+  if (HIDE_DEMO_SCHOOLS) {
+    var demo = function (id) { return /^DEMO/i.test(String(id || '')); };
+    institutions = institutions.filter(function (i) { return !demo(i.institution_id); });
+    programmes = programmes.filter(function (p) { return !demo(p.institution_id); });
+    campus = campus.filter(function (c) { return !demo(c.institution_id); });
+  }
   return {
     version: 1,
     generated_at: generatedAt || new Date().toISOString(),

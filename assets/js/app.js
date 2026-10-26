@@ -1896,6 +1896,7 @@ app.addEventListener("submit",function(ev){
 
 /* ---------- School data API (Google Sheet) ---------- */
 function applyApi(d){
+ if(window.EDUPLAN_NO_DEMO)d=window.EDUPLAN_NO_DEMO(d);
  if(!d||d.version!==1)return false;
  var inst={},courses={};
  (d.institutions||[]).forEach(function(i){inst[i.institution_id]=i;});

@@ -47,7 +47,7 @@ function getSampler(){
  return window.claude.use("sample").then(function(s){return sampler=s||null;},function(){return sampler=null;});
 }
 function askArtifact(sample,history,onText){
- var data=window.EDUPLAN_SHEET_DATA||{};
+ var data=window.EDUPLAN_SHEET_DATA||{};if(window.EDUPLAN_NO_DEMO)data=window.EDUPLAN_NO_DEMO(data);
  var turns=history.map(function(m){return {role:m.role,content:m.content};});
  turns[0]={role:"user",content:EDUPLAN_CHAT_SYSTEM+"\n\n<eduplan_data>\n"+eduplanKnowledge(data)+"\n</eduplan_data>\n\nStudent: "+turns[0].content};
  return sample(turns,{cache:false,onText:function(p){onText(p.text);}}).then(function(r){return r.text;},function(err){

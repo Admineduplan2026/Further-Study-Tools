@@ -48,6 +48,7 @@ function intakeMonths(s){s=String(s||"");if(/monthly|every month|throughout/i.te
 function facOfCourse(cid){for(var i=0;i<FAC.fields.length;i++)for(var j=0;j<FAC.fields[i].courses.length;j++)if(FAC.fields[i].courses[j].id===cid)return {f:FAC.fields[i],c:FAC.fields[i].courses[j]};return null;}
 function facByCode(code){for(var i=0;i<FAC.fields.length;i++)if(FAC.fields[i].code===code)return FAC.fields[i];return null;}
 function useData(d){
+ if(window.EDUPLAN_NO_DEMO)d=window.EDUPLAN_NO_DEMO(d);
  if(!d||d.version!==1)return false;
  var by={};
  D.inst=(d.institutions||[]).map(function(i){var o={id:i.institution_id,name:i.short_name||i.name,full:i.name,type:i.type,city:i.city,state:i.state,website:i.website,progs:0,sch:0};by[o.id]=o;return o;});
