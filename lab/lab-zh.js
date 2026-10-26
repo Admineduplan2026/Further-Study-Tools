@@ -36,7 +36,7 @@ window.EDUPLAN_ZH_EXTRA={text:{
  "Start the 12 questions":"开始 12 道问题","Continue the quiz":"继续测验","Faculties that suit your interests":"适合你兴趣的科系","See matching courses":"查看相关课程","Take the quiz again":"重新测验",
  "One last question":"最后一题","If you could only choose one of these for the next 3 years, which would you pick?":"如果未来 3 年只能选一个，你会选哪个？","Back":"返回",
  "Continue where you left off":"继续上次的进度","Unfinished application":"未完成的申请","Recently viewed":"最近浏览","View":"查看",
- "Popular universities":"热门大学","Malaysia":"马来西亚","Programmes coming soon":"课程即将上线","Popular fields of study":"热门科系",
+ "Popular universities":"热门大学","Loading universities and programmes…":"正在载入大学和课程…","The latest universities and programmes could not be loaded.":"未能载入最新的大学和课程。","Try again":"重试","Malaysia":"马来西亚","Programmes coming soon":"课程即将上线","Popular fields of study":"热门科系",
  "Scholarships and offers":"奖学金与优惠","See all":"查看全部","Deadline: check with the university":"截止日期：请向大学确认","Closes today":"今天截止","Offer":"优惠",
  "Recommended for you":"为你推荐","Take the interest quiz or save a few programmes, and we will recommend courses for you here.":"做兴趣测验或收藏几个课程，我们就会在这里推荐课程给你。",
  "Like the programmes you saved":"与你收藏的课程相似",

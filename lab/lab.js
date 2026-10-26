@@ -322,7 +322,15 @@ function intsBar(){var ints=myInts();if(!ints.length)return '';var sc={};
  var top=D.inst.filter(function(u){return sc[u.id];}).sort(function(a,b){return sc[b.id]-sc[a.id];}).slice(0,4);
  return '<div class="myints"><span>Your top 3 interests:</span>'+ints.map(function(c,i){return '<button type="button" class="lchip" data-lfac="'+esc(c)+'">'+(i+1)+'. '+esc(facLabel(c))+'</button>';}).join("")+'</div>'+
   (top.length?'<div class="myints"><span>Recommended universities:</span>'+top.map(function(u){return '<a class="lchip" href="#universities/'+esc(u.id.toLowerCase())+'" data-lflow="universities">'+esc(u.name)+'</a>';}).join("")+'</div>':'');}
+/* The live sheet data: "loading" until it arrives, "failed" when it does not (the Apps Script can take a while after
+   the sheets change). While nothing is loaded the home page says so instead of showing empty sections. */
+var LIVE=API&&window.fetch&&!PREVIEW?"loading":"done";
+function loadLive(){if(LIVE==="done")return;LIVE="loading";
+ fetch(API).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
+  .then(function(d){LIVE=useData(d)?"done":"failed";render(true);}).catch(function(){LIVE="failed";render(true);});}
 function popular(){
+ if(!D.inst.length&&LIVE!=="done")return '<section class="sec"><div class="lnote" role="status">'+(LIVE==="loading"?'Loading universities and programmes…':
+  'The latest universities and programmes could not be loaded. <button type="button" class="linkbtn" data-act="reload-data">Try again</button>')+'</div></section>';
  var unis=D.inst.filter(function(u){return u.progs||u.sch;}).sort(function(a,b){return b.progs-a.progs;});
  var facs=FAC.fields.map(function(f){return {f:f,n:D.progs.filter(function(p){return p.fac===f;}).length};}).filter(function(x){return x.n;}).sort(function(a,b){return b.n-a.n;});
  return '<section class="sec"><div class="sh"><h2>Popular universities</h2><span class="hint">Malaysia</span></div><div class="hscroll">'+unis.map(function(u){
@@ -726,6 +734,7 @@ document.addEventListener("click",function(ev){
  else if(act==="clear-search"){S.search=JSON.parse(JSON.stringify(SEARCH0));ls("eduplan-lab-search",S.search);hadSearch=false;touch("search");render(true);}
  else if(act==="show-nofee"){L.showNoFee=true;render(true);}
  else if(act==="quiz-start"){var a=S.quiz.answers.filter(function(v){return v!=null;}).length;L.quizStep=a&&S.quiz.step<QUIZ.questions.length?S.quiz.step:0;if(!L.quizStep){S.quiz={step:0,answers:[],tie:null};}render(true);}
+ else if(act==="reload-data"){loadLive();render(true);}
  else if(act==="quiz-again"){S.quiz={step:0,answers:[],tie:null};L.quizStep=0;quizSave();render(true);}
  else if(act==="quiz-back"){L.quizStep=Math.max(0,L.quizStep-1);S.quiz.step=L.quizStep;quizSave();render(true);}
 });
@@ -880,5 +889,5 @@ syncLoad();
    route. No cookie, no identifier; the preview does not count. */
 try{if(API&&window.fetch&&!PREVIEW&&!sessionStorage.getItem("eduplan-visit")){sessionStorage.setItem("eduplan-visit","1");post({action:"visit",member:!!S.session,mode:L.mode}).catch(function(){});}}catch(e){}
 intro();
-if(API&&window.fetch&&!PREVIEW)fetch(API).then(function(r){return r.json();}).then(function(d){if(useData(d))render(true);}).catch(function(){});
+loadLive();
 })();
