@@ -1419,7 +1419,10 @@ function idBox(){var v=idv();
 document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute("data-idfile"))return;var file=t.files&&t.files[0];if(!file)return;
  S.idBusy=true;S.idErr="";rerender();
  RX.readId(file).then(function(r){S.idBusy=false;
-  if(r.error)S.idErr=RX.errText(r.error);else{S.prof=S.prof||{};S.prof.idv=r.v;S.prof.name=r.v.name;S.prof.icform=r.form||{};store("eduplan-profile",S.prof);pfTouch("profile");}
+  if(r.error)S.idErr=RX.errText(r.error);else{S.prof=S.prof||{};S.prof.idv=r.v;S.prof.name=r.v.name;S.prof.icform=r.form||{};store("eduplan-profile",S.prof);pfTouch("profile");
+   /* A new IC reading replaces the IC fields already in the application form. */
+   var f=S.prof.icform,map={ic:f.ic,dob:f.dob,a_pob:f.pob,gender:f.gender,nationality:f.nationality,residence:f.residence,religion:f.religion,addr:f.address,postcode:f.postcode,town:f.town,state:f.state},ch=false;
+   if(S.app&&S.app.v){Object.keys(map).forEach(function(k){if(map[k]&&S.app.v[k]!==map[k]){S.app.v[k]=map[k];ch=true;}});if(ch)applySave();}}
   rerender();});});
 var PROF_STATUS=["Form 4 or Form 5 student","Waiting for SPM results","Finished SPM","In pre-university (Form 6, A-Level, foundation, matriculation)","Studying at a college or university"];
 var MY_STATES=["Johor","Kedah","Kelantan","Kuala Lumpur","Labuan","Melaka","Negeri Sembilan","Pahang","Penang","Perak","Perlis","Putrajaya","Sabah","Sarawak","Selangor","Terengganu"];
