@@ -944,7 +944,8 @@ V.next=function(){
 V.apply=function(){
  var a=S.app,n=APPLY_STEPS.length,pr=S.prof||{};
  /* Empty fields start from My profile and the signed-in email; the student checks them against the IC. */
- var pre={name_en:pr.idv&&pr.idv.name,mobile:pr.phone,email:PF.s&&PF.s.email},ch=false;
+ var f=pr.icform||{},pre={name_en:pr.idv&&pr.idv.name,mobile:pr.phone,email:PF.s&&PF.s.email,
+  gender:f.gender,addr:f.address,postcode:f.postcode,town:f.town,state:f.state,country:f.gender?"Malaysia":""},ch=false;   /* name, address and gender read from the IC */
  Object.keys(pre).forEach(function(k){if(!a.v[k]&&pre[k]){a.v[k]=pre[k];ch=true;}});if(ch)applySave();
  return '<section class="stack">'+flowStep("Apply")+'<span class="eyebrow">Apply with EDUPLAN</span><h1>Application form</h1>'+
   '<p class="lead">One form for your university application. It takes about 10 minutes. '+(PF.s?'Your answers are saved to your portfolio as you type.':'Your answers stay on this device until you close the tab. <a href="#portfolio">Sign in</a> to save them and continue later.')+'</p></section>'+
@@ -1402,17 +1403,18 @@ V.privacy=function(){
 function sameNameApp(a,b){function k(s){return String(s||"").toUpperCase().replace(/[^A-Z\u00C0-\u024F\u4E00-\u9FFF]+/g," ").trim().split(/\s+/).filter(Boolean).sort().join(" ");}return !!k(a)&&k(a)===k(b);}
 function idv(){var v=S.prof&&S.prof.idv;return v&&v.name&&(!RX.live()||v.sig)?v:null;}
 function idBox(){var v=idv();
- if(v)return '<div class="idok"><span class="idbadge">✓ Verified with your IC</span><b data-notr>'+esc(v.name)+'</b><span class="hint">'+(v.type==="passport"?'Passport':'IC')+' ending ••••'+esc(v.last4)+'</span></div>';
+ if(v)return '<div class="idok"><span class="idbadge">✓ Verified with your IC</span><b data-notr>'+esc(v.name)+'</b><span class="hint">'+(v.type==="passport"?'Passport':'IC')+' ending ••••'+esc(v.last4)+'</span>'+
+  (function(f){return f&&(f.address||f.gender)?'<span class="hint">'+(f.gender?'<span>'+esc(f.gender)+'</span>':'')+(f.address?' · <span data-notr>'+esc([f.address,[f.postcode,f.town].filter(Boolean).join(" "),f.state].filter(Boolean).join(", "))+'</span>':'')+'</span><span class="hint">Filled in on your application form for you.</span>':'';})((S.prof||{}).icform)+'</div>';
  if(RX.live()&&!PF.s)return '<p class="hint"><a href="#portfolio">Sign in</a>, then verify your name with a photo of your IC.</p>';
  if(!RX.canRead())return '<p class="hint">Verifying your name with your IC works on the live EDUPLAN website.</p>';
  if(S.idBusy)return '<p class="note" role="status">Reading your IC… This takes up to a minute.</p>';
  return '<div class="idup"><label class="btn idbtn">🪪 Verify my name with my IC<input type="file" accept="'+(RX.live()?'image/*,application/pdf':'image/*')+'" capture="environment" data-idfile hidden></label>'+
-  '<span class="hint">Take a photo of the front of your IC (MyKad or MyKid; international students: passport photo page). AI reads your name. We keep only your name and the last 4 digits of the number; the photo is not stored.</span>'+
+  '<span class="hint">Take a photo of the front of your IC (MyKad or MyKid; international students: passport photo page). AI reads your name, and from a MyKad or MyKid also your address, postcode and gender (from the last digit: odd male, even female) to fill in your application form for you. We keep your name and the last 4 digits of the number; the photo is not stored.</span>'+
   (S.idErr?'<span class="err" role="alert">'+esc(S.idErr)+'</span>':'')+'</div>';}
 document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribute||!t.hasAttribute("data-idfile"))return;var file=t.files&&t.files[0];if(!file)return;
  S.idBusy=true;S.idErr="";rerender();
  RX.readId(file).then(function(r){S.idBusy=false;
-  if(r.error)S.idErr=RX.errText(r.error);else{S.prof=S.prof||{};S.prof.idv=r.v;S.prof.name=r.v.name;store("eduplan-profile",S.prof);pfTouch("profile");}
+  if(r.error)S.idErr=RX.errText(r.error);else{S.prof=S.prof||{};S.prof.idv=r.v;S.prof.name=r.v.name;S.prof.icform=r.form||{};store("eduplan-profile",S.prof);pfTouch("profile");}
   rerender();});});
 var PROF_STATUS=["Form 4 or Form 5 student","Waiting for SPM results","Finished SPM","In pre-university (Form 6, A-Level, foundation, matriculation)","Studying at a college or university"];
 var MY_STATES=["Johor","Kedah","Kelantan","Kuala Lumpur","Labuan","Melaka","Negeri Sembilan","Pahang","Penang","Perak","Perlis","Putrajaya","Sabah","Sarawak","Selangor","Terengganu"];

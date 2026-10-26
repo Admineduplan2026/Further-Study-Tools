@@ -260,7 +260,8 @@ function readSlip(id){var f=document.getElementById("rx-file"),k=document.getEle
 /* Name check (Identity.gs): Claude reads the front of the student's MyKad / MyKid / passport. Only the name and the
    last 4 characters of the number are kept; the photo and the full number are not. Resolves {v} or {error}. */
 var ID_PROMPT="You read the front of an identity document for EDUPLAN, a study guidance service in Malaysia, to confirm the student's name. "+
- "Reply with JSON only: {\"is_id_document\":boolean,\"card_type\":\"MyKad|MyKid|passport|other\",\"name\":string,\"id_number\":string,\"problems\":string}. "+
+ "Reply with JSON only: {\"is_id_document\":boolean,\"card_type\":\"MyKad|MyKid|passport|other\",\"name\":string,\"id_number\":string,\"address\":string,\"postcode\":string,\"town\":string,\"state\":string,\"problems\":string}. "+
+ "address = the address lines printed on a MyKad or MyKid without postcode, town and state, joined with \", \"; postcode = the 5 digits; town = the town after it; state = the state at the end (Johor, Kedah, Kelantan, Kuala Lumpur, Labuan, Melaka, Negeri Sembilan, Pahang, Penang, Perak, Perlis, Putrajaya, Sabah, Sarawak, Selangor or Terengganu); \"\" when not printed. "+
  "is_id_document is true only for the front of a Malaysian MyKad or MyKid, or the photo page of a passport. name: the holder's full name exactly as printed. "+
  "id_number: the IC number (000000-00-0000) or passport number exactly as printed. Leave a field \"\" if you cannot read it with certainty.";
 function idCheck(r){if(!r||!r.is_id_document||r.card_type==="other")return {error:"not_id"};
@@ -268,7 +269,9 @@ function idCheck(r){if(!r||!r.is_id_document||r.card_type==="other")return {erro
  if(name.length<3||name.length>120)return {error:"unreadable"};
  if(r.card_type==="passport"){if(!/^[A-Z0-9]{6,12}$/.test(num))return {error:"unreadable"};}
  else if(!(m=num.match(/^(\d{2})(\d{2})(\d{2})\d{6}$/))||+m[2]<1||+m[2]>12||+m[3]<1||+m[3]>31)return {error:"unreadable"};
- return {v:{name:name,last4:num.slice(-4),at:Date.now(),type:r.card_type}};}
+ var form={};if(r.card_type!=="passport"){form.gender=(+num.slice(-1))%2?"Male":"Female";var pc=String(r.postcode||"").replace(/\D/g,"");if(/^\d{5}$/.test(pc))form.postcode=pc;
+  if(r.address)form.address=String(r.address).replace(/\s+/g," ").trim().slice(0,300);if(r.town)form.town=String(r.town).trim().slice(0,80);if(r.state)form.state=String(r.state).trim();}
+ return {v:{name:name,last4:num.slice(-4),at:Date.now(),type:r.card_type},form:form};}
 function readId(file){
  if(!file)return Promise.resolve({error:"bad_request"});
  return shrink(file).then(readIdFile).then(function(r){if(r&&r.error==="not_configured")r.error="id_not_configured";return r;});}
@@ -279,7 +282,7 @@ function readIdFile(file){
  var ss=session();if(!ss)return Promise.resolve({error:"signed_out"});
  return new Promise(function(res){var rd=new FileReader();rd.onload=function(){
   fetch(window.EDUPLAN_API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({action:"id_verify",token:ss.token,file:{type:file.type,data:String(rd.result).split(",")[1]||""}})})
-   .then(function(r){return r.json();}).then(function(d){res(d&&d.ok?{v:{name:d.name,last4:d.last4,at:d.at,type:d.type,sig:d.sig}}:{error:(d&&d.error)||"busy"});},function(){res({error:"net"});});};
+   .then(function(r){return r.json();}).then(function(d){res(d&&d.ok?{v:{name:d.name,last4:d.last4,at:d.at,type:d.type,sig:d.sig},form:d.form||{}}:{error:(d&&d.error)||"busy"});},function(){res({error:"net"});});};
   rd.readAsDataURL(file);});}
 /* The photo box in the search forms: take or choose a photo of the slip; the grades fill in and lock. */
 function snapField(id,pick){var e=exam(id)||exam("SPM"),grade=EXAMS.filter(function(x){return !x.cgpa;});

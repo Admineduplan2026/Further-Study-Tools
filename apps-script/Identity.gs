@@ -5,9 +5,12 @@
  * The website POSTs {"action":"id_verify","token":"...","file":{"type":"image/jpeg"|...,"data":"<base64>"}} to /exec.
  * The student must be signed in (Account.gs). Only the name and the last 4 digits of the IC (or passport) number are
  * kept, signed with RESULTS_SECRET (Results.gs) together with the student's email; the photo and the full number are
- * never stored. Account.gs keeps the name check in the portfolio's profile only when its signature is valid, so a name
+ * never stored. The address, postcode, town, state and gender (from the last digit) are also returned, only to fill in
+ * the application form, where the student can still change them. Account.gs keeps the name check in the portfolio's profile only when its signature is valid, so a name
  * typed in the browser does not count. Uses ANTHROPIC_API_KEY and the daily limit of Results.gs (RESULTS_DAILY_LIMIT).
  */
+
+var ID_STATES = ['Johor', 'Kedah', 'Kelantan', 'Kuala Lumpur', 'Labuan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Penang', 'Perak', 'Perlis', 'Putrajaya', 'Sabah', 'Sarawak', 'Selangor', 'Terengganu'];
 
 var ID_SYSTEM = [
   'You read the front of an identity document for Eduplan, a study guidance service in Malaysia, to confirm the student\'s name.',
@@ -16,6 +19,8 @@ var ID_SYSTEM = [
   '- card_type: MyKad, MyKid, passport or other.',
   '- name: the holder\'s full name exactly as printed.',
   '- id_number: the IC number (12 digits, written 000000-00-0000) or the passport number, exactly as printed.',
+  '- address: the address lines printed on a MyKad or MyKid, without the postcode, town and state, lines joined with ", "; "" for a passport.',
+  '- postcode: the 5-digit postcode in the address; town: the town or city after it; state: the state at the end, written as one of: ' + ID_STATES.join(', ') + '. "" when not printed.',
   '- problems: anything unreadable, covered, edited-looking or inconsistent; "" when there is none.',
   'If the name or number cannot be read with certainty, leave it "" and say so in problems.'
 ].join('\n');
@@ -30,9 +35,13 @@ var ID_TOOL = {
       card_type: { type: 'string', enum: ['MyKad', 'MyKid', 'passport', 'other'] },
       name: { type: 'string' },
       id_number: { type: 'string' },
+      address: { type: 'string' },
+      postcode: { type: 'string' },
+      town: { type: 'string' },
+      state: { type: 'string' },
       problems: { type: 'string' }
     },
-    required: ['is_id_document', 'card_type', 'name', 'id_number', 'problems']
+    required: ['is_id_document', 'card_type', 'name', 'id_number', 'address', 'postcode', 'town', 'state', 'problems']
   }
 };
 
@@ -98,7 +107,7 @@ function idReadFile_(email, type, data) {
 }
 
 /* A MyKad / MyKid number is 12 digits starting with a real date of birth (YYMMDD); a passport number is 6 to 12
-   letters and digits. Only the name and the last 4 characters are returned. */
+   letters and digits. The name and the last 4 characters are kept (signed); the address and gender go to the form. */
 function idCheck_(email, r) {
   if (!r || !r.is_id_document || r.card_type === 'other') return { error: 'not_id' };
   var name = String(r.name || '').replace(/\s+/g, ' ').trim(), num = String(r.id_number || '').replace(/[\s-]/g, '').toUpperCase();
@@ -110,7 +119,18 @@ function idCheck_(email, r) {
   }
   var v = { name: accountCell_(name, 120), last4: num.slice(-4), at: Date.now(), type: r.card_type };
   v.sig = idSign_(email, v);
-  return { ok: true, name: v.name, last4: v.last4, at: v.at, type: v.type, sig: v.sig };
+  // For the application form only (the student can still change them there): the address on a MyKad / MyKid, and
+  // the gender from the last digit of the IC number (odd = male, even = female). Not part of the signature.
+  var form = {};
+  if (r.card_type !== 'passport') {
+    form.gender = (+num.slice(-1)) % 2 ? 'Male' : 'Female';
+    var pc = String(r.postcode || '').replace(/\D/g, '');
+    if (/^\d{5}$/.test(pc)) form.postcode = pc;
+    if (r.address) form.address = accountCell_(String(r.address).replace(/\s+/g, ' ').trim(), 300);
+    if (r.town) form.town = accountCell_(String(r.town).trim(), 80);
+    if (ID_STATES.indexOf(String(r.state || '').trim()) > -1) form.state = String(r.state).trim();
+  }
+  return { ok: true, name: v.name, last4: v.last4, at: v.at, type: v.type, sig: v.sig, form: form };
 }
 
 /* Test from the Apps Script editor: put a photo of an IC (front) in Google Drive, paste its file ID below, select
