@@ -1408,6 +1408,7 @@ function idBox(){var v=idv();
   (function(f){return f&&(f.address||f.gender||f.dob)?'<dl class="facts idread">'+(f.dob?'<dt>Date of birth</dt><dd data-notr>'+esc(f.dob)+'</dd>':'')+(f.pob?'<dt>Place of birth</dt><dd>'+esc(f.pob)+'</dd>':'')+
    (f.gender?'<dt>Gender</dt><dd>'+esc(f.gender)+'</dd>':'')+(f.address?'<dt>Address</dt><dd data-notr>'+esc([f.address,[f.postcode,f.town].filter(Boolean).join(" "),f.state].filter(Boolean).join(", "))+'</dd>':'')+'</dl>'+
    '<span class="hint">Filled in on your application form for you. Please check them; if anything is wrong, upload a sharper photo below.</span>':'';})((S.prof||{}).icform)+
+  (!S.idBusy?'<button type="button" class="btn ghost sm" data-idremove>✕ <span>Remove my IC details</span></button>':'')+
   (RX.canRead()&&!S.idBusy?'<label class="btn ghost sm idbtn">🪪 <span>Upload my IC again</span><input type="file" accept="'+(RX.live()?'image/*,application/pdf':'image/*')+'" capture="environment" data-idfile hidden></label>':'')+
   (S.idBusy?'<p class="note" role="status">Reading your IC… This takes up to a minute.</p>':'')+(S.idErr?'<span class="err" role="alert">'+esc(S.idErr)+'</span>':'')+'</div>';
  if(RX.live()&&!PF.s)return '<p class="hint"><a href="#portfolio">Sign in</a>, then verify your name with a photo of your IC.</p>';
@@ -1424,6 +1425,14 @@ document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribu
    var f=S.prof.icform,map={ic:f.ic,dob:f.dob,a_pob:f.pob,gender:f.gender,nationality:f.nationality,residence:f.residence,religion:f.religion,addr:f.address,postcode:f.postcode,town:f.town,state:f.state},ch=false;
    if(S.app&&S.app.v){Object.keys(map).forEach(function(k){if(map[k]&&S.app.v[k]!==map[k]){S.app.v[k]=map[k];ch=true;}});if(ch)applySave();}}
   rerender();});});
+/* Remove the IC check: the verified name, the details read from the IC and the same details in the application
+   form are cleared, so the student can upload the IC again or start over. */
+document.addEventListener("click",function(ev){var b=ev.target.closest&&ev.target.closest("[data-idremove]");if(!b)return;
+ var q="Remove your IC details? Your verified name and the details read from your IC are cleared, also from your application form. You can upload your IC again at any time.";
+ if(!window.confirm(window.EDUPLAN_T?window.EDUPLAN_T(q):q))return;
+ var p=S.prof||{},f=p.icform||{},map={ic:f.ic,dob:f.dob,a_pob:f.pob,gender:f.gender,nationality:f.nationality,residence:f.residence,religion:f.religion,addr:f.address,postcode:f.postcode,town:f.town,state:f.state,name_en:p.idv&&p.idv.name},ch=false;
+ if(S.app&&S.app.v)Object.keys(map).forEach(function(k){if(map[k]&&S.app.v[k]===map[k]){S.app.v[k]="";ch=true;}});if(ch)applySave();
+ delete p.idv;delete p.icform;if(p.postcode&&p.postcode===f.postcode)delete p.postcode;S.prof=p;S.idErr="";store("eduplan-profile",p);pfTouch("profile");rerender();});
 var PROF_STATUS=["Form 4 or Form 5 student","Waiting for SPM results","Finished SPM","In pre-university (Form 6, A-Level, foundation, matriculation)","Studying at a college or university"];
 var MY_STATES=["Johor","Kedah","Kelantan","Kuala Lumpur","Labuan","Melaka","Negeri Sembilan","Pahang","Penang","Perak","Perlis","Putrajaya","Sabah","Sarawak","Selangor","Terengganu"];
 function pfProfile(){var p=S.prof||{},fi=p.fields||[];
