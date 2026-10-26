@@ -178,6 +178,22 @@ function uniTour(u,title,lead,meta){
   (u.tour?'<div class="row"><a class="btn" href="'+esc(u.tour)+'" target="_blank" rel="noopener">Explore the 3D campus tour '+ARROW+'</a></div>'+
   '<p class="hint">Opens '+esc(u.name)+'\u2019s official virtual tour in a new tab.</p>':'')+'</div></section>';
 }
+/* Student accommodation from the institution's own document (accommodation-data.js): rooms and rent, fees and
+   refunds, facilities, how the rent is paid, rent per semester, contact and photos. "" when there is none. */
+function accomData(id){var A=window.EDUPLAN_ACCOM||{};return A[String(id||"").toUpperCase()]||null;}
+function accomFrom(id){var a=accomData(id);return a?Math.min.apply(null,a.rooms.map(function(r){return r.rent;})):null;}
+function accomBox(id){var a=accomData(id);if(!a)return "";
+ function ul(l){return '<ul class="aclist">'+l.map(function(x){return '<li>'+esc(x[0])+'</li>';}).join("")+'</ul>';}
+ return '<div class="accom">'+
+  '<div class="tablewrap"><table class="actable"><caption class="sr">Student accommodation</caption><thead><tr><th scope="col">Room type</th><th scope="col">Monthly rent per student</th><th scope="col">Deposit</th><th scope="col">Room size</th></tr></thead><tbody>'+
+   a.rooms.map(function(r){return '<tr><th scope="row"><span>'+esc(r.name[0])+'</span><br><small>'+esc(r.note[0])+'</small></th><td data-notr>'+esc(rm(r.rent))+'</td><td data-notr>'+esc(rm(r.deposit))+'</td><td data-notr>'+r.size+' m²</td></tr>';}).join("")+'</tbody></table></div>'+
+  '<div class="acgrid"><div><h4>Facilities</h4>'+ul(a.facilities)+'</div><div><h4>Fees and refunds</h4>'+ul(a.fees)+'<h4>Paying the rent</h4>'+ul(a.payment)+'</div></div>'+
+  '<h4>Rent charged per semester</h4><div class="tablewrap"><table class="actable"><thead><tr><th scope="col">Programme</th><th scope="col">Semester</th><th scope="col">Rent charged</th></tr></thead><tbody>'+
+   a.terms.map(function(t){return t[1].map(function(sm,i){return '<tr>'+(i?'':'<th scope="rowgroup" rowspan="'+t[1].length+'">'+esc(t[0][0])+'</th>')+'<td>'+esc(sm[0][0])+'</td><td>'+sm[1]+(sm[1]===1?' month':' months')+'</td></tr>';}).join("");}).join("")+'</tbody></table></div>'+
+  '<h4>Photos</h4><div class="acphotos">'+a.photos.map(function(ph){return '<figure><img src="'+esc(asset(ph[0]))+'" alt="'+esc(ph[1][0])+'" loading="lazy"><figcaption>'+esc(ph[1][0])+'</figcaption></figure>';}).join("")+'</div>'+
+  '<h4>Contact the accommodation office</h4><p><a href="mailto:'+esc(a.contact.email)+'">'+esc(a.contact.email)+'</a><br><span data-notr>'+esc(a.contact.phones)+'</span><br><span class="hint">'+esc(a.contact.hours[0])+'</span></p>'+
+  '<p class="hint"><span>Source:</span> <span>'+esc(a.source[0])+'</span>. <span>Rules and fees can change. Please confirm with the university before you book.</span></p></div>';}
+window.EDUPLAN_ACCOMBOX=accomBox;
 function uniPage(u){
  var n=uniScholarships(u);
  return uniHead(u,2,"#universities")+(hasBanner(u)?'':'<h1>'+esc(u.name)+'</h1>'+(u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':''))+
@@ -186,6 +202,7 @@ function uniPage(u){
  '<section class="panel">'+facts([["Website",u.website],["Admissions email",u.email],["Admissions phone",u.phone],["WhatsApp",u.whatsapp],["Last updated",u.lastUpdated]])+
   '<div class="row">'+(u.website?'<a class="btn ghost" href="'+esc(u.website)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'')+
   (n?'<a class="btn ghost" href="#scholarships-campus/'+esc(u.id.toLowerCase())+'">Scholarships ('+n+') '+ARROW+'</a>':'')+'</div></section>'+
+ (accomData(u.id)?'<section class="section"><h2>🏠 <span>Student accommodation</span></h2>'+accomBox(u.id)+'</section>':'')+
  '<section class="section"><h2>Choose a study level</h2><div class="grid">'+LEVELS.map(function(L){
   var ps=u.progs.filter(function(p){return uniLevel(p.level)[0]===L[0];});
   var subs=L[2].map(function(sl){var k=ps.filter(function(p){return uniLevel(p.level)[1]===sl;}).length;return k?'<span class="pill">'+esc(sl)+' · '+k+'</span>':'';}).join("");
@@ -482,8 +499,9 @@ function facUnis(f,c){
  '<div class="row"><a class="btn" href="#consultation" data-topic="Choosing a university" data-note="Interested in: '+esc(c.name)+'.">Ask a counsellor about this course</a></div></section>';
 }
 
-V.accommodation=function(){return ''+
+V.accommodation=function(){var A=window.EDUPLAN_ACCOM||{};return ''+
  '<section class="stack"><span class="eyebrow">Accommodation</span><h1>Where you will stay</h1><p class="lead">Hostel options at each institution. Monthly rent is a placeholder figure.</p></section>'+
+ Object.keys(A).map(function(id){var x=UNIV.filter(function(u){return u.id===id;})[0];return '<section class="section"><h2>🏠 <span data-notr>'+esc(x?x.fullName||x.name:id)+'</span></h2>'+accomBox(id)+'</section>';}).join("")+
  '<section class="grid">'+UNIS.map(function(u){return '<div class="item"><span class="big">'+(u.rent?"RM "+u.rent:"Rental help")+'</span><span class="hint">'+(u.rent?"per month, shared room":"no hostel on campus")+'</span><h3>'+esc(u.name)+'</h3><p>'+esc(u.city)+'. '+esc(u.hostel)+'.</p></div>';}).join("")+'</section>'+
  '<section class="panel"><h2>Need help choosing a hostel?</h2><div><a class="btn" href="#consultation">Ask a counsellor</a></div></section>';
 };
@@ -879,6 +897,7 @@ function progAccordion(u,annual,notes){
   (function(h,c){return h?accItem("careers","🚀","Future pathway and careers",c.list.length?c.list.length+(c.list.length===1?" career":" careers")+(c.general?" (general guide)":""):"",h):'';})(pathway(u.course_id,u.level,u.careers),careerList(u.course_id,u.careers))+
   accItem("scholarships","🎓","Scholarships",best!=null?"Up to "+best+"% tuition waiver":"",(sch.length?'<ul class="schlinks">'+sch.map(function(g){return '<li><a href="'+esc(g.href)+'"><span class="name">'+esc(g.name)+'</span>'+(g.best!=null?'<span class="pill brand">Up to '+g.best+'% tuition waiver</span>':'')+'</a></li>';}).join("")+'</ul>'
     :'<p class="hint">No campus scholarship listed for this level yet.</p>')+'<a class="textlink" href="#scholarships-foundation">Other scholarships open to all students '+ARROW+'</a>')+
+  (accomData(u.inst)?accItem("accom","🏠","Accommodation",'<span>from</span> <span data-notr>'+esc(rm(accomFrom(u.inst)))+'</span> <span>a month</span>',accomBox(u.inst)):'')+
   (notes.length?accItem("notes","📝","Notes","",notes.map(function(l){return '<p class="muted">'+esc(l)+'</p>';}).join("")):'')+'</div>'+
   (u.url?'<a class="textlink" href="'+esc(u.url)+'" target="_blank" rel="noopener">Programme page '+ARROW+'</a>':'');}
 /* Expand all / Collapse all, and the button follows the sections the student opens one by one. */
@@ -930,7 +949,8 @@ V.stay=function(){
   '<div class="row"><a class="btn" href="#pay">Pay tuition fees '+ARROW+'</a><button type="button" class="btn ghost" data-apply="clear">Start a new application</button><a class="btn ghost" href="#home">Back to home</a></div></section>';
  if(!a.complete)return head+'<h1>Finish your application first</h1><p class="lead">Accommodation help is the last step of the application.</p><div class="row"><a class="btn" href="#apply">Go to the application form</a></div></section>';
  var x=applyProg();
- return head+'<h1>Do you need help with accommodation?</h1><p class="lead">EDUPLAN can help you find a hostel or a room near '+esc(x?x.u.name:"your campus")+'.</p></section>'+
+ return head+'<h1>Do you need help with accommodation?</h1><p class="lead">EDUPLAN can help you find a hostel or a room near '+esc(x?x.u.name:"your campus")+'.</p>'+
+  (x&&accomData(x.u.id)?'<details class="acc"><summary><span class="acci" aria-hidden="true">🏠</span><span class="acct"><b>Accommodation details from the institution</b><span class="hint"><span>from</span> <span data-notr>'+esc(rm(accomFrom(x.u.id)))+'</span> <span>a month</span></span></span></summary><div class="accb">'+accomBox(x.u.id)+'</div></details>':'')+'</section>'+
   '<section class="panel" style="max-width:760px"><form class="fields" id="stay-form" novalidate>'+
    agroup("Accommodation",af("acc","Do you need accommodation help?",{opts:[["Yes","Yes, please help me"],["No","No, I have arranged it"]],first:"Choose",rerender:true,full:true})+
     (v.acc==="Yes"?af("acc_type","Type",{opts:["On-campus hostel","Rented room near campus","Not sure yet"],first:"Choose"})+af("acc_room","Room",{opts:["Single room","Shared room","No preference"],first:"Choose"})+

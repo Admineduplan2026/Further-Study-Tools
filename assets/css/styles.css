@@ -805,3 +805,18 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .pwstep p{margin:0}
 .pwi{flex:none;width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:#fff;font-size:18px}
 .pwjobs{margin:4px 0 6px;display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:2px 18px}
+/* Student accommodation (accommodation-data.js) */
+.accom{display:flex;flex-direction:column;gap:12px;min-width:0}
+.accom h4{margin:6px 0 0;font-size:15px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink)}
+.actable{width:100%;border-collapse:collapse;font-size:14.5px}
+.actable th,.actable td{text-align:left;vertical-align:top;padding:9px 10px;border-bottom:1px solid var(--line)}
+.actable thead th{font-size:12.5px;font-weight:600;color:var(--muted);background:var(--soft)}
+.actable tbody th{font-weight:600}
+.actable small{font-weight:400;color:var(--muted)}
+.acgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px}
+.aclist{margin:4px 0 0;padding-left:18px;font-size:14.5px;display:flex;flex-direction:column;gap:3px}
+.acphotos{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.acphotos figure{margin:0;display:flex;flex-direction:column;gap:4px}
+.acphotos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;border:1px solid var(--line);background:var(--soft)}
+.acphotos figcaption{font-size:12.5px;color:var(--muted)}
+@media (max-width:640px){.acgrid{grid-template-columns:minmax(0,1fr)}.acphotos{grid-template-columns:repeat(2,minmax(0,1fr))}.actable{font-size:13.5px}.actable th,.actable td{padding:8px 6px}}
