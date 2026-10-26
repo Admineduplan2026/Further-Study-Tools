@@ -193,7 +193,9 @@ function accomBox(id){var a=accomData(id);if(!a)return "";
   '<h4>Photos</h4><div class="acphotos">'+a.photos.map(function(ph){return '<figure><img src="'+esc(asset(ph[0]))+'" alt="'+esc(ph[1][0])+'" loading="lazy"><figcaption>'+esc(ph[1][0])+'</figcaption></figure>';}).join("")+'</div>'+
   '<h4>Contact the accommodation office</h4><p><a href="mailto:'+esc(a.contact.email)+'">'+esc(a.contact.email)+'</a><br><span data-notr>'+esc(a.contact.phones)+'</span><br><span class="hint">'+esc(a.contact.hours[0])+'</span></p>'+
   '<p class="hint"><span>Source:</span> <span>'+esc(a.source[0])+'</span>. <span>Rules and fees can change. Please confirm with the university before you book.</span></p></div>';}
-window.EDUPLAN_ACCOMBOX=accomBox;
+/* The same, folded: one line with the lowest rent, opened by a tap (several institutions can sit on one page). */
+function accomFold(id,title){return accomData(id)?accItem("accom","🏠",title||"Student accommodation",'<span>from</span> <span data-notr>'+esc(rm(accomFrom(id)))+'</span> <span>a month</span>',accomBox(id)):'';}
+window.EDUPLAN_ACCOMBOX=accomBox;window.EDUPLAN_ACCOMFOLD=accomFold;
 function uniPage(u){
  var n=uniScholarships(u);
  return uniHead(u,2,"#universities")+(hasBanner(u)?'':'<h1>'+esc(u.name)+'</h1>'+(u.fullName!==u.name?'<p class="lead">'+esc(u.fullName)+'</p>':''))+
@@ -202,7 +204,7 @@ function uniPage(u){
  '<section class="panel">'+facts([["Website",u.website],["Admissions email",u.email],["Admissions phone",u.phone],["WhatsApp",u.whatsapp],["Last updated",u.lastUpdated]])+
   '<div class="row">'+(u.website?'<a class="btn ghost" href="'+esc(u.website)+'" target="_blank" rel="noopener">Official website '+ARROW+'</a>':'')+
   (n?'<a class="btn ghost" href="#scholarships-campus/'+esc(u.id.toLowerCase())+'">Scholarships ('+n+') '+ARROW+'</a>':'')+'</div></section>'+
- (accomData(u.id)?'<section class="section"><h2>🏠 <span>Student accommodation</span></h2>'+accomBox(u.id)+'</section>':'')+
+ (accomData(u.id)?'<section class="section accwrap">'+accomFold(u.id)+'</section>':'')+
  '<section class="section"><h2>Choose a study level</h2><div class="grid">'+LEVELS.map(function(L){
   var ps=u.progs.filter(function(p){return uniLevel(p.level)[0]===L[0];});
   var subs=L[2].map(function(sl){var k=ps.filter(function(p){return uniLevel(p.level)[1]===sl;}).length;return k?'<span class="pill">'+esc(sl)+' · '+k+'</span>':'';}).join("");
@@ -501,7 +503,7 @@ function facUnis(f,c){
 
 V.accommodation=function(){var A=window.EDUPLAN_ACCOM||{};return ''+
  '<section class="stack"><span class="eyebrow">Accommodation</span><h1>Where you will stay</h1><p class="lead">Hostel options at each institution. Monthly rent is a placeholder figure.</p></section>'+
- Object.keys(A).map(function(id){var x=UNIV.filter(function(u){return u.id===id;})[0];return '<section class="section"><h2>🏠 <span data-notr>'+esc(x?x.fullName||x.name:id)+'</span></h2>'+accomBox(id)+'</section>';}).join("")+
+ (Object.keys(A).length?'<section class="section accwrap"><h2>Accommodation details from the institutions</h2>'+Object.keys(A).map(function(id){var x=UNIV.filter(function(u){return u.id===id;})[0];return accomFold(id,esc(x?x.fullName||x.name:id));}).join("")+'</section>':'')+
  '<section class="grid">'+UNIS.map(function(u){return '<div class="item"><span class="big">'+(u.rent?"RM "+u.rent:"Rental help")+'</span><span class="hint">'+(u.rent?"per month, shared room":"no hostel on campus")+'</span><h3>'+esc(u.name)+'</h3><p>'+esc(u.city)+'. '+esc(u.hostel)+'.</p></div>';}).join("")+'</section>'+
  '<section class="panel"><h2>Need help choosing a hostel?</h2><div><a class="btn" href="#consultation">Ask a counsellor</a></div></section>';
 };

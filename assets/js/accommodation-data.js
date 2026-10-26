@@ -54,6 +54,6 @@ window.EDUPLAN_ACCOM={
   ["Fees and refunds","费用与退款"],["Facilities","设施"],["Paying the rent","缴付租金"],["Rent charged per semester","每学期收取的租金"],["Programme","课程"],["Semester","学期"],["Rent charged","收取租金"],
   ["Contact the accommodation office","联络住宿处"],["Photos","照片"],["from","最低"],["a month","每月"],["Source:","资料来源："],
   ["Rules and fees can change. Please confirm with the university before you book.","规则和费用可能会更改，预订前请向大学确认。"],
-  ["Accommodation details from the institution","院校提供的住宿资料"],["See accommodation","查看住宿"]].forEach(add);
+  ["Accommodation details from the institution","院校提供的住宿资料"],["See accommodation","查看住宿"],["Accommodation details from the institutions","各院校提供的住宿资料"]].forEach(add);
  x.patterns=x.patterns||[];x.patterns.push([/^(\d+) months?$/,function(m){return m[1]+" 个月";}]);
 })(window.EDUPLAN_ACCOM);

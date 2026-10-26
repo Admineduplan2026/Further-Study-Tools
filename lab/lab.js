@@ -638,7 +638,7 @@ function detailSheet(){
   '<h3>Entry requirements</h3>'+entryBadge(p,true)+'<dl class="lfacts">'+p.entry.map(function(e){return '<dt>'+esc(e[0])+'</dt><dd>'+(e[1]?String(e[1]).split(/\n/).filter(function(x){return x.trim();}).map(function(x){x=x.trim();var h=/[:：]$/.test(x);
    return h?'<b>'+esc(x)+'</b>':'• '+esc(x.replace(/^[•·*▪◦–-]\s*/,""));}).join("<br>"):'<span class="hint">Not listed by the institution</span>')+'</dd>';}).join("")+'</dl>'+
   '<h3>Programme structure</h3>'+structure(p.structure,p.url)+
-  (function(h){return h?'<h3>🏠 <span>Student accommodation</span></h3>'+h:'';})(window.EDUPLAN_ACCOMBOX?window.EDUPLAN_ACCOMBOX(p.inst&&p.inst.id):'')+
+  (window.EDUPLAN_ACCOMFOLD?window.EDUPLAN_ACCOMFOLD(p.inst&&p.inst.id):'')+
   (function(h){return h?'<h3>Future pathway and careers</h3>'+h:'';})(window.EDUPLAN_PATHWAY?window.EDUPLAN_PATHWAY(p.course&&p.course.id,p.level,p.careers):'')+
   (p.notes.length?'<h3>Notes</h3>'+p.notes.map(function(x){return '<p class="muted">'+esc(x)+'</p>';}).join(""):'')+
   '</div><div class="sfoot">'+heartBtn(p.id)+(p.url?'<a class="btn ghost sm" href="'+esc(p.url)+'" target="_blank" rel="noopener">Programme page</a>':'')+
