@@ -82,4 +82,14 @@ x.patterns.push([new RegExp("^(?:(?:"+sent+")\\s*)+$"),function(m){
 /* Label: value, and plain eligibility values. */
 x.patterns.push([new RegExp("^("+Object.keys(L).map(rx).join("|")+"): (.+)$"),function(m){var v=val(m[2]);return L[m[1]]+"："+(v==null?m[2]:v);}]);
 x.patterns.push([/^(?:CGPA [\d.]+ and above(?: \(Foundation \/ Matriculation\))?)$/,function(m){return val(m[0]);}]);
+/* Programme notes: international fees and other fees (APU fee guide lines). */
+var FEES={"library deposit RM 500 (refundable)":"图书馆押金 RM 500（可退还）","engineering laboratory deposit RM 500 (refundable)":"工程实验室押金 RM 500（可退还）",
+ "Hospitality Resource Fee RM 4,200 (uniforms, knife sets, food handler training and practical fees)":"款待业资源费 RM 4,200（制服、刀具、食品处理培训及实践课费用）",
+ "Events Resource Fee RM 2,600 (uniform, name tag and practical fees)":"活动管理资源费 RM 2,600（制服、名牌及实践课费用）"};
+x.patterns.push([/^International students: RM ([\d,]+) for the whole programme(?: \(RM ([\d,\/ ]+) per level\))?, plus 6% SST\. (One-off international student fees: RM 3,600 when accepting the offer, RM 2,000 when the Student Pass is approved and RM 5,000 registration, plus a RM 1,000 refundable personal bond|One-off ODL enrolment fee RM 2,580) \(([^)]+)\)\.$/,function(m){
+ return "国际生：全课程 RM "+m[1]+(m[2]?"（每级别分别为 RM "+m[2]+"）":"")+"，另加 6% 销售与服务税（SST）。"+
+  (/^One-off ODL/.test(m[3])?"一次性线上课程（ODL）注册费 RM 2,580":"国际生一次性费用：接受录取时 RM 3,600、学生准证获批后 RM 2,000、注册费 RM 5,000，另加 RM 1,000 可退还保证金")+"（"+m[4].replace(", June 2026","，2026年6月")+"）。";}]);
+x.patterns.push([new RegExp("^Other fees: ((?:"+Object.keys(FEES).map(rx).join("|")+")(?:, (?:"+Object.keys(FEES).map(rx).join("|")+"))*)\\.$"),function(m){
+ var o=[],rest=m[1];while(rest){for(var k in FEES)if(rest.indexOf(k)===0){o.push(FEES[k]);rest=rest.slice(k.length).replace(/^, /,"");break;}}
+ return "其他费用："+o.join("、")+"。";}]);
 })();
