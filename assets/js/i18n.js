@@ -238,7 +238,7 @@ var ZH={
  "Continue":"继续","Choose a foundation scholarship":"选择基金会奖学金","View requirements":"查看申请条件","Award: what you get":"奖励：你可以获得","Information is for reference only. Please confirm with the official website.":"资料仅供参考，请以官方网站为准。","See official information":"请查看官方资料","See official information.":"请查看官方资料。","Requirements and award":"申请条件与奖励","Search scholarships":"搜索奖学金","e.g. engineering, B40, SPM, Petronas":"例如 engineering、B40、SPM、Petronas","No scholarship matches. Try another word.":"没有符合的奖学金，请换一个关键词。","See all":"查看全部","No foundation scholarships listed yet.":"暂未列出基金会奖学金。",
  "Want help applying?":"需要申请协助吗？","Choose a university":"选择大学","View scholarship details":"查看奖学金详情","No universities listed yet.":"暂未列出大学。",
  "Kampar Campus and Sungai Long Campus. Scholarships for Foundation and Undergraduate programmes, automatically offered on SPM, O-Level, UEC, STPM or A-Level results.":"金宝校区与双溪龙校区。预科与学士课程奖学金，依据 SPM、O-Level、UEC、STPM 或 A-Level 成绩自动颁发。",
- "Private University":"私立大学","Scholarship tiers":"奖学金等级","Tuition waiver":"学费减免","Award":"奖励","Eligibility":"资格","Result":"成绩","Conditions":"条件","Applies to":"适用于",
+ "Private University":"私立大学","Private University College":"私立大学学院","Scholarship tiers":"奖学金等级","Tuition waiver":"学费减免","Award":"奖励","Eligibility":"资格","Result":"成绩","Conditions":"条件","Applies to":"适用于",
  "Not sure which tier you reach?":"不确定自己符合哪个等级？","Find your scholarship":"查找你的奖学金","Your qualification":"你的考试资格","Study level":"升学阶段",
  "Foundation":"预科","Undergraduate":"本科","Postgraduate":"研究生","Qualification":"考试资格",
  /* Guided */

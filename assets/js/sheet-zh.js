@@ -37,7 +37,26 @@ var S={
  "Straight passes in all courses.":"所有科目全部及格。",
  "Terms and conditions apply.":"须符合条款与条件。",
  "The award is based on actual examination results in a single-sitting.":"奖励以一次考获的实际考试成绩为准。",
- "UEC grade points: A1=1, A2=2, B3=3, B4=4, B5=5, B6=6.":"UEC 等级积分：A1=1、A2=2、B3=3、B4=4、B5=5、B6=6。"
+ "UEC grade points: A1=1, A2=2, B3=3, B4=4, B5=5, B6=6.":"UEC 等级积分：A1=1、A2=2、B3=3、B4=4、B5=5、B6=6。",
+ "Grade A in Biology, Chemistry, Physics, Mathematics or Additional Mathematics, and another subject at school certificate level.":"中学文凭程度的生物、化学、物理、数学或高级数学，以及另一科，全部考获 A。",
+ "Overall 6As, with a mixture of Grade A and B in Biology, Chemistry, Physics, Mathematics or Additional Mathematics, and another subject at school certificate level.":"总成绩 6A，且中学文凭程度的生物、化学、物理、数学或高级数学，以及另一科，成绩为 A 和 B。",
+ "100% off the total programme tuition fee; you still pay RM 3,100 (caution deposit, administration and laboratory fees).":"全课程学费全免；仍须缴付 RM 3,100（押金、行政费及实验室费）。",
+ "50% off the total programme tuition fee; you pay RM 9,850 for the year.":"全课程学费减免 50%；全年须缴付 RM 9,850。",
+ "All scholarships and bursaries are subject to change without further notice.":"所有奖学金及助学金可能更改，恕不另行通知。",
+ "For the MBBS and BDS programmes.":"适用于医科（MBBS）及牙科（BDS）课程。",
+ "For the Occupational Therapy, Physiotherapy and Psychology programmes.":"适用于职能治疗、物理治疗及心理学课程。",
+ "CGPA 3.90 to 4.00.":"CGPA 3.90 至 4.00。","CGPA 3.70 to 3.89.":"CGPA 3.70 至 3.89。","CGPA 3.50 to 3.69.":"CGPA 3.50 至 3.69。",
+ "CGPA 3.30 to 3.49.":"CGPA 3.30 至 3.49。","CGPA 3.70 to 4.00.":"CGPA 3.70 至 4.00。",
+ "The fee schedule does not say which qualification the CGPA is from; check with MUCM.":"学费表没有说明 CGPA 是以哪一项资格计算，请向 MUCM 查询。",
+ "For MUCM Foundation in Science students progressing to MBBS or BDS.":"适用于升读医科或牙科的 MUCM 科学预科学生。",
+ "Up to RM 100,000, with a minimum CGPA of 3.6 in the required subjects.":"最高 RM 100,000，指定科目 CGPA 至少 3.6。",
+ "RM 10,000 rebate on any MUCM degree programme, for Foundation in Science students who do not hold a scholarship.":"没有获得奖学金的科学预科学生，升读任何 MUCM 学位课程可获 RM 10,000 回扣。",
+ "For MBBS and BDS: RM 5,000 waived.":"医科及牙科：减免 RM 5,000。",
+ "For Occupational Therapy, Physiotherapy and Psychology: RM 2,000 waived.":"职能治疗、物理治疗及心理学：减免 RM 2,000。",
+ "RM 10,000 waived, for all MUCM degree programmes.":"所有 MUCM 学位课程减免 RM 10,000。",
+ "RM 5,000 off the tuition fee, for all MUCM degree programmes.":"所有 MUCM 学位课程学费减 RM 5,000。",
+ "10% tuition fee waiver for the MBBS and BDS programmes.":"医科及牙科课程学费减免 10%。",
+ "Who qualifies is not stated in the fee schedule; check with MUCM.":"学费表没有说明申请资格，请向 MUCM 查询。"
 };
 /* Scheme names, levels and eligibility written in words. */
 var T={
@@ -57,7 +76,9 @@ var T={
  "Sibling / Parent Alumni":"兄弟姐妹／家长是校友","Sibling is an XMUM student or alumnus":"兄弟姐妹是 XMUM 学生或校友",
  "APU Leadership Award: prefect in the final school year, with a recommendation letter from the principal or headmaster":"APU 领袖奖：中学最后一年担任学长，并附校长推荐信",
  "APU Emerging Young Leader Award: President, Vice-President, Treasurer or Secretary-General of a club or society (certificate from the school)":"APU 青年领袖奖：社团或学会的主席、副主席、财政或秘书长（附学校证书）",
- "APU Nationwide School Teachers' & Educators' Children Bursary: child of a school teacher or educator":"APU 全国教师与教育工作者子女助学金：学校教师或教育工作者的子女"
+ "APU Nationwide School Teachers' & Educators' Children Bursary: child of a school teacher or educator":"APU 全国教师与教育工作者子女助学金：学校教师或教育工作者的子女",
+ "MUCM Foundation in Science graduate":"MUCM 科学预科毕业生","Anak Melaka applicant":"马六甲子弟申请者","Athlete applicant":"运动员申请者",
+ "Sibling Discount applicant":"兄弟姐妹优惠申请者","Alumni Discount applicant":"校友优惠申请者"
 };
 /* "Label: value" eligibility: the labels, and the value forms that follow them. */
 var L={"IB Diploma":"IB 文凭","International Baccalaureate (IB) Diploma":"国际文凭（IB）","IB Middle Years Programme (MYP)":"IB 中学项目（MYP）",
