@@ -18,8 +18,8 @@ if official:
  main=open("classic.html").read()
  notice=re.search(r'<div class="sample">.*?</div>',main).group(0)
  body=re.sub(r'<div class="sample">.*?</div>',lambda m:notice,body,count=1)
-settings="window.EDUPLAN_LOGO=%r;window.EDUPLAN_CAMPUS_PHOTOS={XMUM:%r,UTAR:%r,APU:%r};window.EDUPLAN_FOUNDER_PHOTO=%r;" % (
- uri("assets/img/logo.png","image/png"),uri("assets/img/campus/xmum.jpg","image/jpeg"),uri("assets/img/campus/utar.jpg","image/jpeg"),uri("assets/img/campus/apu.jpg","image/jpeg"),uri("assets/img/founder.jpg","image/jpeg"))
+settings="window.EDUPLAN_LOGO=%r;window.EDUPLAN_CAMPUS_PHOTOS={XMUM:%r,UTAR:%r,APU:%r,MUCM:%r};window.EDUPLAN_FOUNDER_PHOTO=%r;" % (
+ uri("assets/img/logo.png","image/png"),uri("assets/img/campus/xmum.jpg","image/jpeg"),uri("assets/img/campus/utar.jpg","image/jpeg"),uri("assets/img/campus/apu.jpg","image/jpeg"),uri("assets/img/campus/mucm.jpg","image/jpeg"),uri("assets/img/founder.jpg","image/jpeg"))
 files=["assets/js/config.js","lab/lab-config.js","lab/lab-about.js","assets/js/scholarship-data.js","assets/js/faculty-data.js","assets/js/quiz-data.js","assets/js/fit-data.js","assets/js/results.js","assets/js/privacy-notice.js","lab/lab-zh.js","lab/lab-host.js","assets/js/school-forms.js","assets/js/career-data.js","assets/js/accommodation-data.js","assets/js/sheet-zh.js","assets/js/app.js","lab/lab.js","assets/js/chat-knowledge.js","assets/js/chat.js","assets/js/content-zh.js","assets/js/i18n.js"]
 js=settings+"\n"+"\n".join(open(f).read() for f in files)
 assert "EDUPLAN_SHEET_DATA=" not in js
