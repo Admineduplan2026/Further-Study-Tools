@@ -544,7 +544,8 @@ function siteStats(){function real(u){return !/^demo/i.test(u.id)&&!/\(demo\)/i.
  var unis=D.inst.filter(function(u){return u.progs&&real(u);}).length;
  return [[unis,"partner institutions"],[D.progs.filter(function(p){return real(p.inst);}).length,"programmes"],
   [D.sch.filter(function(x){return real(x.inst);}).length+D.fnd.length,"scholarship options"]].filter(function(x){return x[0]>0;});}
-/* About us motion: blocks rise in as they scroll into view, numbers count up (nothing moves with reduced motion). */
+/* About us motion: blocks rise in as they scroll into view, numbers count up, and the hero text drifts up and fades as the
+   page scrolls (nothing moves with reduced motion). */
 function aboutFx(){
  var root=document.documentElement,still=!root.classList.contains("motion")||!window.IntersectionObserver;
  var els=app.querySelectorAll(".rv");if(still){Array.prototype.forEach.call(els,function(e){e.classList.add("in");});return;}
@@ -552,18 +553,78 @@ function aboutFx(){
   Array.prototype.forEach.call(e.target.querySelectorAll("[data-count]"),function(n){var to=Number(n.getAttribute("data-count")),t0=null;
    function step(ts){if(t0==null)t0=ts;var f=Math.min(1,(ts-t0)/1200),v=Math.round(to*(1-Math.pow(1-f,3)));n.textContent=v.toLocaleString("en-MY");if(f<1)requestAnimationFrame(step);}
    n.textContent="0";requestAnimationFrame(step);});});},{rootMargin:"0px 0px -10% 0px"});
- Array.prototype.forEach.call(els,function(e){io.observe(e);});}
+ Array.prototype.forEach.call(els,function(e){io.observe(e);});
+ var hin=app.querySelector(".ax .axin");if(!hin)return;
+ function par(){if(!hin.isConnected){window.removeEventListener("scroll",par);return;}var y=window.pageYOffset||0,h=hin.parentNode.offsetHeight||1;if(y>h)return;
+  hin.style.transform=y>0?"translateY("+(y*.3).toFixed(1)+"px)":"";hin.style.opacity=y>0?String(Math.max(0,1-y/(h*1.2)).toFixed(3)):"";}
+ window.addEventListener("scroll",par,{passive:true});}
 var VP_ICON=["🤝","💰","🧭"],JR_ICON=["🔍","⚖️","🎓","🏁"];
-/* About us hero background: drifting dots joined by lines when close (a still picture with reduced motion). */
-function aboutNet(){var c=app.querySelector(".anet");if(!c||!c.getContext)return;var x=c.getContext("2d"),P=[],W=0,H=0,dpr=Math.min(2,window.devicePixelRatio||1),moving=document.documentElement.classList.contains("motion");
- function size(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);}
- size();var n=Math.round(Math.min(90,W*H/9000));for(var i=0;i<n;i++)P.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.35,vy:(Math.random()-.5)*.35,r:Math.random()*1.6+.8,h:Math.random()<.5?190:265});
- function draw(){if(!c.isConnected)return;if(c.clientWidth!==W||c.clientHeight!==H)size();x.clearRect(0,0,W,H);
-  for(var i=0;i<P.length;i++){var a=P[i];if(moving){a.x+=a.vx;a.y+=a.vy;if(a.x<0||a.x>W)a.vx*=-1;if(a.y<0||a.y>H)a.vy*=-1;}
-   for(var j=i+1;j<P.length;j++){var b=P[j],dx=a.x-b.x,dy=a.y-b.y,d=dx*dx+dy*dy;if(d<13000){x.strokeStyle="rgba(94,234,212,"+(.28*(1-d/13000)).toFixed(3)+")";x.lineWidth=.7;x.beginPath();x.moveTo(a.x,a.y);x.lineTo(b.x,b.y);x.stroke();}}
-   x.fillStyle="hsla("+a.h+",90%,70%,.9)";x.beginPath();x.arc(a.x,a.y,a.r,0,7);x.fill();}
-  if(moving)requestAnimationFrame(draw);}
- draw();}
+/* About us hero background: a drawn deep-sea scene (light rays, swaying kelp, glowing specks, a fish school and a friendly
+   whale gliding past). Pauses off screen, follows the pointer slightly, and is one still picture with reduced motion. */
+function aboutNet(){var c=app.querySelector(".anet");if(!c||!c.getContext)return;var x=c.getContext("2d"),W=0,H=0,dpr=Math.min(2,window.devicePixelRatio||1),
+  moving=document.documentElement.classList.contains("motion"),K=[],F=[],P=[],B=[],R=[],t0=null,last=0,vis=true,run=false,mx=0,tx=0,nextB=2;
+ function rnd(a,b){return a+Math.random()*(b-a);}
+ function seed(){var i,small=W<640;K=[];F=[];P=[];R=[];
+  for(i=0;i<(small?7:14);i++){var far=i%2===0,u=Math.random(),edge=u<.5?u*.36:1-(u-.5)*.36;
+   K.push({x:(far?Math.random():edge)*W,h:H*(far?rnd(.25,.5):rnd(.45,.8)),w:far?rnd(5,8):rnd(8,13),ph:rnd(0,6),far:far,hue:far?rnd(175,190):rnd(150,168)});}
+  for(i=0;i<(small?16:34);i++)F.push({a:rnd(0,6.3),r:rnd(.25,1),sp:rnd(.8,1.2),s:rnd(.7,1.2),px:0,py:0});
+  for(i=0;i<Math.round(Math.min(70,W*H/11000));i++)P.push({x:Math.random()*W,y:Math.random()*H,r:rnd(.6,2),v:rnd(4,14),ph:rnd(0,6),h:Math.random()<.7?185:280});
+  for(i=0;i<5;i++)R.push({x:rnd(.05,.95),w:rnd(.04,.11),ph:rnd(0,6)});}
+ function size(){W=c.clientWidth;H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);seed();}
+ function kelp(k,t,dx){var n=12,seg=k.h/n,px=k.x+dx,py=H+6,i,a;x.lineCap="round";
+  for(i=1;i<=n;i++){var f=i/n,sw=Math.sin(t*.7+k.ph+i*.38)*Math.pow(f,1.3)*(k.far?18:30),nx=k.x+dx+sw,ny=H+6-i*seg;
+   x.strokeStyle="hsla("+k.hue+",55%,"+(k.far?16:24+f*8)+"%,"+(k.far?.7:.95)+")";x.lineWidth=k.w*(1-f*.6);x.beginPath();x.moveTo(px,py);x.lineTo(nx,ny);x.stroke();
+   if(i%2===0&&i<n){a=(i%4===0?-1:1)*(.9+Math.sin(t*.9+k.ph+i)*.25);x.save();x.translate(nx,ny);x.rotate(a);x.fillStyle=x.strokeStyle;
+    x.beginPath();x.ellipse(k.w*1.4,0,k.w*1.6,k.w*.45,0,0,7);x.fill();x.restore();}
+   px=nx;py=ny;}}
+ function whale(t,cx,cy,s){var tail=Math.sin(t*1.6)*10,fl=Math.sin(t*1.6-.8)*.45,g,i;x.save();x.translate(cx,cy);x.scale(s,s);x.rotate(Math.cos(t*.5)*.06);
+  g=x.createRadialGradient(0,0,10,0,0,220);g.addColorStop(0,"rgba(56,189,248,.22)");g.addColorStop(1,"rgba(56,189,248,0)");x.fillStyle=g;x.beginPath();x.arc(0,0,220,0,7);x.fill();
+  x.save();x.translate(-116,tail*.6);x.rotate(fl);x.fillStyle="#1d5c86";x.beginPath();x.moveTo(0,0);x.quadraticCurveTo(-14,-10,-36,-32);x.quadraticCurveTo(-30,-8,-42,0);
+   x.quadraticCurveTo(-30,8,-36,32);x.quadraticCurveTo(-14,10,0,0);x.fill();x.restore();
+  x.beginPath();x.moveTo(122,4);x.bezierCurveTo(122,-50,40,-64,-30,-44);x.quadraticCurveTo(-90,-24,-120,tail*.6-5);x.quadraticCurveTo(-90,18+tail*.3,-30,36);x.bezierCurveTo(40,60,122,48,122,4);x.closePath();
+  g=x.createLinearGradient(0,-60,0,50);g.addColorStop(0,"#2f86b8");g.addColorStop(1,"#1a4f78");x.fillStyle=g;x.fill();
+  x.save();x.clip();x.fillStyle="#bfe9f4";x.beginPath();x.ellipse(30,46,108,26,0,0,7);x.fill();x.strokeStyle="rgba(26,79,120,.35)";x.lineWidth=2;
+   for(i=0;i<4;i++){x.beginPath();x.moveTo(-20+i*6,30+i*6);x.quadraticCurveTo(50,40+i*6,112,24+i*4);x.stroke();}x.restore();
+  x.save();x.translate(36,26);x.rotate(.7+Math.sin(t*1.6)*.3);x.fillStyle="#1d5c86";x.beginPath();x.moveTo(0,0);x.quadraticCurveTo(-6,26,-34,40);x.quadraticCurveTo(-24,16,0,0);x.fill();x.restore();
+  for(i=0;i<5;i++){var sx=-60+i*32,sy=-44+Math.abs(i-2)*3+(i>2?4:0),a=.5+.5*Math.sin(t*2.2+i);g=x.createRadialGradient(sx,sy,0,sx,sy,9);
+   g.addColorStop(0,"rgba(165,243,252,"+(.9*a).toFixed(2)+")");g.addColorStop(1,"rgba(165,243,252,0)");x.fillStyle=g;x.beginPath();x.arc(sx,sy,9,0,7);x.fill();}
+  if(t%5<.14){x.strokeStyle="#0b2236";x.lineWidth=2.5;x.beginPath();x.moveTo(72,8);x.lineTo(84,8);x.stroke();}
+  else{x.fillStyle="#fff";x.beginPath();x.arc(78,8,6.5,0,7);x.fill();x.fillStyle="#0b2236";x.beginPath();x.arc(80,9,4,0,7);x.fill();x.fillStyle="#fff";x.beginPath();x.arc(81.5,7,1.4,0,7);x.fill();}
+  x.fillStyle="rgba(244,114,182,.35)";x.beginPath();x.ellipse(88,22,7,4,0,0,7);x.fill();
+  x.strokeStyle="#0b2236";x.lineWidth=2;x.beginPath();x.moveTo(96,24);x.quadraticCurveTo(108,30,119,20);x.stroke();
+  x.restore();}
+ function spark(p,t,dt){p.y-=p.v*dt;p.x+=Math.sin(t*.8+p.ph)*.15;if(p.y<-4){p.y=H+4;p.x=Math.random()*W;}
+  var a=.35+.35*Math.sin(t*2+p.ph);x.fillStyle="hsla("+p.h+",90%,75%,"+(a*.25).toFixed(3)+")";x.beginPath();x.arc(p.x,p.y,p.r*3,0,7);x.fill();
+  x.fillStyle="hsla("+p.h+",90%,80%,"+a.toFixed(3)+")";x.beginPath();x.arc(p.x,p.y,p.r,0,7);x.fill();}
+ function frame(ts){if(!c.isConnected){run=false;return;}if(c.clientWidth!==W||c.clientHeight!==H)size();
+  if(t0==null)t0=ts;var t=moving?(ts-t0)/1000:15.5,dt=moving&&last?Math.min(.05,(ts-last)/1000):0;last=ts;mx+=(tx-mx)*.04;
+  var g=x.createLinearGradient(0,0,0,H),i,k;g.addColorStop(0,"#0c4a6e");g.addColorStop(.45,"#082f49");g.addColorStop(1,"#030712");x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.globalCompositeOperation="lighter";
+  for(i=0;i<R.length;i++){var r=R[i],rx=r.x*W+mx*4+Math.sin(t*.15+r.ph)*W*.03,rw=r.w*W,al=.05+.035*Math.sin(t*.3+r.ph);g=x.createLinearGradient(0,0,0,H*.9);
+   g.addColorStop(0,"rgba(165,243,252,"+al.toFixed(3)+")");g.addColorStop(1,"rgba(165,243,252,0)");x.fillStyle=g;x.beginPath();x.moveTo(rx-rw/2,0);x.lineTo(rx+rw/2,0);x.lineTo(rx+rw*1.6+H*.12,H*.9);x.lineTo(rx-rw*.4+H*.12,H*.9);x.closePath();x.fill();}
+  x.lineWidth=1.5;for(i=0;i<3;i++){x.strokeStyle="rgba(186,230,253,"+(.07-i*.015).toFixed(3)+")";x.beginPath();
+   for(k=0;k<=W+16;k+=16){var wy=10+i*14+Math.sin(k*.02+t*(.8+i*.2)+i)*5+Math.sin(k*.051-t*.6)*3;if(k)x.lineTo(k,wy);else x.moveTo(k,wy);}x.stroke();}
+  x.globalCompositeOperation="source-over";
+  for(i=0;i<K.length;i++)if(K[i].far)kelp(K[i],t,mx*6);
+  for(i=0;i<P.length;i+=2)spark(P[i],t,dt);
+  var fcx=W*(.5+.33*Math.sin(t*.11))+mx*10,fcy=H*(.28+.1*Math.sin(t*.17)),fs=Math.max(.7,Math.min(1.2,W/1000));
+  for(i=0;i<F.length;i++){var f=F[i],fa=f.a+t*.45*f.sp,fx=fcx+Math.cos(fa)*f.r*110*fs,fy=fcy+Math.sin(fa)*f.r*40*fs+Math.sin(t*2+f.a)*3,hd=Math.atan2(fy-f.py,fx-f.px);
+   if(!f.px||!moving)hd=Math.sin(fa)<0?0:Math.PI;f.px=fx;f.py=fy;x.save();x.translate(fx,fy);x.rotate(hd);x.scale(f.s*fs,f.s*fs);x.fillStyle="rgba(186,230,253,.6)";
+   x.beginPath();x.ellipse(0,0,7,2.6,0,0,7);x.fill();x.beginPath();x.moveTo(-5,0);x.lineTo(-11,-3.5+Math.sin(t*12+f.a)*1.2);x.lineTo(-11,3.5+Math.sin(t*12+f.a)*1.2);x.closePath();x.fill();x.restore();}
+  var ws=Math.max(.42,Math.min(.85,W/1500)),pr=((t+14)/42)%1,wx=-W*.25-200*ws+pr*(W*1.5+400*ws)+mx*16,wy=H*.5+Math.sin(t*.5)*H*.06;
+  whale(t,wx,wy,ws);
+  if(moving){nextB-=dt;if(nextB<=0){nextB=rnd(.25,.6);if(Math.random()<.6)B.push({x:wx+100*ws,y:wy-46*ws,r:rnd(2,5),v:rnd(30,50),ph:rnd(0,6)});}}
+  x.lineWidth=1.2;x.strokeStyle="rgba(224,242,254,.6)";for(i=B.length-1;i>=0;i--){var b=B[i];b.y-=b.v*dt;b.x+=Math.sin(t*3+b.ph)*.3;if(b.y<-10){B.splice(i,1);continue;}
+   x.beginPath();x.arc(b.x,b.y,b.r,0,7);x.stroke();}
+  g=x.createRadialGradient(W/2,H*.48,0,W/2,H*.48,Math.max(W,H)*.55);g.addColorStop(0,"rgba(3,7,18,.6)");g.addColorStop(1,"rgba(3,7,18,0)");x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.fillStyle="#020617";x.beginPath();x.moveTo(0,H);for(k=0;k<=W+20;k+=20)x.lineTo(k,H-14-Math.sin(k*.008)*8-Math.sin(k*.023+1)*4);x.lineTo(W+20,H);x.closePath();x.fill();
+  for(i=0;i<K.length;i++)if(!K[i].far)kelp(K[i],t,mx*24);
+  for(i=1;i<P.length;i+=2)spark(P[i],t,dt);
+  if(moving&&vis)requestAnimationFrame(frame);else run=false;}
+ function go(){if(!run){run=true;requestAnimationFrame(frame);}}
+ size();go();if(!moving)return;
+ if(window.IntersectionObserver)new IntersectionObserver(function(es){vis=es[0].isIntersecting;if(vis){last=0;go();}}).observe(c);
+ c.parentNode.addEventListener("pointermove",function(e){var b=c.getBoundingClientRect();tx=Math.max(-1,Math.min(1,(e.clientX-b.left)/b.width*2-1));});}
 /* Catch your future: a 30-second game. Catch the EDUPLAN tools that fall (each one tells you a fact about EDUPLAN),
    miss the time-wasters. Arrow keys, the on-screen buttons or dragging move the basket. Facts come from the site itself. */
 function gameFacts(){var st=siteStats(),pg=st.filter(function(x){return x[1]==="programmes";})[0];
@@ -618,7 +679,7 @@ function aboutView(){
  var go={"#faculty":'data-mode="interest"',"#universities":'data-mode="interest"',"#scholarships":'data-mode="scholarship"'};
  function tl(label,rows){return rows&&rows.length?'<div class="tl2"><h3>'+esc(label)+'</h3><ol>'+rows.map(function(r,i){return '<li style="--i:'+i+'"><b>'+esc(r.title)+'</b><span>'+esc(r.org)+'</span><span class="hint">'+esc([r.when,r.place].filter(Boolean).join(" · "))+'</span></li>';}).join("")+'</ol></div>':'';}
  var st=siteStats();
- return '<section class="hero about ax"><canvas class="anet" aria-hidden="true"></canvas><i class="aglow g1" aria-hidden="true"></i><i class="aglow g2" aria-hidden="true"></i><i class="aglow g3" aria-hidden="true"></i>'+
+ return '<section class="hero about ax"><canvas class="anet" aria-hidden="true"></canvas>'+
   '<div class="hwrap axin"><span class="axpill"><i aria-hidden="true"></i><span>About us</span></span><h1><span class="axl1">Every student deserves</span><span class="axl2">the right place to study.</span></h1>'+
   '<p class="lead">EDUPLAN is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
   expoLink("axexpo")+'<div class="axbtns"><button type="button" class="axgo" data-act="agame">🎮 <span>Play the EDUPLAN game</span></button><button type="button" class="axghost" data-mode="interest"><span>Start exploring</span></button></div>'+
