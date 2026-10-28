@@ -16,9 +16,10 @@ The exhibition website lets organisers (主办方) open education fairs and scho
    **Deploy > Manage deployments > Edit > Version: New version > Deploy** (the `/exec` URL stays the same).
 2. In **Project Settings > Script Properties** add `EXPO_ADMIN_EMAILS` with the Eduplan staff emails that review
    organisers and events, comma-separated. Optional: `EXPO_SITE_URL` if the exhibition moves to its own domain.
-3. The first sign-in creates the private spreadsheet **Eduplan Exhibitions** in
-   `Eduplan Databases/5. Exhibitions (private)` (tabs Users, Events, Registrations, Sessions). Cover images go to
-   `Event covers (public links)` in the same folder.
+3. In the editor select **expoSetup** and **Run** once. On Google's consent screen choose **Select all** (Drive, Sheets
+   and email are all needed; a missing tick shows as "You do not have permission to call …" on the website). It creates
+   **Eduplan Exhibitions** in `Eduplan Databases/5. Exhibitions (private)` (tabs Users, Events, Registrations,
+   Sessions) and logs the admin emails. Cover images go to `Event covers (public links)` in the same folder.
 
 ## Who can do what
 

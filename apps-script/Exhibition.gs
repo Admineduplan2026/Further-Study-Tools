@@ -643,3 +643,14 @@ function expoMail_(to, subject, body) {
     return false;
   }
 }
+
+/* Run once from the editor (select expoSetup, Run): asks for the Drive, Sheets and email permissions the exhibition
+   needs (tick "Select all" on Google's consent screen), creates "Eduplan Exhibitions" and checks EXPO_ADMIN_EMAILS. */
+function expoSetup() {
+  console.log('Email quota left today: ' + MailApp.getRemainingDailyQuota());
+  expoStore_().table('users').all();
+  ['events', 'registrations', 'sessions'].forEach(function (t) { expoStore_().table(t).all(); });
+  console.log('Eduplan Exhibitions: ' + SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID')).getUrl());
+  var admins = expoAdmins_();
+  console.log(admins.length ? 'Admins: ' + admins.join(', ') : 'Add EXPO_ADMIN_EMAILS in Project Settings > Script Properties: no one can approve organisers yet.');
+}
