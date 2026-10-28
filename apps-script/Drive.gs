@@ -1,5 +1,5 @@
 /**
- * Eduplan's Google Drive, in one private folder "Eduplan Databases" (My Drive) with four parts:
+ * Eduplan's Google Drive, in one private folder "Eduplan Databases" (My Drive) with five parts:
  *
  *   Eduplan Databases/
  *     1. School databases/                    (was "Eduplan School Data", SCHOOL_FOLDER_ID in Code.gs)
@@ -13,6 +13,9 @@
  *          "Eduplan Payments"        one row per payment request (Payments.gs)
  *          Receipts/<yyyy-MM>/<PAY-...>/  a PDF payment record for every payment marked Paid; add the bank slip or the
  *                                         gateway's receipt to the same folder
+ *     5. Exhibitions (private)/
+ *          "Eduplan Exhibitions"     organisers, schools, events and booth registrations (Exhibition.gs)
+ *          Event covers (public links)/  cover images of exhibition events, viewable by anyone with the link
  *
  * Run driveOrganize once from the editor (select driveOrganize, Run): it creates the missing folders, moves the existing
  * folders and spreadsheets into place (their links, IDs and sharing stay the same), moves the old "Payments" tab into
@@ -26,6 +29,7 @@ var DRIVE_NAMES = {
   apply: '2. Student applications (private)',
   people: '3. Students and visitors (private)',
   pay: '4. Payments (private)',
+  expo: '5. Exhibitions (private)',
   receipts: 'Receipts'
 };
 
@@ -44,7 +48,7 @@ function driveTop_() {
   return folder;
 }
 
-/* "people", "pay" (in Eduplan Databases) or "receipts" (in 4. Payments), created when missing. */
+/* "people", "pay", "expo" (in Eduplan Databases) or "receipts" (in 4. Payments), created when missing. */
 function driveFolder_(key) {
   var props = PropertiesService.getScriptProperties(), prop = 'DRIVE_' + key.toUpperCase() + '_ID', id = props.getProperty(prop);
   if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted: make a new one */ } }

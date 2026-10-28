@@ -19,6 +19,7 @@
  * POST <url> {"action":"chat",...}  -> AI study assistant reply (Chat.gs, docs/ai-chatbot-setup.md)
  * POST <url> {"action":"apply",...} -> stores an application in Eduplan's private Drive (Apply.gs, docs/application-form-setup.md)
  * POST <url> {"action":"account_...",...} -> student sign-in and portfolio autosave (Account.gs, docs/student-portfolio-setup.md)
+ * POST <url> {"action":"expo_...",...}    -> Eduplan Exhibition: organisers, schools and booths (Exhibition.gs, docs/exhibition-setup.md)
  * Menu Eduplan > Check school documents with AI -> compares each school sheet with its "documents" folder (Verify.gs, docs/document-check.md)
  * Edits show up within about a minute: each request compares the folder's last-edit times
  * (checked at most every FRESH_SECONDS) with the cached copy.
@@ -81,6 +82,7 @@ function doPost(e) {
     if (body && body.action === 'chat') return chatJson_(chatReply_(body.messages));
     if (body && body.action === 'apply') return chatJson_(applySubmit_(body));
     if (body && /^account_/.test(body.action)) return chatJson_(accountAction_(body));
+    if (body && /^expo_/.test(body.action)) return chatJson_(expoAction_(body));  // Exhibition.gs (Eduplan 教育展)
     if (body && body.action === 'results_read') return chatJson_(resultsRead_(body));  // Results.gs
     if (body && body.action === 'id_verify') return chatJson_(idVerify_(body));  // Identity.gs
     if (body && body.action === 'visit') return chatJson_(statsVisit_(body));  // Stats.gs

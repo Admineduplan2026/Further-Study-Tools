@@ -6,6 +6,14 @@
 window.EDUPLAN_API_URL="https://script.google.com/macros/s/AKfycbwVtqrntxp2HITILIGk0pnV7Wk8FghGodcwKJTJGPazu1LdnmAOUYGKErbCeSzqaryp/exec";
 /* EDUPLAN_SITE_URL: the public website address, used for the share links of programmes. */
 window.EDUPLAN_SITE_URL="https://admineduplan2026.github.io/Further-Study-Tools/";
+/* EDUPLAN_EXHIBITION_URL: the Eduplan 教育展 (Exhibition) website, opened by the "About Exhibition" button in About us and
+   by its card in Other Activities. Change it here only, e.g. when the exhibition gets its own domain. */
+window.EDUPLAN_EXHIBITION_URL=window.EDUPLAN_SITE_URL+"exhibition/";
+/* EDUPLAN_ACTIVITIES: the cards of the home page's "Other Activities" section, in order. To add an activity, add one
+   entry: icon, title and text in English (the Chinese is in lab/lab-zh.js), and the link. */
+window.EDUPLAN_ACTIVITIES=[
+ {id:"exhibition",icon:"🎪",title:"Education Exhibition",text:"Organisers open education fairs; schools book booths online.",url:window.EDUPLAN_EXHIBITION_URL}
+];
 /* EDUPLAN_NO_DEMO: leaves the demo schools (institution_id starting with DEMO) out of the school data, also when the
    Apps Script has not been redeployed yet. apps-script/Code.gs HIDE_DEMO_SCHOOLS does the same on the server. */
 window.EDUPLAN_NO_DEMO=function(d){if(!d||typeof d!=="object")return d;function ok(x){return !/^DEMO/i.test(String(x&&x.institution_id||""));}

@@ -405,7 +405,15 @@ function mtabs(){var h=location.hash||"#home",n=S.saved.length;
   tab("#saved",'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"></path></svg>'+(n?'<b class="mbadge">'+n+'</b>':''),"Saved",h==="#saved")+
   tab("#portfolio",'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>',"Portfolio",/^#(portfolio|fit|compare)/.test(h))+'</nav>';}
 function home(){if(locked())return hero()+'<div class="page">'+continueRow()+popular()+trust()+'</div>';
- return mapp()+hero()+'<div class="page">'+recommended()+popular()+schTracker()+continueRow()+(L.mode==="guidance"?'':offers())+trust()+'</div>';}   /* recommended first, then popular, then the rest */
+ return mapp()+hero()+'<div class="page">'+recommended()+popular()+schTracker()+continueRow()+(L.mode==="guidance"?'':offers())+activities()+trust()+'</div>';}
+/* Eduplan 教育展 and other activities beyond the study search: the address and the cards come from assets/js/config.js
+   (EDUPLAN_EXHIBITION_URL, EDUPLAN_ACTIVITIES), so a new address or a new activity is a change there only. They open in
+   a new tab: each activity is its own website. */
+function expoLink(cls){var u=window.EDUPLAN_EXHIBITION_URL;return u?'<a class="xpo '+cls+'" href="'+esc(u)+'" target="_blank" rel="noopener">About Exhibition <span aria-hidden="true">→</span></a>':'';}
+function activities(){var a=(window.EDUPLAN_ACTIVITIES||[]).filter(function(x){return x&&x.url;});if(!a.length)return '';
+ return '<section class="sec"><div class="sh"><h2>Other Activities</h2></div><div class="acts">'+a.map(function(x){
+  return '<a class="act" href="'+esc(x.url)+'" target="_blank" rel="noopener" data-act-id="'+esc(x.id||"")+'"><span class="acti" aria-hidden="true">'+esc(x.icon||"✨")+'</span>'+
+   '<span class="actb"><b>'+esc(x.title)+'</b><span>'+esc(x.text||"")+'</span></span><span class="actgo" aria-hidden="true">→</span></a>';}).join("")+'</div></section>';}   /* recommended first, then popular, then the rest */
 function resultsView(){
  var q=S.search,r=results(q);
  return '<section class="rhead"><div class="page"><div class="rbar"><button type="button" class="btn ghost sm" data-act="home">'+'Change search'+'</button>'+
@@ -613,7 +621,7 @@ function aboutView(){
  return '<section class="hero about ax"><canvas class="anet" aria-hidden="true"></canvas><i class="aglow g1" aria-hidden="true"></i><i class="aglow g2" aria-hidden="true"></i><i class="aglow g3" aria-hidden="true"></i>'+
   '<div class="hwrap axin"><span class="axpill"><i aria-hidden="true"></i><span>About us</span></span><h1><span class="axl1">Every student deserves</span><span class="axl2">the right place to study.</span></h1>'+
   '<p class="lead">EDUPLAN is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
-  '<div class="axbtns"><button type="button" class="axgo" data-act="agame">🎮 <span>Play the EDUPLAN game</span></button><button type="button" class="axghost" data-mode="interest"><span>Start exploring</span></button></div>'+
+  expoLink("axexpo")+'<div class="axbtns"><button type="button" class="axgo" data-act="agame">🎮 <span>Play the EDUPLAN game</span></button><button type="button" class="axghost" data-mode="interest"><span>Start exploring</span></button></div>'+
   (st.length?'<div class="astats rv">'+st.map(function(x,i){return '<div style="--i:'+i+'"><b data-count="'+x[0]+'" data-notr>'+x[0].toLocaleString("en-MY")+'</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+
   '<span class="axmouse" aria-hidden="true"><i></i></span></div></section>'+gameBox()+
   '<div class="page"><div class="pgrid"><section class="box avision rv"><span class="pinst">Our vision</span><p class="lbig">'+esc(A.vision)+'</p><ul class="vp">'+A.points.map(function(v,i){return '<li style="--i:'+i+'"><span class="vpi" aria-hidden="true">'+(VP_ICON[i]||"⭐")+'</span><b>'+esc(v[0])+'</b><span>'+esc(v[1])+'</span></li>';}).join("")+'</ul></section>'+
@@ -871,6 +879,7 @@ function intro(){
   '<span class="ieye">Step 1 of 3 · About us</span>'+
   '<h1 id="intro-h"><span>We lead students to the right place to study</span></h1>'+
   '<p class="ilead">EDUPLAN is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
+  expoLink("iexpo")+
   '<ol class="ijr">'+A.journey.map(function(j,i){return '<li style="--i:'+i+'"><b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span></li>';}).join("")+'</ol>'+
   (stats.length?'<div class="istats">'+stats.map(function(x){return '<div><b data-count="'+x[0]+'">0</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+
   '<div class="ifounder">'+(photo?'<img src="'+esc(photo)+'" alt="">':'')+'<div><b>'+esc(f.name)+'</b><span>'+esc(f.role)+'</span><span>Guiding students since 2015</span></div></div>'+
@@ -885,7 +894,7 @@ function intro(){
   setTimeout(function(){d.remove();if(!account()&&!interests()){document.body.classList.remove("introopen");var m=document.querySelector("main,#app");if(m&&m.focus)m.focus({preventScroll:true});}},still?0:450);}
  btn.addEventListener("click",done);
  d.addEventListener("keydown",function(ev){if(ev.key!=="Tab")return;ev.preventDefault();   /* keep focus on the cover: language buttons and Continue */
-  var f=[].slice.call(d.querySelectorAll("button")),i=f.indexOf(document.activeElement);f[(i+(ev.shiftKey?-1:1)+f.length)%f.length].focus();});
+  var f=[].slice.call(d.querySelectorAll("button,a[href]")),i=f.indexOf(document.activeElement);f[(i+(ev.shiftKey?-1:1)+f.length)%f.length].focus();});
 }
 if(window.EDUPLAN_SHEET_DATA)useData(window.EDUPLAN_SHEET_DATA);
 render();
