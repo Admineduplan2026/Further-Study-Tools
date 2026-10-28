@@ -89,7 +89,8 @@ function doPost(e) {
     if (body && body.action === 'pay_create') return chatJson_(payCreate_(body));  // Payments.gs
   } catch (err) {
     console.error('doPost ' + (body && body.action) + ': ' + (err && err.stack || err));
-    return chatJson_({ error: 'server' });
+    // The error's name and message (no stack, no data) help Eduplan see what failed straight from the website.
+    return chatJson_({ error: 'server', detail: String(err && err.message || err).slice(0, 160) });
   }
   return chatJson_({ error: 'bad_request' });
 }

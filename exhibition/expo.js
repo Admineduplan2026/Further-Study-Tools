@@ -39,7 +39,7 @@ function api(action,data){
   .then(function(r){return r.json();}).catch(function(){return {error:"network"};})
   .then(function(r){r=r||{error:"server"};if(r.error==="signed_out"){setToken("");S.me=null;}return r;});
 }
-function errText(r){var t=ERR[r.error]||ERR.server+"（代码 "+String(r.error||"unknown").slice(0,40)+"）";if(r.fields&&r.fields.length&&r.error==="missing")t+="（"+r.fields.map(function(f){return FIELD[f]||f;}).join("、")+"）";
+function errText(r){var t=ERR[r.error]?ERR[r.error]+(r.detail?"（"+String(r.detail).slice(0,160)+"）":""):ERR.server+"（代码 "+String(r.error||"unknown").slice(0,40)+"）";if(r.fields&&r.fields.length&&r.error==="missing")t+="（"+r.fields.map(function(f){return FIELD[f]||f;}).join("、")+"）";
  if(r.error==="not_enough_booths"&&r.remaining!=null)t+="目前剩 "+r.remaining+" 个。";return t;}
 function rm(n){n=Number(n)||0;return n?"RM "+n.toLocaleString("en-MY",{minimumFractionDigits:n%1?2:0}):"免费 Free";}
 var WD=["日","一","二","三","四","五","六"];
