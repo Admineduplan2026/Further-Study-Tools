@@ -156,7 +156,7 @@ V.universities=function(){
    (ph?'<span class="unicover" aria-hidden="true" style="background-image:url(\''+esc(ph)+'\')"></span>'
      :'<span class="unicover art" aria-hidden="true" style="--h:'+(String(u.id).charCodeAt(0)*37%360)+'"><b data-notr>'+esc(u.name.slice(0,8))+'</b></span>')+
    '<span class="name">'+esc(u.name)+'</span>'+(u.fullName!==u.name?'<span class="desc">'+esc(u.fullName)+'</span>':'')+
-   '<span class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>'+
+   '<span class="meta">'+(u.type?'<span class="pill">'+esc(u.type)+'</span>':'')+(u.place?'<span class="pill uplace">'+esc(u.place)+'</span>':'')+'</span>'+
    '<span class="meta"><span class="pill brand">'+u.progs.length+' programme'+(u.progs.length===1?'':'s')+'</span>'+(n?'<span class="pill ok">'+n+' scholarship'+(n===1?'':'s')+'</span>':'')+'</span>'+
    '<span class="textlink">View university '+ARROW+'</span></a>';}).join("")+'</section>'
   :'<div class="empty">The university list is being prepared.</div>');

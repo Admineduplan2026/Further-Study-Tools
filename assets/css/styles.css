@@ -848,4 +848,16 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 .unicover.art{display:flex;align-items:flex-end;padding:14px 18px;background:linear-gradient(135deg,hsl(var(--h),55%,38%),hsl(calc(var(--h) + 40),60%,52%))}
 .unicover.art b{color:#fff;font-size:22px;font-weight:600;letter-spacing:.02em}
 .unigrid .item.pick:hover .unicover{filter:brightness(1.05)}
-@media (max-width:560px){.unicover{height:130px}}
+/* Phones: two universities side by side, compact cards (the whole card is the link, so "View university" is left out). */
+@media (max-width:560px){
+ .unigrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .unigrid .item.pick{padding:10px 10px 12px;gap:4px;border-radius:14px}
+ .unicover{margin:-10px -10px 4px;height:88px}
+ .unicover.art{padding:8px 10px}.unicover.art b{font-size:15px}
+ .unigrid .pick .name{font-size:15px;line-height:1.25}
+ .unigrid .pick .desc{font-size:12px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+ .unigrid .meta{gap:4px;margin-top:2px}
+ .unigrid .pill{font-size:11px;padding:2px 7px}
+ .unigrid .uplace{display:none}
+ .unigrid .textlink{display:none}
+}
