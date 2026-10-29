@@ -387,6 +387,7 @@ function recommended(){
  return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div>'+expoCards()+'<div class="cards">'+scored.map(function(x){return card(x.p,x.why);}).join("")+'</div></section>';
 }
 function trust(){
+ if(!D.inst.length)return '';   /* no numbers until the sheet data has arrived: popular() says it is loading or failed */
  var mqa=D.progs.filter(function(p){return p.mqa;}).length,unis=D.inst.length,sch=D.sch.length+D.fnd.length;
  return '<section class="sec trust"><div class="sh"><h2>Why students plan with EDUPLAN</h2></div><div class="stats">'+
   [[unis,"partner universities and colleges"],[D.progs.length,"programmes listed"],[mqa,"programmes with an MQA reference"],[sch,"scholarship options"]].map(function(s){return '<div class="stat"><b>'+s[0]+'</b><span>'+esc(s[1])+'</span></div>';}).join("")+
