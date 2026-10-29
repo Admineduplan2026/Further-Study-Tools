@@ -941,7 +941,7 @@ function intro(){
   '<h1 id="intro-h"><span>We lead students to the right place to study</span></h1>'+
   '<p class="ilead">EDUPLAN is an education tool that guides students to a suitable institution, from learning about it to the registration phase. The service is free of charge for students.</p>'+
   expoLink("iexpo")+
-  '<ol class="ijr">'+A.journey.map(function(j,i){return '<li style="--i:'+i+'"><b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span></li>';}).join("")+'</ol>'+
+  '<ol class="ijr">'+A.journey.map(function(j,i){return '<li style="--i:'+i+'"><i class="jic" aria-hidden="true">'+(JR_ICON[i]||"⭐")+'</i><div><b>'+esc(j[0])+'</b><span>'+esc(j[1])+'</span></div></li>';}).join("")+'</ol>'+
   (stats.length?'<div class="istats">'+stats.map(function(x){return '<div><b data-count="'+x[0]+'">0</b><span>'+esc(x[1])+'</span></div>';}).join("")+'</div>':'')+
   '<div class="ifounder">'+(photo?'<img src="'+esc(photo)+'" alt="">':'')+'<div><b>'+esc(f.name)+'</b><span>'+esc(f.role)+'</span><span>Guiding students since 2015</span></div></div>'+
   '<button type="button" class="btn icta">Click to continue <span aria-hidden="true">→</span></button></div>';
