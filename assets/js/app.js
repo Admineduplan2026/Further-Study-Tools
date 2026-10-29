@@ -1170,12 +1170,15 @@ function pfVerify(code){
 }
 /* A verified code: keep the session and load the portfolio into this browser (My portfolio and the opening screens). */
 function pfSignedIn(d){
- PF.s={token:d.token,email:d.email,exp:Date.now()+(d.days||30)*864e5};store(PF_KEY,PF.s);
+ PF.s={token:d.token,email:d.email,exp:Date.now()+(d.days||30)*864e5};
+ if(/^https:\/\//.test(d.portal||""))PF.s.portal=d.portal;   /* staff (Account.gs STAFF_EMAILS): go to the staff portal */
+ store(PF_KEY,PF.s);
  PF.step="email";PF.msg="";PF.err="";PF.loaded=Date.now();
  pfUse(d.data,true);
  if(PF.dirty)PF.timer=setTimeout(pfFlush,300);
  pfStatus("Signed in. Your progress is saved automatically.");
  try{window.dispatchEvent(new CustomEvent("eduplan:signedin"));}catch(e){}
+ if(PF.s.portal){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}pfStatus("Staff account: opening the staff portal…");setTimeout(function(){location.href=PF.s.portal;},600);}
 }
 /* Sign-in for other screens (the lab's opening screens): the same account and portfolio as My portfolio. */
 window.EDUPLAN_ACCOUNT={live:pfLive,errors:PF_ERR,
@@ -1485,7 +1488,7 @@ V.portfolio=function(){
  var acct=PF.s?'<section class="panel pfcard"><h2>Account</h2><p class="muted">Status: <span id="pf-sync">'+(PF.dirty||PF.saving?'Saving…':'Saved to your portfolio')+'</span></p>'+
   (PF.del?'<div class="empty"><strong>Delete your portfolio?</strong> Your saved programmes, quiz result, consultation request and unsent application will be deleted from EDUPLAN. Applications you already sent are not affected.</div>'+
    '<div class="row"><button type="button" class="btn" id="pf-del-yes" data-pf="delete-yes"'+(PF.busy?' disabled':'')+'>Yes, delete my portfolio</button><button type="button" class="btn ghost" data-pf="keep">Keep it</button></div>'
-   :'<div class="row"><button type="button" class="btn ghost" data-pf="logout">Sign out</button><button type="button" class="btn ghost" data-pf="delete">Delete my portfolio</button></div>')+
+   :'<div class="row">'+(PF.s&&/^https:\/\//.test(PF.s.portal||"")?'<a class="btn" href="'+esc(PF.s.portal)+'">Staff portal</a>':'')+'<button type="button" class="btn ghost" data-pf="logout">Sign out</button><button type="button" class="btn ghost" data-pf="delete">Delete my portfolio</button></div>')+
   (PF.err?'<span class="err" role="alert">'+esc(PF.err)+'</span>':'')+
   '<p class="hint">Signing out removes your details from this browser. Please sign out on a shared computer.</p></section>':'';
  var nav='<nav class="pfnav" aria-label="Portfolio sections">'+[["pf-profile","👤","My profile"],["pf-results","📊","My results"],["pf-choices","⭐","My choices"],["pf-sch","🎓","Scholarships"],["pf-apply","📝","Application"],["pf-pay","💳","Payment"],["pf-cons","💬","Consultation"]]

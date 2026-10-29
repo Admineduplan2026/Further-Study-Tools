@@ -18,6 +18,10 @@
  * Script Properties (Project Settings > Script Properties), all optional:
  *   ACCOUNT_DAILY_EMAILS  sign-in emails per day for the whole website, default 80. A free Gmail account can send
  *                         about 100 emails a day from Apps Script, shared with APPLY_NOTIFY_EMAIL.
+ *   STAFF_PORTAL_URL      link of the EDUPLAN staff portal. Staff who sign in are sent there; the link is never in
+ *                         the public website code and goes only to the emails below.
+ *   STAFF_EMAILS          staff emails (comma-separated) sent to the portal after signing in; default
+ *                         admin.eduplan@gmail.com.
  * Set by the script itself: ACCOUNT_SHEET_ID.
  * See docs/student-portfolio-setup.md.
  */
@@ -49,6 +53,14 @@ function accountAction_(body) {
 function accountHash_(s) {
   return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(s), Utilities.Charset.UTF_8)
     .map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join('');
+}
+
+/* The staff portal link for a staff email (Script Properties STAFF_PORTAL_URL and STAFF_EMAILS), or ''. */
+function accountStaffPortal_(email) {
+  var props = PropertiesService.getScriptProperties(), url = String(props.getProperty('STAFF_PORTAL_URL') || '').trim();
+  if (!/^https:\/\//.test(url)) return '';
+  var staff = String(props.getProperty('STAFF_EMAILS') || 'admin.eduplan@gmail.com').split(/[,;\s]+/).map(accountEmail_).filter(Boolean);
+  return staff.indexOf(accountEmail_(email)) >= 0 ? url : '';
 }
 
 function accountEmail_(v) {
@@ -178,7 +190,10 @@ function accountVerify_(body) {
     sh.getRange(row, ACCOUNT_COL.sessions).setValue(accountSessionsText_(list.slice(-ACCOUNT_MAX_SESSIONS)));
     sh.getRange(row, ACCOUNT_COL.signin).setValue(now);
     statsActive_(sh, row); statsLog_(email, isNew ? 'Registered' : 'Signed in');   // Stats.gs
-    return { token: token, email: email, days: ACCOUNT_SESSION_DAYS, data: accountData_(sh, row) };
+    var out = { token: token, email: email, days: ACCOUNT_SESSION_DAYS, data: accountData_(sh, row) };
+    var portal = accountStaffPortal_(email);
+    if (portal) out.portal = portal;
+    return out;
   } finally {
     lock.releaseLock();
   }

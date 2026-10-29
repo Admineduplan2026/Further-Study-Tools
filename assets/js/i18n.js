@@ -78,7 +78,7 @@ var ZH={
  "Application":"报名","Application sent. Your reference number is":"报名资料已送出。你的报名编号是","Ready to send":"可以送出","Finish and send":"完成并送出","Continue my application":"继续填写报名表",
  "Uploaded documents are not kept in your portfolio. Add them again before you send your application.":"上传的文件不会保存在档案中，送出报名前请重新加入。",
  "Not started. Choose a programme first, then tap":"还没开始。请先选择课程，然后点",
- "Account":"账户","Status:":"状态：","Sign out":"登出","Delete my portfolio":"删除我的档案","Delete your portfolio?":"要删除你的档案吗？",
+ "Account":"账户","Status:":"状态：","Sign out":"登出","Staff portal":"员工入口 Staff portal","Staff account: opening the staff portal…":"员工账号：正在打开员工入口…","Delete my portfolio":"删除我的档案","Delete your portfolio?":"要删除你的档案吗？",
  "Your saved programmes, quiz result, consultation request and unsent application will be deleted from EDUPLAN. Applications you already sent are not affected.":"你收藏的课程、测验结果、咨询申请和未送出的报名表将从 EDUPLAN 删除。已送出的报名不受影响。",
  "Yes, delete my portfolio":"是的，删除我的档案","Keep it":"保留",
  "Signing out removes your details from this browser. Please sign out on a shared computer.":"登出会把你的资料从这个浏览器清除。使用公用电脑时请记得登出。",

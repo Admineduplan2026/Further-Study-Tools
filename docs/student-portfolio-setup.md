@@ -103,3 +103,11 @@ Set up:
 
 "Online now" means active in the last 15 minutes: the website reports activity when a signed-in student opens a
 page or their portfolio is saved, not every second. Guests appear only as counts, never by name.
+
+## Staff portal after sign-in
+
+Staff who sign in on the website (My portfolio or the opening screens) are sent straight to the EDUPLAN staff portal.
+Set two Script Properties: `STAFF_PORTAL_URL` (the portal's link) and, optionally, `STAFF_EMAILS` (comma-separated;
+default `admin.eduplan@gmail.com`). The link is sent by the server only to those emails after a correct sign-in code,
+so it never appears in the public website code. A staff member's My portfolio page also shows a **Staff portal**
+button. The portal still needs each staff member to have Google access to the sheets and folders it links to.
