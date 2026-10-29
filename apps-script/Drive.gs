@@ -36,10 +36,23 @@ var DRIVE_NAMES = {
 /* A file or folder this project made earlier, unless it was deleted or moved to the trash. */
 function driveLive_(item) { return item && !item.isTrashed() ? item : null; }
 function driveSheetLive_(id) {
+  driveOwnerCheck_();
   try { return driveLive_(DriveApp.getFileById(id)) ? SpreadsheetApp.openById(id) : null; } catch (err) { return null; }
 }
 
+/* Script Property DRIVE_OWNER: the Google account whose Drive holds Eduplan's data (admin.eduplan@gmail.com). Run as any
+   other account, the project cannot open those files and would quietly start new, empty ones in that account's Drive;
+   it stops with this message instead. Fix: Deploy > Manage deployments > Edit > Execute as: that account. */
+function driveOwnerCheck_() {
+  var owner = PropertiesService.getScriptProperties().getProperty('DRIVE_OWNER'), me = '';
+  if (!owner) return;
+  try { me = Session.getEffectiveUser().getEmail(); } catch (err) { return; }
+  if (me && me.toLowerCase() !== owner.trim().toLowerCase())
+    throw new Error('wrong account: running as ' + me + ', data is in the Drive of ' + owner.trim());
+}
+
 function driveTop_() {
+  driveOwnerCheck_();
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('DRIVE_TOP_ID');
   if (id) { try { var t = driveLive_(DriveApp.getFolderById(id)); if (t) return t; } catch (err) { /* deleted: make a new one */ } }
   var found = DriveApp.getRootFolder().getFoldersByName(DRIVE_TOP);
@@ -50,6 +63,7 @@ function driveTop_() {
 
 /* "people", "pay", "expo" (in Eduplan Databases) or "receipts" (in 4. Payments), created when missing. */
 function driveFolder_(key) {
+  driveOwnerCheck_();
   var props = PropertiesService.getScriptProperties(), prop = 'DRIVE_' + key.toUpperCase() + '_ID', id = props.getProperty(prop);
   if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted: make a new one */ } }
   var parent = key === 'receipts' ? driveFolder_('pay') : driveTop_(), found = parent.getFoldersByName(DRIVE_NAMES[key]);

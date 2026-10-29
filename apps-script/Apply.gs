@@ -32,6 +32,7 @@ var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile
   'Accommodation help', 'Documents', 'Folder', 'Status', 'Counsellor', 'Notes'];
 
 function applyFolder_() {
+  driveOwnerCheck_();   // Drive.gs
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_FOLDER_ID');
   if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted or no access: find or make one */ } }
   // Drive.gs: the folder in Eduplan Databases, or the earlier "Eduplan Applications (private)" in My Drive, or a new one.

@@ -12,6 +12,11 @@ The exhibition website lets organisers (主办方) open education fairs and scho
 
 ## Turn it on
 
+Always edit, run and deploy the Apps Script project signed in as **admin.eduplan@gmail.com**, the account whose Drive
+holds Eduplan's data, and keep **Execute as: Me (admin.eduplan@gmail.com)** on the deployment. Add the Script Property
+`DRIVE_OWNER` = `admin.eduplan@gmail.com`: if the project ever runs as another account, it stops with "wrong account"
+instead of quietly starting new, empty sheets in that account's Drive.
+
 1. Run `python3 tools/bundle-apps-script.py`, paste `dist/Eduplan-all.gs` into the Apps Script project, then
    **Deploy > Manage deployments > Edit > Version: New version > Deploy** (the `/exec` URL stays the same).
 2. In **Project Settings > Script Properties** add `EXPO_ADMIN_EMAILS` with the Eduplan staff emails that review
