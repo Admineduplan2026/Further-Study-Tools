@@ -87,4 +87,8 @@ window.EDUPLAN_ZH_EXTRA={text:{
 (function(x){(window.EDUPLAN_FACULTIES||{fields:[]}).fields.forEach(function(f){if(f.zh)x.text[f.name]=f.zh;});
  var M=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
  x.patterns.push([/^(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})$/,function(m){return m[2]+"年"+(M.indexOf(m[1])+1)+"月";}]);
+ /* Exhibition dates in Recommended for you: "Sat, 31 Oct 2026" and the month on the date badge. */
+ var W={Sun:"日",Mon:"一",Tue:"二",Wed:"三",Thu:"四",Fri:"五",Sat:"六"};
+ x.patterns.push([/^📅 (Sun|Mon|Tue|Wed|Thu|Fri|Sat), (\d{1,2}) (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) (\d{4})$/,function(m){return "📅 "+m[4]+"年"+(M.indexOf(m[3])+1)+"月"+m[2]+"日（周"+W[m[1]]+"）";}]);
+ M.forEach(function(n,i){if(!x.text[n])x.text[n]=(i+1)+"月";});
 })(window.EDUPLAN_ZH_EXTRA);

@@ -199,6 +199,66 @@ test("a failed email does not stop the booking", () => {
   assert.ok(res.ok, JSON.stringify(res));
   assert.strictEqual(t.h.tables.registrations.filter(r => r.event_id === id).length, 1);
 });
+console.log("New-event emails");
+test("a published event is emailed once to every student account and school, not to organisers or admins", () => {
+  const t = setup();
+  t.h.students.push("Stu1@test.local", "stu2@test.local", "stu1@test.local", "school-a@test.local", "not an email");
+  const id = publish(t, t.org);
+  t.h.mails.length = 0;
+  assert.strictEqual(t.h.notify().sent, 7);
+  const to = t.h.mails.map(m => m.to).sort();
+  assert.deepStrictEqual(to, ["school-a@test.local", "school-b@test.local", "school-c@test.local", "school-d@test.local", "school-e@test.local", "stu1@test.local", "stu2@test.local"]);
+  assert.ok(t.h.mails.every(m => m.subject.indexOf(EVENT.title) >= 0 && m.body.indexOf("2026-12-10") >= 0 && m.body.indexOf("#/unsub/") >= 0));
+  t.h.mails.length = 0;
+  assert.strictEqual(t.h.notify().sent, 0, "a second run sends nothing more");
+  assert.ok(t.h.tables.notify.find(j => j.event_id === id).done_at);
+});
+test("drafts, rejected events and organisers waiting for approval send no emails", () => {
+  const t = setup();
+  t.h.students.push("stu@test.local");
+  const r = t.h.call({ action: "expo_event_save", token: t.org.token, submit: true, event: EVENT });
+  t.h.call({ action: "expo_admin_event", token: t.admin, event_id: r.id, decision: "rejected", note: "x" });
+  t.h.call({ action: "expo_event_save", token: t.org.token, event: EVENT });
+  t.h.mails.length = 0;
+  t.h.notify();
+  assert.strictEqual(t.h.mails.length, 0);
+});
+test("a low daily quota stops the sending and the next run carries on without repeats", () => {
+  const t = setup();
+  ["s1", "s2", "s3", "s4"].forEach(x => t.h.students.push(x + "@test.local"));
+  publish(t, t.org);
+  t.h.mails.length = 0;
+  t.h.quota.left = 28;   // 25 are kept for sign-in codes
+  assert.strictEqual(t.h.notify().sent, 3);
+  t.h.students.push("late@test.local");   // a student who signs up in between is added at the end of the sheet
+  t.h.quota.left = 1000;
+  t.h.notify();
+  const to = t.h.mails.map(m => m.to);
+  assert.strictEqual(new Set(to).size, to.length, "nobody gets it twice");
+  assert.strictEqual(to.length, 10, "4 students, 1 newcomer, 5 schools");
+});
+test("the stop link works only with its own signature, and stopped emails stay stopped", () => {
+  const t = setup();
+  t.h.students.push("stu@test.local");
+  const link = t.h.unsubLink("stu@test.local"), sig = link.split("/").pop();
+  assert.strictEqual(t.h.call({ action: "expo_unsub", email: "stu@test.local", sig: "forged" }).error, "bad_link");
+  assert.strictEqual(t.h.call({ action: "expo_unsub", email: "other@test.local", sig }).error, "bad_link");
+  assert.ok(t.h.call({ action: "expo_unsub", email: "stu@test.local", sig }).ok);
+  assert.ok(t.h.call({ action: "expo_unsub", email: "STU@test.local", sig }).ok, "twice is fine");
+  publish(t, t.org);
+  t.h.mails.length = 0;
+  t.h.notify();
+  assert.ok(t.h.mails.every(m => m.to !== "stu@test.local"));
+  assert.strictEqual(t.h.mails.length, 5);
+});
+test("the background sending writes its progress inside the lock", () => {
+  const t = setup();
+  t.h.students.push("stu@test.local");
+  publish(t, t.org);
+  const before = t.h.writesOutsideLock();
+  t.h.notify();
+  assert.strictEqual(t.h.writesOutsideLock(), before);
+});
 test("sign-up needs the privacy consent and the listed fields only", () => {
   const t = setup();
   const s = t.h.signIn("noconsent@test.local");

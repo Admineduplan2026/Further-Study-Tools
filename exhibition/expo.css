@@ -150,3 +150,4 @@ main{display:block;outline:none}
 
 .xfoot{max-width:1080px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:6px}
 @media (max-width:480px){.xrole span,.xbrand small{display:none}.xbrand img{height:30px}}
+.xsolo .xcover{max-height:220px}

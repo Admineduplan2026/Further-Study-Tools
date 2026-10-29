@@ -664,8 +664,8 @@ var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile
 
 function applyFolder_() {
   driveOwnerCheck_();   // Drive.gs
-  var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_FOLDER_ID');
-  if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted or no access: find or make one */ } }
+  var props = PropertiesService.getScriptProperties(), f = driveFolderLive_('APPLY_FOLDER_ID');   // Drive.gs
+  if (f) return f;
   // Drive.gs: the folder in Eduplan Databases, or the earlier "Eduplan Applications (private)" in My Drive, or a new one.
   var found = driveTop_().getFoldersByName(DRIVE_NAMES.apply), old = DriveApp.getRootFolder().getFoldersByName('Eduplan Applications (private)');
   var folder = found.hasNext() ? found.next() : old.hasNext() ? old.next() : driveTop_().createFolder(DRIVE_NAMES.apply);
@@ -1478,11 +1478,24 @@ var DRIVE_NAMES = {
   receipts: 'Receipts'
 };
 
-/* A file or folder this project made earlier, unless it was deleted or moved to the trash. */
+/* A file or folder this project made earlier, unless it was moved to the trash (then the caller makes a new one).
+   An ID in Script Properties that cannot be opened at all (a typo, or a file of another account) stops the request
+   with a clear error: making a new, empty file instead would quietly split Eduplan's data over several sheets. */
 function driveLive_(item) { return item && !item.isTrashed() ? item : null; }
+function driveCleanId_(id) { return String(id || '').replace(/[\s'"`]/g, ''); }
 function driveSheetLive_(id) {
   driveOwnerCheck_();
-  try { return driveLive_(DriveApp.getFileById(id)) ? SpreadsheetApp.openById(id) : null; } catch (err) { return null; }
+  id = driveCleanId_(id);
+  var file;
+  try { file = DriveApp.getFileById(id); } catch (err) { throw new Error('cannot open sheet ' + id + ' from Script Properties: check the ID'); }
+  return driveLive_(file) ? SpreadsheetApp.openById(id) : null;
+}
+/* The folder whose ID is in Script Property prop, or null when it is not set or in the trash. */
+function driveFolderLive_(prop) {
+  var id = driveCleanId_(PropertiesService.getScriptProperties().getProperty(prop)), folder;
+  if (!id) return null;
+  try { folder = DriveApp.getFolderById(id); } catch (err) { throw new Error('cannot open folder ' + id + ' (' + prop + ' in Script Properties): check the ID'); }
+  return driveLive_(folder);
 }
 
 /* Script Property DRIVE_OWNER: the Google account whose Drive holds Eduplan's data (admin.eduplan@gmail.com). Run as any
@@ -1498,8 +1511,8 @@ function driveOwnerCheck_() {
 
 function driveTop_() {
   driveOwnerCheck_();
-  var props = PropertiesService.getScriptProperties(), id = props.getProperty('DRIVE_TOP_ID');
-  if (id) { try { var t = driveLive_(DriveApp.getFolderById(id)); if (t) return t; } catch (err) { /* deleted: make a new one */ } }
+  var props = PropertiesService.getScriptProperties(), t = driveFolderLive_('DRIVE_TOP_ID');
+  if (t) return t;
   var found = DriveApp.getRootFolder().getFoldersByName(DRIVE_TOP);
   var folder = found.hasNext() ? found.next() : DriveApp.createFolder(DRIVE_TOP);
   props.setProperty('DRIVE_TOP_ID', folder.getId());
@@ -1509,8 +1522,8 @@ function driveTop_() {
 /* "people", "pay", "expo" (in Eduplan Databases) or "receipts" (in 4. Payments), created when missing. */
 function driveFolder_(key) {
   driveOwnerCheck_();
-  var props = PropertiesService.getScriptProperties(), prop = 'DRIVE_' + key.toUpperCase() + '_ID', id = props.getProperty(prop);
-  if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted: make a new one */ } }
+  var props = PropertiesService.getScriptProperties(), prop = 'DRIVE_' + key.toUpperCase() + '_ID', f = driveFolderLive_(prop);
+  if (f) return f;
   var parent = key === 'receipts' ? driveFolder_('pay') : driveTop_(), found = parent.getFoldersByName(DRIVE_NAMES[key]);
   var folder = found.hasNext() ? found.next() : parent.createFolder(DRIVE_NAMES[key]);
   props.setProperty(prop, folder.getId());
@@ -1593,9 +1606,12 @@ var EXPO_COLS = {
   events: ['id', 'organiser_id', 'title', 'description', 'date', 'start_time', 'end_time', 'venue', 'address', 'city', 'state', 'booth_capacity',
     'registration_deadline', 'booth_fee', 'cover_image', 'status', 'review_note', 'approved_at', 'created_at', 'updated_at'],
   registrations: ['id', 'event_id', 'exhibitor_id', 'booths_requested', 'topics', 'special_needs', 'status', 'organiser_note', 'created_at', 'updated_at'],
-  sessions: ['h', 'email', 'exp']
+  sessions: ['h', 'email', 'exp'],
+  notify: ['event_id', 'next_student', 'next_school', 'sent', 'created_at', 'done_at'],
+  unsubscribed: ['h', 'at']
 };
-var EXPO_TABS = { users: 'Users', events: 'Events', registrations: 'Registrations', sessions: 'Sessions' };
+var EXPO_TABS = { users: 'Users', events: 'Events', registrations: 'Registrations', sessions: 'Sessions', notify: 'Notify', unsubscribed: 'Unsubscribed' };
+var EXPO_MAIL_RESERVE = 25;   // emails a day kept for sign-in codes and application notices
 var EXPO_STATES = ['Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak',
   'Selangor', 'Terengganu', 'W.P. Kuala Lumpur', 'W.P. Labuan', 'W.P. Putrajaya'];
 var EXPO_SCHOOL_TYPES = ['university', 'college', 'secondary', 'other'];
@@ -1608,6 +1624,7 @@ function expoAction_(body) {
   if (a === 'expo_public') return expoPublic_();
   if (a === 'expo_code') return expoCode_(body);
   if (a === 'expo_verify') return expoVerify_(body);
+  if (a === 'expo_unsub') return expoUnsub_(body);
   var who = expoAuth_(body.token);
   if (!who) return { error: 'signed_out' };
   switch (a) {
@@ -1656,7 +1673,7 @@ function expoSheetTable_(ss, name) {
   var cols = EXPO_COLS[name], sh = ss.getSheetByName(EXPO_TABS[name]);
   if (!sh) {
     var first = ss.getSheets()[0];
-    sh = ss.getSheets().length === 1 && first.getLastRow() === 0 && !(first.getName() in { Users: 1, Events: 1, Registrations: 1, Sessions: 1 })
+    sh = ss.getSheets().length === 1 && first.getLastRow() === 0 && !(first.getName() in { Users: 1, Events: 1, Registrations: 1, Sessions: 1, Notify: 1, Unsubscribed: 1 })
       ? first.setName(EXPO_TABS[name]) : ss.insertSheet(EXPO_TABS[name]);
     sh.getRange(1, 1, sh.getMaxRows(), cols.length).setNumberFormat('@');   // plain text: dates and phone numbers stay as typed
     sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setBackground('#e4f2fa');
@@ -2163,10 +2180,13 @@ function expoAdminEvent_(who, body) {
     if (e.status !== 'pending') return { error: 'bad_status' };
     var patch = decision === 'approved' ? { status: 'published', approved_at: expoStamp_(), review_note: note } : { status: 'rejected', review_note: note };
     expoStore_().table('events').update('id', e.id, patch);
+    if (decision === 'approved' && !expoFind_('notify', 'event_id', e.id))
+      expoStore_().table('notify').insert({ event_id: e.id, next_student: 0, next_school: 0, sent: 0, created_at: expoStamp_(), done_at: '' });
     var org = expoFind_('users', 'id', e.organiser_id);
     if (org) mail = { to: org.email, title: e.title };
     return { ok: true, status: patch.status };
   });
+  if (r.ok && decision === 'approved') expoNotifySoon_();
   if (r.ok && mail) {
     expoMail_([mail.to], (decision === 'approved' ? '活动已发布：' : '活动未获批准：') + mail.title,
       decision === 'approved' ? '你的活动「' + mail.title + '」已通过审核并公开，参展学校现在可以报名摊位。\n' + expoSite_() + '#/org'
@@ -2184,8 +2204,7 @@ function expoSaveCover_(c) {
   var bytes;
   try { bytes = Utilities.base64Decode(String(c.data).replace(/^data:[^,]*,/, '')); } catch (err) { return { error: 'bad_image' }; }
   if (!bytes.length || bytes.length > EXPO_COVER_BYTES) return { error: 'image_too_large' };
-  var props = PropertiesService.getScriptProperties(), id = props.getProperty('EXPO_COVERS_ID'), folder = null;
-  if (id) { try { folder = driveLive_(DriveApp.getFolderById(id)); } catch (err) { folder = null; } }
+  var props = PropertiesService.getScriptProperties(), folder = driveFolderLive_('EXPO_COVERS_ID');   // Drive.gs
   if (!folder) {
     folder = driveFolder_('expo').createFolder('Event covers (public links)');
     props.setProperty('EXPO_COVERS_ID', folder.getId());
@@ -2211,13 +2230,119 @@ function expoMail_(to, subject, body) {
   }
 }
 
+/* ---------- New-event emails to students and schools ---------- */
+/* When an admin publishes an event, every student with an EDUPLAN account (Eduplan Student Portfolios) and every
+   exhibition school gets one email about it, with a link to stop these emails. Sending runs in the background a minute
+   later and stops for the day when the Gmail quota is low (EXPO_MAIL_RESERVE is kept for sign-in codes); the daily
+   trigger from expoSetup carries on the next day. Each list has its own cursor, so people who sign up later do not
+   shift anyone already counted; they are not sent older events. */
+
+function expoNotifySoon_() {
+  try { ScriptApp.newTrigger('expoNotifyNow').timeBased().after(60 * 1000).create(); }
+  catch (err) { console.warn('expo notify trigger not made (run expoSetup once): ' + err); }
+}
+function expoNotifyNow() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'expoNotifyNow') ScriptApp.deleteTrigger(t); });
+  expoNotifyRun_();
+}
+function expoNotifyDaily() { expoNotifyRun_(); }
+
+/* Students first (in sign-up order), then exhibition schools that are not students too. */
+function expoNotifyLists_() {
+  var students = [], schools = [], seen = {};
+  expoStudentEmails_().forEach(function (v) { var e = accountEmail_(v); if (e && !seen[e]) { seen[e] = 1; students.push(e); } });
+  expoStore_().table('users').all().forEach(function (u) {
+    var e = accountEmail_(u.email);
+    if (u.role === 'exhibitor' && e && !seen[e]) { seen[e] = 1; schools.push(e); }
+  });
+  return { student: students, school: schools };
+}
+function expoStudentEmails_() {   // Account.gs: column A of "Students"
+  var sh = accountSheet_(), n = sh.getLastRow();
+  return n < 2 ? [] : sh.getRange(2, 1, n - 1, 1).getValues().map(function (r) { return String(r[0]); });
+}
+
+function expoNotifyRun_() {
+  var cache = CacheService.getScriptCache();
+  if (cache.get('expo-notify-run')) return { busy: true };
+  cache.put('expo-notify-run', '1', 600);
+  try {
+    var st = expoStore_(), jobs = st.table('notify').all().filter(function (j) { return !j.done_at; });
+    if (!jobs.length) return { sent: 0 };
+    var lists = expoNotifyLists_(), events = st.table('events').all(), users = st.table('users').all(), today = expoToday_(), total = 0;
+    var off = {};
+    st.table('unsubscribed').all().forEach(function (u) { off[u.h] = 1; });
+    var budget = MailApp.getRemainingDailyQuota() - EXPO_MAIL_RESERVE;
+    jobs.forEach(function (j) {
+      var e = expoById_(events, j.event_id), gone = !e || e.status !== 'published' || e.date < today, sent = Number(j.sent) || 0;
+      var cur = { student: Number(j.next_student) || 0, school: Number(j.next_school) || 0 };
+      if (!gone) {
+        var org = expoById_(users, e.organiser_id);
+        ['student', 'school'].forEach(function (k) {
+          while (budget > 0 && cur[k] < lists[k].length) {
+            var to = lists[k][cur[k]];
+            if (!off[accountHash_(to)]) {
+              if (!expoNotifyOne_(to, e, org)) { budget = 0; break; }   // the mail service failed: try again tomorrow
+              budget--; sent++; total++;
+            }
+            cur[k]++;
+          }
+        });
+      }
+      var done = gone || (cur.student >= lists.student.length && cur.school >= lists.school.length);
+      expoLocked_(function () {
+        st.table('notify').update('event_id', j.event_id, { next_student: cur.student, next_school: cur.school, sent: sent, done_at: done ? expoStamp_() : '' });
+        return { ok: true };
+      });
+    });
+    return { sent: total };
+  } finally { cache.remove('expo-notify-run'); }
+}
+
+function expoNotifyOne_(to, e, org) {
+  var place = [e.venue, e.address, e.city, e.state].filter(Boolean).join(', ');
+  var body = '有一个新的教育展 A new education exhibition is open on Eduplan:\n\n' + e.title + '\n' +
+    '日期 Date: ' + e.date + '  ' + e.start_time + '–' + e.end_time + '\n' +
+    '地点 Venue: ' + place + '\n' + (org ? '主办方 Organiser: ' + org.org_name + '\n' : '') +
+    (e.description ? '\n' + String(e.description).slice(0, 600) + '\n' : '') +
+    '\n详情 Details: ' + expoSite_() + '#/e/' + e.id + '\n\n' +
+    '你收到这封邮件，是因为你在 EDUPLAN 有账号。不想再收到教育展通知 Stop these emails:\n' + expoUnsubLink_(to);
+  try {
+    MailApp.sendEmail({ to: to, name: 'Eduplan 教育展', subject: '新教育展 New exhibition: ' + e.title + ' · ' + e.date, body: body });
+    return true;
+  } catch (err) {
+    console.error('expo notify failed: ' + err);
+    return false;
+  }
+}
+
+/* Stop link: the email and a signature only Eduplan can make, so nobody can stop someone else's emails. */
+function expoUnsubSig_(email) {
+  var props = PropertiesService.getScriptProperties(), key = props.getProperty('EXPO_MAIL_SECRET');
+  if (!key) { key = Utilities.getUuid(); props.setProperty('EXPO_MAIL_SECRET', key); }
+  return Utilities.base64EncodeWebSafe(Utilities.computeHmacSha256Signature(email, key)).replace(/=+$/, '').slice(0, 22);
+}
+function expoUnsubLink_(email) { return expoSite_() + '#/unsub/' + encodeURIComponent(email) + '/' + expoUnsubSig_(email); }
+function expoUnsub_(body) {
+  var email = accountEmail_(body.email);
+  if (!email || String(body.sig || '') !== expoUnsubSig_(email)) return { error: 'bad_link' };
+  return expoLocked_(function () {
+    var h = accountHash_(email);
+    if (!expoFind_('unsubscribed', 'h', h)) expoStore_().table('unsubscribed').insert({ h: h, at: expoStamp_() });
+    return { ok: true };
+  });
+}
+
 /* Run once from the editor (select expoSetup, Run): asks for the Drive, Sheets and email permissions the exhibition
    needs (tick "Select all" on Google's consent screen), creates "Eduplan Exhibitions" and checks EXPO_ADMIN_EMAILS. */
 function expoSetup() {
   console.log('Email quota left today: ' + MailApp.getRemainingDailyQuota());
   expoStore_().table('users').all();
-  ['events', 'registrations', 'sessions'].forEach(function (t) { expoStore_().table(t).all(); });
-  console.log('Eduplan Exhibitions: ' + SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID')).getUrl());
+  ['events', 'registrations', 'sessions', 'notify', 'unsubscribed'].forEach(function (t) { expoStore_().table(t).all(); });
+  console.log('Eduplan Exhibitions: ' + SpreadsheetApp.openById(driveCleanId_(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID'))).getUrl());
+  if (!ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'expoNotifyDaily'; }))
+    ScriptApp.newTrigger('expoNotifyDaily').timeBased().everyDays(1).atHour(10).inTimezone(EXPO_TZ).create();
+  console.log('New-event emails: students with an account ' + expoStudentEmails_().length + ', daily trigger on.');
   var admins = expoAdmins_();
   console.log(admins.length ? 'Admins: ' + admins.join(', ') : 'Add EXPO_ADMIN_EMAILS in Project Settings > Script Properties: no one can approve organisers yet.');
 }

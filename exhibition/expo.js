@@ -86,10 +86,30 @@ function render(){
   if(r[0]==="org")return r[1]==="new"?eventForm(null):r[1]==="edit"?eventForm(r[2]):r[1]==="regs"?regsView(r[2]):orgView();
   if(r[0]==="ex")return r[1]==="apply"?applyView(r[2]):r[1]==="my"?myRegsView():browseView();
   if(r[0]==="admin")return adminView();
+  if(r[0]==="e")return eventView(r[1]||"");
+  if(r[0]==="unsub")return unsubView(decodeURIComponent(r[1]||""),r[2]||"");
   homeView();
  });
 }
 function done(my){return my!==seq;}
+/* One published event for anyone (students and parents come here from the EDUPLAN home page and the emails). */
+function eventView(id){
+ var my=seq;loading();
+ api("expo_public").then(function(r){if(done(my))return;
+  if(r.error){page(failed(r));return;}
+  var e=r.events.filter(function(x){return x.id===id;})[0];
+  if(!e){page('<div class="xempty">找不到这个活动，它可能已经结束或取消。<a href="#/">看看其他教育展 See other exhibitions</a></div>');return;}
+  page('<p><a href="#/">← 所有教育展 All exhibitions</a></p><div class="xsolo">'+eventCard(e,{more:(e.description?'<p class="xpre">'+esc(e.description)+'</p>':'')+
+   (e.address?'<p class="xmeta">地址 Address：'+esc(e.address)+'</p>':'')+
+   (e.open&&!e.full?'<a class="xbtn sm" href="#/ex/apply/'+esc(e.id)+'">学校报名摊位 Book a booth</a>':'')})+'</div>');});
+}
+/* The stop link in new-exhibition emails (Exhibition.gs expoUnsubLink_). */
+function unsubView(email,sig){
+ var my=seq;loading();
+ api("expo_unsub",{email:email,sig:sig}).then(function(r){if(done(my))return;
+  page(r.error?'<section class="xtop"><div><h1>链接无效</h1><p class="xlead">这个取消通知的链接不完整或已失效。请直接点电邮里的链接，或联系 EDUPLAN。This link is not valid.</p></div></section>':
+   '<section class="xtop"><div><span class="xeye">通知 Emails</span><h1>已取消教育展通知</h1><p class="xlead">'+esc(email)+' 以后不会再收到新教育展的电邮。You will no longer get emails about new exhibitions.</p></div></section>');});
+}
 
 /* ---------- Home ---------- */
 function eventCard(e,opts){

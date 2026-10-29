@@ -27,7 +27,14 @@ function seed(email, role, extra) {
 const org = seed("organiser@test.local", "organiser", { org_name: "Test Education Fair Sdn Bhd" });
 seed("school@test.local", "exhibitor", { org_name: "Test University", school_type: "university", website: "https://university.test" });
 seed("school2@test.local", "exhibitor", { org_name: "Test College", school_type: "college", website: "https://college.test" });
-expo.call({ action: "expo_admin_user", token: expo.signIn("admin@test.local").token, user_id: org.id, decision: "approved" });
+const adminToken = expo.signIn("admin@test.local").token, orgToken = expo.signIn("organiser@test.local").token;
+expo.call({ action: "expo_admin_user", token: adminToken, user_id: org.id, decision: "approved" });
+/* One published sample event a month from now, so the exhibition list and the EDUPLAN home page have something to show. */
+const soon = d => new Date(Date.now() + d * 864e5 + 8 * 36e5).toISOString().slice(0, 10);
+const sample = expo.call({ action: "expo_event_save", token: orgToken, submit: true, event: { title: "Penang Education Fair (sample)", description: "A sample event for trying the site.",
+  date: soon(30), start_time: "10:00", end_time: "17:00", venue: "Sample Hall", address: "1 Sample Road", city: "George Town", state: "Pulau Pinang",
+  booth_capacity: 20, registration_deadline: soon(20), booth_fee: 300 } });
+expo.call({ action: "expo_admin_event", token: adminToken, event_id: sample.id, decision: "approved" });
 expo.mails.length = 0;
 seeding = false;
 

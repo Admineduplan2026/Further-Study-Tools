@@ -48,6 +48,18 @@ One account has one role, chosen at sign-up. Sign-in is a 6-digit code by email 
 - Every action checks the role and that the event or booking belongs to the caller.
 - School contact details are only sent to the organiser of the event the school booked.
 
+## New-exhibition emails to students and schools
+
+When an admin approves an event, every student with an EDUPLAN account (column A of "Eduplan Student Portfolios")
+and every exhibition school gets one email with the date, time, venue and a link to the event page
+(`exhibition/#/e/<id>`). It is sent in the background about a minute later. Each email has a stop link
+(`#/unsub/...`, signed with Script Property `EXPO_MAIL_SECRET`, made automatically); stopped addresses are kept as
+hashes in the Unsubscribed tab. Progress is kept in the Notify tab.
+
+The Gmail quota (about 100 emails a day on a free account) limits this: 25 a day are kept for sign-in codes, and the
+rest continues the next day with the daily trigger. Run **expoSetup** once (signed in as admin.eduplan, "Select all")
+to allow the triggers. Upcoming published events also appear first in **Recommended for you** on the EDUPLAN home page.
+
 ## Emails (best effort)
 
 Sign-in codes, and notices for: a new organiser or event to review (to admins), a new booking (to the organiser),

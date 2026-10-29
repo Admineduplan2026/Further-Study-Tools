@@ -12,6 +12,7 @@ module.exports = function (opts) {
   const root = path.join(__dirname, ".."), mails = [], codes = {}, props = { EXPO_ADMIN_EMAILS: (opts.admins || []).join(",") };
   const cache = new Map();
   let lockHeld = false, writesOutsideLock = 0, mailDown = false;
+  const quota = { left: opts.quota == null ? 1000 : opts.quota }, students = (opts.students || []).slice();
 
   /* Tables as arrays of row objects with string values, like the sheet. Writes outside the script lock are counted:
      every write must happen inside expoLocked_, which is what keeps two bookings from both taking the last booth. */
@@ -49,7 +50,9 @@ module.exports = function (opts) {
         if (f === "yyyy-MM-dd") return p.year + "-" + p.month + "-" + p.day;
         return p.year + "-" + p.month + "-" + p.day + "T" + p.hour + ":" + p.minute + ":" + p.second;
       },
-      base64Decode: s => Array.from(Buffer.from(s, "base64"))
+      base64Decode: s => Array.from(Buffer.from(s, "base64")),
+      computeHmacSha256Signature: (v, k) => Array.from(crypto.createHmac("sha256", String(k)).update(String(v), "utf8").digest()).map(b => (b > 127 ? b - 256 : b)),
+      base64EncodeWebSafe: bytes => Buffer.from(bytes.map(b => b & 255)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_")
     },
     CacheService: { getScriptCache: () => ({
       get: k => { const v = cache.get(k); return v && v.until > Date.now() ? v.value : null; },
@@ -62,10 +65,11 @@ module.exports = function (opts) {
     }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => (k in props ? props[k] : null), setProperty: (k, v) => { props[k] = String(v); } }) },
     MailApp: {
-      getRemainingDailyQuota: () => 100,
+      getRemainingDailyQuota: () => quota.left,
       sendEmail: m => {
         if (mailDown) throw new Error("mail service down (test)");
         mails.push(m);
+        quota.left--;
         const code = /code: (\d{6})/.exec(m.subject);
         if (code) m.to.split(",").forEach(t => { codes[t] = code[1]; });
         if (opts.onMail) opts.onMail(m);
@@ -74,6 +78,8 @@ module.exports = function (opts) {
   };
   vm.createContext(ctx);
   ["apps-script/Account.gs", "apps-script/Exhibition.gs"].forEach(f => vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f }));
+  /* Student accounts (Eduplan Student Portfolios, column A) as a list of emails; no triggers in Node. */
+  vm.runInContext("expoStudentEmails_ = function () { return __students.slice(); }; expoNotifySoon_ = function () {};", Object.assign(ctx, { __students: students }));
   vm.runInContext("expoStore_ = function () { return __store; }; expoSaveCover_ = function (c) { return __cover(c); };", Object.assign(ctx, {
     __store: { table },
     __cover: c => (/^image\/(jpeg|png|webp)$/.test(c.type || "") ? "https://example.test/cover-" + crypto.randomUUID().slice(0, 8) + ".jpg" : { error: "bad_image" })
@@ -93,7 +99,10 @@ module.exports = function (opts) {
       ["wait", "sent"].forEach(s => cache.delete("expo-otp-" + hashHex("" + email) + ":" + s));   // so the browser can ask for a code right away
       return r;
     },
-    tables, mails, codes, props,
+    tables, mails, codes, props, quota, students,
+    /* The background run that emails students and schools about newly published events. */
+    notify: () => JSON.parse(JSON.stringify(ctx.expoNotifyRun_())),
+    unsubLink: email => ctx.expoUnsubLink_(email),
     writesOutsideLock: () => writesOutsideLock,
     failMail: on => { mailDown = !!on; }
   };

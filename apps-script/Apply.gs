@@ -33,8 +33,8 @@ var APPLY_HEADERS = ['Reference', 'Received', 'Name', 'NRIC / passport', 'Mobile
 
 function applyFolder_() {
   driveOwnerCheck_();   // Drive.gs
-  var props = PropertiesService.getScriptProperties(), id = props.getProperty('APPLY_FOLDER_ID');
-  if (id) { try { var f = driveLive_(DriveApp.getFolderById(id)); if (f) return f; } catch (err) { /* deleted or no access: find or make one */ } }
+  var props = PropertiesService.getScriptProperties(), f = driveFolderLive_('APPLY_FOLDER_ID');   // Drive.gs
+  if (f) return f;
   // Drive.gs: the folder in Eduplan Databases, or the earlier "Eduplan Applications (private)" in My Drive, or a new one.
   var found = driveTop_().getFoldersByName(DRIVE_NAMES.apply), old = DriveApp.getRootFolder().getFoldersByName('Eduplan Applications (private)');
   var folder = found.hasNext() ? found.next() : old.hasNext() ? old.next() : driveTop_().createFolder(DRIVE_NAMES.apply);

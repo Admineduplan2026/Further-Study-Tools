@@ -357,7 +357,24 @@ function offers(){
     '<span class="oq">'+g.quals.slice(0,4).map(function(q){return pill(q);}).join("")+'</span>'+
     (dl!=null&&dl>=0?'<span class="cd">'+(dl===0?"Closes today":plural(dl,"day","days")+" left")+'</span>':'<span class="hint">Deadline: check with the university</span>')+'</a>';}).join("")+'</div></section>';
 }
+/* Published, upcoming Eduplan 教育展 events (Exhibition.gs expo_public), loaded once and shown first in Recommended
+   for you; each opens its page on the exhibition website. Nothing is shown offline or when the request fails. */
+var EXPO={events:null,busy:false};
+function loadExpo(){if(!live||EXPO.busy||EXPO.events)return;EXPO.busy=true;
+ post({action:"expo_public"}).then(function(r){EXPO.events=r&&r.events||[];if(EXPO.events.length&&L.view==="home")render(true);})
+  .catch(function(){EXPO.events=[];});}
+var EXPO_MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],EXPO_WD=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+function expoCards(){var ev=(EXPO.events||[]).slice(0,6),u=window.EDUPLAN_EXHIBITION_URL;if(!ev.length||!u)return '';
+ return '<div class="xevs">'+ev.map(function(e){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(e.date||"");if(!m)return '';
+  var d=new Date(+m[1],+m[2]-1,+m[3]),mon=EXPO_MON[+m[2]-1];
+  return '<a class="xev" href="'+esc(u+"#/e/"+encodeURIComponent(e.id))+'" target="_blank" rel="noopener">'+
+   '<span class="xevd" aria-hidden="true"><b>'+(+m[3])+'</b><span>'+mon+'</span></span>'+
+   '<span class="xevb"><span class="xevk">Education Exhibition</span><b data-notr>'+esc(e.title)+'</b>'+
+   '<span>📅 '+EXPO_WD[d.getDay()]+', '+(+m[3])+' '+mon+' '+m[1]+'</span><span data-notr>🕘 '+esc(e.start_time)+'–'+esc(e.end_time)+'</span>'+
+   '<span data-notr>📍 '+esc([e.venue,e.city,e.state].filter(Boolean).join(", "))+'</span>'+
+   (e.organiser?'<span data-notr>🎪 '+esc(e.organiser)+'</span>':'')+'</span><span class="actgo" aria-hidden="true">→</span></a>';}).join("")+'</div>';}
 function recommended(){
+ loadExpo();
  var picks=quizResult(),ints=myInts(),q=S.search,scored=D.progs.map(function(p){var sc=0,why="";
    if(p.fac&&ints.indexOf(p.fac.code)>=0){sc+=2.5-ints.indexOf(p.fac.code)*0.5;why="Your interest: "+p.fac.name;}
    if(p.fac&&picks.indexOf(p.fac.code)>=0){sc+=3-picks.indexOf(p.fac.code)*0.5;why="Matches your quiz: "+p.fac.name;}
@@ -365,9 +382,9 @@ function recommended(){
    if(q.fac&&p.fac&&p.fac.code===q.fac){sc+=2;why=why||"Your last search: "+p.fac.name;}
    S.saved.forEach(function(id){var s=prog(id);if(s&&s!==p&&s.fac&&s.fac===p.fac){sc+=1;why=why||"Like the programmes you saved";}});
    if(S.saved.indexOf(p.id)>=0)sc-=5;return {p:p,sc:sc,why:why};}).filter(function(x){return x.sc>0;}).sort(function(a,b){return b.sc-a.sc;}).slice(0,6);
- if(!scored.length)return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div><div class="empty">Take the interest quiz or save a few programmes, and we will recommend courses for you here. '+
+ if(!scored.length)return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div>'+expoCards()+'<div class="empty">Take the interest quiz or save a few programmes, and we will recommend courses for you here. '+
   '<button type="button" class="linkbtn" data-mode="guidance">Start the quiz '+ARROW+'</button></div></section>';
- return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div><div class="cards">'+scored.map(function(x){return card(x.p,x.why);}).join("")+'</div></section>';
+ return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div>'+expoCards()+'<div class="cards">'+scored.map(function(x){return card(x.p,x.why);}).join("")+'</div></section>';
 }
 function trust(){
  var mqa=D.progs.filter(function(p){return p.mqa;}).length,unis=D.inst.length,sch=D.sch.length+D.fnd.length;
