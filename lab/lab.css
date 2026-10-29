@@ -641,3 +641,6 @@ body.introopen{overflow:hidden}
 .xev .actgo{flex:none;color:#6a3fc9;align-self:center}
 @media (max-width:480px){.xevs{grid-template-columns:minmax(0,1fr)}}
 @media (prefers-reduced-motion:reduce){.xev{transition:none}}
+/* #game: the mini game on its own page */
+.gpage{padding-top:20px}
+.gpage .glink{display:inline-flex;align-items:center;min-height:44px;font-weight:500;text-decoration:none}
