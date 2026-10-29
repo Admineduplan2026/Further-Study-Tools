@@ -151,7 +151,11 @@ V.universities=function(){
  return '<section class="stack">'+uniStepper(1)+'<div><a class="btn ghost" href="'+(S.flow==="scholarships"?esc(sget("eduplan-schback")||"#scholarships"):"#home")+'">Back</a></div>'+
  '<span class="eyebrow">Universities</span><h1>Partner universities and colleges</h1><p class="lead">Choose a university to see its programmes by level: foundation, undergraduate and postgraduate.</p></section>'+
  (UNIV.length?'<section class="grid unigrid">'+UNIV.map(function(u){var n=uniScholarships(u);
-  return '<a class="item pick" href="#universities/'+esc(u.id.toLowerCase())+'"><span class="name">'+esc(u.name)+'</span>'+(u.fullName!==u.name?'<span class="desc">'+esc(u.fullName)+'</span>':'')+
+  var ph=uniPhoto(u);
+  return '<a class="item pick" href="#universities/'+esc(u.id.toLowerCase())+'">'+
+   (ph?'<span class="unicover" aria-hidden="true" style="background-image:url(\''+esc(ph)+'\')"></span>'
+     :'<span class="unicover art" aria-hidden="true" style="--h:'+(String(u.id).charCodeAt(0)*37%360)+'"><b data-notr>'+esc(u.name.slice(0,8))+'</b></span>')+
+   '<span class="name">'+esc(u.name)+'</span>'+(u.fullName!==u.name?'<span class="desc">'+esc(u.fullName)+'</span>':'')+
    '<span class="meta">'+[u.type,u.place].filter(Boolean).map(function(m){return '<span class="pill">'+esc(m)+'</span>';}).join("")+'</span>'+
    '<span class="meta"><span class="pill brand">'+u.progs.length+' programme'+(u.progs.length===1?'':'s')+'</span>'+(n?'<span class="pill ok">'+n+' scholarship'+(n===1?'':'s')+'</span>':'')+'</span>'+
    '<span class="textlink">View university '+ARROW+'</span></a>';}).join("")+'</section>'
@@ -168,7 +172,8 @@ function uniMeta(u){return '<div class="meta">'+[u.type,u.place].filter(Boolean)
 var API_DONE=!(window.EDUPLAN_API_URL&&window.fetch&&!window.EDUPLAN_SHEET_DATA);  /* true once the live sheet data has arrived (or failed) */
 var CAMPUS_PHOTOS={xmum:"assets/img/campus/xmum.jpg",utar:"assets/img/campus/utar.jpg",apu:"assets/img/campus/apu.jpg",mucm:"assets/img/campus/mucm.jpg"};
 function asset(p){return p&&HOST&&HOST.assetBase&&!/^(data:|https?:)/.test(p)?HOST.assetBase+p:p;}
-function uniPhoto(u){return asset(CAMPUS_PHOTOS[String(u.id).toLowerCase()]||"");}
+/* The page's own photo list first (index.html, or the Claude preview where the photos are built into the page), then these files. */
+function uniPhoto(u){var w=window.EDUPLAN_CAMPUS_PHOTOS||{},k=String(u.id);return asset(w[k.toUpperCase()]||CAMPUS_PHOTOS[k.toLowerCase()]||"");}
 function hasBanner(u){return !!(u.tour||uniPhoto(u));}
 function uniTour(u,title,lead,meta){
  if(!hasBanner(u))return '';

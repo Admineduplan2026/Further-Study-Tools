@@ -842,3 +842,10 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
 @keyframes agRocket{0%,100%{transform:translate(0,0)}50%{transform:translate(2px,-3px) rotate(-8deg)}}
 @media (prefers-reduced-motion:reduce){.btn.applygo,.btn.applygo::after,.btn.applygo .agi{animation:none!important}}
 @media (max-width:640px){.applyrow .btn.applygo{flex:1 1 auto;justify-content:center}.applyrow .hint{flex-basis:100%}}
+/* University list (#universities): the campus photo as each card's cover, or a coloured block with the name. */
+.unigrid .item.pick{overflow:hidden}
+.unicover{display:block;align-self:stretch;margin:-20px -20px 6px;height:150px;background-size:cover;background-position:center 40%;background-color:var(--soft)}
+.unicover.art{display:flex;align-items:flex-end;padding:14px 18px;background:linear-gradient(135deg,hsl(var(--h),55%,38%),hsl(calc(var(--h) + 40),60%,52%))}
+.unicover.art b{color:#fff;font-size:22px;font-weight:600;letter-spacing:.02em}
+.unigrid .item.pick:hover .unicover{filter:brightness(1.05)}
+@media (max-width:560px){.unicover{height:130px}}
