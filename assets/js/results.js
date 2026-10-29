@@ -189,7 +189,8 @@ function icName(){try{var p=JSON.parse(localStorage.getItem("eduplan-profile"))|
 /* The same name, ignoring case, punctuation, spacing and word order (as Results.gs resultsSameName_). */
 function nameKey(s){return String(s||"").toUpperCase().replace(/[^A-Z\u00C0-\u024F\u4E00-\u9FFF]+/g," ").trim().split(/\s+/).filter(Boolean).sort().join(" ");}
 function sameName(a,b){var x=nameKey(a);return !!x&&x===nameKey(b);}
-function idFirst(){return '<p class="hint rxid">The name on your results slip must match your IC, so verify your name with your IC first: <a href="#portfolio">My portfolio, My profile</a>.</p>';}
+function idFirst(){return '<div class="rxid"><p class="hint">'+(UI.stale?'Your IC check is no longer valid for this account, for example after signing in with another email. Please verify your name with your IC again.':
+  'The name on your results slip must match your IC, so verify your name with your IC first.')+'</p><div class="row"><a class="btn" href="#portfolio">Verify my name with my IC</a></div></div>';}
 /* Live website: the student uploads the slip and Claude reads it (Results.gs); the grades are shown, not editable. */
 function slipBox(id,e){var x=R.exams[id],v=x&&x.v,ok=has(id);
  var shown=!ok?'':'<div class="rxver"><span class="rxbadge">✓ Verified by AI from your '+(v.kind==="Trial"?'trial':'official')+' results slip · '+esc(day(v.at))+'</span>'+
@@ -241,6 +242,8 @@ function readSlipFile(id,file,kind){UI.err="";UI.kind=kind;UI.cur=id;
  if(file.size>5*1024*1024){UI.err=RX_ERR.too_large;return save();}
  function done(x){R.exams[id]=x;UI.busy=false;UI.err="";save();}
  function fail(code,found){UI.busy=false;UI.err=RX_ERR[code]||RX_ERR.busy;
+  /* The server did not accept the saved IC check (another account, or the check was reset): forget it, so the page asks for it again. */
+  if(code==="id_first"&&live()&&icName()){UI.stale=true;try{window.dispatchEvent(new CustomEvent("eduplan:idstale"));}catch(e){}}
   if(code==="name_mismatch"){var ic=icName();UI.err="The name on this slip ("+(found||"?")+") does not match the name on your IC ("+(ic?ic.name:"?")+"). Upload your own results slip.";}
   save();}
  if(!icName())return fail("id_first");

@@ -1410,6 +1410,8 @@ V.privacy=function(){
 /* Verified name: read from the student's IC by AI (Identity.gs; in the preview by Claude in the page). Students without
    it are guests: they can browse but not book a free consultation. */
 function sameNameApp(a,b){function k(s){return String(s||"").toUpperCase().replace(/[^A-Z\u00C0-\u024F\u4E00-\u9FFF]+/g," ").trim().split(/\s+/).filter(Boolean).sort().join(" ");}return !!k(a)&&k(a)===k(b);}
+/* results.js: the server refused the saved IC check, so it is removed here and from the portfolio (newer change wins). */
+window.addEventListener("eduplan:idstale",function(){if(S.prof&&S.prof.idv){delete S.prof.idv;store("eduplan-profile",S.prof);pfTouch("profile");}});
 function idv(){var v=S.prof&&S.prof.idv;return v&&v.name&&(!RX.live()||v.sig)?v:null;}
 function idBox(){var v=idv();
  if(v)return '<div class="idok"><span class="idbadge">✓ Verified with your IC</span><b data-notr>'+esc(v.name)+'</b><span class="hint">'+(v.type==="passport"?'Passport':'IC')+' ending ••••'+esc(v.last4)+'</span>'+
