@@ -5,9 +5,9 @@ Everything Eduplan keeps is in one private folder in My Drive, **Eduplan Databas
 ```
 Eduplan Databases/
   00 先看这里 · Start here                 one-page guide to these folders (Google Doc)
-  Eduplan Control Panel                    Overview 总览 first, then publish / hide with a tick
-  1. School databases/                     (was "Eduplan School Data")
-       master sheet "Eduplan School Data" (Foundation scholarships, FAQ, Lists)
+  Eduplan School Data                      the one admin sheet: control panel (Overview 总览, Schools, Programmes,
+                                           Scholarships, How to use) + master data (Foundation scholarships, FAQ, Lists)
+  1. School databases/
        XMUM/, UTAR/, APU/ ...              one folder per school with its sheet
   2. Student applications (private)/      (was "Eduplan Applications (private)")
        Eduplan Applications                one row per application
@@ -57,10 +57,12 @@ gateway sets it). Eduplan then automatically:
 Put the bank slip, or the payment provider's receipt, in the same folder so the proof stays together. Type the bank's
 or provider's transaction ID in **Transaction ID** before choosing *Paid* to have it on the record.
 
-## Eduplan Control Panel (publish with a tick)
+## Control panel in Eduplan School Data (publish with a tick)
 
-**Eduplan Control Panel** is a private spreadsheet in `Eduplan Databases` for the website owner. It lists every school
-sheet in `1. School databases`:
+Since 2026-10-29 the control panel is part of the master sheet **Eduplan School Data**, owned by
+admin.eduplan@gmail.com (the separate "Eduplan Control Panel" file is no longer used and can be deleted). Its first
+tabs list every school sheet in `1. School databases`; the master tabs (Instructions, Foundation Scholarships, FAQ,
+Lists) follow:
 
 | Tab | One row per | What you do |
 |---|---|---|
@@ -76,12 +78,14 @@ website shows the change on its next load; the Claude preview pages follow at th
 The lists are refreshed every morning at 7am and from the menu **Eduplan > Refresh lists** (also: Check data, Refresh
 website data now).
 
-The spreadsheet already exists in `Eduplan Databases` (made 2026-10-23, empty lists). Set up once: paste `dist/Eduplan-all.gs` into the Apps Script project, select **cpSetup**, **Run**, allow the
-permissions. The log shows the Control Panel's link. Running it again is safe.
+Set up once, signed in as admin.eduplan@gmail.com (triggers run as the account that made them): paste
+`dist/Eduplan-all.gs` into the Apps Script project of Eduplan School Data, select **cpSetup**, **Run**, allow the
+permissions. It adds the panel tabs, moves the checkbox trigger from the old panel file to this sheet and orders the
+tabs. Running it again is safe.
 
 ### Overview 总览 tab
 
-The Control Panel opens on **Overview 总览**: the website's numbers (schools, programmes, scholarships, published or
+The sheet opens on **Overview 总览**: the website's numbers (schools, programmes, scholarships, published or
 not), student counts (registered, applications, payment requests: numbers only, no names), a to-do list (schools ready to
 publish, schools missing information, payments waiting) and a link to every database with who may see it. It is
 rebuilt with the lists (Eduplan > Refresh lists, and every morning at 7am). Every list tab has bilingual headers and

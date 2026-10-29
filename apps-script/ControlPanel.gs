@@ -1,10 +1,12 @@
 /**
- * Eduplan Control Panel: one private spreadsheet, "Eduplan Control Panel" in "Eduplan Databases", where Eduplan sees
- * every school sheet in "1. School databases" and publishes or hides schools, programmes and campus scholarships with a
- * checkbox. A tick writes Published = Yes (an untick writes No) into the school's own sheet, so the school sheets stay
- * the single source of the data; the live website shows the change on its next load, the Claude artifacts after the
- * daily sync.
+ * Eduplan Control Panel, inside the master sheet "Eduplan School Data" (since 2026-10-29; before, a separate
+ * spreadsheet "Eduplan Control Panel"). One file for the website owner: the panel tabs first, then the master tabs
+ * (Instructions, Foundation Scholarships, FAQ, Lists). Eduplan publishes or hides schools, programmes and campus
+ * scholarships with a checkbox. A tick writes Published = Yes (an untick writes No) into the school's own sheet, so the
+ * school sheets stay the single source of the data; the live website shows the change on its next load, the Claude
+ * artifacts after the daily sync.
  *
+ *   Overview 总览  website numbers, what needs doing, links to every database.
  *   Schools        one row per school: programmes ready / published, problems, link to the sheet. Tick "Publish" to
  *                  publish the school with every programme and scholarship that is ready (Check column ✓); untick to
  *                  hide the whole school.
@@ -13,12 +15,11 @@
  *   Scholarships   one row per campus scholarship tier, the same way.
  *   How to use     short instructions.
  *
- * Run cpSetup once from the editor (select cpSetup, Run): it creates the spreadsheet, its "Eduplan" menu, the checkbox
- * trigger and a daily refresh at 7am, and fills the lists. Menu "Eduplan > Refresh lists" re-reads the school sheets
- * at any time (new schools appear, rows edited in a school sheet are updated).
+ * Run cpSetup once from the editor (select cpSetup, Run), signed in as the owner (admin.eduplan@gmail.com): it adds the
+ * tabs, the checkbox trigger and a daily refresh at 7am, and fills the lists. Menu "Eduplan > Refresh lists" (Code.gs
+ * onOpen) re-reads the school sheets at any time. The old separate "Eduplan Control Panel" file is no longer used.
  */
 
-var CP_NAME = 'Eduplan Control Panel';
 var CP_TABS = { overview: 'Overview 总览', schools: 'Schools', programmes: 'Programmes', scholarships: 'Scholarships', help: 'How to use' };
 var CP_HEAD = {
   schools: ['Publish 发布', 'School ID 编号', 'Name 名称', 'Type 类型', 'State 州属', 'Programmes 课程', 'Ready 完整', 'Published 已发布', 'Scholarships 奖学金 (published / all)', 'Status 状态', 'School sheet 学校表格', 'Last edited 最后修改'],
@@ -27,21 +28,8 @@ var CP_HEAD = {
 };
 var CP_TZ = 'Asia/Kuala_Lumpur';
 
-function cpBook_() {
-  var props = PropertiesService.getScriptProperties(), id = props.getProperty('CP_SHEET_ID');
-  var live = id && driveSheetLive_(id);   // Drive.gs
-  if (live) return live;
-  var found = driveTop_().getFilesByName(CP_NAME);   // the panel already made in Drive
-  while (found.hasNext()) {
-    var f = found.next();
-    if (!f.isTrashed() && f.getMimeType() === MimeType.GOOGLE_SHEETS) { props.setProperty('CP_SHEET_ID', f.getId()); return SpreadsheetApp.openById(f.getId()); }
-  }
-  var ss = SpreadsheetApp.create(CP_NAME);
-  DriveApp.getFileById(ss.getId()).moveTo(driveTop_());
-  ss.setSpreadsheetTimeZone(CP_TZ);
-  props.setProperty('CP_SHEET_ID', ss.getId());
-  return ss;
-}
+/* The panel lives in the master sheet (Code.gs master_). */
+function cpBook_() { return master_(); }
 
 function cpTab_(ss, key) {
   var sh = ss.getSheetByName(CP_TABS[key]) || ss.insertSheet(CP_TABS[key]);
@@ -57,8 +45,9 @@ function cpSetup() {
   var help = cpTab_(ss, 'help');
   help.clear();
   var lines = [
-    ['Eduplan Control Panel · 使用说明'],
+    ['Eduplan School Data · 管理与使用说明 How to use'],
     [''],
+    ['This one sheet holds the control panel (Overview, Schools, Programmes, Scholarships) and the master data (Foundation Scholarships, FAQ, Lists). 本表格同时包含管理面板和主资料（基金会奖学金、FAQ、下拉列表）。'],
     ['Overview 总览: website numbers, what needs doing, and links to every database. 网站数据、待办事项和所有资料库的链接。'],
     ['Schools: tick "Publish" to put a school on the website with every programme and scholarship that is ready (Check starts with ✓). Untick to hide the whole school.'],
     ['Schools 分页：勾选 Publish，学校连同所有完整（Check 有 ✓）的课程和奖学金一起上线；取消勾选就整间隐藏。'],
@@ -76,26 +65,33 @@ function cpSetup() {
   help.getRange('A1').setFontSize(16).setFontWeight('bold');
   help.setColumnWidth(1, 900);
   ['schools', 'programmes', 'scholarships'].forEach(function (k) { cpTab_(ss, k); });
-  var first = ss.getSheets()[0];
-  if (first.getName() === 'Sheet1') ss.deleteSheet(first);
-  ss.setActiveSheet(ss.getSheetByName(CP_TABS.schools));
-  ss.moveActiveSheet(2);   // after Overview 总览, which cpRefresh puts first
 
-  var id = ss.getId(), triggers = ScriptApp.getProjectTriggers();
+  /* Triggers: the checkbox trigger on this sheet (the one on the old separate panel is removed), no separate menu
+     trigger (Code.gs onOpen makes the one Eduplan menu), and the daily refresh. Triggers run as the account that made
+     them, so run this signed in as the owner. */
+  var id = ss.getId();
+  ScriptApp.getProjectTriggers().forEach(function (t) {
+    var fn = t.getHandlerFunction();
+    if (fn === 'cpOnOpen' || (fn === 'cpOnEdit' && t.getTriggerSourceId() !== id)) ScriptApp.deleteTrigger(t);
+  });
+  var triggers = ScriptApp.getProjectTriggers();
   function has(fn) { return triggers.some(function (t) { return t.getHandlerFunction() === fn; }); }
   if (!has('cpOnEdit')) ScriptApp.newTrigger('cpOnEdit').forSpreadsheet(id).onEdit().create();
-  if (!has('cpOnOpen')) ScriptApp.newTrigger('cpOnOpen').forSpreadsheet(id).onOpen().create();
   if (!has('cpRefresh')) ScriptApp.newTrigger('cpRefresh').timeBased().everyDays(1).atHour(7).inTimezone(CP_TZ).create();
+  PropertiesService.getScriptProperties().deleteProperty('CP_SHEET_ID');   // the old separate panel
   cpRefresh();
-  console.log('Eduplan Control Panel: ' + ss.getUrl());
+  cpOrder_(ss);
+  console.log('Eduplan School Data with the control panel: ' + ss.getUrl());
 }
 
-function cpOnOpen() {
-  SpreadsheetApp.getUi().createMenu('Eduplan')
-    .addItem('Refresh lists', 'cpRefreshMenu')
-    .addItem('Check data (what the website will show)', 'showCheck')   // Code.gs
-    .addItem('Refresh website data now', 'clearCache')                 // Code.gs
-    .addToUi();
+/* Panel tabs first, then the master tabs in their usual order. */
+function cpOrder_(ss) {
+  [CP_TABS.overview, CP_TABS.schools, CP_TABS.programmes, CP_TABS.scholarships, CP_TABS.help, 'Instructions', 'Foundation Scholarships', 'FAQ', 'Lists']
+    .forEach(function (name, i) {
+      var sh = ss.getSheetByName(name);
+      if (sh) { ss.setActiveSheet(sh); ss.moveActiveSheet(i + 1); }
+    });
+  ss.setActiveSheet(ss.getSheetByName(CP_TABS.overview) || ss.getSheets()[0]);
 }
 function cpRefreshMenu() {
   var n = cpRefresh();
@@ -206,12 +202,11 @@ function cpOverview_(ss, schools, progs, schs) {
     [waiting ? 'Payments waiting 待处理的付款' : 'No payment waiting 没有待处理的付款', waiting || '', waiting ? 'Eduplan Payments: set Status to Paid when paid 已付款时把状态改为 Paid' : ''],
     ['', '', ''],
     ['④ 所有资料库 Where everything is (Eduplan Databases)', 'Who can see 谁能看', 'What is inside 内容'],
-    [link('Eduplan Control Panel (this sheet 本表)', ss.getUrl()), 'Eduplan only', 'Publish or hide schools, programmes, scholarships 发布或隐藏'],
+    [link('Eduplan School Data (this sheet 本表)', ss.getUrl()), 'Eduplan only 仅 Eduplan', 'Control panel: publish or hide; master data: foundation scholarships, FAQ answers for the AI, dropdown lists 管理面板与主资料'],
     [link('1. School databases 学校资料库', url(function () { return DriveApp.getFolderById(SCHOOL_FOLDER_ID).getUrl(); })), 'Eduplan; each school sees only its own sheet 学校只看自己的表格', 'One folder + sheet per school: programmes, fees, scholarships 每校一个表格'],
     [link('2. Student applications 学生申请 (private)', url(function () { return applyFolder_().getUrl(); })), 'Eduplan only 仅 Eduplan', 'Application forms, filled-in school forms, uploaded documents 申请表与文件'],
     [link('3. Students and visitors 学生与访客 (private)', url(function () { return driveFolder_('people').getUrl(); })), 'Eduplan only 仅 Eduplan', 'Registered students, sign-ins, visits per day 注册、登入、每日访客'],
     [link('4. Payments 付款 (private)', url(function () { return driveFolder_('pay').getUrl(); })), 'Eduplan only 仅 Eduplan', 'Payment requests and PDF payment records 付款申请与付款记录'],
-    [link('Master sheet 主表格 (foundation scholarships, FAQ, lists)', url(function () { return DriveApp.getFileById(master_().getId()).getUrl(); })), 'Eduplan only 仅 Eduplan', 'Foundation scholarships, FAQ answers for the AI, dropdown lists 基金会奖学金、FAQ'],
     ['', '', ''],
     ['Never share a whole school folder or any private folder with a school. 不要把整个学校文件夹或私人文件夹分享给学校。', '', '']
   ];
@@ -219,7 +214,7 @@ function cpOverview_(ss, schools, progs, schs) {
   sh.getRange('A1').setFontSize(18).setFontWeight('bold');
   sh.getRange('A2').setFontColor('#58616c');
   [4, 9, 14, 19].forEach(function (r) { sh.getRange(r, 1, 1, 3).setFontWeight('bold').setBackground('#0b3a5c').setFontColor('#ffffff'); });
-  [[5, 7], [10, 12], [15, 17], [20, 25]].forEach(function (b) { sh.getRange(b[0], 1, b[1] - b[0] + 1, 3).setBackground('#f3f6f8').setVerticalAlignment('middle'); });
+  [[5, 7], [10, 12], [15, 17], [20, 24]].forEach(function (b) { sh.getRange(b[0], 1, b[1] - b[0] + 1, 3).setBackground('#f3f6f8').setVerticalAlignment('middle'); });
   sh.getRange(5, 2, 8, 1).setFontSize(14).setFontWeight('bold').setHorizontalAlignment('center');
   sh.getRange(15, 2, 3, 1).setFontWeight('bold').setHorizontalAlignment('center').setFontColor('#b3261e');
   sh.getRange(rows.length, 1).setFontColor('#b3261e').setFontWeight('bold');

@@ -133,6 +133,7 @@ function cacheGet_(cache, key) {
 
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Eduplan')
+    .addItem('Refresh lists (control panel)', 'cpRefreshMenu')   // ControlPanel.gs
     .addItem('Check data (what the website will show)', 'showCheck')
     .addItem('Refresh website data now', 'clearCache')
     .addSeparator()
