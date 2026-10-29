@@ -1630,6 +1630,13 @@ function expoStore_() {
   return expoStore_.cached;
 }
 
+/* A cell that Sheets already turned into a date (rows saved before plain-text writes) is read back as the text it was. */
+function expoCellDate_(d, col, tz) {
+  if (/_time$/.test(col)) return Utilities.formatDate(d, tz, 'HH:mm');
+  if (col === 'date' || col === 'registration_deadline') return Utilities.formatDate(d, tz, 'yyyy-MM-dd');
+  return Utilities.formatDate(d, tz, "yyyy-MM-dd'T'HH:mm:ss");
+}
+
 function expoSheetTable_(ss, name) {
   var cols = EXPO_COLS[name], sh = ss.getSheetByName(EXPO_TABS[name]);
   if (!sh) {
@@ -1640,23 +1647,28 @@ function expoSheetTable_(ss, name) {
     sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setBackground('#e4f2fa');
     sh.setFrozenRows(1);
   }
+  var tz = ss.getSpreadsheetTimeZone();
   function read() {
     var n = sh.getLastRow();
     if (n < 2) return [];
     return sh.getRange(2, 1, n - 1, cols.length).getValues().map(function (r, i) {
       var o = { _row: i + 2 };
-      cols.forEach(function (c, j) { o[c] = r[j] == null ? '' : String(r[j]); });
+      cols.forEach(function (c, j) { o[c] = r[j] instanceof Date ? expoCellDate_(r[j], c, tz) : r[j] == null ? '' : String(r[j]); });
       return o;
     });
   }
   return {
     all: read,
-    insert: function (o) { sh.appendRow(cols.map(function (c) { return o[c] == null ? '' : String(o[c]); })); },
+    /* setValues on a plain-text row: appendRow would turn "2026-10-31" or "09:00" into dates and drop the 0 of phone numbers. */
+    insert: function (o) {
+      sh.getRange(sh.getLastRow() + 1, 1, 1, cols.length).setNumberFormat('@')
+        .setValues([cols.map(function (c) { return o[c] == null ? '' : String(o[c]); })]);
+    },
     update: function (key, value, patch) {
       var rows = read();
       for (var i = 0; i < rows.length; i++) {
         if (rows[i][key] !== value) continue;
-        cols.forEach(function (c, j) { if (c in patch) sh.getRange(rows[i]._row, j + 1).setValue(String(patch[c])); });
+        cols.forEach(function (c, j) { if (c in patch) sh.getRange(rows[i]._row, j + 1).setNumberFormat('@').setValue(String(patch[c])); });
         return true;
       }
       return false;
