@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Study Timer &amp; Progress Tracker</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>📚 Study Timer</h1>
+      <p class="subtitle">Track your sessions. Build your daily routine.</p>
+    </header>
+
+    <main class="layout">
+      <!-- Timer Card -->
+      <section class="card timer-card">
+        <div class="mode-switch" role="tablist">
+          <button class="mode-btn active" data-mode="focus" data-minutes="25">Focus (25m)</button>
+          <button class="mode-btn" data-mode="short" data-minutes="5">Short Break (5m)</button>
+          <button class="mode-btn" data-mode="long" data-minutes="15">Long Break (15m)</button>
+        </div>
+
+        <div class="timer-display">
+          <svg class="progress-ring" width="240" height="240" viewBox="0 0 240 240">
+            <circle class="progress-ring__bg" cx="120" cy="120" r="108" />
+            <circle class="progress-ring__fg" id="progressRing" cx="120" cy="120" r="108" />
+          </svg>
+          <div class="time-text" id="timeText">25:00</div>
+        </div>
+
+        <div class="subject-row">
+          <label for="subjectInput">What are you studying?</label>
+          <input type="text" id="subjectInput" placeholder="e.g. Scholarship essay, Maths revision..." maxlength="60" />
+        </div>
+
+        <div class="controls">
+          <button id="startBtn" class="btn btn-primary">Start</button>
+          <button id="pauseBtn" class="btn" disabled>Pause</button>
+          <button id="resetBtn" class="btn btn-ghost">Reset</button>
+        </div>
+
+        <div class="custom-duration">
+          <label for="customMinutes">Custom focus length (minutes)</label>
+          <input type="number" id="customMinutes" min="1" max="180" value="25" />
+          <button id="applyCustom" class="btn btn-small">Apply</button>
+        </div>
+      </section>
+
+      <!-- Progress / Daily Routine Card -->
+      <section class="card progress-card">
+        <div class="progress-header">
+          <h2>Today's Progress</h2>
+          <span class="date-badge" id="todayDate"></span>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-value" id="todayMinutes">0</span>
+            <span class="stat-label">minutes today</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="todaySessions">0</span>
+            <span class="stat-label">sessions today</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value" id="streakCount">0</span>
+            <span class="stat-label">day streak 🔥</span>
+          </div>
+        </div>
+
+        <div class="goal-row">
+          <label for="dailyGoal">Daily goal (minutes)</label>
+          <input type="number" id="dailyGoal" min="5" step="5" value="60" />
+          <div class="goal-bar">
+            <div class="goal-fill" id="goalFill"></div>
+          </div>
+          <span class="goal-text" id="goalText">0 / 60 min</span>
+        </div>
+
+        <h3 class="week-title">Last 7 Days</h3>
+        <div class="week-chart" id="weekChart"></div>
+
+        <h3 class="log-title">Session Log</h3>
+        <ul class="session-log" id="sessionLog">
+          <li class="empty-log">No sessions recorded yet. Finish a focus timer to log one.</li>
+        </ul>
+
+        <button id="clearHistory" class="btn btn-danger-ghost">Clear All History</button>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>Your data is saved locally in this browser only.</p>
+    </footer>
+  </div>
+
+  <audio id="chimeSound" preload="auto">
+    <source src="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=" type="audio/wav">
+  </audio>
+
+  <script src="script.js"></script>
+</body>
+</html>
