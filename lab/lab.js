@@ -543,6 +543,7 @@ function menu(){
  return '<div class="mscrim" data-act="menu"></div><nav class="menu" id="lab-menu" aria-label="Menu">'+
   '<div class="mhead">'+(em?'<span class="avatar" aria-hidden="true" data-notr>'+esc(em.charAt(0).toUpperCase())+'</span><span class="memail" data-notr>'+esc(em)+'</span>'
    :'<span class="mguest">You are not signed in.</span><a class="btn sm" href="'+esc(mainLink("#portfolio"))+'">Sign in</a>')+'</div>'+
+  (S.session&&S.session.staff?item("#staff","Staff portal","EDUPLAN sheets, folders and reviews"):'')+
   item("#portfolio","My portfolio","Saved programmes, quiz result and application")+
   item("#about","About us","Who we are and how we guide you")+
   '<span class="mlabel">Explore</span>'+
@@ -654,6 +655,42 @@ function gameFacts(){var st=siteStats(),pg=st.filter(function(x){return x[1]==="
   ["🆓","Free for students","EDUPLAN's service is free of charge for students."],
   ["🪪","Verified results","Your grades are read from your results slip, so your applications are accurate."]];}
 var GAME_BAD=[["⏰","Missed deadline"],["🌀","Guesswork"]];
+/* Staff portal (#staff): opened after a staff email signs in (Account.gs STAFF_EMAILS). The private links come from the
+   server only for a signed-in staff account (account_staff); the public pages and guides are listed here. */
+var STAFF={links:null,err:"",busy:false};
+var STAFF_TEXT={
+ start:["Start here","每天先看这里"],schools:["School data","学校资料"],students:["Students (private)","学生（私人）"],payments:["Payments (private)","付款（私人）"],expo:["Exhibitions","教育展"],web:["Websites and guides","网站与说明"],
+ master:["Eduplan School Data","Overview, publish or hide schools, programmes and scholarships; foundation scholarships, FAQ, lists","📊"],
+ databases:["Eduplan Databases","The folder that holds every database","🗂️"],
+ "school-folder":["1. School databases","One folder and sheet per school: programmes, fees, scholarships, documents","🏫"],
+ applications:["Eduplan Applications","One row per application: student, programme, status, counsellor","📝"],
+ "apply-folder":["2. Student applications","Application PDFs and the documents students uploaded","📁"],
+ portfolios:["Eduplan Student Portfolios","Registered students, sign-ins and visits","👥"],
+ payments:["Eduplan Payments","One row per payment request. Set Status to Paid when paid","💳"],
+ "pay-folder":["4. Payments","Payment records by month","🧾"],
+ "expo-admin":["Exhibition review","Approve organisers and events","✅"],
+ "expo-sheet":["Eduplan Exhibitions","Organisers, schools, events, bookings and email progress","🎪"],
+ "expo-folder":["5. Exhibitions","Exhibition data and cover images","📁"]};
+function loadStaff(){var se=ls("eduplan-session");
+ if(!live||!se||!se.token||!se.staff||STAFF.busy||STAFF.links)return;STAFF.busy=true;
+ post({action:"account_staff",token:se.token}).then(function(r){STAFF.busy=false;
+  if(r&&r.groups){STAFF.links=r;STAFF.err="";}else STAFF.err=r&&r.error==="forbidden"?"forbidden":r&&r.error==="signed_out"?"signed_out":"server";
+  if(L.view==="staff")render(true);}).catch(function(){STAFF.busy=false;STAFF.err="server";if(L.view==="staff")render(true);});}
+function staffView(){var se=ls("eduplan-session"),site=window.EDUPLAN_SITE_URL||"",ex=window.EDUPLAN_EXHIBITION_URL||"";
+ var head='<section class="hero sthero"><div class="hwrap"><span class="eyebrow">EDUPLAN</span><h1>Staff portal</h1>'+
+  (se&&se.email?'<p class="lead"><span>Signed in as</span> <span data-notr>'+esc(se.email)+'</span></p><p class="hint">Each link opens only for staff it is shared with in Google Drive.</p>':'')+'</div></section>';
+ function card(it){var t=STAFF_TEXT[it.key]||[it.key,"","🔗"];
+  return '<a class="act" href="'+esc(it.url)+'" target="_blank" rel="noopener"><span class="acti" aria-hidden="true">'+t[2]+'</span>'+
+   '<span class="actb"><b>'+esc(t[0])+'</b><span>'+esc(t[1])+'</span>'+(it.private?'<span class="stp">Private</span>':'')+'</span><span class="actgo" aria-hidden="true">↗</span></a>';}
+ function group(key,items){return '<section class="sec"><div class="sh"><h2>'+esc((STAFF_TEXT[key]||[key])[0])+'</h2></div><div class="acts">'+items.map(card).join("")+'</div></section>';}
+ if(!se||!se.staff)return head+'<div class="page"><div class="empty">This page is for EDUPLAN staff. <a href="'+esc(mainLink("#portfolio"))+'">Sign in</a> with a staff email.</div></div>';
+ var body=STAFF.links?STAFF.links.groups.map(function(g){return group(g.key,g.items);}).join(""):
+  STAFF.err?'<div class="empty">'+(STAFF.err==="forbidden"?'This email is not on the staff list.':STAFF.err==="signed_out"?'Please sign in again.':'The staff links could not be loaded. Please try again.')+'</div>':
+  '<div class="lnote" role="status">Loading the staff links…</div>';
+ var web=[{key:"w-site",url:site,t:["EDUPLAN website","The student website","🌐"]},{key:"w-expo",url:ex,t:["Exhibition website","For organisers and schools","🎪"]},
+  {key:"w-manual",url:"https://github.com/Admineduplan2026/Further-Study-Tools/tree/claude/website-eduplan-artifacts-mb4z44/docs",t:["Guides","How each part of EDUPLAN works","📘"]}]
+  .filter(function(x){return x.url;}).map(function(x){STAFF_TEXT[x.key]=x.t;return {key:x.key,url:x.url};});
+ return head+'<div class="page">'+body+group("web",web)+'</div>';}
 /* The game on its own page (#game), opened from About us: a page of its own works in every browser and in the Claude
    preview, where scrolling to a section of a long page does not always move. */
 function gameView(){return '<div class="page gpage"><p><a class="glink" href="#about">← About us</a></p>'+gameBox()+'</div>';}
@@ -752,7 +789,7 @@ function help(){
 
 /* ---------- Render and events ---------- */
 var top=document.getElementById("top"),app=document.getElementById("app"),helpBox=document.getElementById("helpbox"),sheet=document.getElementById("sheet");
-function route(){var h=(location.hash||"#home").slice(1);L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about",game:"game"}[h]||"home");}
+function route(){var h=(location.hash||"#home").slice(1);L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about",game:"game",staff:"staff"}[h]||"home");}
 function chrome(){
  S.saved=ls("eduplan-saved")||[];S.quiz=ls("eduplan-quiz")||S.quiz;S.session=ls("eduplan-session");if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
  var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"")+(L.info?modeInfo():"");if(lang)top.querySelector(".bar").appendChild(lang);
@@ -765,10 +802,11 @@ function render(keep){
  document.body.classList.toggle("lab-own",L.view!=="app");
  if(L.view==="app"){sheet.innerHTML="";document.body.classList.remove("locked");return;}   /* the main app draws this page */
  if(L.view==="results"&&locked())L.view="home";
- app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():L.view==="game"?gameView():home();
+ app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():L.view==="game"?gameView():L.view==="staff"?staffView():home();
  sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
  if(L.view==="about"){aboutFx();aboutNet();}
  if(L.view==="game")aboutFx();
+ if(L.view==="staff")loadStaff();
  if(!keep)window.scrollTo(0,0);
 }
 function go(view){if(location.hash==="#"+view)render();else location.hash="#"+view;}
@@ -949,7 +987,7 @@ function account(){
   if(a==="other"){st.step="email";st.err="";st.msg="";draw("#ia-email");return;}
   if(a==="again"){st.step="email";send();}});
  return true;}
-window.addEventListener("eduplan:signedin",function(){S.session=ls("eduplan-session");});
+window.addEventListener("eduplan:signedin",function(){S.session=ls("eduplan-session");STAFF.links=null;STAFF.err="";});
 function intro(){
  if(/^#(next\/|compare\/)/.test(location.hash))return;   /* a shared programme or comparison link opens that page straight away */
  try{if(sessionStorage.getItem("eduplan-intro")){if(!account())interests();return;}}catch(e){}

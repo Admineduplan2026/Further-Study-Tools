@@ -644,3 +644,8 @@ body.introopen{overflow:hidden}
 /* #game: the mini game on its own page */
 .gpage{padding-top:20px}
 .gpage .glink{display:inline-flex;align-items:center;min-height:44px;font-weight:500;text-decoration:none}
+/* #staff: the staff portal */
+.sthero h1{margin:0}
+.sthero .eyebrow{color:#bfe6ff}
+.sthero .hint{color:#d6ebf8;margin-top:6px}
+.stp{align-self:flex-start;margin-top:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#fdecea;color:#a33d2b}

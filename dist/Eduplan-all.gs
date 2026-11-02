@@ -403,6 +403,7 @@ function accountAction_(body) {
     case 'account_save': return accountSave_(body);
     case 'account_logout': return accountLogout_(body);
     case 'account_delete': return accountDelete_(body);
+    case 'account_staff': return accountStaffLinks_(body);
   }
   return { error: 'bad_request' };
 }
@@ -412,12 +413,51 @@ function accountHash_(s) {
     .map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join('');
 }
 
-/* The staff portal link for a staff email (Script Properties STAFF_PORTAL_URL and STAFF_EMAILS), or ''. */
+/* Staff emails (Script Property STAFF_EMAILS, default admin.eduplan@gmail.com). */
+function accountIsStaff_(email) {
+  var staff = String(PropertiesService.getScriptProperties().getProperty('STAFF_EMAILS') || 'admin.eduplan@gmail.com')
+    .split(/[,;\s]+/).map(accountEmail_).filter(Boolean);
+  return staff.indexOf(accountEmail_(email)) >= 0;
+}
+/* An extra outside staff portal link (Script Property STAFF_PORTAL_URL) for a staff email, or ''. */
 function accountStaffPortal_(email) {
-  var props = PropertiesService.getScriptProperties(), url = String(props.getProperty('STAFF_PORTAL_URL') || '').trim();
-  if (!/^https:\/\//.test(url)) return '';
-  var staff = String(props.getProperty('STAFF_EMAILS') || 'admin.eduplan@gmail.com').split(/[,;\s]+/).map(accountEmail_).filter(Boolean);
-  return staff.indexOf(accountEmail_(email)) >= 0 ? url : '';
+  var url = String(PropertiesService.getScriptProperties().getProperty('STAFF_PORTAL_URL') || '').trim();
+  return /^https:\/\//.test(url) && accountIsStaff_(email) ? url : '';
+}
+
+/* The staff page on the website (#staff): links to Eduplan's sheets and folders, sent only to a signed-in staff email.
+   The links are made from the IDs in Script Properties, so no private address is in the website code. A link opens
+   only for people the file or folder is shared with in Google Drive. */
+function accountStaffLinks_(body) {
+  var sh = accountSheet_(), s = accountSession_(sh, body.token);
+  if (!s) return { error: 'signed_out' };
+  var email = String(sh.getRange(s.row, ACCOUNT_COL.email).getValue()).toLowerCase();
+  if (!accountIsStaff_(email)) return { error: 'forbidden' };
+  var props = PropertiesService.getScriptProperties();
+  function id(k) { return driveCleanId_(props.getProperty(k)); }   // Drive.gs
+  function sheet(v) { return v ? 'https://docs.google.com/spreadsheets/d/' + v + '/edit' : ''; }
+  function folder(v) { return v ? 'https://drive.google.com/drive/folders/' + v : ''; }
+  var expoSite = props.getProperty('EXPO_SITE_URL') || EXPO_SITE_DEFAULT;   // Exhibition.gs
+  var groups = [
+    { key: 'start', items: [
+      { key: 'master', url: sheet(MASTER_SHEET_ID), kind: 'sheet' },
+      { key: 'databases', url: folder(id('DRIVE_TOP_ID')), kind: 'folder', private: true }] },
+    { key: 'schools', items: [
+      { key: 'school-folder', url: folder(SCHOOL_FOLDER_ID), kind: 'folder' }] },
+    { key: 'students', items: [
+      { key: 'applications', url: sheet(id('APPLY_SHEET_ID')), kind: 'sheet', private: true },
+      { key: 'apply-folder', url: folder(id('APPLY_FOLDER_ID')), kind: 'folder', private: true },
+      { key: 'portfolios', url: sheet(id('ACCOUNT_SHEET_ID')), kind: 'sheet', private: true }] },
+    { key: 'payments', items: [
+      { key: 'payments', url: sheet(id('PAY_SHEET_ID')), kind: 'sheet', private: true },
+      { key: 'pay-folder', url: folder(id('DRIVE_PAY_ID')), kind: 'folder', private: true }] },
+    { key: 'expo', items: [
+      { key: 'expo-admin', url: expoSite + '#/admin', kind: 'site' },
+      { key: 'expo-sheet', url: sheet(id('EXPO_SHEET_ID')), kind: 'sheet', private: true },
+      { key: 'expo-folder', url: folder(id('DRIVE_EXPO_ID')), kind: 'folder', private: true }] }
+  ];
+  groups.forEach(function (g) { g.items = g.items.filter(function (x) { return x.url; }); });
+  return { email: email, groups: groups.filter(function (g) { return g.items.length; }) };
 }
 
 function accountEmail_(v) {
@@ -548,6 +588,7 @@ function accountVerify_(body) {
     sh.getRange(row, ACCOUNT_COL.signin).setValue(now);
     statsActive_(sh, row); statsLog_(email, isNew ? 'Registered' : 'Signed in');   // Stats.gs
     var out = { token: token, email: email, days: ACCOUNT_SESSION_DAYS, data: accountData_(sh, row) };
+    if (accountIsStaff_(email)) out.staff = true;   // the website opens its staff page (#staff)
     var portal = accountStaffPortal_(email);
     if (portal) out.portal = portal;
     return out;

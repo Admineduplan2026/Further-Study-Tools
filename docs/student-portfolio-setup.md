@@ -106,8 +106,11 @@ page or their portfolio is saved, not every second. Guests appear only as counts
 
 ## Staff portal after sign-in
 
-Staff who sign in on the website (My portfolio or the opening screens) are sent straight to the EDUPLAN staff portal.
-Set two Script Properties: `STAFF_PORTAL_URL` (the portal's link) and, optionally, `STAFF_EMAILS` (comma-separated;
-default `admin.eduplan@gmail.com`). The link is sent by the server only to those emails after a correct sign-in code,
-so it never appears in the public website code. A staff member's My portfolio page also shows a **Staff portal**
-button. The portal still needs each staff member to have Google access to the sheets and folders it links to.
+Staff who sign in on the website (My portfolio or the opening screens) go straight to the staff page **#staff** on the
+website itself. It lists Eduplan's sheets and folders (School Data, Databases, Applications, Student Portfolios,
+Payments, Exhibitions) and the exhibition review page, plus the public websites and guides. The private links are built
+by the server from the IDs in Script Properties and sent only to a signed-in staff email (action `account_staff`), so
+they are never in the public website code. Each link still opens only for people the file is shared with in Drive.
+
+Staff emails: Script Property `STAFF_EMAILS` (comma-separated; default `admin.eduplan@gmail.com`). The menu and My
+portfolio show a **Staff portal** link for staff. `STAFF_PORTAL_URL` is optional and no longer needed.
