@@ -649,3 +649,29 @@ body.introopen{overflow:hidden}
 .sthero .eyebrow{color:#bfe6ff}
 .sthero .hint{color:#d6ebf8;margin-top:6px}
 .stp{align-self:flex-start;margin-top:4px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#fdecea;color:#a33d2b}
+/* #staff long-term goals: countdown to the next deadline, list, add form */
+.gcd{display:flex;flex-direction:column;gap:4px;padding:18px 20px;border-radius:18px;background:linear-gradient(120deg,#0b3a5c,#0a6ea8);color:#fff;margin-bottom:12px}
+.gcdk{font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#bfe6ff}
+.gcdg{font-size:18px;font-weight:600;line-height:1.3;overflow-wrap:anywhere}
+.gcdn{font-size:15px;color:#d6ebf8}.gcdn b{font-size:30px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums}
+.gcdo{display:none;font-weight:600}
+.gcd.over{background:linear-gradient(120deg,#7a1f12,#b3261e)}.gcd.over .gcdo{display:block}.gcd.over .gcdk{color:#ffd9d2}
+.goals{list-style:none;margin:0 0 12px;padding:0;display:flex;flex-direction:column;gap:8px}
+.goal{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;padding:12px 14px;border:1px solid var(--line,#e3e7eb);border-radius:14px;background:#fff;min-width:0}
+.goal.late{border-color:#b3261e;background:#fdecea}
+.goal.isdone .gt{text-decoration:line-through;color:var(--muted,#58616c)}
+.gchk{display:flex;align-items:flex-start;gap:10px;flex:1 1 240px;min-width:0;cursor:pointer}
+.gchk input{width:20px;height:20px;margin-top:2px;flex:none;accent-color:#12715b}
+.gt{font-weight:500;overflow-wrap:anywhere}
+.gmeta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.gdue{font-size:13px;color:var(--muted,#58616c);font-variant-numeric:tabular-nums}
+.gpill{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;background:#e4f2fa;color:#0a6ea8}
+.gpill.ok{background:#e3f4ef;color:#12715b}.gpill.bad{background:#b3261e;color:#fff}
+.gdel{font:inherit;font-size:13px;min-height:32px;min-width:32px;padding:0 8px;border:1px solid var(--line,#e3e7eb);border-radius:999px;background:#fff;color:var(--muted,#58616c);cursor:pointer}
+.gdel[data-sure]{border-color:#b3261e;color:#b3261e}
+.gnote{flex-basis:100%;font-size:13px;color:var(--muted,#58616c);padding-left:30px}
+.gadd{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px}
+.gadd .field{display:flex;flex-direction:column;gap:4px;flex:1 1 220px;min-width:0;font-size:14px;font-weight:500}
+.gadd .field:nth-child(2){flex:0 1 180px}
+.gadd input{font:inherit;min-height:44px;padding:8px 12px;border:1px solid #b9c1c9;border-radius:12px;width:100%}
+.gdone{margin-top:12px}.gdone summary{cursor:pointer;font-weight:500;min-height:36px}

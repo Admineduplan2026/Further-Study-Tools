@@ -47,6 +47,7 @@ function accountAction_(body) {
     case 'account_logout': return accountLogout_(body);
     case 'account_delete': return accountDelete_(body);
     case 'account_staff': return accountStaffLinks_(body);
+    case 'account_goals': return accountGoals_(body);   // StaffGoals.gs
   }
   return { error: 'bad_request' };
 }
@@ -71,11 +72,18 @@ function accountStaffPortal_(email) {
 /* The staff page on the website (#staff): links to Eduplan's sheets and folders, sent only to a signed-in staff email.
    The links are made from the IDs in Script Properties, so no private address is in the website code. A link opens
    only for people the file or folder is shared with in Google Drive. */
-function accountStaffLinks_(body) {
+/* {email} of a signed-in staff account, or {error}. */
+function accountStaffEmail_(body) {
   var sh = accountSheet_(), s = accountSession_(sh, body.token);
   if (!s) return { error: 'signed_out' };
   var email = String(sh.getRange(s.row, ACCOUNT_COL.email).getValue()).toLowerCase();
-  if (!accountIsStaff_(email)) return { error: 'forbidden' };
+  return accountIsStaff_(email) ? { email: email } : { error: 'forbidden' };
+}
+
+function accountStaffLinks_(body) {
+  var who = accountStaffEmail_(body);
+  if (who.error) return who;
+  var email = who.email;
   var props = PropertiesService.getScriptProperties();
   function id(k) { return driveCleanId_(props.getProperty(k)); }   // Drive.gs
   function sheet(v) { return v ? 'https://docs.google.com/spreadsheets/d/' + v + '/edit' : ''; }

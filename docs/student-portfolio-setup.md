@@ -114,3 +114,10 @@ they are never in the public website code. Each link still opens only for people
 
 Staff emails: Script Property `STAFF_EMAILS` (comma-separated; default `admin.eduplan@gmail.com`). The menu and My
 portfolio show a **Staff portal** link for staff. `STAFF_PORTAL_URL` is optional and no longer needed.
+
+### Long-term goals on the staff page
+
+The top of #staff is a shared to-do list of long-term goals (apps-script/StaffGoals.gs). Each goal has a title and a due
+date; a countdown shows the time left to the nearest goal that is not done (it turns red when the time is up). Staff tick
+a goal when it is done, add new ones with the form, or delete one (click ✕ twice). The goals are kept in the tab
+**Staff goals** of Eduplan School Data, made automatically the first time.

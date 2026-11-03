@@ -671,7 +671,46 @@ var STAFF_TEXT={
  "expo-admin":["Exhibition review","Approve organisers and events","✅"],
  "expo-sheet":["Eduplan Exhibitions","Organisers, schools, events, bookings and email progress","🎪"],
  "expo-folder":["5. Exhibitions","Exhibition data and cover images","📁"]};
+/* Long-term goals (StaffGoals.gs): a countdown to the nearest goal not done yet, the list with a done tick, and a form
+   to add one. Shared by all staff; stored in the "Staff goals" tab of Eduplan School Data. */
+var GOALS={list:null,err:"",busy:false,timer:null};
+function goalEnd(g){return Date.parse(g.due+"T23:59:59+08:00");}   /* the end of the due day, Malaysia time */
+function goalsCall(extra){var se=ls("eduplan-session");if(!live||!se||!se.token||!se.staff)return;GOALS.busy=true;
+ var body={action:"account_goals",token:se.token};Object.keys(extra||{}).forEach(function(k){body[k]=extra[k];});
+ post(body).then(function(r){GOALS.busy=false;if(r&&r.goals){GOALS.list=r.goals;GOALS.err="";}else GOALS.err=r&&r.error||"server";if(L.view==="staff")render(true);})
+  .catch(function(){GOALS.busy=false;GOALS.err="server";if(L.view==="staff")render(true);});}
+function goalLeft(ms){if(ms<0)ms=-ms;var d=Math.floor(ms/864e5),h=Math.floor(ms/36e5)%24,m=Math.floor(ms/6e4)%60,sec=Math.floor(ms/1e3)%60;
+ function two(n){return (n<10?"0":"")+n;}return {d:d,t:two(h)+":"+two(m)+":"+two(sec)};}
+function goalsTick(){var el=app.querySelector(".gcd");if(!el){clearInterval(GOALS.timer);GOALS.timer=null;return;}
+ var ms=Number(el.getAttribute("data-end"))-Date.now(),l=goalLeft(ms);
+ el.querySelector(".gcdd").textContent=l.d;el.querySelector(".gcdt").textContent=l.t;el.classList.toggle("over",ms<0);}
+function goalsBox(){
+ if(GOALS.err&&!GOALS.list)return '<section class="sec"><div class="empty">'+(GOALS.err==="forbidden"?'This email is not on the staff list.':'The goals could not be loaded. Please try again.')+'</div></section>';
+ if(!GOALS.list)return '<section class="sec"><div class="lnote" role="status">Loading the goals…</div></section>';
+ var open=GOALS.list.filter(function(g){return !g.done;}).sort(function(a,b){return a.due<b.due?-1:a.due>b.due?1:0;}),done=GOALS.list.filter(function(g){return g.done;}),next=open[0];
+ function row(g){var ms=goalEnd(g)-Date.now(),days=Math.ceil(ms/864e5);
+  return '<li class="goal'+(g.done?' isdone':ms<0?' late':'')+'"><label class="gchk"><input type="checkbox" data-goal-done="'+esc(g.id)+'"'+(g.done?' checked':'')+'><span class="gt" data-notr>'+esc(g.title)+'</span></label>'+
+   '<span class="gmeta"><span class="gdue" data-notr>'+esc(g.due)+'</span>'+(g.done?'<span class="gpill ok">Done</span>':ms<0?'<span class="gpill bad">Overdue</span>':'<span class="gpill"><b data-notr>'+days+'</b> <span>days left</span></span>')+
+   '<button type="button" class="gdel" data-goal-del="'+esc(g.id)+'" aria-label="Delete">✕</button></span>'+(g.note?'<span class="gnote" data-notr>'+esc(g.note)+'</span>':'')+'</li>';}
+ var l=next?goalLeft(goalEnd(next)-Date.now()):null;
+ return '<section class="sec"><div class="sh"><h2>Long-term goals</h2></div>'+
+  (next?'<div class="gcd'+(goalEnd(next)<Date.now()?' over':'')+'" data-end="'+goalEnd(next)+'"><span class="gcdk">Next deadline</span><b class="gcdg" data-notr>'+esc(next.title)+'</b>'+
+   '<span class="gcdn"><b class="gcdd" data-notr>'+l.d+'</b> <span>days</span> <b class="gcdt" data-notr>'+l.t+'</b></span><span class="gcdo">Time is up: finish this goal and tick it done.</span></div>'
+   :'<div class="empty">No open goals. Add one below.</div>')+
+  (open.length?'<ul class="goals">'+open.map(row).join("")+'</ul>':'')+
+  '<form class="gadd" id="goal-form"><label class="field"><span>New goal</span><input id="goal-title" maxlength="200" required placeholder="e.g. Add 10 new universities"></label>'+
+   '<label class="field"><span>Due date</span><input id="goal-due" type="date" required></label><button class="btn" type="submit"'+(GOALS.busy?' disabled':'')+'>Add goal</button></form>'+
+  (GOALS.err?'<p class="err" role="alert">'+(GOALS.err==="bad_date"?'Choose a due date.':GOALS.err==="bad_title"?'Write the goal.':'The change could not be saved. Please try again.')+'</p>':'')+
+  (done.length?'<details class="gdone"><summary><span>Done</span> (<span data-notr>'+done.length+'</span>)</summary><ul class="goals">'+done.map(row).join("")+'</ul></details>':'')+'</section>';}
+document.addEventListener("change",function(e){var t=e.target;if(t&&t.hasAttribute&&t.hasAttribute("data-goal-done"))goalsCall({op:"done",id:t.getAttribute("data-goal-done"),done:t.checked});});
+document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&e.target.closest("[data-goal-del]");if(!t)return;
+ var id=t.getAttribute("data-goal-del");if(t.getAttribute("data-sure")){goalsCall({op:"delete",id:id});return;}
+ t.setAttribute("data-sure","1");t.textContent="Delete?";setTimeout(function(){if(t.isConnected){t.removeAttribute("data-sure");t.textContent="✕";}},3000);});
+document.addEventListener("submit",function(e){if(!e.target||e.target.id!=="goal-form")return;e.preventDefault();
+ var ti=document.getElementById("goal-title"),du=document.getElementById("goal-due");goalsCall({op:"add",title:ti.value,due:du.value});});
 function loadStaff(){var se=ls("eduplan-session");
+ if(se&&se.staff&&!GOALS.list&&!GOALS.busy)goalsCall({});
+ if(app.querySelector(".gcd")&&!GOALS.timer)GOALS.timer=setInterval(goalsTick,1000);
  if(!live||!se||!se.token||!se.staff||STAFF.busy||STAFF.links)return;STAFF.busy=true;
  post({action:"account_staff",token:se.token}).then(function(r){STAFF.busy=false;
   if(r&&r.groups){STAFF.links=r;STAFF.err="";}else STAFF.err=r&&r.error==="forbidden"?"forbidden":r&&r.error==="signed_out"?"signed_out":"server";
@@ -690,7 +729,7 @@ function staffView(){var se=ls("eduplan-session"),site=window.EDUPLAN_SITE_URL||
  var web=[{key:"w-site",url:site,t:["EDUPLAN website","The student website","🌐"]},{key:"w-expo",url:ex,t:["Exhibition website","For organisers and schools","🎪"]},
   {key:"w-manual",url:"https://github.com/Admineduplan2026/Further-Study-Tools/tree/claude/website-eduplan-artifacts-mb4z44/docs",t:["Guides","How each part of EDUPLAN works","📘"]}]
   .filter(function(x){return x.url;}).map(function(x){STAFF_TEXT[x.key]=x.t;return {key:x.key,url:x.url};});
- return head+'<div class="page">'+body+group("web",web)+'</div>';}
+ return head+'<div class="page">'+goalsBox()+body+group("web",web)+'</div>';}
 /* The game on its own page (#game), opened from About us: a page of its own works in every browser and in the Claude
    preview, where scrolling to a section of a long page does not always move. */
 function gameView(){return '<div class="page gpage"><p><a class="glink" href="#about">← About us</a></p>'+gameBox()+'</div>';}
@@ -898,7 +937,7 @@ function langBox(){var zh=false;try{zh=localStorage.getItem("eduplan-lang")==="z
   '<button type="button" data-lang="zh" lang="zh-Hans" aria-pressed="'+zh+'">中文</button></div>';}
 function interests(){
  var skipped=false;try{skipped=!!sessionStorage.getItem("eduplan-ints-skip");}catch(e){}
- if(skipped||myInts().length>=3||/^#(privacy|portfolio)/.test(location.hash)||document.querySelector(".ipick")||!intFacs().length)return false;
+ if(skipped||myInts().length>=3||/^#(privacy|portfolio|staff)/.test(location.hash)||(ls("eduplan-session")||{}).staff||document.querySelector(".ipick")||!intFacs().length)return false;
  var pick=myInts().slice(0,3),d=document.createElement("div");d.className="intro ipick";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","ipick-h");
  function draw(){
   d.innerHTML=langBox()+'<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
@@ -987,7 +1026,7 @@ function account(){
   if(a==="other"){st.step="email";st.err="";st.msg="";draw("#ia-email");return;}
   if(a==="again"){st.step="email";send();}});
  return true;}
-window.addEventListener("eduplan:signedin",function(){S.session=ls("eduplan-session");STAFF.links=null;STAFF.err="";});
+window.addEventListener("eduplan:signedin",function(){S.session=ls("eduplan-session");STAFF.links=null;STAFF.err="";GOALS.list=null;GOALS.err="";});
 function intro(){
  if(/^#(next\/|compare\/)/.test(location.hash))return;   /* a shared programme or comparison link opens that page straight away */
  try{if(sessionStorage.getItem("eduplan-intro")){if(!account())interests();return;}}catch(e){}
