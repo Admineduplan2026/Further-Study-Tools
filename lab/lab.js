@@ -828,7 +828,11 @@ function help(){
 
 /* ---------- Render and events ---------- */
 var top=document.getElementById("top"),app=document.getElementById("app"),helpBox=document.getElementById("helpbox"),sheet=document.getElementById("sheet");
-function route(){var h=(location.hash||"#home").slice(1);L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about",game:"game",staff:"staff"}[h]||"home");}
+/* A signed-in staff account lands on the staff portal, not the student search on the home page. */
+function staffSession(){var se=ls("eduplan-session");return !!(se&&se.staff&&se.token&&se.exp>Date.now());}
+function route(){var h=(location.hash||"#home").slice(1);
+ if((h===""||h==="home")&&staffSession()){h="staff";try{history.replaceState(null,"","#staff");}catch(e){}}
+ L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about",game:"game",staff:"staff"}[h]||"home");}
 function chrome(){
  S.saved=ls("eduplan-saved")||[];S.quiz=ls("eduplan-quiz")||S.quiz;S.session=ls("eduplan-session");if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
  var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"")+(L.info?modeInfo():"");if(lang)top.querySelector(".bar").appendChild(lang);
