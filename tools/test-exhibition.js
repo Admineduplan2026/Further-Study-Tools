@@ -426,5 +426,31 @@ test("Google sign-in accepts only a verified email in a token meant for EDUPLAN"
   assert.strictEqual(h.call({ action: "expo_google", credential: "not a token" }).error, "google_failed");
 });
 
+console.log("Share pages");
+test("publishing an event writes its share page with the organiser's picture, and the share link uses it", () => {
+  const puts = [];
+  const h = require("./expo-harness")({ admins: ["admin@test.local"], today: TODAY, quiet: true, fetch: (url, o) => {
+    if (!o || !o.method) return { code: 404, body: "{}" };
+    puts.push({ url, body: JSON.parse(o.payload), auth: o.headers.Authorization }); return { code: 201, body: "{}" }; } });
+  const s = h.signIn("o@test.local"), admin = h.signIn("admin@test.local").token;
+  const me = h.call({ action: "expo_register", token: s.token, role: "organiser", org_name: "O", name: "N", position: "P", phone: "0123456789", consent: true }).me;
+  h.call({ action: "expo_admin_user", token: admin, user_id: me.id, decision: "approved" });
+  const r = h.call({ action: "expo_event_save", token: s.token, submit: true, cover: { type: "image/jpeg", data: "AAAA" }, event: Object.assign({}, EVENT, { title: "APU讲座 <b>", title_tr: "APU Talk" }) });
+  h.tables.events.find(e => e.id === r.id).cover_image = "https://drive.google.com/thumbnail?id=FILE123&sz=w1200";
+  h.call({ action: "expo_admin_event", token: admin, event_id: r.id, decision: "approved" });
+  assert.strictEqual(puts.length, 0, "no token: nothing is written");
+  assert.strictEqual(h.call({ action: "expo_public" }).events[0].share_page, "");
+  h.props.GITHUB_TOKEN = "gh-test";
+  h.call({ action: "expo_event_save", token: s.token, submit: true, event: Object.assign({}, EVENT, { id: r.id, title: "APU讲座 <b>", title_tr: "APU Talk", venue: "Hall 2" }) });
+  assert.strictEqual(puts.length, 1);
+  assert.ok(puts[0].url.endsWith("/contents/exhibition/e/" + r.id + ".html"), puts[0].url);
+  assert.strictEqual(puts[0].auth, "Bearer gh-test");
+  const html = Buffer.from(puts[0].body.content, "base64").toString("utf8");
+  assert.ok(html.includes('property="og:image" content="https://lh3.googleusercontent.com/d/FILE123=w1200-h630-c"'));
+  assert.ok(html.includes("APU讲座 &lt;b&gt; · APU Talk"), "titles in both languages, escaped");
+  assert.ok(html.includes("Hall 2") && html.includes("../#/e/" + r.id));
+  assert.strictEqual(h.call({ action: "expo_public" }).events[0].share_page, "e/" + r.id + ".html");
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

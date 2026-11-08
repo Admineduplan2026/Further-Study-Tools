@@ -143,11 +143,13 @@ function actions(e,open){
 }
 /* Share an event: the public event page link (#/e/<id>) to WhatsApp, Facebook, Telegram, X or email, the phone's own
    share menu where there is one, or copy the link. */
-function shareUrl(e){return location.href.split("#")[0]+"#/e/"+encodeURIComponent(e.id);}
+/* The event's share page (Exhibition.gs writes exhibition/e/<id>.html with its picture for link previews) once it exists. */
+function shareUrl(e){var base=location.href.split("#")[0].replace(/[^\/]*$/,"");return e.share_page?base+e.share_page:base+"#/e/"+encodeURIComponent(e.id);}
 function shareText(e){
  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(e.date||""),d=m?(+m[3])+"/"+(+m[2])+"/"+m[1]:e.date;
- return evT(e)+"\n📅 "+d+" "+(e.start_time||"")+"–"+(e.end_time||"")+"\n📍 "+[e.venue,e.city].filter(Boolean).join(", ")+
-  (e.can_attend?"\n🎟 "+T("限量名额，免费报名","Limited seats, free sign-up"):"");
+ /* Plain text only: some WhatsApp versions turn emoji in shared links into "?". */
+ return evT(e)+"\n"+T("日期：","Date: ")+d+" "+(e.start_time||"")+"–"+(e.end_time||"")+"\n"+T("地点：","Venue: ")+[e.venue,e.city].filter(Boolean).join(", ")+
+  (e.can_attend?"\n"+T("限量名额，免费报名","Limited seats, free sign-up"):"");
 }
 function shareBox(e,open){
  var u=shareUrl(e),t=shareText(e),q=encodeURIComponent;

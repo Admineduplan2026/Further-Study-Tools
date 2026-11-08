@@ -1800,6 +1800,14 @@ function driveOrganize() {
  * the translation was made from, so an edited title or description gets a fresh translation. Run expoTranslateAll once
  * from the editor to translate events saved before this.
  *
+ * Share links with the event's own picture: WhatsApp and Facebook read the preview (title, text, picture) from the page
+ * a link opens, and the website itself is one page for every event. So for each published event the script writes a
+ * small page exhibition/e/<id>.html to the website's GitHub repository (title, date, venue and the organiser's cover
+ * picture as the preview; it forwards visitors to the event). Needs Script Property GITHUB_TOKEN: a fine-grained GitHub
+ * token for this repository only, with "Contents: Read and write". Optional GITHUB_REPO and GITHUB_BRANCH (defaults
+ * below). The page is (re)written when an event is approved or a published event is edited; run expoSharePagesAll once
+ * for events published before this. The share buttons use the page once it exists (column share_page).
+ *
  * The website POSTs to the same /exec URL as everything else; doPost in Code.gs sends every "expo_*" action here:
  *   expo_public                                   upcoming published events (no sign-in, no contact details)
  *   expo_login {email,password}                    email and password -> {token, me}
@@ -1838,11 +1846,13 @@ var EXPO_MAX_BOOTHS = 1000;
 var EXPO_MAX_SEATS = 5000;
 var EXPO_COVER_BYTES = 2 * 1024 * 1024;
 var EXPO_SITE_DEFAULT = 'https://admineduplan2026.github.io/Further-Study-Tools/exhibition/';
+var EXPO_GITHUB_REPO = 'Admineduplan2026/Further-Study-Tools';
+var EXPO_GITHUB_BRANCH = 'claude/website-eduplan-artifacts-mb4z44';   // the branch GitHub Pages publishes
 var EXPO_COLS = {
   users: ['id', 'role', 'email', 'name', 'position', 'phone', 'org_name', 'school_type', 'website', 'status', 'review_note', 'consent_at', 'created_at'],
   events: ['id', 'organiser_id', 'title', 'description', 'date', 'start_time', 'end_time', 'venue', 'address', 'city', 'state', 'booth_capacity',
     'registration_deadline', 'booth_fee', 'cover_image', 'status', 'review_note', 'approved_at', 'created_at', 'updated_at', 'seats', 'mode',
-    'title_tr', 'description_tr', 'tr_src'],
+    'title_tr', 'description_tr', 'tr_src', 'share_page'],
   registrations: ['id', 'event_id', 'exhibitor_id', 'booths_requested', 'topics', 'special_needs', 'status', 'organiser_note', 'created_at', 'updated_at'],
   attendees: ['id', 'event_id', 'name', 'email', 'phone', 'who', 'school', 'people', 'status', 'consent_at', 'created_at', 'updated_at'],
   sessions: ['h', 'email', 'exp'],
@@ -2200,6 +2210,7 @@ function expoEventOut_(e, regs, today, org, att) {
   var tr = expoTr_(e);
   out.src_lang = tr.src; out.title_zh = tr.title_zh; out.title_en = tr.title_en; out.description_zh = tr.description_zh; out.description_en = tr.description_en;
   out.title_tr = e.title_tr || ''; out.description_tr = e.description_tr || '';
+  out.share_page = e.share_page ? 'e/' + e.id + '.html' : '';
   return out;
 }
 
@@ -2285,6 +2296,7 @@ function expoEventSave_(who, body) {
     }
     return { ok: true, id: e.id, status: e.status };
   });
+  if (r.ok && r.status === 'published') expoSharePage_(r.id);
   if (r.ok && r.status === 'pending') {
     expoMail_(expoAdmins_(), '新的教育展活动待审核 New event to review: ' + chk.e.title,
       who.user.org_name + ' 提交了活动「' + chk.e.title + '」（' + chk.e.date + '，' + chk.e.venue + '，' + chk.e.city + '）。\n请到 ' + expoSite_() + '#/admin 审核。');
@@ -2589,7 +2601,7 @@ function expoAdminEvent_(who, body) {
     if (org) mail = { to: org.email, title: e.title };
     return { ok: true, status: patch.status };
   });
-  if (r.ok && decision === 'approved') { expoTrFill_(String(body.event_id || '')); expoNotifySoon_(); }
+  if (r.ok && decision === 'approved') { expoTrFill_(String(body.event_id || '')); expoSharePage_(String(body.event_id || '')); expoNotifySoon_(); }
   if (r.ok && mail) {
     expoMail_([mail.to], (decision === 'approved' ? '活动已发布：' : '活动未获批准：') + mail.title,
       decision === 'approved' ? '你的活动「' + mail.title + '」已通过审核并公开，参展学校现在可以报名摊位。\n' + expoSite_() + '#/org'
@@ -2663,6 +2675,69 @@ function expoTranslate_(title, description, to) {
     console.warn('expo translate failed: ' + err);
     return null;
   }
+}
+
+/* ---------- Share pages (link previews with the event's picture) ---------- */
+
+function expoHtml_(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+/* A direct picture link for previews: the Drive file of the cover, cropped to 1200 x 630; or the EDUPLAN logo. */
+function expoPreviewImage_(cover) {
+  var m = /[?&]id=([\w-]+)/.exec(String(cover || ''));
+  if (m) return 'https://lh3.googleusercontent.com/d/' + m[1] + '=w1200-h630-c';
+  if (/^https:\/\//.test(String(cover || ''))) return String(cover);
+  return expoSite_().replace(/exhibition\/?$/, '') + 'assets/img/logo.png';
+}
+/* The share page of an event: link previews read its title, text and picture; people are sent on to the event. */
+function expoSharePageHtml_(e) {
+  var tr = expoTr_(e), site = expoSite_(), url = site + 'e/' + e.id + '.html', go = '../#/e/' + encodeURIComponent(e.id);
+  var title = tr.title_zh === tr.title_en ? tr.title_zh : tr.title_zh + ' · ' + tr.title_en;
+  var desc = e.date + ' ' + e.start_time + '–' + e.end_time + ' · ' + [e.venue, e.city, e.state].filter(Boolean).join(', ') +
+    ' · 限量名额，免费报名 Limited seats, free sign-up';
+  var img = expoPreviewImage_(e.cover_image);
+  return '<!doctype html>\n<html lang="zh-Hans"><head><meta charset="utf-8">\n' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>' + expoHtml_(title) + ' · Eduplan 教育展</title>\n' +
+    '<meta name="description" content="' + expoHtml_(desc) + '">\n<meta property="og:type" content="website">\n' +
+    '<meta property="og:site_name" content="Eduplan 教育展">\n<meta property="og:title" content="' + expoHtml_(title) + '">\n' +
+    '<meta property="og:description" content="' + expoHtml_(desc) + '">\n<meta property="og:image" content="' + expoHtml_(img) + '">\n' +
+    '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n' +
+    '<meta property="og:url" content="' + expoHtml_(url) + '">\n<meta name="twitter:card" content="summary_large_image">\n' +
+    '<meta http-equiv="refresh" content="0; url=' + expoHtml_(go) + '">\n<link rel="canonical" href="' + expoHtml_(url) + '">\n' +
+    '<script>location.replace(' + JSON.stringify(go) + ');</script>\n</head><body><p><a href="' + expoHtml_(go) + '">' + expoHtml_(title) + '</a></p></body></html>\n';
+}
+/* Writes (or rewrites) exhibition/e/<id>.html in the GitHub repository. Quietly does nothing without GITHUB_TOKEN. */
+function expoSharePage_(id) {
+  var props = PropertiesService.getScriptProperties(), token = props.getProperty('GITHUB_TOKEN');
+  var e = expoFind_('events', 'id', String(id || ''));
+  if (!token || !e || e.status !== 'published' || !/^EV-[0-9A-F]{10}$/.test(e.id)) return false;
+  var repo = props.getProperty('GITHUB_REPO') || EXPO_GITHUB_REPO, branch = props.getProperty('GITHUB_BRANCH') || EXPO_GITHUB_BRANCH;
+  var path = 'exhibition/e/' + e.id + '.html', api = 'https://api.github.com/repos/' + repo + '/contents/' + path;
+  var headers = { Authorization: 'Bearer ' + token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' };
+  try {
+    var html = expoSharePageHtml_(e), sha = null;
+    var cur = UrlFetchApp.fetch(api + '?ref=' + encodeURIComponent(branch), { headers: headers, muteHttpExceptions: true });
+    if (cur.getResponseCode() === 200) {
+      var info = JSON.parse(cur.getContentText());
+      sha = info.sha;
+      var old = Utilities.newBlob(Utilities.base64Decode(String(info.content || '').replace(/\s/g, ''))).getDataAsString();
+      if (old === html) { expoShareMark_(e.id); return true; }   // nothing changed
+    }
+    var body = { message: 'Exhibition share page: ' + e.id, content: Utilities.base64Encode(html, Utilities.Charset.UTF_8), branch: branch };
+    if (sha) body.sha = sha;
+    var res = UrlFetchApp.fetch(api, { method: 'put', contentType: 'application/json', headers: headers, payload: JSON.stringify(body), muteHttpExceptions: true });
+    if (res.getResponseCode() !== 200 && res.getResponseCode() !== 201) { console.warn('share page ' + e.id + ': ' + res.getResponseCode() + ' ' + res.getContentText().slice(0, 300)); return false; }
+    expoShareMark_(e.id);
+    return true;
+  } catch (err) {
+    console.warn('share page ' + e.id + ' failed: ' + err);
+    return false;
+  }
+}
+function expoShareMark_(id) { expoLocked_(function () { expoStore_().table('events').update('id', id, { share_page: expoStamp_() }); return { ok: true }; }); }
+/* Run once from the editor (select expoSharePagesAll, Run): writes the share page of every published event. */
+function expoSharePagesAll() {
+  var n = 0;
+  expoStore_().table('events').all().forEach(function (e) { if (e.status === 'published' && expoSharePage_(e.id)) n++; });
+  console.log('Share pages written: ' + n + (PropertiesService.getScriptProperties().getProperty('GITHUB_TOKEN') ? '' : ' (add GITHUB_TOKEN first)'));
 }
 
 /* ---------- Cover images and emails ---------- */

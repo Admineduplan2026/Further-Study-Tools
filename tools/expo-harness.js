@@ -53,7 +53,9 @@ module.exports = function (opts) {
       base64Decode: s => Array.from(Buffer.from(s, "base64")),
       computeHmacSha256Signature: (v, k) => { const buf = x => Array.isArray(x) ? Buffer.from(x.map(b => b & 255)) : Buffer.from(String(x), "utf8");
         return Array.from(crypto.createHmac("sha256", buf(k)).update(buf(v)).digest()).map(b => (b > 127 ? b - 256 : b)); },
-      newBlob: x => ({ getBytes: () => Array.from(Buffer.from(String(x), "utf8")).map(b => (b > 127 ? b - 256 : b)) }),
+      newBlob: x => { const buf = Array.isArray(x) ? Buffer.from(x.map(b => b & 255)) : Buffer.from(String(x), "utf8");
+        return { getBytes: () => Array.from(buf).map(b => (b > 127 ? b - 256 : b)), getDataAsString: () => buf.toString("utf8") }; },
+      base64Encode: x => (Array.isArray(x) ? Buffer.from(x.map(b => b & 255)) : Buffer.from(String(x), "utf8")).toString("base64"),
       base64EncodeWebSafe: bytes => Buffer.from(bytes.map(b => b & 255)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_")
     },
     CacheService: { getScriptCache: () => ({

@@ -66,6 +66,23 @@ event is saved or approved, using the chat's Script Properties `ANTHROPIC_API_KE
 event shows in its own language. An edited title or description gets a new translation. For events saved before this,
 run **expoTranslateAll** once in the Apps Script editor.
 
+## Share links with the event's picture
+
+WhatsApp, Facebook and other apps build a link preview from the page the link opens, and the exhibition site is one page
+for every event. So Apps Script writes a small page `exhibition/e/<id>.html` for each published event to the GitHub
+repository (title in both languages, date, venue and the organiser's cover picture), which sends visitors on to the
+event. The share buttons use it once it exists. It is written when an event is approved or a published event is edited.
+
+Set up once:
+1. GitHub → Settings (your profile) → Developer settings → Personal access tokens → **Fine-grained tokens** →
+   Generate new token. Repository access: **Only select repositories** → Further-Study-Tools. Permissions →
+   Repository permissions → **Contents: Read and write**. Choose an expiry (e.g. 1 year) and copy the token.
+2. Apps Script → Project Settings → Script Properties: add `GITHUB_TOKEN` with the token. Never put it anywhere else.
+3. Run **expoSharePagesAll** once in the editor for events published before this.
+
+When the token expires, make a new one and replace `GITHUB_TOKEN`. Apps reading a link the first time may keep its old
+preview for a while (WhatsApp caches previews).
+
 ## Rules checked on the server
 
 - An event cannot be on a past date; its registration deadline must be before the event and not in the past; it needs at
