@@ -270,5 +270,68 @@ test("sign-up needs the privacy consent and the listed fields only", () => {
   assert.ok(!JSON.stringify(t.h.tables.users).includes("900101"), "extra fields are not stored");
 });
 
+console.log("Visitors sign up to attend");
+const VISITOR = { name: "Ali", email: "ali@test.local", phone: "012-111 2222", who: "student", school: "SMK Test", people: 2, consent: true };
+const attend = (t, id, over) => t.h.call(Object.assign({ action: "expo_attend", event_id: id }, VISITOR, over || {}));
+test("anyone can sign up for a published event without an account, and the organiser sees the list", () => {
+  const t = setup(), id = publish(t, t.org);
+  const r = attend(t, id);
+  assert.ok(r.ok && /^ATT-/.test(r.id) && r.updated === false, JSON.stringify(r));
+  assert.ok(r.emailed, "confirmation email");
+  assert.ok(t.h.mails.some(m => m.to === "ali@test.local" && /You are signed up/.test(m.subject)));
+  const pub = t.h.call({ action: "expo_public" }).events.find(e => e.id === id);
+  assert.strictEqual(pub.going, 2);
+  assert.strictEqual(pub.can_attend, true);
+  assert.ok(!JSON.stringify(t.h.call({ action: "expo_public" })).includes("ali@test.local"), "no visitor details in public data");
+  const list = t.h.call({ action: "expo_event_attendees", token: t.org.token, event_id: id });
+  assert.strictEqual(list.attendees.length, 1);
+  assert.strictEqual(list.attendees[0].phone, "012-111 2222");
+  assert.strictEqual(t.h.call({ action: "expo_my_events", token: t.org.token }).events[0].visitors, 1);
+});
+test("only the event's own organiser can see its visitors", () => {
+  const t = setup(), id = publish(t, t.org);
+  attend(t, id);
+  assert.strictEqual(t.h.call({ action: "expo_event_attendees", token: t.org2.token, event_id: id }).error, "forbidden");
+  assert.strictEqual(t.h.call({ action: "expo_event_attendees", token: t.schools[0].token, event_id: id }).error, "forbidden");
+});
+test("signing up again with the same email updates the sign-up instead of adding one", () => {
+  const t = setup(), id = publish(t, t.org);
+  const a = attend(t, id), b = attend(t, id, { email: "ALI@test.local", people: 3 });
+  assert.strictEqual(b.id, a.id);
+  assert.strictEqual(b.updated, true);
+  assert.strictEqual(t.h.call({ action: "expo_public" }).events.find(e => e.id === id).going, 3);
+});
+test("visitors cannot sign up for events in review, cancelled or already over", () => {
+  const t = setup();
+  const pending = t.h.call({ action: "expo_event_save", token: t.org.token, submit: true, event: EVENT }).id;
+  assert.strictEqual(attend(t, pending).error, "not_found");
+  const id = publish(t, t.org);
+  t.h.setToday("2026-12-05");   // after the booth deadline: visitors may still sign up
+  assert.ok(attend(t, id).ok);
+  t.h.setToday("2026-12-11");
+  assert.strictEqual(attend(t, id, { email: "late@test.local" }).error, "event_over");
+  t.h.setToday(TODAY);
+  const id2 = publish(t, t.org);
+  assert.ok(attend(t, id2, { email: "x@test.local" }).ok);
+  assert.ok(t.h.call({ action: "expo_event_cancel", token: t.org.token, event_id: id2 }).ok);
+  assert.ok(t.h.mails.some(m => /x@test.local/.test(m.bcc || "") && /cancelled/i.test(m.subject)), "visitors told by Bcc");
+  assert.strictEqual(attend(t, id2, { email: "y@test.local" }).error, "cancelled");
+});
+test("the sign-up checks its fields, the number of people and the consent", () => {
+  const t = setup(), id = publish(t, t.org);
+  assert.strictEqual(attend(t, id, { consent: false }).error, "consent");
+  assert.deepStrictEqual(attend(t, id, { name: "", phone: "12", who: "boss" }).fields, ["name", "phone", "who"]);
+  [0, 11, 1.5].forEach(n => assert.strictEqual(attend(t, id, { people: n }).error, "bad_people", String(n)));
+  assert.strictEqual(attend(t, id, { email: "nope" }).error, "missing");
+  assert.strictEqual(t.h.writesOutsideLock(), 0);
+});
+test("no confirmation email when the day's quota is low, but the sign-up is kept", () => {
+  const t = setup(), id = publish(t, t.org);
+  t.h.quota.left = 20;
+  const r = attend(t, id);
+  assert.ok(r.ok);
+  assert.strictEqual(r.emailed, false);
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

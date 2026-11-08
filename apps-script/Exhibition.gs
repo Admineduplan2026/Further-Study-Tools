@@ -10,6 +10,8 @@
  *   Organiser: expo_event_save, expo_my_events, expo_event_regs, expo_reg_decide, expo_event_cancel
  *   Exhibitor: expo_events, expo_apply, expo_my_regs, expo_withdraw
  *   Admin:     expo_admin_list, expo_admin_user, expo_admin_event
+ *   Visitors:  expo_attend {event_id, name, email, phone, who, school, people, consent}   no sign-in: students and parents
+ *              sign up to attend a published event; organisers see the list with expo_event_attendees {token, event_id}
  *
  * Every rule is checked here, never only in the browser: no events or registrations for past dates, the deadline is
  * before the event, booked booths never exceed the event's capacity, one registration per school per event, and each
@@ -17,7 +19,7 @@
  * two schools booking the last booth at the same moment cannot both get it.
  *
  * Data: private spreadsheet "Eduplan Exhibitions" in "Eduplan Databases/5. Exhibitions (private)" (Drive.gs) with the
- * tabs Users, Events, Registrations and Sessions. Event cover images go to "Event covers (public links)" in the same
+ * tabs Users, Events, Registrations, Attendees and Sessions. Event cover images go to "Event covers (public links)" in the same
  * folder and are viewable by anyone with the link. School contact details are only sent to the organiser of the event
  * the school registered for. Session tokens and codes are kept only as SHA-256 hashes (Account.gs helpers).
  *
@@ -38,15 +40,18 @@ var EXPO_COLS = {
   events: ['id', 'organiser_id', 'title', 'description', 'date', 'start_time', 'end_time', 'venue', 'address', 'city', 'state', 'booth_capacity',
     'registration_deadline', 'booth_fee', 'cover_image', 'status', 'review_note', 'approved_at', 'created_at', 'updated_at'],
   registrations: ['id', 'event_id', 'exhibitor_id', 'booths_requested', 'topics', 'special_needs', 'status', 'organiser_note', 'created_at', 'updated_at'],
+  attendees: ['id', 'event_id', 'name', 'email', 'phone', 'who', 'school', 'people', 'status', 'consent_at', 'created_at', 'updated_at'],
   sessions: ['h', 'email', 'exp'],
   notify: ['event_id', 'next_student', 'next_school', 'sent', 'created_at', 'done_at'],
   unsubscribed: ['h', 'at']
 };
-var EXPO_TABS = { users: 'Users', events: 'Events', registrations: 'Registrations', sessions: 'Sessions', notify: 'Notify', unsubscribed: 'Unsubscribed' };
+var EXPO_TABS = { users: 'Users', events: 'Events', registrations: 'Registrations', attendees: 'Attendees', sessions: 'Sessions', notify: 'Notify', unsubscribed: 'Unsubscribed' };
 var EXPO_MAIL_RESERVE = 25;   // emails a day kept for sign-in codes and application notices
 var EXPO_STATES = ['Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak',
   'Selangor', 'Terengganu', 'W.P. Kuala Lumpur', 'W.P. Labuan', 'W.P. Putrajaya'];
 var EXPO_SCHOOL_TYPES = ['university', 'college', 'secondary', 'other'];
+var EXPO_VISITOR_TYPES = ['student', 'parent', 'teacher', 'other'];
+var EXPO_MAX_PEOPLE = 10;   // people one visitor sign-up may bring, themselves included
 /* Stored event status: draft, pending (waiting for an admin), published, rejected (by an admin), closed (by the
    organiser) or cancelled. A published event whose registration deadline has passed is shown as closed. */
 var EXPO_EVENT_STATUS = ['draft', 'pending', 'published', 'rejected', 'closed', 'cancelled'];
@@ -57,6 +62,7 @@ function expoAction_(body) {
   if (a === 'expo_code') return expoCode_(body);
   if (a === 'expo_verify') return expoVerify_(body);
   if (a === 'expo_unsub') return expoUnsub_(body);
+  if (a === 'expo_attend') return expoAttend_(body);
   var who = expoAuth_(body.token);
   if (!who) return { error: 'signed_out' };
   switch (a) {
@@ -68,6 +74,7 @@ function expoAction_(body) {
     case 'expo_event_regs': return expoEventRegs_(who, body);
     case 'expo_reg_decide': return expoRegDecide_(who, body);
     case 'expo_event_cancel': return expoEventCancel_(who, body);
+    case 'expo_event_attendees': return expoEventAttendees_(who, body);
     case 'expo_events': return expoOpenEvents_(who, body);
     case 'expo_apply': return expoApply_(who, body);
     case 'expo_my_regs': return expoMyRegs_(who);
@@ -105,7 +112,7 @@ function expoSheetTable_(ss, name) {
   var cols = EXPO_COLS[name], sh = ss.getSheetByName(EXPO_TABS[name]);
   if (!sh) {
     var first = ss.getSheets()[0];
-    sh = ss.getSheets().length === 1 && first.getLastRow() === 0 && !(first.getName() in { Users: 1, Events: 1, Registrations: 1, Sessions: 1, Notify: 1, Unsubscribed: 1 })
+    sh = ss.getSheets().length === 1 && first.getLastRow() === 0 && !(first.getName() in { Users: 1, Events: 1, Registrations: 1, Attendees: 1, Sessions: 1, Notify: 1, Unsubscribed: 1 })
       ? first.setName(EXPO_TABS[name]) : ss.insertSheet(EXPO_TABS[name]);
     sh.getRange(1, 1, sh.getMaxRows(), cols.length).setNumberFormat('@');   // plain text: dates and phone numbers stay as typed
     sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setBackground('#e4f2fa');
@@ -302,21 +309,31 @@ function expoState_(e, today) {
 }
 function expoOpen_(e, today) { return e.status === 'published' && e.date >= today && e.registration_deadline >= today; }
 
-function expoEventOut_(e, regs, today, org) {
+/* People signed up to attend an event (expo_attend), counting the guests each visitor brings. */
+function expoGoing_(eventId, att) {
+  var n = 0;
+  (att || []).forEach(function (a) { if (a.event_id === eventId && a.status === 'going') n += Number(a.people) || 1; });
+  return n;
+}
+/* Visitors can sign up until the day of a published event (the booth deadline is only for schools). */
+function expoCanAttend_(e, today) { return e.status === 'published' && e.date >= today; }
+
+function expoEventOut_(e, regs, today, org, att) {
   var b = expoBooths_(e.id, regs), cap = Number(e.booth_capacity) || 0;
   return {
     id: e.id, title: e.title, description: e.description, date: e.date, start_time: e.start_time, end_time: e.end_time, venue: e.venue,
     address: e.address, city: e.city, state: e.state, booth_capacity: cap, registration_deadline: e.registration_deadline,
     booth_fee: Number(e.booth_fee) || 0, cover_image: e.cover_image, status: expoState_(e, today), organiser: org ? org.org_name : '',
-    remaining: Math.max(0, cap - b.taken), full: b.taken >= cap, open: expoOpen_(e, today)
+    remaining: Math.max(0, cap - b.taken), full: b.taken >= cap, open: expoOpen_(e, today),
+    going: expoGoing_(e.id, att), can_attend: expoCanAttend_(e, today)
   };
 }
 
 function expoPublic_() {
-  var today = expoToday_(), st = expoStore_(), regs = st.table('registrations').all(), users = st.table('users').all();
+  var today = expoToday_(), st = expoStore_(), regs = st.table('registrations').all(), users = st.table('users').all(), att = st.table('attendees').all();
   var events = st.table('events').all().filter(function (e) { return e.status === 'published' && e.date >= today; })
     .sort(function (a, b) { return (a.date + a.start_time).localeCompare(b.date + b.start_time); });
-  return { today: today, events: events.map(function (e) { return expoEventOut_(e, regs, today, expoById_(users, e.organiser_id)); }) };
+  return { today: today, events: events.map(function (e) { return expoEventOut_(e, regs, today, expoById_(users, e.organiser_id), att); }) };
 }
 function expoById_(rows, id) { for (var i = 0; i < rows.length; i++) if (rows[i].id === id) return rows[i]; return null; }
 
@@ -395,11 +412,12 @@ function expoEventSave_(who, body) {
 function expoMyEvents_(who) {
   var deny = expoRole_(who, 'organiser');
   if (deny) return deny;
-  var today = expoToday_(), st = expoStore_(), regs = st.table('registrations').all();
+  var today = expoToday_(), st = expoStore_(), regs = st.table('registrations').all(), att = st.table('attendees').all();
   var list = st.table('events').all().filter(function (e) { return e.organiser_id === who.user.id; })
     .sort(function (a, b) { return b.date.localeCompare(a.date); })
     .map(function (e) {
-      var o = expoEventOut_(e, regs, today, who.user), b = expoBooths_(e.id, regs);
+      var o = expoEventOut_(e, regs, today, who.user, att), b = expoBooths_(e.id, regs);
+      o.visitors = att.filter(function (a) { return a.event_id === e.id && a.status === 'going'; }).length;
       o.accepted_booths = b.accepted; o.pending_booths = b.pending; o.registrations = b.count; o.review_note = e.review_note;
       o.approved = !!e.approved_at; o.stored_status = e.status;
       return o;
@@ -463,7 +481,7 @@ function expoRegDecide_(who, body) {
 function expoEventCancel_(who, body) {
   var deny = expoRole_(who, 'organiser');
   if (deny) return deny;
-  var notify = [], title = '', date = '';
+  var notify = [], visitors = [], title = '', date = '';
   var r = expoLocked_(function () {
     var own = expoOwnEvent_(who, body.event_id);
     if (own.error) return own;
@@ -476,13 +494,77 @@ function expoEventCancel_(who, body) {
       var s = expoById_(users, x.exhibitor_id);
       if (s) notify.push(s.email);
     });
+    st.table('attendees').all().forEach(function (a) { if (a.event_id === own.e.id && a.status === 'going') visitors.push(a.email); });
     title = own.e.title; date = own.e.date;
     return { ok: true };
   });
   if (r.ok && notify.length) {
     expoMail_(notify, '活动已取消：' + title, '主办方已取消教育展「' + title + '」（' + date + '）。你的摊位报名不再有效。\n\n查看我的报名：' + expoSite_() + '#/ex/my');
   }
+  if (r.ok && visitors.length) {
+    expoMailBcc_(visitors, '活动已取消 Event cancelled：' + title, '主办方已取消教育展「' + title + '」（' + date + '），你的参加报名不再有效。\n' +
+      'The organiser has cancelled "' + title + '" (' + date + '). Your sign-up to attend is no longer needed.\n\n其他教育展 Other exhibitions：' + expoSite_());
+  }
   return r;
+}
+
+/* ---------- Visitors (students and parents) ---------- */
+
+/* Sign up to attend a published event. No account is needed: name, email and phone go only to the event's organiser
+   and Eduplan. Signing up again with the same email for the same event updates the earlier sign-up. */
+function expoAttend_(body) {
+  if (body.consent !== true) return { error: 'consent' };
+  var v = {
+    name: expoText_(body.name, 100), email: accountEmail_(body.email), phone: expoPhone_(body.phone),
+    who: EXPO_VISITOR_TYPES.indexOf(String(body.who)) >= 0 ? String(body.who) : '', school: expoText_(body.school, 160),
+    people: expoInt_(body.people == null || body.people === '' ? 1 : body.people)
+  };
+  var missing = ['name', 'email', 'phone', 'who'].filter(function (f) { return !v[f]; });
+  if (missing.length) return { error: 'missing', fields: missing };
+  if (!(v.people >= 1 && v.people <= EXPO_MAX_PEOPLE)) return { error: 'bad_people', fields: ['people'] };
+  var cache = CacheService.getScriptCache(), k = 'expo-attend-' + accountHash_(v.email), n = Number(cache.get(k)) || 0;
+  if (n >= 10) return { error: 'too_many' };
+  cache.put(k, String(n + 1), 3600);
+  var today = expoToday_(), ev = null;
+  var r = expoLocked_(function () {
+    var st = expoStore_(), e = expoFind_('events', 'id', String(body.event_id || ''));
+    if (!e || e.status === 'draft' || e.status === 'pending' || e.status === 'rejected') return { error: 'not_found' };
+    if (e.status === 'cancelled') return { error: 'cancelled' };
+    if (!expoCanAttend_(e, today)) return { error: 'event_over' };
+    ev = e;
+    var t = st.table('attendees'), old = null, stamp = expoStamp_();
+    t.all().forEach(function (a) { if (a.event_id === e.id && a.email === v.email) old = a; });
+    var row = { name: v.name, phone: v.phone, who: v.who, school: v.school, people: String(v.people), status: 'going', consent_at: stamp, updated_at: stamp };
+    if (old) { t.update('id', old.id, row); return { ok: true, id: old.id, updated: true }; }
+    row.id = expoId_('ATT'); row.event_id = e.id; row.email = v.email; row.created_at = stamp;
+    t.insert(row);
+    return { ok: true, id: row.id, updated: false };
+  });
+  if (!r.ok) return r;
+  /* The confirmation email is skipped when the day's Gmail quota is low: sign-in codes come first. */
+  r.emailed = false;
+  try {
+    if (MailApp.getRemainingDailyQuota() > EXPO_MAIL_RESERVE + 2) {
+      r.emailed = expoMail_([v.email], '报名成功 You are signed up：' + ev.title,
+        v.name + '，你已报名参加 Eduplan 教育展：\nYou are signed up for this Eduplan exhibition:\n\n' + ev.title + '\n' +
+        '日期 Date：' + ev.date + '，' + ev.start_time + '–' + ev.end_time + '\n地点 Venue：' + ev.venue + '，' + ev.address + '，' + ev.city + '\n' +
+        '人数 People：' + v.people + '\n报名编号 Reference：' + r.id + '\n\n活动详情 Details：' + expoSite_() + '#/e/' + ev.id);
+    }
+  } catch (err) { console.warn('expo attend mail: ' + err); }
+  return r;
+}
+
+/* The organiser's list of visitors who signed up for one of their events. */
+function expoEventAttendees_(who, body) {
+  var deny = expoRole_(who, 'organiser');
+  if (deny) return deny;
+  var own = expoOwnEvent_(who, body.event_id);
+  if (own.error) return own;
+  var st = expoStore_(), att = st.table('attendees').all();
+  var list = att.filter(function (a) { return a.event_id === own.e.id && a.status === 'going'; })
+    .sort(function (a, b) { return a.created_at.localeCompare(b.created_at); })
+    .map(function (a) { return { id: a.id, name: a.name, email: a.email, phone: a.phone, who: a.who, school: a.school, people: Number(a.people) || 1, created_at: a.created_at }; });
+  return { event: expoEventOut_(own.e, st.table('registrations').all(), expoToday_(), who.user, att), attendees: list };
 }
 
 /* ---------- Exhibitors ---------- */
@@ -662,6 +744,19 @@ function expoMail_(to, subject, body) {
   }
 }
 
+/* One email to many people who must not see each other's addresses (visitors): Bcc, 50 at a time. */
+function expoMailBcc_(list, subject, body) {
+  list = (list || []).filter(Boolean);
+  for (var i = 0; i < list.length; i += 50) {
+    var part = list.slice(i, i + 50);
+    try {
+      if (MailApp.getRemainingDailyQuota() < part.length + EXPO_MAIL_RESERVE) { console.warn('expo bcc mail stopped (quota): ' + subject); return false; }
+      MailApp.sendEmail({ to: expoAdmins_()[0] || part[0], bcc: part.join(','), name: 'Eduplan 教育展', subject: subject, body: body + '\n\n— Eduplan 教育展 ' + expoSite_() });
+    } catch (err) { console.error('expo bcc mail failed: ' + err); return false; }
+  }
+  return true;
+}
+
 /* ---------- New-event emails to students and schools ---------- */
 /* When an admin publishes an event, every student with an EDUPLAN account (Eduplan Student Portfolios) and every
    exhibition school gets one email about it, with a link to stop these emails. Sending runs in the background a minute
@@ -770,7 +865,7 @@ function expoUnsub_(body) {
 function expoSetup() {
   console.log('Email quota left today: ' + MailApp.getRemainingDailyQuota());
   expoStore_().table('users').all();
-  ['events', 'registrations', 'sessions', 'notify', 'unsubscribed'].forEach(function (t) { expoStore_().table(t).all(); });
+  ['events', 'registrations', 'attendees', 'sessions', 'notify', 'unsubscribed'].forEach(function (t) { expoStore_().table(t).all(); });
   console.log('Eduplan Exhibitions: ' + SpreadsheetApp.openById(driveCleanId_(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID'))).getUrl());
   if (!ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'expoNotifyDaily'; }))
     ScriptApp.newTrigger('expoNotifyDaily').timeBased().everyDays(1).atHour(10).inTimezone(EXPO_TZ).create();

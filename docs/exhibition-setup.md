@@ -33,8 +33,20 @@ instead of quietly starting new, empty sheets in that account's Drive.
 | Organiser 主办方 | Sign up, save drafts, submit events (after approval), edit or cancel own events, accept or reject bookings with a note | See other organisers' events; publish before Eduplan approves the account and the event |
 | Exhibitor 参展学校 | Sign up, browse published upcoming events with open registration, book booths, withdraw before the deadline | Book twice for one event; book a full, closed or cancelled event; see other schools' bookings |
 | Admin (EXPO_ADMIN_EMAILS) | Approve or reject organisers and submitted events | Sign up as organiser or school |
+| Visitor 参加者 (students, parents, teachers; no account) | Sign up to attend a published event until its date (`#/join/<id>`), bringing up to 10 people; signing up again with the same email updates it | See other visitors; sign up for events in review, cancelled or over |
 
 One account has one role, chosen at sign-up. Sign-in is a 6-digit code by email (no password), as for students.
+
+## Visitors: 报名参加
+
+Every published event shows **报名参加 Register to attend** on the exhibition home page, on its event page and on the
+EDUPLAN home page cards. The form asks for name, email, phone, who they are (student, parent, teacher, other), school
+(optional), number of people (1–10) and the privacy consent. Sign-ups go to the **Attendees** tab of Eduplan Exhibitions
+(made automatically on the first sign-up, or by running **expoSetup**). The event's organiser sees them under
+**参加者名单 Visitors** in the organiser dashboard, with counts and a CSV download; the public pages show only the total
+("已有 N 人报名参加"). A confirmation email is sent when the day's Gmail quota allows (EXPO_MAIL_RESERVE is kept for
+sign-in codes); otherwise the page tells the visitor to keep a screenshot. When an organiser cancels an event, its
+visitors get one email (Bcc). One email can sign up at most 10 times an hour.
 
 ## Rules checked on the server
 

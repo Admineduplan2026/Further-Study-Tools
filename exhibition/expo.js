@@ -1,7 +1,8 @@
 /* Eduplan 教育展 (Exhibition): organisers open education fairs, schools book booths, Eduplan admins approve.
    Talks to the same Apps Script /exec as the main site (EDUPLAN_API_URL in ../assets/js/config.js), actions "expo_*"
    in apps-script/Exhibition.gs. The server checks every rule; the checks here only give quicker messages.
-   Routes: #/  #/login/organiser|exhibitor  #/org  #/org/new  #/org/edit/<id>  #/org/regs/<id>  #/ex  #/ex/apply/<id>  #/ex/my  #/admin */
+   Routes: #/  #/login/organiser|exhibitor  #/org  #/org/new  #/org/edit/<id>  #/org/regs/<id>  #/org/att/<id>  #/ex  #/ex/apply/<id>  #/ex/my  #/admin
+   Visitors (no account): #/e/<id> one event, #/join/<id> sign up to attend it. */
 (function(){
 "use strict";
 var API=window.EXPO_API_URL||window.EDUPLAN_API_URL,TOKEN_KEY="eduplan-expo-token";
@@ -11,6 +12,8 @@ var STATES=["Johor","Kedah","Kelantan","Melaka","Negeri Sembilan","Pahang","Pera
 var TYPES=[["university","大学 University"],["college","学院 College"],["secondary","中学 Secondary school"],["other","其他 Other"]];
 var ROLE={organiser:["主办方后台","Organiser"],exhibitor:["参展学校","Exhibitor"],admin:["Eduplan 管理员","Admin"]};
 var EV_STATUS={draft:"草稿 Draft",pending:"待审核 In review",published:"已发布 Published",rejected:"未获批准 Not approved",closed:"已截止 Closed",cancelled:"已取消 Cancelled"};
+var WHO=[["student","学生 Student"],["parent","家长 Parent"],["teacher","老师 Teacher"],["other","其他 Other"]];
+var VISITOR_KEY="eduplan-expo-visitor";
 var REG_STATUS={pending:"待审核 Pending",accepted:"已接受 Accepted",rejected:"已拒绝 Rejected",withdrawn:"已撤回 Withdrawn",cancelled:"活动已取消 Event cancelled"};
 var ERR={bad_email:"请输入正确的电邮地址。",wait:"验证码刚寄出，请等 1 分钟再试。",too_many:"这个电邮申请验证码太多次，请 6 小时后再试。",
  daily_limit:"今天的电邮额度已用完，请明天再试，或联络 Eduplan。",bad_code:"验证码不对，请再检查一次。",expired:"验证码已过期，请重新获取。",
@@ -23,10 +26,11 @@ var ERR={bad_email:"请输入正确的电邮地址。",wait:"验证码刚寄出�
  not_found:"找不到这个活动或报名。",closed:"报名已截止。",duplicate:"你的学校已经报名这个活动，不能重复报名。",full:"摊位已额满。",
  not_enough_booths:"剩余摊位不够。",bad_booths:"摊位数量必须是 1 或以上的整数。",withdrawn:"学校已撤回这个报名。",bad_status:"这个状态不能再更改。",
  bad_image:"封面图片只接受 JPG、PNG 或 WebP。",image_too_large:"封面图片不能超过 2 MB。",server:"系统出错，请稍后再试。",bad_request:"请求有误。",
- network:"连不上 Eduplan 伺服器，请检查网络后再试。"};
+ network:"连不上 Eduplan 伺服器，请检查网络后再试。",bad_people:"人数必须是 1 到 10 位。",event_over:"这个活动已经结束，不能再报名。",
+ attend_many:"这个电邮报名太多次，请 1 小时后再试。"};
 var FIELD={title:"活动名称",description:"简介",date:"日期",start_time:"开始时间",end_time:"结束时间",venue:"场地名称",address:"地址",city:"城市",state:"州属",
  booth_capacity:"摊位总数",registration_deadline:"报名截止日",booth_fee:"摊位费",org_name:"机构／学校名称",name:"联络人姓名",position:"职位",phone:"电话",
- school_type:"学校类型",website:"学校官网",topics:"展示的科系或主题",booths:"摊位数量"};
+ school_type:"学校类型",website:"学校官网",topics:"展示的科系或主题",booths:"摊位数量",email:"电邮",who:"身份",school:"就读学校",people:"人数"};
 
 function load(){try{return localStorage.getItem(TOKEN_KEY)||"";}catch(e){return "";}}
 function setToken(t){S.token=t||"";try{if(t)localStorage.setItem(TOKEN_KEY,t);else localStorage.removeItem(TOKEN_KEY);}catch(e){}}
@@ -39,7 +43,7 @@ function api(action,data){
   .then(function(r){return r.json();}).catch(function(){return {error:"network"};})
   .then(function(r){r=r||{error:"server"};if(r.error==="signed_out"){setToken("");S.me=null;}return r;});
 }
-function errText(r){var t=ERR[r.error]?ERR[r.error]+(r.detail?"（"+String(r.detail).slice(0,160)+"）":""):ERR.server+"（代码 "+String(r.error||"unknown").slice(0,40)+"）";if(r.fields&&r.fields.length&&r.error==="missing")t+="（"+r.fields.map(function(f){return FIELD[f]||f;}).join("、")+"）";
+function errText(r){var t=ERR[r.error]?ERR[r.error]+(r.detail?"（"+String(r.detail).slice(0,160)+"）":""):ERR.server+"（代码 "+String(r.error||"unknown").slice(0,40)+"）";if(r.fields&&r.fields.length&&r.error==="missing")t+="（"+r.fields.map(function(f){return (r.labels||{})[f]||FIELD[f]||f;}).join("、")+"）";
  if(r.error==="not_enough_booths"&&r.remaining!=null)t+="目前剩 "+r.remaining+" 个。";return t;}
 function rm(n){n=Number(n)||0;return n?"RM "+n.toLocaleString("en-MY",{minimumFractionDigits:n%1?2:0}):"免费 Free";}
 var WD=["日","一","二","三","四","五","六"];
@@ -83,10 +87,11 @@ function render(){
   if(need&&(!me||!me.role)){go("#/login/"+(need==="admin"?"":need));return;}
   if(need&&me.role!==need){S.flash="你登录的是"+ROLE[me.role][0]+"账号，已为你打开对应的页面。";go(home(me.role));return;}
   if(r[0]==="login")return loginView(r[1]||"");
-  if(r[0]==="org")return r[1]==="new"?eventForm(null):r[1]==="edit"?eventForm(r[2]):r[1]==="regs"?regsView(r[2]):orgView();
+  if(r[0]==="org")return r[1]==="new"?eventForm(null):r[1]==="edit"?eventForm(r[2]):r[1]==="regs"?regsView(r[2]):r[1]==="att"?attView(r[2]):orgView();
   if(r[0]==="ex")return r[1]==="apply"?applyView(r[2]):r[1]==="my"?myRegsView():browseView();
   if(r[0]==="admin")return adminView();
   if(r[0]==="e")return eventView(r[1]||"");
+  if(r[0]==="join")return joinView(r[1]||"");
   if(r[0]==="unsub")return unsubView(decodeURIComponent(r[1]||""),r[2]||"");
   homeView();
  });
@@ -101,7 +106,45 @@ function eventView(id){
   if(!e){page('<div class="xempty">找不到这个活动，它可能已经结束或取消。<a href="#/">看看其他教育展 See other exhibitions</a></div>');return;}
   page('<p><a href="#/">← 所有教育展 All exhibitions</a></p><div class="xsolo">'+eventCard(e,{more:(e.description?'<p class="xpre">'+esc(e.description)+'</p>':'')+
    (e.address?'<p class="xmeta">地址 Address：'+esc(e.address)+'</p>':'')+
-   (e.open&&!e.full?'<a class="xbtn sm" href="#/ex/apply/'+esc(e.id)+'">学校报名摊位 Book a booth</a>':'')})+'</div>');});
+   actions(e)})+'</div>');});
+}
+/* The buttons under a public event: visitors sign up to attend; schools book a booth while booths are open. */
+function actions(e){
+ return '<div class="xrow">'+(e.can_attend?'<a class="xbtn sm" href="#/join/'+esc(e.id)+'">报名参加 Register to attend</a>':'')+
+  (e.open&&!e.full?'<a class="xbtn ghost sm" href="#/ex/apply/'+esc(e.id)+'">学校报名摊位 Book a booth</a>':'')+'</div>';
+}
+function loadVisitor(){try{return JSON.parse(localStorage.getItem(VISITOR_KEY)||"null")||{};}catch(e){return {};}}
+function saveVisitor(v){try{localStorage.setItem(VISITOR_KEY,JSON.stringify({name:v.name,email:v.email,phone:v.phone,who:v.who,school:v.school}));}catch(e){}}
+/* Sign up to attend (students, parents, teachers): no account, details go only to the organiser and Eduplan. */
+function joinView(id){
+ var my=seq;loading();
+ api("expo_public").then(function(r){if(done(my))return;
+  if(r.error){page(failed(r));return;}
+  var e=r.events.filter(function(x){return x.id===id;})[0];
+  if(!e||!e.can_attend){page('<div class="xempty">这个活动目前不接受报名，它可能已经结束或取消。<a href="#/">看看其他教育展 See other exhibitions</a></div>');return;}
+  var v=loadVisitor();
+  page('<nav class="xcrumb"><a href="#/">所有教育展</a> › <a href="#/e/'+esc(e.id)+'">'+esc(e.title)+'</a></nav>'+eventCard(e)+
+   '<section class="xform"><span class="xeye">学生 · 家长 · 老师 Visitors</span><h1>报名参加</h1><p class="xlead">免费报名，不需要注册账号。报名后会收到确认电邮（如果当天电邮额度允许）。</p>'+
+   '<form data-form="join" data-id="'+esc(e.id)+'" novalidate>'+
+   field("name","姓名 Full name","text",true,"",v.name,' maxlength="100" autocomplete="name"')+
+   field("email","电邮 Email","email",true,"",v.email,' autocomplete="email"')+
+   field("phone","电话 Phone","tel",true,"例如 012-345 6789",v.phone,' autocomplete="tel"')+
+   '<fieldset class="xf"><legend>身份 I am a *</legend><div class="xchoice">'+WHO.map(function(w){
+    return '<label><input type="radio" name="who" value="'+w[0]+'"'+((v.who||"student")===w[0]?" checked":"")+'> <b>'+esc(w[1])+'</b></label>';}).join("")+'</div></fieldset>'+
+   field("school","就读学校 School（可选）","text",false,"例如 SMJK Chung Ling",v.school,' maxlength="160"')+
+   field("people","人数（包括你自己）People coming, including you","number",true,"",1,' min="1" max="10" step="1" inputmode="numeric"')+
+   '<div class="xprivacy"><b>资料使用说明 How we use your details</b><p>你的姓名、电邮、电话、身份和学校只提供给这个活动的主办方和 Eduplan，用于安排这次活动和联络你，不会公开，也不收身份证号码。用同一个电邮再报名一次，会更新你之前的报名。</p>'+
+   '<label class="xcheck"><input type="checkbox" name="consent" required> 我同意以上资料使用说明 I agree</label></div>'+
+   '<div class="xrow"><button class="xbtn" type="submit">确认报名 Register</button><a class="xbtn ghost" href="#/e/'+esc(e.id)+'">返回 Back</a></div></form></section>');
+ });
+}
+function joinDone(e,r,v){
+ page('<section class="xform narrow"><span class="xeye">报名成功 You are signed up</span><h1>'+(r.updated?"已更新你的报名":"报名成功！")+'</h1>'+
+  '<p class="xlead">'+esc(v.name)+'，你已报名参加「'+esc(e.title)+'」，共 '+esc(v.people)+' 人。</p>'+
+  '<dl class="xdl"><dt>日期</dt><dd>'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</dd><dt>地点</dt><dd>'+esc([e.venue,e.address,e.city].filter(Boolean).join("，"))+'</dd>'+
+  '<dt>报名编号</dt><dd>'+esc(r.id)+'</dd></dl>'+
+  '<p class="xhint">'+(r.emailed?"确认电邮已寄到 "+esc(v.email)+"。":"今天的电邮额度已满，这次不会寄确认电邮。请截图保存这一页。")+'</p>'+
+  '<div class="xrow"><a class="xbtn" href="#/">看看其他教育展 More exhibitions</a></div></section>');
 }
 /* The stop link in new-exhibition emails (Exhibition.gs expoUnsubLink_). */
 function unsubView(email,sig){
@@ -120,7 +163,7 @@ function eventCard(e,opts){
   '<p class="xmeta">📍 '+esc([e.venue,e.city,e.state].filter(Boolean).join("，"))+'</p>'+
   (e.organiser?'<p class="xmeta">主办方 Organiser：'+esc(e.organiser)+'</p>':'')+
   '<p class="xmeta">摊位费 Booth fee：'+esc(rm(e.booth_fee))+' · 报名截止 Deadline：'+day(e.registration_deadline)+'</p>'+
-  '<div class="xpills">'+state+(opts.mine?pill("已报名："+(REG_STATUS[opts.mine]||opts.mine),"brand"):"")+'</div>'+
+  '<div class="xpills">'+state+(e.going?pill("已有 "+e.going+" 人报名参加","brand"):"")+(opts.mine?pill("已报名："+(REG_STATUS[opts.mine]||opts.mine),"brand"):"")+'</div>'+
   (opts.more||"")+'</div></article>';
 }
 function homeView(){
@@ -134,7 +177,7 @@ function homeView(){
   if(done(my))return;var box=document.getElementById("xlist");if(!box)return;
   if(r.error){box.innerHTML=failed(r);return;}
   box.innerHTML=r.events.length?'<div class="xgrid">'+r.events.map(function(e){
-   return eventCard(e,{more:e.open&&!e.full?'<a class="xbtn sm" href="#/ex/apply/'+esc(e.id)+'">学校报名摊位 Book a booth</a>':''});}).join("")+'</div>'
+   return eventCard(e,{more:actions(e)});}).join("")+'</div>'
    :'<div class="xempty">目前还没有即将举行的公开活动。主办方可以<a href="#/login/organiser">登录开办教育展</a>。</div>';
  });
 }
@@ -202,11 +245,11 @@ function orgView(){
     var st=e.status,booked=e.accepted_booths+e.pending_booths;
     return '<article class="xcard row"><div class="xbody"><span class="xdate">'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</span><h3>'+esc(e.title)+'</h3>'+
      '<p class="xmeta">📍 '+esc([e.venue,e.city].join("，"))+'</p><div class="xpills">'+pill(EV_STATUS[st]||st,st==="published"?"ok":st==="cancelled"||st==="rejected"?"bad":"mute")+
-     pill("已报名 "+booked+" / "+e.booth_capacity+" 个摊位","brand")+(e.pending_booths?pill(e.pending_booths+" 个待审核","warn"):"")+'</div>'+
+     pill("已报名 "+booked+" / "+e.booth_capacity+" 个摊位","brand")+(e.going?pill("参加者 "+e.going+" 人","ok"):"")+(e.pending_booths?pill(e.pending_booths+" 个待审核","warn"):"")+'</div>'+
      (st==="rejected"&&e.review_note?'<p class="xnote err sm">Eduplan 备注：'+esc(e.review_note)+'</p>':'')+
      (st==="pending"?'<p class="xmeta">Eduplan 审核通过后，活动会公开给学校报名。</p>':'')+
-     '<div class="xrow">'+(st!=="cancelled"?'<a class="xbtn sm" href="#/org/regs/'+esc(e.id)+'">管理报名 Registrations ('+e.registrations+')</a><a class="xbtn ghost sm" href="#/org/edit/'+esc(e.id)+'">编辑 Edit</a>'+
-      '<button type="button" class="xbtn ghost sm danger" data-act="cancel-event" data-id="'+esc(e.id)+'" data-title="'+esc(e.title)+'">取消活动 Cancel</button>':'<a class="xbtn ghost sm" href="#/org/regs/'+esc(e.id)+'">查看报名 View</a>')+'</div></div></article>';}).join("")+'</div>'
+     '<div class="xrow">'+(st!=="cancelled"?'<a class="xbtn sm" href="#/org/regs/'+esc(e.id)+'">管理报名 Registrations ('+e.registrations+')</a><a class="xbtn ghost sm" href="#/org/att/'+esc(e.id)+'">参加者名单 Visitors ('+(e.visitors||0)+')</a><a class="xbtn ghost sm" href="#/org/edit/'+esc(e.id)+'">编辑 Edit</a>'+
+      '<button type="button" class="xbtn ghost sm danger" data-act="cancel-event" data-id="'+esc(e.id)+'" data-title="'+esc(e.title)+'">取消活动 Cancel</button>':'<a class="xbtn ghost sm" href="#/org/regs/'+esc(e.id)+'">查看报名 View</a><a class="xbtn ghost sm" href="#/org/att/'+esc(e.id)+'">参加者名单 Visitors ('+(e.visitors||0)+')</a>')+'</div></div></article>';}).join("")+'</div>'
     :'<div class="xempty">你还没有开办活动。<a href="#/org/new">开第一个活动</a>。</div>'));
  });
 }
@@ -283,6 +326,34 @@ function regsView(id){
       :(x.organiser_note?'<p class="xmeta">备注：'+esc(x.organiser_note)+'</p>':''))+'</div></article>';}).join("")+'</div>'
     :'<div class="xempty">还没有学校报名。</div>')+'<p><a class="xbtn ghost" href="#/org">返回我的活动 Back</a></p>');
  });
+}
+
+/* The organiser's list of visitors signed up to attend (expo_event_attendees), with a CSV download. */
+var ATT=[];
+function attView(id){
+ var my=seq;loading();
+ api("expo_event_attendees",{event_id:id}).then(function(r){
+  if(done(my))return;if(r.error){page(failed(r)+'<a class="xbtn ghost" href="#/org">返回 Back</a>');return;}
+  var e=r.event,list=r.attendees,people=0;ATT=list;list.forEach(function(a){people+=a.people;});
+  var whoName=function(w){return (WHO.filter(function(x){return x[0]===w;})[0]||["",w])[1];};
+  page('<nav class="xcrumb"><a href="#/org">我的活动</a> › '+esc(e.title)+'</nav><section class="xtop"><div><span class="xeye">主办方后台 · 参加者名单 Visitors</span><h1>'+esc(e.title)+'</h1>'+
+   '<p class="xlead">'+day(e.date)+' · '+esc(e.venue)+'</p></div>'+(list.length?'<button type="button" class="xbtn" data-act="att-csv" data-title="'+esc(e.title)+'">下载 CSV Download</button>':'')+'</section>'+
+   '<div class="xstats"><div><b>'+list.length+'</b><span>报名</span></div><div><b>'+people+'</b><span>总人数</span></div>'+
+   WHO.map(function(w){var n=list.filter(function(a){return a.who===w[0];}).length;return '<div><b>'+n+'</b><span>'+esc(w[1].split(" ")[0])+'</span></div>';}).join("")+'</div>'+
+   '<p class="xhint">参加者的联络资料只给你（这个活动的主办方）用于这次活动，请勿外传。</p>'+
+   (list.length?'<div class="xtable att" tabindex="0" role="region" aria-label="参加者名单"><table><thead><tr><th>#</th><th>姓名</th><th>身份</th><th>学校</th><th>人数</th><th>电话</th><th>电邮</th><th>报名时间</th></tr></thead><tbody>'+
+    list.map(function(a,i){return '<tr><td>'+(i+1)+'</td><td>'+esc(a.name)+'</td><td>'+esc(whoName(a.who))+'</td><td>'+esc(a.school)+'</td><td>'+a.people+'</td>'+
+     '<td><a href="tel:'+esc(a.phone)+'">'+esc(a.phone)+'</a></td><td><a href="mailto:'+esc(a.email)+'">'+esc(a.email)+'</a></td><td>'+esc(String(a.created_at).replace("T"," ").slice(0,16))+'</td></tr>';}).join("")+'</tbody></table></div>'
+    :'<div class="xempty">还没有人报名参加。把活动链接分享给学生和家长：<br><b>'+esc(location.href.split("#")[0]+"#/e/"+e.id)+'</b></div>')+
+   '<p><a class="xbtn ghost" href="#/org">返回我的活动 Back</a></p>');
+ });
+}
+function attCsv(title){
+ var q=function(x){x=String(x==null?"":x);if(/^[=+\-@]/.test(x))x="'"+x;return '"'+x.replace(/"/g,'""')+'"';};
+ var rows=[["No","Name","Who","School","People","Phone","Email","Signed up"]].concat(ATT.map(function(a,i){return [i+1,a.name,a.who,a.school,a.people,a.phone,a.email,a.created_at];}));
+ var blob=new Blob(["\ufeff"+rows.map(function(r){return r.map(q).join(",");}).join("\r\n")],{type:"text/csv;charset=utf-8"});
+ var a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=(title||"visitors").replace(/[\\/:*?"<>|]+/g," ").slice(0,60)+" - visitors.csv";
+ document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove();},500);
 }
 
 /* ---------- Exhibitor ---------- */
@@ -374,6 +445,15 @@ app.addEventListener("submit",function(ev){
  else if(kind==="apply"){var b=Number(v.booths||1);if(!v.topics){busy(f,false);formError(f,{error:"missing",fields:["topics"]});return;}
   p=api("expo_apply",{event_id:f.getAttribute("data-id"),booths:b,topics:v.topics,special_needs:v.special_needs});
   after=function(){S.flash="报名已提交，主办方接受或拒绝后会电邮通知你。";go("#/ex/my");};}
+ else if(kind==="join"){var n=Number(v.people||1),jid=f.getAttribute("data-id");
+  var miss=["name","email","phone","who"].filter(function(k){return !v[k];});
+  if(miss.length){busy(f,false);formError(f,{error:"missing",fields:miss,labels:{name:"姓名"}});return;}
+  if(!(n>=1&&n<=10&&Math.floor(n)===n)){busy(f,false);formError(f,{error:"bad_people",fields:["people"]});return;}
+  if(!v.consent){busy(f,false);formError(f,{error:"consent"});return;}
+  v.people=n;saveVisitor(v);
+  p=api("expo_attend",{event_id:jid,name:v.name,email:v.email,phone:v.phone,who:v.who,school:v.school,people:n,consent:true}).then(function(r){
+   if(r&&r.error==="too_many")r.error="attend_many";if(r&&r.error==="bad_email")r={error:"missing",fields:["email"]};if(r&&r.fields)r.labels={name:"姓名"};return r;});
+  after=function(r){api("expo_public").then(function(x){var e=(x.events||[]).filter(function(y){return y.id===jid;})[0]||{title:"",id:jid};joinDone(e,r,v);window.scrollTo(0,0);});};}
  else if(kind==="admin"){var dd=btn&&btn.getAttribute("data-decision"),k=f.getAttribute("data-kind");
   p=api(k==="user"?"expo_admin_user":"expo_admin_event",k==="user"?{user_id:f.getAttribute("data-id"),decision:dd,note:v.note}:{event_id:f.getAttribute("data-id"),decision:dd,note:v.note});
   after=function(){S.flash=dd==="approved"?"已批准。":"已拒绝。";render();};}
@@ -384,6 +464,7 @@ document.addEventListener("click",function(ev){
  var b=ev.target.closest&&ev.target.closest("[data-act]");if(!b)return;var a=b.getAttribute("data-act");
  if(a==="logout"){api("expo_logout").then(function(){setToken("");S.me=null;S.mine=[];go("#/");});}
  else if(a==="relogin"){S.login.step="email";render();}
+ else if(a==="att-csv"){attCsv(b.getAttribute("data-title"));}
  else if(a==="clear-filter"){F={state:"",city:"",from:"",to:""};render();}
  else if(a==="cancel-event"){if(!confirm("确定取消「"+b.getAttribute("data-title")+"」吗？已报名的学校会收到通知，取消后不能恢复。"))return;
   b.disabled=true;api("expo_event_cancel",{event_id:b.getAttribute("data-id")}).then(function(r){S.mine=[];if(r.error){b.disabled=false;alert(errText(r));return;}S.flash="活动已取消，已报名的学校会收到通知。";render();});}

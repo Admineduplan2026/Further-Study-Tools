@@ -367,12 +367,12 @@ var EXPO_MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov",
 function expoCards(){var ev=(EXPO.events||[]).slice(0,6),u=window.EDUPLAN_EXHIBITION_URL;if(!ev.length||!u)return '';
  return '<div class="xevs">'+ev.map(function(e){var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(e.date||"");if(!m)return '';
   var d=new Date(+m[1],+m[2]-1,+m[3]),mon=EXPO_MON[+m[2]-1];
-  return '<a class="xev" href="'+esc(u+"#/e/"+encodeURIComponent(e.id))+'" target="_blank" rel="noopener">'+
+  return '<a class="xev" href="'+esc(u+(e.can_attend?"#/join/":"#/e/")+encodeURIComponent(e.id))+'" target="_blank" rel="noopener">'+
    '<span class="xevd" aria-hidden="true"><b>'+(+m[3])+'</b><span>'+mon+'</span></span>'+
    '<span class="xevb"><span class="xevk">Education Exhibition</span><b data-notr>'+esc(e.title)+'</b>'+
    '<span>📅 '+EXPO_WD[d.getDay()]+', '+(+m[3])+' '+mon+' '+m[1]+'</span><span data-notr>🕘 '+esc(e.start_time)+'–'+esc(e.end_time)+'</span>'+
    '<span data-notr>📍 '+esc([e.venue,e.city,e.state].filter(Boolean).join(", "))+'</span>'+
-   (e.organiser?'<span data-notr>🎪 '+esc(e.organiser)+'</span>':'')+'</span><span class="actgo" aria-hidden="true">→</span></a>';}).join("")+'</div>';}
+   (e.organiser?'<span data-notr>🎪 '+esc(e.organiser)+'</span>':'')+(e.can_attend?'<span class="xevj">Register to attend</span>':'')+'</span><span class="actgo" aria-hidden="true">→</span></a>';}).join("")+'</div>';}
 function recommended(){
  loadExpo();
  var picks=quizResult(),ints=myInts(),q=S.search,scored=D.progs.map(function(p){var sc=0,why="";
