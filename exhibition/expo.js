@@ -107,12 +107,37 @@ function eventView(id){
   if(!e){page('<div class="xempty">找不到这个活动，它可能已经结束或取消。<a href="#/">看看其他教育展 See other exhibitions</a></div>');return;}
   page('<p><a href="#/">← 所有教育展 All exhibitions</a></p><div class="xsolo">'+eventCard(e,{more:(e.description?'<p class="xpre">'+esc(e.description)+'</p>':'')+
    (e.address?'<p class="xmeta">地址 Address：'+esc(e.address)+'</p>':'')+
-   actions(e)})+'</div>');});
+   actions(e,true)})+'</div>');});
 }
 /* The button under a public event: visitors sign up for a seat while seats are left and sign-up is open. */
-function actions(e){
+function actions(e,open){
  return '<div class="xrow">'+(e.can_attend?'<a class="xbtn sm" href="#/join/'+esc(e.id)+'">报名参加 Register to attend</a>':
-  e.status==="published"&&e.full?'<button class="xbtn sm" type="button" disabled>名额已满 Full</button>':'')+'</div>';
+  e.status==="published"&&e.full?'<button class="xbtn sm" type="button" disabled>名额已满 Full</button>':'')+
+  (open?'':'<button type="button" class="xbtn ghost sm" data-act="toggle-share" aria-expanded="false">分享 Share</button>')+'</div>'+shareBox(e,open);
+}
+/* Share an event: the public event page link (#/e/<id>) to WhatsApp, Facebook, Telegram, X or email, the phone's own
+   share menu where there is one, or copy the link. */
+function shareUrl(e){return location.href.split("#")[0]+"#/e/"+encodeURIComponent(e.id);}
+function shareText(e){
+ var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(e.date||""),d=m?(+m[3])+"/"+(+m[2])+"/"+m[1]:e.date;
+ return e.title+"\n📅 "+d+" "+(e.start_time||"")+"–"+(e.end_time||"")+"\n📍 "+[e.venue,e.city].filter(Boolean).join(", ")+
+  (e.can_attend?"\n🎟 限量名额，免费报名 Limited seats, free sign-up":"");
+}
+function shareBox(e,open){
+ var u=shareUrl(e),t=shareText(e),q=encodeURIComponent;
+ var links=[["WhatsApp","https://wa.me/?text="+q(t+"\n"+u),"wa"],["Facebook","https://www.facebook.com/sharer/sharer.php?u="+q(u),"fb"],
+  ["Telegram","https://t.me/share/url?url="+q(u)+"&text="+q(t),"tg"],["X","https://twitter.com/intent/tweet?text="+q(t)+"&url="+q(u),"x"],
+  ["电邮 Email","mailto:?subject="+q(e.title)+"&body="+q(t+"\n\n"+u),"em"]];
+ return '<div class="xshare"'+(open?'':' hidden')+'><span class="xshare-k">分享这个活动 Share</span><div class="xshare-row">'+
+  links.map(function(l){return '<a class="xsh '+l[2]+'" href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+'</a>';}).join("")+
+  '<button type="button" class="xsh cp" data-act="copy-link" data-url="'+esc(u)+'">复制链接 Copy link</button>'+
+  (navigator.share?'<button type="button" class="xsh more" data-act="native-share" data-url="'+esc(u)+'" data-title="'+esc(e.title)+'" data-text="'+esc(t)+'">更多 More…</button>':'')+
+  '</div></div>';
+}
+function copyText(text){
+ if(navigator.clipboard&&window.isSecureContext)return navigator.clipboard.writeText(text);
+ return new Promise(function(ok,no){var ta=document.createElement("textarea");ta.value=text;ta.setAttribute("readonly","");ta.style.position="fixed";ta.style.opacity="0";
+  document.body.appendChild(ta);ta.select();try{document.execCommand("copy")?ok():no();}catch(err){no();}ta.remove();});
 }
 function loadVisitor(){try{return JSON.parse(localStorage.getItem(VISITOR_KEY)||"null")||{};}catch(e){return {};}}
 function saveVisitor(v){try{localStorage.setItem(VISITOR_KEY,JSON.stringify({name:v.name,email:v.email,phone:v.phone,who:v.who,school:v.school}));}catch(e){}}
@@ -146,6 +171,7 @@ function joinDone(e,r,v){
   '<dl class="xdl"><dt>日期</dt><dd>'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</dd><dt>地点</dt><dd>'+esc([e.venue,e.address,e.city].filter(Boolean).join("，"))+'</dd>'+
   '<dt>报名编号</dt><dd>'+esc(r.id)+'</dd></dl>'+
   '<p class="xhint">'+(r.emailed?"确认电邮已寄到 "+esc(v.email)+"。":"今天的电邮额度已满，这次不会寄确认电邮。请截图保存这一页。")+'</p>'+
+  (e.id&&e.title?'<p class="xmeta">邀请朋友一起来：</p>'+shareBox(e,true):'')+
   '<div class="xrow"><a class="xbtn" href="#/">看看其他教育展 More exhibitions</a></div></section>');
 }
 /* The stop link in new-exhibition emails (Exhibition.gs expoUnsubLink_). */
@@ -248,8 +274,8 @@ function orgView(){
      '<p class="xmeta">📍 '+esc([e.venue,e.city].join("，"))+'</p><div class="xpills">'+pill(EV_STATUS[st]||st,st==="published"?"ok":st==="cancelled"||st==="rejected"?"bad":"mute")+
      pill("已报名 "+(e.going||0)+" / "+e.seats+" 个名额","brand")+(e.full?pill("名额已满","bad"):"")+'</div>'+
      (st==="rejected"&&e.review_note?'<p class="xnote err sm">Eduplan 备注：'+esc(e.review_note)+'</p>':'')+
-     (st==="pending"?'<p class="xmeta">Eduplan 审核通过后，活动会公开让学生和家长报名。</p>':'')+
-     '<div class="xrow">'+(st!=="cancelled"?'<a class="xbtn sm" href="#/org/att/'+esc(e.id)+'">报名名单 Sign-ups ('+(e.visitors||0)+')</a><a class="xbtn ghost sm" href="#/org/edit/'+esc(e.id)+'">编辑 Edit</a>'+
+     (st==="pending"?'<p class="xmeta">Eduplan 审核通过后，活动会公开让学生和家长报名。</p>':'')+(st==="published"?shareBox(e,false):'')+
+     '<div class="xrow">'+(st!=="cancelled"?'<a class="xbtn sm" href="#/org/att/'+esc(e.id)+'">报名名单 Sign-ups ('+(e.visitors||0)+')</a>'+(st==="published"?'<button type="button" class="xbtn ghost sm" data-act="toggle-share" aria-expanded="false">分享 Share</button>':'')+'<a class="xbtn ghost sm" href="#/org/edit/'+esc(e.id)+'">编辑 Edit</a>'+
       '<button type="button" class="xbtn ghost sm danger" data-act="cancel-event" data-id="'+esc(e.id)+'" data-title="'+esc(e.title)+'">取消活动 Cancel</button>':'<a class="xbtn ghost sm" href="#/org/att/'+esc(e.id)+'">报名名单 Sign-ups ('+(e.visitors||0)+')</a>')+'</div></div></article>';}).join("")+'</div>'
     :'<div class="xempty">你还没有开办活动。<a href="#/org/new">开第一个活动</a>。</div>'));
  });
@@ -464,6 +490,11 @@ document.addEventListener("click",function(ev){
  if(a==="logout"){api("expo_logout").then(function(){setToken("");S.me=null;S.mine=[];go("#/");});}
  else if(a==="relogin"){S.login.step="email";render();}
  else if(a==="att-csv"){attCsv(b.getAttribute("data-title"));}
+ else if(a==="toggle-share"){var box=b.closest(".xbody").querySelector(".xshare");if(box){box.hidden=!box.hidden;b.setAttribute("aria-expanded",String(!box.hidden));}}
+ else if(a==="copy-link"){var url=b.getAttribute("data-url"),was=b.textContent;
+  copyText(url).then(function(){b.textContent="已复制 Copied ✓";},function(){window.prompt("复制这个链接 Copy this link:",url);})
+   .then(function(){setTimeout(function(){b.textContent=was;},2000);});}
+ else if(a==="native-share"){navigator.share({title:b.getAttribute("data-title"),text:b.getAttribute("data-text"),url:b.getAttribute("data-url")}).catch(function(){});}
  else if(a==="clear-filter"){F={state:"",city:"",from:"",to:""};render();}
  else if(a==="cancel-event"){if(!confirm("确定取消「"+b.getAttribute("data-title")+"」吗？已报名的人会收到通知，取消后不能恢复。"))return;
   b.disabled=true;api("expo_event_cancel",{event_id:b.getAttribute("data-id")}).then(function(r){S.mine=[];if(r.error){b.disabled=false;alert(errText(r));return;}S.flash="活动已取消，已报名的人会收到通知。";render();});}

@@ -152,3 +152,16 @@ main{display:block;outline:none}
 .xfoot{max-width:1080px;margin:0 auto;padding:20px 16px 40px;color:var(--muted);font-size:13px;display:flex;flex-direction:column;gap:6px}
 @media (max-width:480px){.xrole span,.xbrand small{display:none}.xbrand img{height:30px}}
 .xsolo .xcover{max-height:220px}
+
+/* Share an event */
+.xshare{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line)}
+.xshare[hidden]{display:none}
+.xshare-k{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:8px}
+.xshare-row{display:flex;flex-wrap:wrap;gap:8px}
+.xsh{display:inline-flex;align-items:center;min-height:36px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--ink);font:inherit;font-size:13.5px;font-weight:500;text-decoration:none;cursor:pointer}
+.xsh:hover{border-color:var(--brand)}
+.xsh.wa{background:#25d366;border-color:#25d366;color:#fff}
+.xsh.fb{background:#1877f2;border-color:#1877f2;color:#fff}
+.xsh.tg{background:#229ed9;border-color:#229ed9;color:#fff}
+.xsh.x{background:#0f1419;border-color:#0f1419;color:#fff}
+.xsh.cp{background:var(--brand-soft);border-color:var(--brand-soft);color:var(--brand-ink)}
