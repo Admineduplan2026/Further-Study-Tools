@@ -1,4 +1,4 @@
-/* Eduplan 教育展 (Exhibition): organisers open education talks and fairs with limited talk seats for visitors and,
+/* EDUPLAN 活动 (Exhibition): organisers open education talks and fairs with limited talk seats for visitors and,
    when they choose, booths for schools (exhibitors). Visitors sign up for a seat, schools book booths, Eduplan admins approve.
    Talks to the same Apps Script /exec as the main site (EDUPLAN_API_URL in ../assets/js/config.js), actions "expo_*"
    in apps-script/Exhibition.gs. The server checks every rule; the checks here only give quicker messages.
@@ -83,7 +83,7 @@ function header(){
  document.body.className=role?"as-"+role:"";
  var links=role==="organiser"?[["#/org","我的活动 My events"],["#/org/new","开新活动 New event"]]:
   role==="exhibitor"?[["#/ex","浏览活动 Events"],["#/ex/my","我的报名 My bookings"]]:role==="admin"?[["#/admin","审核 Review"]]:[];
- head.innerHTML='<div class="xbar"><a class="xbrand" href="#/"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN"><span><b>Eduplan 教育展</b>'+T("<small>Education Exhibition</small>","")+'</span></a>'+
+ head.innerHTML='<div class="xbar"><a class="xbrand" href="#/"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN"><span><b>EDUPLAN 活动</b>'+T("<small>EDUPLAN Activity</small>","")+'</span></a>'+
   roleBadge(role)+'<span class="xsp"></span>'+
   '<button type="button" class="xlang" data-notr data-act="lang" aria-label="'+T("Switch to English","切换到中文")+'" lang="'+T("en","zh")+'">'+T("EN","中文")+'</button>'+
   (me?'<button type="button" class="xbtn ghost sm" data-act="logout">'+T("登出","Sign out")+'</button>':'<a class="xbtn ghost sm" href="#/login" title="主办方或参展学校登录 Organiser or exhibitor sign in">'+T("登录","Sign in")+'</a>')+
@@ -129,8 +129,8 @@ function eventView(id){
  api("expo_public").then(function(r){if(done(my))return;
   if(r.error){page(failed(r));return;}
   var e=r.events.filter(function(x){return x.id===id;})[0];
-  if(!e){page('<div class="xempty">找不到这个活动，它可能已经结束或取消。<a href="#/">看看其他教育展 See other exhibitions</a></div>');return;}
-  page('<p><a href="#/">← 所有教育展 All exhibitions</a></p><div class="xsolo">'+eventCard(e,{more:(evD(e)?'<p class="xpre">'+esc(evD(e))+'</p>':'')+
+  if(!e){page('<div class="xempty">找不到这个活动，它可能已经结束或取消。<a href="#/">看看其他活动 See other activities</a></div>');return;}
+  page('<p><a href="#/">← 所有活动 All activities</a></p><div class="xsolo">'+eventCard(e,{more:(evD(e)?'<p class="xpre">'+esc(evD(e))+'</p>':'')+
    (e.address?'<p class="xmeta">'+T("地址：","Address: ")+esc(e.address)+'</p>':'')+
    actions(e,true)})+'</div>');});
 }
@@ -175,9 +175,9 @@ function joinView(id){
  api("expo_public").then(function(r){if(done(my))return;
   if(r.error){page(failed(r));return;}
   var e=r.events.filter(function(x){return x.id===id;})[0];
-  if(!e||!e.can_attend){page('<div class="xempty">'+(e&&e.full?"这个活动的名额已满。":"这个活动目前不接受报名，它可能已经截止、结束或取消。")+'<a href="#/">看看其他教育展 See other exhibitions</a></div>');return;}
+  if(!e||!e.can_attend){page('<div class="xempty">'+(e&&e.full?"这个活动的名额已满。":"这个活动目前不接受报名，它可能已经截止、结束或取消。")+'<a href="#/">看看其他活动 See other activities</a></div>');return;}
   var v=loadVisitor();
-  page('<nav class="xcrumb"><a href="#/">所有教育展</a> › <a href="#/e/'+esc(e.id)+'">'+esc(evT(e))+'</a></nav>'+eventCard(e)+
+  page('<nav class="xcrumb"><a href="#/">所有活动</a> › <a href="#/e/'+esc(e.id)+'">'+esc(evT(e))+'</a></nav>'+eventCard(e)+
    '<section class="xform"><span class="xeye">学生 · 家长 · 老师 Visitors</span><h1>报名参加</h1><p class="xlead">免费报名，不需要注册账号。报名后会收到确认电邮（如果当天电邮额度允许）。</p>'+
    '<form data-form="join" data-id="'+esc(e.id)+'" novalidate>'+
    field("name","姓名 Full name","text",true,"",v.name,' maxlength="100" autocomplete="name"')+
@@ -200,7 +200,7 @@ function joinDone(e,r,v){
   '<dt>报名编号</dt><dd>'+esc(r.id)+'</dd></dl>'+
   '<p class="xhint">'+(r.emailed?T("确认电邮已寄到 "+esc(v.email)+"。","A confirmation email has been sent to "+esc(v.email)+"."):T("今天的电邮额度已满，这次不会寄确认电邮。请截图保存这一页。","Today's email limit is reached, so no confirmation email this time. Please take a screenshot of this page."))+'</p>'+
   (e.id&&e.title?'<p class="xmeta">邀请朋友一起来：</p>'+shareBox(e,true):'')+
-  '<div class="xrow"><a class="xbtn" href="#/">看看其他教育展 More exhibitions</a></div></section>');
+  '<div class="xrow"><a class="xbtn" href="#/">看看其他活动 More activities</a></div></section>');
 }
 /* The stop link in new-exhibition emails (Exhibition.gs expoUnsubLink_). */
 function unsubView(email,sig){
@@ -227,11 +227,11 @@ function eventCard(e,opts){
 }
 function homeView(){
  var my=seq,me=S.me;
- page('<section class="xhero"><span class="xeye">Eduplan 教育展 · Education Exhibition</span><h1>升学讲座和教育展，名额有限，快来报名</h1>'+
+ page('<section class="xhero"><span class="xeye">EDUPLAN 活动 · EDUPLAN Activity</span><h1>升学讲座和教育展，名额有限，快来报名</h1>'+
   '<p class="xlead">升学讲座和教育展，名额有限，学生、家长和老师免费报名。主办方（教育者、协会、学校）开办活动，大学和学院可以报名摊位。所有新主办方和活动都先经 Eduplan 审核，避免假活动。</p>'+
   '<div class="xroles"><a class="xrolecard r-organiser" href="'+(me&&me.role==="organiser"?"#/org":"#/login/organiser")+'"><span class="xri" aria-hidden="true">🎪</span><b>我是主办方</b>'+T('<span>Organiser</span>','')+'<small>开办讲座或教育展、查看报名名单</small></a>'+
-  '<a class="xrolecard r-exhibitor" href="'+(me&&me.role==="exhibitor"?"#/ex":"#/login/exhibitor")+'"><span class="xri" aria-hidden="true">🏫</span><b>我是参展学校</b>'+T('<span>Exhibitor</span>','')+'<small>浏览教育展、报名摊位</small></a></div></section>'+
-  '<section class="xsec"><h2>'+T('即将举行的教育展 <span>Upcoming exhibitions</span>','Upcoming exhibitions')+'</h2><div id="xlist"><div class="xload" role="status"><i aria-hidden="true"></i>载入中…</div></div></section>');
+  '<a class="xrolecard r-exhibitor" href="'+(me&&me.role==="exhibitor"?"#/ex":"#/login/exhibitor")+'"><span class="xri" aria-hidden="true">🏫</span><b>我是参展学校</b>'+T('<span>Exhibitor</span>','')+'<small>浏览活动、报名摊位</small></a></div></section>'+
+  '<section class="xsec"><h2>'+T('即将举行的活动 <span>Upcoming activities</span>','Upcoming activities')+'</h2><div id="xlist"><div class="xload" role="status"><i aria-hidden="true"></i>载入中…</div></div></section>');
  api("expo_public").then(function(r){
   if(done(my))return;var box=document.getElementById("xlist");if(!box)return;
   if(r.error){box.innerHTML=failed(r);return;}
@@ -463,7 +463,7 @@ function attCsv(title){
 var F={state:"",city:"",from:"",to:""};
 function browseView(){
  var my=seq;
- page('<section class="xtop"><div><span class="xeye">参展学校 Exhibitor</span><h1>浏览教育展</h1><p class="xlead">只显示已发布、还没举行、报名还没截止的活动。</p></div></section>'+
+ page('<section class="xtop"><div><span class="xeye">参展学校 Exhibitor</span><h1>浏览活动</h1><p class="xlead">只显示已发布、还没举行、报名还没截止的活动。</p></div></section>'+
   '<form class="xfilters" data-form="filter"><label class="xf"><span>州属 State</span><select name="state"><option value="">全部 All</option>'+STATES.map(function(s){return '<option'+(F.state===s?" selected":"")+'>'+esc(s)+'</option>';}).join("")+'</select></label>'+
   field("city","城市 City","text",false,"例如 Kuala Lumpur",F.city)+field("from","从 From","date",false,"",F.from)+field("to","到 To","date",false,"",F.to)+
   '<div class="xrow"><button class="xbtn sm" type="submit">筛选 Filter</button><button class="xbtn ghost sm" type="button" data-act="clear-filter">清除 Clear</button></div></form><div id="xlist"><div class="xload" role="status"><i aria-hidden="true"></i>载入中…</div></div>');
@@ -546,7 +546,7 @@ app.addEventListener("submit",function(ev){
  else if(kind==="code"){S.login.email=v.email;p=api("expo_code",{email:v.email});after=function(){S.login.step="code";render();};}
  else if(kind==="verify"){p=api("expo_verify",{email:S.login.email,code:v.code});after=function(r){setToken(r.token);S.me=r.me;S.checked=true;S.login.step="email";
   if(r.me.role){S.flash="已登录 Signed in。";go(home(r.me.role));}else render();};}
- else if(kind==="register"){S.login.role=v.role;p=api("expo_register",v);after=function(r){S.me=r.me;S.flash=r.me.role==="organiser"?"注册成功！你的主办方账号正在等待 Eduplan 审核，审核通过前可以先保存草稿。":"注册成功！现在可以浏览教育展并报名摊位。";go(home(r.me.role));};}
+ else if(kind==="register"){S.login.role=v.role;p=api("expo_register",v);after=function(r){S.me=r.me;S.flash=r.me.role==="organiser"?"注册成功！你的主办方账号正在等待 Eduplan 审核，审核通过前可以先保存草稿。":"注册成功！现在可以浏览活动并报名摊位。";go(home(r.me.role));};}
  else if(kind==="event"){
   var submit=btn&&btn.getAttribute("data-submit")==="1",chk=checkEvent(v);
   if(chk){busy(f,false);formError(f,chk);return;}
@@ -597,7 +597,7 @@ document.addEventListener("click",function(ev){
 window.addEventListener("hashchange",function(){render();window.scrollTo(0,0);app.focus({preventScroll:true});});
 /* Translate fixed texts (EXPO_I18N in expo-i18n.js) whenever the page draws something new, and on the footer. */
 function setLang(l){LANG=l;try{localStorage.setItem("eduplan-lang",l);}catch(e){}applyLang(document.body);render();}
-function applyLang(root){document.documentElement.lang=LANG==="en"?"en":"zh-Hans";document.title=T("Eduplan 教育展","Eduplan Education Exhibition");if(window.EXPO_TR)window.EXPO_TR(root,LANG);}
+function applyLang(root){document.documentElement.lang=LANG==="en"?"en":"zh-Hans";document.title=T("EDUPLAN 活动","EDUPLAN Activity");if(window.EXPO_TR)window.EXPO_TR(root,LANG);}
 if(window.MutationObserver)new MutationObserver(function(list){list.forEach(function(m){m.addedNodes.forEach(function(n){if(window.EXPO_TR)window.EXPO_TR(n,LANG);});});})
  .observe(document.body,{childList:true,subtree:true});
 applyLang(document.body);

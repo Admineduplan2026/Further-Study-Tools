@@ -1,4 +1,4 @@
-/* Eduplan 教育展: English / 中文 for the fixed texts of exhibition/expo.js (made from the texts the pages show).
+/* EDUPLAN 活动: English / 中文 for the fixed texts of exhibition/expo.js (made from the texts the pages show).
    EXPO_I18N maps a text as written in expo.js (often "中文 English") to [中文, English]. Texts built from data are
    translated in expo.js itself with T(zh, en). A field label's " *" is kept. */
 window.EXPO_I18N={
@@ -10,6 +10,18 @@ window.EXPO_I18N={
 "0 = 免费",
 "0 = free"
 ],
+"EDUPLAN 活动": [
+"EDUPLAN 活动",
+"EDUPLAN Activity"
+],
+"EDUPLAN 活动 · EDUPLAN Activity": [
+"EDUPLAN 活动",
+"EDUPLAN Activity"
+],
+"EDUPLAN 活动由 EDUPLAN 营运。报名资料只提供给该活动的主办方和 EDUPLAN，不会公开。": [
+"EDUPLAN 活动由 EDUPLAN 营运。报名资料只提供给该活动的主办方和 EDUPLAN，不会公开。",
+"EDUPLAN Activity is run by EDUPLAN. Sign-up details go only to the event's organiser and EDUPLAN and are never public."
+],
 "Eduplan 备注：": [
 "Eduplan 备注：",
 "Eduplan's note:"
@@ -17,18 +29,6 @@ window.EXPO_I18N={
 "Eduplan 审核通过后，活动会公开让学生和家长报名。": [
 "Eduplan 审核通过后，活动会公开让学生和家长报名。",
 "Once Eduplan approves it, the event goes public for students and parents to sign up."
-],
-"Eduplan 教育展": [
-"Eduplan 教育展",
-"Eduplan Exhibition"
-],
-"Eduplan 教育展 · Education Exhibition": [
-"Eduplan 教育展",
-"Eduplan Education Exhibition"
-],
-"Eduplan 教育展由 EDUPLAN 营运。报名资料只提供给该活动的主办方和 EDUPLAN，不会公开。": [
-"Eduplan 教育展由 EDUPLAN 营运。报名资料只提供给该活动的主办方和 EDUPLAN，不会公开。",
-"Eduplan Exhibition is run by EDUPLAN. Sign-up details go only to the event's organiser and EDUPLAN and are never public."
 ],
 "Eduplan 管理员": [
 "Eduplan 管理员",
@@ -46,9 +46,9 @@ window.EXPO_I18N={
 "Google 登录还没开通，请用电邮和密码登录。",
 "Google sign-in is not set up yet. Please use your email and password."
 ],
-"← 所有教育展 All exhibitions": [
-"← 所有教育展",
-"← All exhibitions"
+"← 所有活动 All activities": [
+"← 所有活动",
+"← All activities"
 ],
 "下载 CSV Download": [
 "下载",
@@ -262,9 +262,9 @@ window.EXPO_I18N={
 "升学讲座和教育展，名额有限，快来报名",
 "Education talks and fairs — limited seats, sign up now"
 ],
-"即将举行的教育展": [
-"即将举行的教育展",
-"Upcoming exhibitions"
+"即将举行的活动": [
+"即将举行的活动",
+"Upcoming activities"
 ],
 "原因：": [
 "原因：",
@@ -746,9 +746,9 @@ window.EXPO_I18N={
 "所有主办方",
 "All organisers"
 ],
-"所有教育展": [
-"所有教育展",
-"All exhibitions"
+"所有活动": [
+"所有活动",
+"All activities"
 ],
 "批准 Approve": [
 "批准",
@@ -962,8 +962,8 @@ window.EXPO_I18N={
 "注册成功！你的主办方账号正在等待 Eduplan 审核，审核通过前可以先保存草稿。",
 "Signed up! Your organiser account is waiting for Eduplan's review; until then you can save drafts."
 ],
-"注册成功！现在可以浏览教育展并报名摊位。": [
-"注册成功！现在可以浏览教育展并报名摊位。",
+"注册成功！现在可以浏览活动并报名摊位。": [
+"注册成功！现在可以浏览活动并报名摊位。",
 "Signed up! You can now browse exhibitions and book booths."
 ],
 "活动": [
@@ -1006,14 +1006,6 @@ window.EXPO_I18N={
 "浏览其他活动",
 "Back"
 ],
-"浏览教育展": [
-"浏览教育展",
-"Browse exhibitions"
-],
-"浏览教育展、报名摊位": [
-"浏览教育展、报名摊位",
-"Browse fairs and book booths"
-],
 "浏览活动": [
 "浏览活动",
 "Browse events"
@@ -1021,6 +1013,10 @@ window.EXPO_I18N={
 "浏览活动 Events": [
 "浏览活动",
 "Events"
+],
+"浏览活动、报名摊位": [
+"浏览活动、报名摊位",
+"Browse fairs and book booths"
 ],
 "清除 Clear": [
 "清除",
@@ -1094,13 +1090,13 @@ window.EXPO_I18N={
 "目前还没有即将举行的公开活动。主办方可以",
 "No upcoming public events yet. Organisers can"
 ],
-"看看其他教育展 More exhibitions": [
-"看看其他教育展",
-"More exhibitions"
+"看看其他活动 More activities": [
+"看看其他活动",
+"More activities"
 ],
-"看看其他教育展 See other exhibitions": [
-"看看其他教育展",
-"See other exhibitions"
+"看看其他活动 See other activities": [
+"看看其他活动",
+"See other activities"
 ],
 "确认报名 Register": [
 "确认报名",

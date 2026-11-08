@@ -1,4 +1,4 @@
-/* Eduplan 教育展 styles. Same colours and font as the main site (lab/lab.css); each role has its own accent so
+/* EDUPLAN 活动 styles. Same colours and font as the main site (lab/lab.css); each role has its own accent so
    organisers (purple, 主办方后台) and schools (green, 参展学校) can tell their pages apart at a glance. Mobile first. */
 :root{
   --bg:#f4f7fa; --card:#ffffff; --ink:#0f1a24; --muted:#56636f; --line:#dfe6ec; --soft:#eef3f7;
@@ -27,7 +27,7 @@ img{max-width:100%}
 .skip{position:absolute;left:-9999px}
 .skip:focus{left:12px;top:12px;z-index:30;background:#fff;padding:8px 12px;border-radius:8px}
 
-/* Header: white bar with the "Eduplan 教育展" name, the role badge, and a coloured nav per role. */
+/* Header: white bar with the "EDUPLAN 活动" name, the role badge, and a coloured nav per role. */
 .xhead{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line)}
 .xbar{position:relative;display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;max-width:1080px;margin:0 auto;padding:10px 16px}
 .xbrand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);min-width:0}

@@ -369,7 +369,7 @@ function expoCards(){var ev=(EXPO.events||[]).slice(0,6),u=window.EDUPLAN_EXHIBI
   var d=new Date(+m[1],+m[2]-1,+m[3]),mon=EXPO_MON[+m[2]-1];
   return '<a class="xev" href="'+esc(u+(e.can_attend?"#/join/":"#/e/")+encodeURIComponent(e.id))+'" target="_blank" rel="noopener">'+
    '<span class="xevd" aria-hidden="true"><b>'+(+m[3])+'</b><span>'+mon+'</span></span>'+
-   '<span class="xevb"><span class="xevk">Education Exhibition</span><b data-notr>'+(e.title_en&&e.title_zh&&e.title_en!==e.title_zh?'<span class="l-zh">'+esc(e.title_zh)+'</span><span class="l-en">'+esc(e.title_en)+'</span>':esc(e.title))+'</b>'+
+   '<span class="xevb"><span class="xevk">EDUPLAN Activity</span><b data-notr>'+(e.title_en&&e.title_zh&&e.title_en!==e.title_zh?'<span class="l-zh">'+esc(e.title_zh)+'</span><span class="l-en">'+esc(e.title_en)+'</span>':esc(e.title))+'</b>'+
    '<span>📅 '+EXPO_WD[d.getDay()]+', '+(+m[3])+' '+mon+' '+m[1]+'</span><span data-notr>🕘 '+esc(e.start_time)+'–'+esc(e.end_time)+'</span>'+
    '<span data-notr>📍 '+esc([e.venue,e.city,e.state].filter(Boolean).join(", "))+'</span>'+
    (e.organiser?'<span data-notr>🎪 '+esc(e.organiser)+'</span>':'')+(e.seats?'<span data-notr>🎟 '+(e.full?'名额已满 · Full':'剩余 '+e.remaining+' 个名额 · '+e.remaining+' seats left')+'</span>':'')+(e.can_attend?'<span class="xevj">Register to attend</span>':'')+'</span><span class="actgo" aria-hidden="true">→</span></a>';}).join("")+'</div>';}
@@ -427,7 +427,7 @@ function home(){if(locked())return hero()+'<div class="page">'+continueRow()+pop
 /* Eduplan 教育展 and other activities beyond the study search: the address and the cards come from assets/js/config.js
    (EDUPLAN_EXHIBITION_URL, EDUPLAN_ACTIVITIES), so a new address or a new activity is a change there only. They open in
    a new tab: each activity is its own website. */
-function expoLink(cls){var u=window.EDUPLAN_EXHIBITION_URL;return u?'<a class="xpo '+cls+'" href="'+esc(u)+'" target="_blank" rel="noopener">About Exhibition <span aria-hidden="true">→</span></a>':'';}
+function expoLink(cls){var u=window.EDUPLAN_EXHIBITION_URL;return u?'<a class="xpo '+cls+'" href="'+esc(u)+'" target="_blank" rel="noopener">EDUPLAN Activity <span aria-hidden="true">→</span></a>':'';}
 function activities(){var a=(window.EDUPLAN_ACTIVITIES||[]).filter(function(x){return x&&x.url;});if(!a.length)return '';
  return '<section class="sec"><div class="sh"><h2>Other Activities</h2></div><div class="acts">'+a.map(function(x){
   return '<a class="act" href="'+esc(x.url)+'" target="_blank" rel="noopener" data-act-id="'+esc(x.id||"")+'"><span class="acti" aria-hidden="true">'+esc(x.icon||"✨")+'</span>'+
@@ -726,7 +726,7 @@ function staffView(){var se=ls("eduplan-session"),site=window.EDUPLAN_SITE_URL||
  var body=STAFF.links?STAFF.links.groups.map(function(g){return group(g.key,g.items);}).join(""):
   STAFF.err?'<div class="empty">'+(STAFF.err==="forbidden"?'This email is not on the staff list.':STAFF.err==="signed_out"?'Please sign in again.':'The staff links could not be loaded. Please try again.')+'</div>':
   '<div class="lnote" role="status">Loading the staff links…</div>';
- var web=[{key:"w-site",url:site,t:["EDUPLAN website","The student website","🌐"]},{key:"w-expo",url:ex,t:["Exhibition website","For organisers and schools","🎪"]},
+ var web=[{key:"w-site",url:site,t:["EDUPLAN website","The student website","🌐"]},{key:"w-expo",url:ex,t:["EDUPLAN Activity website","For organisers and schools","🎪"]},
   {key:"w-manual",url:"https://github.com/Admineduplan2026/Further-Study-Tools/tree/claude/website-eduplan-artifacts-mb4z44/docs",t:["Guides","How each part of EDUPLAN works","📘"]}]
   .filter(function(x){return x.url;}).map(function(x){STAFF_TEXT[x.key]=x.t;return {key:x.key,url:x.url};});
  return head+'<div class="page">'+goalsBox()+body+group("web",web)+'</div>';}

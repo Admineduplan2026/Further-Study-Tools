@@ -16,7 +16,7 @@ window.EDUPLAN_EXHIBITION_URL=window.EDUPLAN_SITE_URL+"exhibition/";
 /* EDUPLAN_ACTIVITIES: the cards of the home page's "Other Activities" section, in order. To add an activity, add one
    entry: icon, title and text in English (the Chinese is in lab/lab-zh.js), and the link. */
 window.EDUPLAN_ACTIVITIES=[
- {id:"exhibition",icon:"🎪",title:"Education Exhibition",text:"Organisers open education fairs; schools book booths online.",url:window.EDUPLAN_EXHIBITION_URL}
+ {id:"exhibition",icon:"🎪",title:"EDUPLAN Activity",text:"Organisers open education fairs; schools book booths online.",url:window.EDUPLAN_EXHIBITION_URL}
 ];
 /* EDUPLAN_NO_DEMO: leaves the demo schools (institution_id starting with DEMO) out of the school data, also when the
    Apps Script has not been redeployed yet. apps-script/Code.gs HIDE_DEMO_SCHOOLS does the same on the server. */

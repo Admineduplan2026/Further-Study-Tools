@@ -1,5 +1,5 @@
 /**
- * Eduplan Exhibition (Eduplan 教育展): organisers open education fairs and talks with a limited number of seats,
+ * EDUPLAN Activity (EDUPLAN 活动): organisers open education fairs and talks with a limited number of seats,
  * students, parents and teachers sign up for a seat (no account), and Eduplan staff (admins) approve new organisers and
  * their events. Website: exhibition/ (exhibition/expo.js).
  *
@@ -41,7 +41,7 @@
  * action checks the caller's role and that the event or registration is theirs. Writes run inside the script lock, so
  * two schools booking the last booth at the same moment cannot both get it.
  *
- * Data: private spreadsheet "Eduplan Exhibitions" in "Eduplan Databases/5. Exhibitions (private)" (Drive.gs) with the
+ * Data: private spreadsheet "EDUPLAN Activitys" in "Eduplan Databases/5. Exhibitions (private)" (Drive.gs) with the
  * tabs Users, Events, Registrations, Attendees and Sessions. Event cover images go to "Event covers (public links)" in the same
  * folder and are viewable by anyone with the link. School contact details are only sent to the organiser of the event
  * the school registered for. Session tokens and codes are kept only as SHA-256 hashes (Account.gs helpers).
@@ -119,12 +119,12 @@ function expoAction_(body) {
 
 /* ---------- Storage: one table per tab, rows as objects of strings ---------- */
 
-/* The tables of "Eduplan Exhibitions"; tools/test-exhibition.js replaces this with an in-memory store. */
+/* The tables of "EDUPLAN Activitys"; tools/test-exhibition.js replaces this with an in-memory store. */
 function expoStore_() {
   if (expoStore_.cached) return expoStore_.cached;
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('EXPO_SHEET_ID'), ss = id && driveSheetLive_(id);
   if (!ss) {
-    ss = SpreadsheetApp.create('Eduplan Exhibitions');
+    ss = SpreadsheetApp.create('EDUPLAN Activitys');
     DriveApp.getFileById(ss.getId()).moveTo(driveFolder_('expo'));
     props.setProperty('EXPO_SHEET_ID', ss.getId());
   }
@@ -246,9 +246,9 @@ function expoCode_(body) {
   if (r.error) return r;
   var reset = body.purpose === 'reset';
   MailApp.sendEmail({
-    to: email, name: 'Eduplan 教育展', subject: (reset ? 'Eduplan 教育展重设密码 / Password reset code: ' : 'Eduplan 教育展验证码 / Exhibition verification code: ') + code,
-    body: '你的 Eduplan 教育展验证码是 ' + code + '，' + ACCOUNT_CODE_MINUTES + ' 分钟内有效，' + (reset ? '用来设定新密码。' : '用来确认电邮、设定密码。') + '\n' +
-      'Your Eduplan Exhibition verification code is ' + code + '. It expires in ' + ACCOUNT_CODE_MINUTES + ' minutes' + (reset ? ' and lets you set a new password.' : ' and confirms your email so you can set your password.') + '\n\n' +
+    to: email, name: 'EDUPLAN 活动', subject: (reset ? 'EDUPLAN 活动重设密码 / Password reset code: ' : 'EDUPLAN 活动验证码 / Exhibition verification code: ') + code,
+    body: '你的 EDUPLAN 活动验证码是 ' + code + '，' + ACCOUNT_CODE_MINUTES + ' 分钟内有效，' + (reset ? '用来设定新密码。' : '用来确认电邮、设定密码。') + '\n' +
+      'Your EDUPLAN Activity verification code is ' + code + '. It expires in ' + ACCOUNT_CODE_MINUTES + ' minutes' + (reset ? ' and lets you set a new password.' : ' and confirms your email so you can set your password.') + '\n\n' +
       '如果你没有申请这个验证码，请忽略这封电邮。If you did not ask for this code, you can ignore this email.'
   });
   return { ok: true };
@@ -611,7 +611,7 @@ function expoEventCancel_(who, body) {
   }
   if (r.ok && visitors.length) {
     expoMailBcc_(visitors, '活动已取消 Event cancelled：' + title, '主办方已取消教育展「' + title + '」（' + date + '），你的参加报名不再有效。\n' +
-      'The organiser has cancelled "' + title + '" (' + date + '). Your sign-up to attend is no longer needed.\n\n其他教育展 Other exhibitions：' + expoSite_());
+      'The organiser has cancelled "' + title + '" (' + date + '). Your sign-up to attend is no longer needed.\n\n其他活动 Other activities：' + expoSite_());
   }
   return r;
 }
@@ -659,7 +659,7 @@ function expoAttend_(body) {
   try {
     if (MailApp.getRemainingDailyQuota() > EXPO_MAIL_RESERVE + 2) {
       r.emailed = expoMail_([v.email], '报名成功 You are signed up：' + ev.title,
-        v.name + '，你已报名参加 Eduplan 教育展：\nYou are signed up for this Eduplan exhibition:\n\n' + ev.title + '\n' +
+        v.name + '，你已报名参加 EDUPLAN 活动：\nYou are signed up for this Eduplan exhibition:\n\n' + ev.title + '\n' +
         '日期 Date：' + ev.date + '，' + ev.start_time + '–' + ev.end_time + '\n地点 Venue：' + ev.venue + '，' + ev.address + '，' + ev.city + '\n' +
         '人数 People：' + v.people + '\n报名编号 Reference：' + r.id + '\n\n活动详情 Details：' + expoSite_() + '#/e/' + ev.id);
     }
@@ -790,7 +790,7 @@ function expoAdminUser_(who, body) {
     return { ok: true };
   });
   if (r.ok) {
-    expoMail_([mail.email], decision === 'approved' ? 'Eduplan 教育展：主办方账号已批准' : 'Eduplan 教育展：主办方账号未获批准',
+    expoMail_([mail.email], decision === 'approved' ? 'EDUPLAN 活动：主办方账号已批准' : 'EDUPLAN 活动：主办方账号未获批准',
       decision === 'approved' ? '你的主办方账号（' + mail.org_name + '）已获批准，现在可以提交教育展活动：' + expoSite_() + '#/org'
         : '你的主办方账号（' + mail.org_name + '）未获批准。' + (note ? '\n原因：' + note : '') + '\n如有疑问，请回复 Eduplan。');
   }
@@ -908,9 +908,9 @@ function expoSharePageHtml_(e) {
     ' · 限量名额，免费报名 Limited seats, free sign-up';
   var img = expoPreviewImage_(e.cover_image);
   return '<!doctype html>\n<html lang="zh-Hans"><head><meta charset="utf-8">\n' +
-    '<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>' + expoHtml_(title) + ' · Eduplan 教育展</title>\n' +
+    '<meta name="viewport" content="width=device-width,initial-scale=1">\n<title>' + expoHtml_(title) + ' · EDUPLAN 活动</title>\n' +
     '<meta name="description" content="' + expoHtml_(desc) + '">\n<meta property="og:type" content="website">\n' +
-    '<meta property="og:site_name" content="Eduplan 教育展">\n<meta property="og:title" content="' + expoHtml_(title) + '">\n' +
+    '<meta property="og:site_name" content="EDUPLAN 活动">\n<meta property="og:title" content="' + expoHtml_(title) + '">\n' +
     '<meta property="og:description" content="' + expoHtml_(desc) + '">\n<meta property="og:image" content="' + expoHtml_(img) + '">\n' +
     '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n' +
     '<meta property="og:url" content="' + expoHtml_(url) + '">\n<meta name="twitter:card" content="summary_large_image">\n' +
@@ -980,7 +980,7 @@ function expoMail_(to, subject, body) {
   if (!to.length) return false;
   try {
     if (MailApp.getRemainingDailyQuota() < to.length + 2) { console.warn('expo mail skipped (quota): ' + subject); return false; }
-    MailApp.sendEmail({ to: to.join(','), name: 'Eduplan 教育展', subject: subject, body: body + '\n\n— Eduplan 教育展 ' + expoSite_() });
+    MailApp.sendEmail({ to: to.join(','), name: 'EDUPLAN 活动', subject: subject, body: body + '\n\n— EDUPLAN 活动 ' + expoSite_() });
     return true;
   } catch (err) {
     console.error('expo mail failed: ' + err);
@@ -995,7 +995,7 @@ function expoMailBcc_(list, subject, body) {
     var part = list.slice(i, i + 50);
     try {
       if (MailApp.getRemainingDailyQuota() < part.length + EXPO_MAIL_RESERVE) { console.warn('expo bcc mail stopped (quota): ' + subject); return false; }
-      MailApp.sendEmail({ to: expoAdmins_()[0] || part[0], bcc: part.join(','), name: 'Eduplan 教育展', subject: subject, body: body + '\n\n— Eduplan 教育展 ' + expoSite_() });
+      MailApp.sendEmail({ to: expoAdmins_()[0] || part[0], bcc: part.join(','), name: 'EDUPLAN 活动', subject: subject, body: body + '\n\n— EDUPLAN 活动 ' + expoSite_() });
     } catch (err) { console.error('expo bcc mail failed: ' + err); return false; }
   }
   return true;
@@ -1079,7 +1079,7 @@ function expoNotifyOne_(to, e, org) {
     '\n详情 Details: ' + expoSite_() + '#/e/' + e.id + '\n\n' +
     '你收到这封邮件，是因为你在 EDUPLAN 有账号。不想再收到教育展通知 Stop these emails:\n' + expoUnsubLink_(to);
   try {
-    MailApp.sendEmail({ to: to, name: 'Eduplan 教育展', subject: '新教育展 New exhibition: ' + e.title + ' · ' + e.date, body: body });
+    MailApp.sendEmail({ to: to, name: 'EDUPLAN 活动', subject: '新教育展 New exhibition: ' + e.title + ' · ' + e.date, body: body });
     return true;
   } catch (err) {
     console.error('expo notify failed: ' + err);
@@ -1105,12 +1105,12 @@ function expoUnsub_(body) {
 }
 
 /* Run once from the editor (select expoSetup, Run): asks for the Drive, Sheets and email permissions the exhibition
-   needs (tick "Select all" on Google's consent screen), creates "Eduplan Exhibitions" and checks EXPO_ADMIN_EMAILS. */
+   needs (tick "Select all" on Google's consent screen), creates "EDUPLAN Activitys" and checks EXPO_ADMIN_EMAILS. */
 function expoSetup() {
   console.log('Email quota left today: ' + MailApp.getRemainingDailyQuota());
   expoStore_().table('users').all();
   ['events', 'registrations', 'attendees', 'sessions', 'notify', 'unsubscribed', 'logins'].forEach(function (t) { expoStore_().table(t).all(); });
-  console.log('Eduplan Exhibitions: ' + SpreadsheetApp.openById(driveCleanId_(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID'))).getUrl());
+  console.log('EDUPLAN Activitys: ' + SpreadsheetApp.openById(driveCleanId_(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID'))).getUrl());
   if (!ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'expoNotifyDaily'; }))
     ScriptApp.newTrigger('expoNotifyDaily').timeBased().everyDays(1).atHour(10).inTimezone(EXPO_TZ).create();
   console.log('New-event emails: students with an account ' + expoStudentEmails_().length + ', daily trigger on.');
