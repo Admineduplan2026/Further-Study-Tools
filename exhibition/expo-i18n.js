@@ -94,6 +94,14 @@ window.EXPO_I18N={
 "主办方或参展学校登录",
 "Organiser or exhibitor sign in"
 ],
+"主办方或学校？": [
+"主办方或学校？",
+"Organiser or school?"
+],
+"主办方（教育者、协会、学校）开办活动，大学和学院可以报名摊位。所有新主办方和活动都先经 Eduplan 审核，避免假活动。": [
+"主办方（教育者、协会、学校）开办活动，大学和学院可以报名摊位。所有新主办方和活动都先经 Eduplan 审核，避免假活动。",
+"Organisers (educators, associations, schools) run the events, and universities and colleges can book booths. EDUPLAN reviews every new organiser and event first, so there are no fake events."
+],
 "人数": [
 "人数",
 "People"
@@ -329,6 +337,10 @@ window.EXPO_I18N={
 "名额必须是 1 到 5000 的整数。": [
 "名额必须是 1 到 5000 的整数。",
 "Seats must be a whole number from 1 to 5000."
+],
+"名额有限，学生、家长和老师免费报名。": [
+"名额有限，学生、家长和老师免费报名。",
+"Limited seats, free for students, parents and teachers."
 ],
 "哦！": [
 "哦！",

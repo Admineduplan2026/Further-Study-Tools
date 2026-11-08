@@ -227,11 +227,14 @@ function eventCard(e,opts){
 }
 function homeView(){
  var my=seq,me=S.me;
- page('<section class="xhero"><span class="xeye">EDUPLAN 活动 · EDUPLAN Activity</span><h1>升学讲座和教育展，名额有限，快来报名</h1>'+
-  '<p class="xlead">升学讲座和教育展，名额有限，学生、家长和老师免费报名。主办方（教育者、协会、学校）开办活动，大学和学院可以报名摊位。所有新主办方和活动都先经 Eduplan 审核，避免假活动。</p>'+
+ /* Compact banner first so the activities show straight away; who runs them, and the sign-in for organisers and
+    schools, sit in a small section at the bottom. */
+ page('<section class="xhero sm"><span class="xeye">EDUPLAN 活动 · EDUPLAN Activity</span><h1>升学讲座和教育展，名额有限，快来报名</h1>'+
+  '<p class="xlead">名额有限，学生、家长和老师免费报名。</p></section>'+
+  '<section class="xsec"><h2>'+T('即将举行的活动 <span>Upcoming activities</span>','Upcoming activities')+'</h2><div id="xlist"><div class="xload" role="status"><i aria-hidden="true"></i>载入中…</div></div></section>'+
+  '<section class="xsec xjoin"><h2>主办方或学校？</h2><p class="xmeta">主办方（教育者、协会、学校）开办活动，大学和学院可以报名摊位。所有新主办方和活动都先经 Eduplan 审核，避免假活动。</p>'+
   '<div class="xroles"><a class="xrolecard r-organiser" href="'+(me&&me.role==="organiser"?"#/org":"#/login/organiser")+'"><span class="xri" aria-hidden="true">🎪</span><b>我是主办方</b>'+T('<span>Organiser</span>','')+'<small>开办讲座或教育展、查看报名名单</small></a>'+
-  '<a class="xrolecard r-exhibitor" href="'+(me&&me.role==="exhibitor"?"#/ex":"#/login/exhibitor")+'"><span class="xri" aria-hidden="true">🏫</span><b>我是参展学校</b>'+T('<span>Exhibitor</span>','')+'<small>浏览活动、报名摊位</small></a></div></section>'+
-  '<section class="xsec"><h2>'+T('即将举行的活动 <span>Upcoming activities</span>','Upcoming activities')+'</h2><div id="xlist"><div class="xload" role="status"><i aria-hidden="true"></i>载入中…</div></div></section>');
+  '<a class="xrolecard r-exhibitor" href="'+(me&&me.role==="exhibitor"?"#/ex":"#/login/exhibitor")+'"><span class="xri" aria-hidden="true">🏫</span><b>我是参展学校</b>'+T('<span>Exhibitor</span>','')+'<small>浏览活动、报名摊位</small></a></div></section>');
  api("expo_public").then(function(r){
   if(done(my))return;var box=document.getElementById("xlist");if(!box)return;
   if(r.error){box.innerHTML=failed(r);return;}

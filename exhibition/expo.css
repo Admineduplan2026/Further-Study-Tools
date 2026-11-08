@@ -197,3 +197,15 @@ main{display:block;outline:none}
 .xor::before,.xor::after{content:"";flex:1;height:1px;background:var(--line)}
 .xgoogle{min-height:44px;max-width:380px}
 .xlink{align-self:center;font-size:14px}
+/* Home: compact banner on top, organisers and schools in a small section at the bottom */
+.xhero.sm{padding:16px 18px;gap:4px;border-radius:18px}
+.xhero.sm h1{font-size:clamp(19px,4.6vw,26px);line-height:1.25;margin:0}
+.xhero.sm .xlead{font-size:14.5px;margin:0}
+.xjoin{margin-top:28px;padding:16px;border:1px solid var(--line);border-radius:18px;background:#fff}
+.xjoin h2{font-size:17px;margin:0 0 4px}
+.xjoin .xmeta{font-size:13.5px;margin:0}
+.xjoin .xroles{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+.xjoin .xrolecard{padding:10px 12px;box-shadow:none;border:1px solid var(--line);border-left-width:5px}
+.xjoin .xrolecard .xri{font-size:22px}
+.xjoin .xrolecard b{font-size:15px}
+.xjoin .xrolecard small{font-size:12.5px}
