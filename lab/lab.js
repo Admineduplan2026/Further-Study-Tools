@@ -372,7 +372,7 @@ function expoCards(){var ev=(EXPO.events||[]).slice(0,6),u=window.EDUPLAN_EXHIBI
    '<span class="xevb"><span class="xevk">Education Exhibition</span><b data-notr>'+esc(e.title)+'</b>'+
    '<span>📅 '+EXPO_WD[d.getDay()]+', '+(+m[3])+' '+mon+' '+m[1]+'</span><span data-notr>🕘 '+esc(e.start_time)+'–'+esc(e.end_time)+'</span>'+
    '<span data-notr>📍 '+esc([e.venue,e.city,e.state].filter(Boolean).join(", "))+'</span>'+
-   (e.organiser?'<span data-notr>🎪 '+esc(e.organiser)+'</span>':'')+(e.can_attend?'<span class="xevj">Register to attend</span>':'')+'</span><span class="actgo" aria-hidden="true">→</span></a>';}).join("")+'</div>';}
+   (e.organiser?'<span data-notr>🎪 '+esc(e.organiser)+'</span>':'')+(e.seats?'<span data-notr>🎟 '+(e.full?'名额已满 · Full':'剩余 '+e.remaining+' 个名额 · '+e.remaining+' seats left')+'</span>':'')+(e.can_attend?'<span class="xevj">Register to attend</span>':'')+'</span><span class="actgo" aria-hidden="true">→</span></a>';}).join("")+'</div>';}
 function recommended(){
  loadExpo();
  var picks=quizResult(),ints=myInts(),q=S.search,scored=D.progs.map(function(p){var sc=0,why="";

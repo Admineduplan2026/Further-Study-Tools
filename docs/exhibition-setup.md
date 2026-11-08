@@ -1,7 +1,9 @@
 # Eduplan 教育展 (Exhibition) setup
 
-The exhibition website lets organisers (主办方) open education fairs and schools (参展学校) book booths. Eduplan staff
-(admins) approve every new organiser account and every new event before schools can see it.
+The exhibition website lets organisers (主办方) open education talks and fairs with a limited number of seats (讲座名额), and
+students, parents and teachers sign up for a seat without an account. Eduplan staff (admins) approve every new organiser
+account and every new event before anyone can see it. School booth booking (参展学校) has been retired: new exhibitor
+accounts and booth bookings are refused; any old rows stay in the Registrations tab.
 
 - Website: `exhibition/` (`index.html`, `expo.js`, `expo.css`), live at
   `https://admineduplan2026.github.io/Further-Study-Tools/exhibition/`.
@@ -30,14 +32,19 @@ instead of quietly starting new, empty sheets in that account's Drive.
 
 | Role | Can | Cannot |
 |---|---|---|
-| Organiser 主办方 | Sign up, save drafts, submit events (after approval), edit or cancel own events, accept or reject bookings with a note | See other organisers' events; publish before Eduplan approves the account and the event |
-| Exhibitor 参展学校 | Sign up, browse published upcoming events with open registration, book booths, withdraw before the deadline | Book twice for one event; book a full, closed or cancelled event; see other schools' bookings |
+| Organiser 主办方 | Sign up, save drafts, submit events with a number of seats (after approval), edit or cancel own events, see and download the sign-up list | See other organisers' events; publish before Eduplan approves the account and the event |
+| Exhibitor 参展学校 (retired) | Old accounts can still sign in and see old bookings | Sign up as a new school; book booths |
 | Admin (EXPO_ADMIN_EMAILS) | Approve or reject organisers and submitted events | Sign up as organiser or school |
-| Visitor 参加者 (students, parents, teachers; no account) | Sign up to attend a published event until its date (`#/join/<id>`), bringing up to 10 people; signing up again with the same email updates it | See other visitors; sign up for events in review, cancelled or over |
+| Visitor 参加者 (students, parents, teachers; no account) | Sign up for seats until the deadline (`#/join/<id>`), up to 10 people per sign-up; the same email again updates it | See other visitors; sign up for events in review, cancelled, past the deadline or full |
 
 One account has one role, chosen at sign-up. Sign-in is a 6-digit code by email (no password), as for students.
 
 ## Visitors: 报名参加
+
+Each event has a number of seats (the organiser's **讲座名额 Seats**, 1–5000, stored in the `booth_capacity` column) and
+a registration deadline that may be the event day. Every sign-up takes as many seats as the people it brings; the cards
+show "限量 · 剩余 N 个讲座名额", and sign-up stops by itself when the seats are gone or the deadline has passed. The organiser
+cannot lower the seats below the people already signed up.
 
 Every published event shows **报名参加 Register to attend** on the exhibition home page, on its event page and on the
 EDUPLAN home page cards. The form asks for name, email, phone, who they are (student, parent, teacher, other), school
