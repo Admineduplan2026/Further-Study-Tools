@@ -57,14 +57,27 @@ function go(h){if(location.hash===h)render();else location.hash=h;}
 function home(role){return role==="organiser"?"#/org":role==="exhibitor"?"#/ex":role==="admin"?"#/admin":"#/";}
 
 /* ---------- Page frame ---------- */
+/* The tip under the EDUPLAN button: visitors who are not signed in to EDUPLAN get new-exhibition emails once they sign in.
+   Closed for good with ×, or when they follow it. */
+var TIP={seen:false,key:"eduplan-expo-tip"};
+function showTip(me){
+ if(me&&me.role)return false;
+ try{if(localStorage.getItem(TIP.key))return false;var se=JSON.parse(localStorage.getItem("eduplan-session")||"null");if(se&&se.token&&se.exp>Date.now())return false;}catch(e){}
+ return true;
+}
+function closeTip(){try{localStorage.setItem(TIP.key,String(Date.now()));}catch(e){}var t=head.querySelector(".xtip");if(t)t.remove();}
 function header(){
  var me=S.me,role=me&&me.role;
+ if(head.querySelector(".xtip"))TIP.seen=true;   /* animate the tip only the first time */
  document.body.className=role?"as-"+role:"";
  var links=role==="organiser"?[["#/org","我的活动 My events"],["#/org/new","开新活动 New event"]]:
   role==="exhibitor"?[["#/ex","浏览活动 Events"],["#/ex/my","我的报名 My bookings"]]:role==="admin"?[["#/admin","审核 Review"]]:[];
  head.innerHTML='<div class="xbar"><a class="xbrand" href="#/"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN"><span><b>Eduplan 教育展</b><small>Education Exhibition</small></span></a>'+
   roleBadge(role)+'<span class="xsp"></span>'+
-  (me?'<button type="button" class="xbtn ghost sm" data-act="logout">登出 Sign out</button>':'<a class="xbtn ghost sm" href="#/login">登录 Sign in</a>')+'</div>'+
+  (me?'<button type="button" class="xbtn ghost sm" data-act="logout">登出 Sign out</button>':'<a class="xbtn ghost sm" href="#/login/organiser" title="主办方登录 Organiser sign in">主办方<span class="xhide-s">登录</span></a>')+
+  '<a class="xhome" href="../" title="回到 EDUPLAN 主网站 Back to EDUPLAN" aria-label="回到 EDUPLAN 主网站 Back to EDUPLAN"><span class="xhome-i" aria-hidden="true">🏠</span><span class="xhome-t"><b>EDUPLAN</b><small>回到主网站</small></span></a>'+
+  (showTip(me)?'<div class="xtip'+(TIP.seen?'':' pop')+'" role="note"><p>💡 登入 EDUPLAN 以便得到最新消息，可以<a href="../#portfolio" data-act="tip-go">点击这里</a>哦！</p>'+
+   '<button type="button" class="xtip-x" data-act="tip-close" aria-label="关闭提示 Close">×</button></div>':'')+'</div>'+
   (links.length?'<nav class="xnav" aria-label="教育展">'+links.map(function(l){
    return '<a href="'+l[0]+'"'+(location.hash===l[0]?' aria-current="page"':'')+'>'+esc(l[1])+'</a>';}).join("")+'</nav>':'');
 }
@@ -490,6 +503,8 @@ document.addEventListener("click",function(ev){
  if(a==="logout"){api("expo_logout").then(function(){setToken("");S.me=null;S.mine=[];go("#/");});}
  else if(a==="relogin"){S.login.step="email";render();}
  else if(a==="att-csv"){attCsv(b.getAttribute("data-title"));}
+ else if(a==="tip-close"){closeTip();}
+ else if(a==="tip-go"){try{localStorage.setItem(TIP.key,String(Date.now()));}catch(e){}}
  else if(a==="toggle-share"){var box=b.closest(".xbody").querySelector(".xshare");if(box){box.hidden=!box.hidden;b.setAttribute("aria-expanded",String(!box.hidden));}}
  else if(a==="copy-link"){var url=b.getAttribute("data-url"),was=b.textContent;
   copyText(url).then(function(){b.textContent="已复制 Copied ✓";},function(){window.prompt("复制这个链接 Copy this link:",url);})

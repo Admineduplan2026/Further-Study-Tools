@@ -29,7 +29,7 @@ img{max-width:100%}
 
 /* Header: white bar with the "Eduplan 教育展" name, the role badge, and a coloured nav per role. */
 .xhead{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line)}
-.xbar{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;max-width:1080px;margin:0 auto;padding:10px 16px}
+.xbar{position:relative;display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;max-width:1080px;margin:0 auto;padding:10px 16px}
 .xbrand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink);min-width:0}
 .xbrand img{height:34px;width:auto}
 .xbrand span{display:flex;flex-direction:column;line-height:1.1}
@@ -165,3 +165,21 @@ main{display:block;outline:none}
 .xsh.tg{background:#229ed9;border-color:#229ed9;color:#fff}
 .xsh.x{background:#0f1419;border-color:#0f1419;color:#fff}
 .xsh.cp{background:var(--brand-soft);border-color:var(--brand-soft);color:var(--brand-ink)}
+
+/* Back to EDUPLAN (top right) and the sign-in tip under it */
+.xhome{display:inline-flex;align-items:center;gap:8px;min-height:40px;padding:5px 14px 5px 8px;border-radius:999px;background:var(--band);color:#fff;text-decoration:none;box-shadow:0 2px 8px rgba(11,58,92,.18);transition:transform .15s,box-shadow .15s}
+.xhome:hover,.xhome:focus-visible{transform:translateY(-1px);box-shadow:0 6px 16px rgba(11,58,92,.25)}
+.xhome-i{display:grid;place-items:center;width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,.16);font-size:15px}
+.xhome-t{display:flex;flex-direction:column;line-height:1.05}
+.xhome-t b{font-size:14px;letter-spacing:.02em}
+.xhome-t small{font-size:11px;opacity:.85}
+.xtip{position:absolute;top:calc(100% + 4px);right:16px;z-index:30;display:flex;align-items:flex-start;gap:6px;max-width:min(320px,calc(100vw - 32px));padding:12px 10px 12px 14px;border-radius:14px;background:#fff8e1;border:1px solid #f3d27a;color:#5b4300;font-size:14px;line-height:1.45;box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.xtip::before{content:"";position:absolute;top:-7px;right:34px;width:12px;height:12px;background:#fff8e1;border-left:1px solid #f3d27a;border-top:1px solid #f3d27a;transform:rotate(45deg)}
+.xtip p{margin:0}
+.xtip a{color:#8a5a00;font-weight:600}
+.xtip-x{flex:none;width:28px;height:28px;margin:-4px -2px 0 0;border:0;border-radius:50%;background:transparent;color:#8a6d1f;font-size:20px;line-height:1;cursor:pointer}
+.xtip-x:hover{background:rgba(0,0,0,.06)}
+.xtip.pop{animation:xtipin .45s cubic-bezier(.2,.9,.3,1.3) 1.2s both}
+@keyframes xtipin{from{opacity:0;transform:translateY(-6px) scale(.96)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.xtip.pop{animation:none}.xhome{transition:none}}
+@media (max-width:520px){.xhide-s{display:none}.xbar{flex-wrap:nowrap}.xhome{padding:5px}.xhome-i{width:32px;height:32px;font-size:17px}.xhome-t{display:none}.xtip::before{right:20px}}
