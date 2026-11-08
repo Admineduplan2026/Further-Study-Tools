@@ -344,5 +344,39 @@ test("a failed email does not stop the sign-up", () => {
   assert.strictEqual(t.h.tables.attendees.filter(a => a.event_id === id).length, 1);
 });
 
+console.log("Event titles in English and 中文");
+test("a translation the organiser types is shown for the other language, and dropped when the text changes", () => {
+  const t = setup();
+  const id = publish(t, t.org, { title: "APU课程及奖学金资讯分享", description: "介绍课程", title_tr: "APU Programmes and Scholarships Talk", description_tr: "About the programmes" });
+  let ev = t.h.call({ action: "expo_public" }).events.find(e => e.id === id);
+  assert.strictEqual(ev.src_lang, "zh");
+  assert.strictEqual(ev.title_zh, "APU课程及奖学金资讯分享"); assert.strictEqual(ev.title_en, "APU Programmes and Scholarships Talk");
+  assert.strictEqual(ev.description_en, "About the programmes");
+  /* Saving again with the same translation keeps it. */
+  t.h.call({ action: "expo_event_save", token: t.org.token, submit: true, event: Object.assign({}, EVENT, { id, title: "APU课程及奖学金资讯分享", description: "介绍课程", title_tr: ev.title_tr, description_tr: ev.description_tr, venue: "New hall" }) });
+  ev = t.h.call({ action: "expo_public" }).events.find(e => e.id === id);
+  assert.strictEqual(ev.title_en, "APU Programmes and Scholarships Talk");
+  /* A changed title with the old translation left as it was: no key to translate, so both languages show the new title. */
+  t.h.call({ action: "expo_event_save", token: t.org.token, submit: true, event: Object.assign({}, EVENT, { id, title: "UCSI讲座", description: "介绍课程", title_tr: ev.title_tr, description_tr: ev.description_tr }) });
+  ev = t.h.call({ action: "expo_public" }).events.find(e => e.id === id);
+  assert.strictEqual(ev.title_en, "UCSI讲座");
+});
+test("without a typed translation, Claude translates on save and on approval", () => {
+  const calls = [];
+  const h = require("./expo-harness")({ admins: ["admin@test.local"], today: TODAY, quiet: true, fetch: (url, o) => {
+    calls.push(JSON.parse(o.payload)); const inp = JSON.parse(JSON.parse(o.payload).messages[0].content);
+    return { code: 200, body: JSON.stringify({ content: [{ type: "text", text: JSON.stringify({ title: "EN: " + inp.title, description: "EN: " + inp.description }) }] }) }; } });
+  h.props.ANTHROPIC_API_KEY = "test-key";
+  const s = h.signIn("o@test.local"), admin = h.signIn("admin@test.local").token;
+  const me = h.call({ action: "expo_register", token: s.token, role: "organiser", org_name: "O", name: "N", position: "P", phone: "0123456789", consent: true }).me;
+  h.call({ action: "expo_admin_user", token: admin, user_id: me.id, decision: "approved" });
+  const r = h.call({ action: "expo_event_save", token: s.token, submit: true, event: Object.assign({}, EVENT, { title: "升学讲座", description: "免费" }) });
+  assert.strictEqual(calls.length, 1); assert.ok(/English/.test(calls[0].system));
+  h.call({ action: "expo_admin_event", token: admin, event_id: r.id, decision: "approved" });
+  assert.strictEqual(calls.length, 1, "already translated: approval asks again only when needed");
+  const ev = h.call({ action: "expo_public" }).events.find(e => e.id === r.id);
+  assert.strictEqual(ev.title_en, "EN: 升学讲座"); assert.strictEqual(ev.description_en, "EN: 免费"); assert.strictEqual(ev.title_zh, "升学讲座");
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

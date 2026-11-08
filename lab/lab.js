@@ -369,7 +369,7 @@ function expoCards(){var ev=(EXPO.events||[]).slice(0,6),u=window.EDUPLAN_EXHIBI
   var d=new Date(+m[1],+m[2]-1,+m[3]),mon=EXPO_MON[+m[2]-1];
   return '<a class="xev" href="'+esc(u+(e.can_attend?"#/join/":"#/e/")+encodeURIComponent(e.id))+'" target="_blank" rel="noopener">'+
    '<span class="xevd" aria-hidden="true"><b>'+(+m[3])+'</b><span>'+mon+'</span></span>'+
-   '<span class="xevb"><span class="xevk">Education Exhibition</span><b data-notr>'+esc(e.title)+'</b>'+
+   '<span class="xevb"><span class="xevk">Education Exhibition</span><b data-notr>'+(e.title_en&&e.title_zh&&e.title_en!==e.title_zh?'<span class="l-zh">'+esc(e.title_zh)+'</span><span class="l-en">'+esc(e.title_en)+'</span>':esc(e.title))+'</b>'+
    '<span>📅 '+EXPO_WD[d.getDay()]+', '+(+m[3])+' '+mon+' '+m[1]+'</span><span data-notr>🕘 '+esc(e.start_time)+'–'+esc(e.end_time)+'</span>'+
    '<span data-notr>📍 '+esc([e.venue,e.city,e.state].filter(Boolean).join(", "))+'</span>'+
    (e.organiser?'<span data-notr>🎪 '+esc(e.organiser)+'</span>':'')+(e.seats?'<span data-notr>🎟 '+(e.full?'名额已满 · Full':'剩余 '+e.remaining+' 个名额 · '+e.remaining+' seats left')+'</span>':'')+(e.can_attend?'<span class="xevj">Register to attend</span>':'')+'</span><span class="actgo" aria-hidden="true">→</span></a>';}).join("")+'</div>';}

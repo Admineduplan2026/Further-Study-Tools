@@ -13,6 +13,9 @@ var LANG=(function(){try{var v=localStorage.getItem("eduplan-lang");if(v==="zh"|
  return /^zh/i.test(navigator.language||"")?"zh":"en";})();
 function T(zh,en){return LANG==="en"?en:zh;}
 function tx(s){return window.EXPO_TX?window.EXPO_TX(s,LANG):s;}
+/* An event's title and description in the chosen language (Exhibition.gs gives both; the organiser's own text otherwise). */
+function evT(e){return (LANG==="en"?e.title_en:e.title_zh)||e.title||"";}
+function evD(e){return (LANG==="en"?e.description_en:e.description_zh)||e.description||"";}
 var app=document.getElementById("app"),head=document.getElementById("xhead");
 var S={token:load(),me:null,checked:false,login:{email:"",step:"email",role:"",msg:""},mine:[],flash:""};
 var STATES=["Johor","Kedah","Kelantan","Melaka","Negeri Sembilan","Pahang","Perak","Perlis","Pulau Pinang","Sabah","Sarawak","Selangor","Terengganu","W.P. Kuala Lumpur","W.P. Labuan","W.P. Putrajaya"];
@@ -125,7 +128,7 @@ function eventView(id){
   if(r.error){page(failed(r));return;}
   var e=r.events.filter(function(x){return x.id===id;})[0];
   if(!e){page('<div class="xempty">找不到这个活动，它可能已经结束或取消。<a href="#/">看看其他教育展 See other exhibitions</a></div>');return;}
-  page('<p><a href="#/">← 所有教育展 All exhibitions</a></p><div class="xsolo">'+eventCard(e,{more:(e.description?'<p class="xpre">'+esc(e.description)+'</p>':'')+
+  page('<p><a href="#/">← 所有教育展 All exhibitions</a></p><div class="xsolo">'+eventCard(e,{more:(evD(e)?'<p class="xpre">'+esc(evD(e))+'</p>':'')+
    (e.address?'<p class="xmeta">'+T("地址：","Address: ")+esc(e.address)+'</p>':'')+
    actions(e,true)})+'</div>');});
 }
@@ -141,18 +144,18 @@ function actions(e,open){
 function shareUrl(e){return location.href.split("#")[0]+"#/e/"+encodeURIComponent(e.id);}
 function shareText(e){
  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(e.date||""),d=m?(+m[3])+"/"+(+m[2])+"/"+m[1]:e.date;
- return e.title+"\n📅 "+d+" "+(e.start_time||"")+"–"+(e.end_time||"")+"\n📍 "+[e.venue,e.city].filter(Boolean).join(", ")+
+ return evT(e)+"\n📅 "+d+" "+(e.start_time||"")+"–"+(e.end_time||"")+"\n📍 "+[e.venue,e.city].filter(Boolean).join(", ")+
   (e.can_attend?"\n🎟 "+T("限量名额，免费报名","Limited seats, free sign-up"):"");
 }
 function shareBox(e,open){
  var u=shareUrl(e),t=shareText(e),q=encodeURIComponent;
  var links=[["WhatsApp","https://wa.me/?text="+q(t+"\n"+u),"wa"],["Facebook","https://www.facebook.com/sharer/sharer.php?u="+q(u),"fb"],
   ["Telegram","https://t.me/share/url?url="+q(u)+"&text="+q(t),"tg"],["X","https://twitter.com/intent/tweet?text="+q(t)+"&url="+q(u),"x"],
-  [T("电邮","Email"),"mailto:?subject="+q(e.title)+"&body="+q(t+"\n\n"+u),"em"]];
+  [T("电邮","Email"),"mailto:?subject="+q(evT(e))+"&body="+q(t+"\n\n"+u),"em"]];
  return '<div class="xshare"'+(open?'':' hidden')+'><span class="xshare-k">分享这个活动 Share</span><div class="xshare-row">'+
   links.map(function(l){return '<a class="xsh '+l[2]+'" href="'+esc(l[1])+'" target="_blank" rel="noopener">'+esc(l[0])+'</a>';}).join("")+
   '<button type="button" class="xsh cp" data-act="copy-link" data-url="'+esc(u)+'">复制链接 Copy link</button>'+
-  (navigator.share?'<button type="button" class="xsh more" data-act="native-share" data-url="'+esc(u)+'" data-title="'+esc(e.title)+'" data-text="'+esc(t)+'">更多 More…</button>':'')+
+  (navigator.share?'<button type="button" class="xsh more" data-act="native-share" data-url="'+esc(u)+'" data-title="'+esc(evT(e))+'" data-text="'+esc(t)+'">更多 More…</button>':'')+
   '</div></div>';
 }
 function copyText(text){
@@ -170,7 +173,7 @@ function joinView(id){
   var e=r.events.filter(function(x){return x.id===id;})[0];
   if(!e||!e.can_attend){page('<div class="xempty">'+(e&&e.full?"这个活动的名额已满。":"这个活动目前不接受报名，它可能已经截止、结束或取消。")+'<a href="#/">看看其他教育展 See other exhibitions</a></div>');return;}
   var v=loadVisitor();
-  page('<nav class="xcrumb"><a href="#/">所有教育展</a> › <a href="#/e/'+esc(e.id)+'">'+esc(e.title)+'</a></nav>'+eventCard(e)+
+  page('<nav class="xcrumb"><a href="#/">所有教育展</a> › <a href="#/e/'+esc(e.id)+'">'+esc(evT(e))+'</a></nav>'+eventCard(e)+
    '<section class="xform"><span class="xeye">学生 · 家长 · 老师 Visitors</span><h1>报名参加</h1><p class="xlead">免费报名，不需要注册账号。报名后会收到确认电邮（如果当天电邮额度允许）。</p>'+
    '<form data-form="join" data-id="'+esc(e.id)+'" novalidate>'+
    field("name","姓名 Full name","text",true,"",v.name,' maxlength="100" autocomplete="name"')+
@@ -188,7 +191,7 @@ function joinView(id){
 }
 function joinDone(e,r,v){
  page('<section class="xform narrow"><span class="xeye">报名成功 You are signed up</span><h1>'+(r.updated?T("已更新你的报名","Sign-up updated"):T("报名成功！","You are signed up!"))+'</h1>'+
-  '<p class="xlead">'+T(esc(v.name)+'，你已报名参加「'+esc(e.title)+'」，共 '+esc(v.people)+' 人。',esc(v.name)+', you are signed up for “'+esc(e.title)+'”, '+esc(v.people)+(v.people>1?' people.':' person.'))+'</p>'+
+  '<p class="xlead">'+T(esc(v.name)+'，你已报名参加「'+esc(evT(e))+'」，共 '+esc(v.people)+' 人。',esc(v.name)+', you are signed up for “'+esc(evT(e))+'”, '+esc(v.people)+(v.people>1?' people.':' person.'))+'</p>'+
   '<dl class="xdl"><dt>日期</dt><dd>'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</dd><dt>地点</dt><dd>'+esc([e.venue,e.address,e.city].filter(Boolean).join("，"))+'</dd>'+
   '<dt>报名编号</dt><dd>'+esc(r.id)+'</dd></dl>'+
   '<p class="xhint">'+(r.emailed?T("确认电邮已寄到 "+esc(v.email)+"。","A confirmation email has been sent to "+esc(v.email)+"."):T("今天的电邮额度已满，这次不会寄确认电邮。请截图保存这一页。","Today's email limit is reached, so no confirmation email this time. Please take a screenshot of this page."))+'</p>'+
@@ -210,7 +213,7 @@ function eventCard(e,opts){
  var state=e.status==="cancelled"?pill("已取消 Cancelled","bad"):e.status==="draft"||e.status==="pending"||e.status==="rejected"?pill(T("限量 "+seats+" 个讲座名额",seats+" seats"),"mute"):
   !e.open?pill("报名已截止 Closed","mute"):e.full?pill("名额已满 Full","bad"):pill(T("限量 · 剩余 "+e.remaining+" 个讲座名额","Limited · "+e.remaining+" seats left"),"ok");
  return '<article class="xcard ev">'+(e.cover_image?'<img class="xcover" src="'+esc(e.cover_image)+'" alt="" loading="lazy">':'<span class="xcover art" aria-hidden="true"><b>'+esc((e.city||"").slice(0,14))+'</b></span>')+
-  '<div class="xbody"><span class="xdate">'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</span><h3>'+esc(e.title)+'</h3>'+
+  '<div class="xbody"><span class="xdate">'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</span><h3>'+esc(evT(e))+'</h3>'+
   '<p class="xmeta">📍 '+esc([e.venue,e.city,e.state].filter(Boolean).join("，"))+'</p>'+
   (e.organiser?'<p class="xmeta">'+T("主办方：","Organiser: ")+esc(e.organiser)+'</p>':'')+
   '<p class="xmeta">'+T("免费报名 · 报名截止：","Free sign-up · Deadline: ")+day(e.registration_deadline)+'</p>'+
@@ -295,14 +298,14 @@ function orgView(){
    '<a class="xbtn" href="#/org/new">+ 开新活动 New event</a></section>'+orgBanner(r.me)+
    (r.events.length?'<div class="xlist">'+r.events.map(function(e){
     var st=e.status;
-    return '<article class="xcard row"><div class="xbody"><span class="xdate">'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</span><h3>'+esc(e.title)+'</h3>'+
+    return '<article class="xcard row"><div class="xbody"><span class="xdate">'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</span><h3>'+esc(evT(e))+'</h3>'+
      '<p class="xmeta">📍 '+esc([e.venue,e.city].join("，"))+'</p><div class="xpills">'+pill(EV_STATUS[st]||st,st==="published"?"ok":st==="cancelled"||st==="rejected"?"bad":"mute")+
      pill(T("讲座 "+(e.going||0)+" / "+e.seats+" 个名额","Seats "+(e.going||0)+" / "+e.seats),"brand")+(e.full?pill("名额已满","bad"):"")+
      (e.booths?pill(T("摊位 ","Booths ")+(e.accepted_booths+e.pending_booths)+" / "+e.booths,"brand")+(e.pending_booths?pill(T(e.pending_booths+" 个摊位待审核",e.pending_booths+" booths to review"),"warn"):""):"")+'</div>'+
      (st==="rejected"&&e.review_note?'<p class="xnote err sm">Eduplan 备注：'+esc(e.review_note)+'</p>':'')+
      (st==="pending"?'<p class="xmeta">Eduplan 审核通过后，活动会公开让学生和家长报名。</p>':'')+(st==="published"?shareBox(e,false):'')+
      '<div class="xrow">'+(st!=="cancelled"?'<a class="xbtn sm" href="#/org/att/'+esc(e.id)+'">'+T('报名名单','Sign-ups')+' ('+(e.visitors||0)+')</a>'+(e.booths||e.registrations?'<a class="xbtn sm" href="#/org/regs/'+esc(e.id)+'">'+T('摊位报名','Booths')+' ('+e.registrations+')</a>':'')+(st==="published"?'<button type="button" class="xbtn ghost sm" data-act="toggle-share" aria-expanded="false">分享 Share</button>':'')+'<a class="xbtn ghost sm" href="#/org/edit/'+esc(e.id)+'">编辑 Edit</a>'+
-      '<button type="button" class="xbtn ghost sm danger" data-act="cancel-event" data-id="'+esc(e.id)+'" data-title="'+esc(e.title)+'">取消活动 Cancel</button>':'<a class="xbtn ghost sm" href="#/org/att/'+esc(e.id)+'">'+T('报名名单','Sign-ups')+' ('+(e.visitors||0)+')</a>'+(e.registrations?'<a class="xbtn ghost sm" href="#/org/regs/'+esc(e.id)+'">摊位报名 Booths</a>':''))+'</div></div></article>';}).join("")+'</div>'
+      '<button type="button" class="xbtn ghost sm danger" data-act="cancel-event" data-id="'+esc(e.id)+'" data-title="'+esc(evT(e))+'">取消活动 Cancel</button>':'<a class="xbtn ghost sm" href="#/org/att/'+esc(e.id)+'">'+T('报名名单','Sign-ups')+' ('+(e.visitors||0)+')</a>'+(e.registrations?'<a class="xbtn ghost sm" href="#/org/regs/'+esc(e.id)+'">摊位报名 Booths</a>':''))+'</div></div></article>';}).join("")+'</div>'
     :'<div class="xempty">你还没有开办活动。<a href="#/org/new">开第一个活动</a>。</div>'));
  });
 }
@@ -321,6 +324,10 @@ function eventForm(id){
    '<form data-form="event" data-id="'+esc(id||"")+'" novalidate>'+
    field("title","活动名称 Event title","text",true,"",e.title,' maxlength="140"')+
    '<label class="xf"><span>简介 Description *</span><textarea name="description" rows="4" required maxlength="3000">'+esc(e.description)+'</textarea></label>'+
+   '<details class="xtr"'+(e.title_tr?' open':'')+'><summary>英文／中文翻译（可选）Translation (optional)</summary>'+
+   '<p class="xhint">活动名称和简介会按访客选的语言显示。留空的话，系统会自动翻译成另一种语言（英文或中文）；你也可以自己填写或修改。</p>'+
+   field("title_tr","翻译后的活动名称 Translated title","text",false,"",e.title_tr,' maxlength="140"')+
+   '<label class="xf"><span>翻译后的简介 Translated description</span><textarea name="description_tr" rows="4" maxlength="3000">'+esc(e.description_tr||"")+'</textarea></label></details>'+
    '<div class="xgrid3">'+field("date","日期 Date","date",true,"",e.date,' min="'+t+'"')+field("start_time","开始 Start","time",true,"",e.start_time)+field("end_time","结束 End","time",true,"",e.end_time)+'</div>'+
    field("venue","场地名称 Venue","text",true,"",e.venue)+field("address","地址 Address","text",true,"",e.address)+
    '<div class="xgrid2">'+field("city","城市 City","text",true,"",e.city)+
@@ -369,7 +376,7 @@ function regsView(id){
   if(done(my))return;if(r.error){page(failed(r)+'<a class="xbtn ghost" href="#/org">返回 Back</a>');return;}
   var e=r.event,acc=0,pen=0;r.registrations.forEach(function(x){if(x.status==="accepted")acc+=x.booths_requested;if(x.status==="pending")pen+=x.booths_requested;});
   var live=e.status!=="cancelled";
-  page('<nav class="xcrumb"><a href="#/org">我的活动</a> › '+esc(e.title)+'</nav><section class="xtop"><div><span class="xeye">主办方后台 · 管理报名</span><h1>'+esc(e.title)+'</h1>'+
+  page('<nav class="xcrumb"><a href="#/org">我的活动</a> › '+esc(evT(e))+'</nav><section class="xtop"><div><span class="xeye">主办方后台 · 管理报名</span><h1>'+esc(evT(e))+'</h1>'+
    '<p class="xlead">'+day(e.date)+' · '+esc(e.venue)+'</p></div></section>'+
    '<div class="xstats"><div><b>'+acc+'</b><span>已接受摊位</span></div><div><b>'+pen+'</b><span>待审核摊位</span></div><div><b>'+e.booths+'</b><span>摊位总数</span></div><div><b>'+e.booths_remaining+'</b><span>剩余</span></div></div>'+
    (!live?'<div class="xnote err">这个活动已取消，已报名的学校会看到「活动已取消」。</div>':'')+
@@ -394,8 +401,8 @@ function attView(id){
   if(done(my))return;if(r.error){page(failed(r)+'<a class="xbtn ghost" href="#/org">返回 Back</a>');return;}
   var e=r.event,list=r.attendees,people=0;ATT=list;list.forEach(function(a){people+=a.people;});
   var whoName=function(w){return tx((WHO.filter(function(x){return x[0]===w;})[0]||["",w])[1]);};
-  page('<nav class="xcrumb"><a href="#/org">我的活动</a> › '+esc(e.title)+'</nav><section class="xtop"><div><span class="xeye">主办方后台 · 报名名单 Sign-ups</span><h1>'+esc(e.title)+'</h1>'+
-   '<p class="xlead">'+day(e.date)+' · '+esc(e.venue)+'</p></div>'+(list.length?'<button type="button" class="xbtn" data-act="att-csv" data-title="'+esc(e.title)+'">下载 CSV Download</button>':'')+'</section>'+
+  page('<nav class="xcrumb"><a href="#/org">我的活动</a> › '+esc(evT(e))+'</nav><section class="xtop"><div><span class="xeye">主办方后台 · 报名名单 Sign-ups</span><h1>'+esc(evT(e))+'</h1>'+
+   '<p class="xlead">'+day(e.date)+' · '+esc(e.venue)+'</p></div>'+(list.length?'<button type="button" class="xbtn" data-act="att-csv" data-title="'+esc(evT(e))+'">下载 CSV Download</button>':'')+'</section>'+
    '<div class="xstats"><div><b>'+people+' / '+e.seats+'</b><span>已报名 / 名额</span></div><div><b>'+e.remaining+'</b><span>剩余名额</span></div><div><b>'+list.length+'</b><span>报名笔数</span></div>'+
    WHO.map(function(w){var n=list.filter(function(a){return a.who===w[0];}).length;return '<div><b>'+n+'</b><span>'+esc(tx(w[1]))+'</span></div>';}).join("")+'</div>'+
    '<p class="xhint">参加者的联络资料只给你（这个活动的主办方）用于这次活动，请勿外传。</p>'+
@@ -439,8 +446,8 @@ function applyView(id){
   if(!e){page('<div class="xnote err">这个活动目前不接受报名（可能已截止、已额满、已取消或还没公开）。</div><a class="xbtn ghost" href="#/ex">浏览其他活动 Back</a>');return;}
   if(e.my_status){page('<div class="xnote warn">'+T('你的学校已经报名这个活动（'+esc(tx(REG_STATUS[e.my_status]||e.my_status))+'），不能重复报名。','Your school has already booked this event ('+esc(tx(REG_STATUS[e.my_status]||e.my_status))+') and cannot book again.')+'</div><a class="xbtn" href="#/ex/my">查看我的报名</a>');return;}
   if(e.booths_full){page('<div class="xnote err">这个活动的摊位已额满。</div><a class="xbtn ghost" href="#/ex">浏览其他活动</a>');return;}
-  page('<nav class="xcrumb"><a href="#/ex">浏览活动</a> › '+esc(e.title)+'</nav>'+eventCard(e)+
-   (e.description?'<section class="xcard pad"><h2>活动简介</h2><p class="xpre">'+esc(e.description)+'</p><p class="xmeta">'+T("地址：","Address: ")+esc(e.address)+'</p></section>':'')+
+  page('<nav class="xcrumb"><a href="#/ex">浏览活动</a> › '+esc(evT(e))+'</nav>'+eventCard(e)+
+   (evD(e)?'<section class="xcard pad"><h2>活动简介</h2><p class="xpre">'+esc(evD(e))+'</p><p class="xmeta">'+T("地址：","Address: ")+esc(e.address)+'</p></section>':'')+
    '<section class="xform"><h2>报名摊位 Book a booth</h2><form data-form="apply" data-id="'+esc(e.id)+'" novalidate>'+
    field("booths","需要几个摊位 Booths","number",true,"",1,' min="1" max="'+e.booths_remaining+'" step="1" inputmode="numeric"')+'<p class="xhint">'+T('目前剩 '+e.booths_remaining+' 个摊位。摊位费：'+esc(rm(e.booth_fee))+'（每个摊位，向主办方缴付）。',e.booths_remaining+' booths left. Booth fee: '+esc(rm(e.booth_fee))+' per booth, paid to the organiser.')+'</p>'+
    '<label class="xf"><span>展示的科系或主题 Programmes or topics *</span><textarea name="topics" rows="3" required maxlength="500" placeholder="例如：医学、工程、商科；奖学金咨询"></textarea></label>'+
@@ -456,7 +463,7 @@ function myRegsView(){
   page('<section class="xtop"><div><span class="xeye">参展学校 Exhibitor</span><h1>我的报名</h1><p class="xlead">'+esc(r.me.org_name)+'</p></div><a class="xbtn" href="#/ex">浏览活动 Events</a></section>'+
    (r.registrations.length?'<div class="xlist">'+r.registrations.map(function(x){var e=x.event||{};
     return '<article class="xcard row"><div class="xbody"><div class="xpills">'+pill(REG_STATUS[x.status]||x.status,x.status==="accepted"?"ok":x.status==="pending"?"warn":"bad")+pill(T(x.booths_requested+" 个摊位",x.booths_requested+(x.booths_requested>1?" booths":" booth")),"brand")+'</div>'+
-     '<h3>'+esc(e.title||"活动")+'</h3><p class="xmeta">'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+' · '+esc([e.venue,e.city].filter(Boolean).join("，"))+'</p>'+
+     '<h3>'+esc(evT(e)||T("活动","Event"))+'</h3><p class="xmeta">'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+' · '+esc([e.venue,e.city].filter(Boolean).join("，"))+'</p>'+
      '<p class="xmeta">'+T("展示内容：","Topics: ")+esc(x.topics)+'</p>'+(x.organiser_note?'<p class="xnote sm">'+T("主办方备注：","Organiser's note: ")+esc(x.organiser_note)+'</p>':'')+
      (x.can_withdraw?'<div class="xrow"><button type="button" class="xbtn ghost sm danger" data-act="withdraw" data-id="'+esc(x.id)+'">撤回报名 Withdraw</button></div>':'')+'</div></article>';}).join("")+'</div>'
     :'<div class="xempty">你还没有报名任何活动。<a href="#/ex">浏览活动</a>。</div>'));
@@ -475,7 +482,7 @@ function adminView(){
    '<section class="xsec"><h2>待审核主办方 <span>'+po.length+'</span></h2>'+(po.length?'<div class="xlist">'+po.map(function(u){
     return '<article class="xcard row"><div class="xbody"><h3>'+esc(u.org_name)+'</h3><dl class="xdl"><dt>联络人</dt><dd>'+esc(u.name)+'（'+esc(u.position)+'）</dd><dt>电邮</dt><dd>'+esc(u.email)+'</dd><dt>电话</dt><dd>'+esc(u.phone)+'</dd><dt>注册于</dt><dd>'+esc(u.created_at)+'</dd></dl>'+decide("user",u.id)+'</div></article>';}).join("")+'</div>':'<div class="xempty">没有待审核的主办方。</div>')+'</section>'+
    '<section class="xsec"><h2>待审核活动 <span>'+pe.length+'</span></h2>'+(pe.length?'<div class="xlist">'+pe.map(function(e){
-    return eventCard(e,{more:'<p class="xpre sm">'+esc(e.description)+'</p><p class="xmeta">'+T("地址：","Address: ")+esc(e.address)+T(' · 名额 '+e.seats+' 个',' · '+e.seats+' seats')+'</p>'+decide("event",e.id)});}).join("")+'</div>':'<div class="xempty">没有待审核的活动。</div>')+'</section>'+
+    return eventCard(e,{more:'<p class="xpre sm">'+esc(evD(e))+'</p><p class="xmeta">'+T("地址：","Address: ")+esc(e.address)+T(' · 名额 '+e.seats+' 个',' · '+e.seats+' seats')+'</p>'+decide("event",e.id)});}).join("")+'</div>':'<div class="xempty">没有待审核的活动。</div>')+'</section>'+
    '<section class="xsec"><h2>所有主办方 <span>'+r.organisers.length+'</span></h2><div class="xtable"><table><thead><tr><th>机构</th><th>联络人</th><th>状态</th></tr></thead><tbody>'+
     r.organisers.map(function(u){return '<tr><td>'+esc(u.org_name)+'</td><td>'+esc(u.name)+'<br><small>'+esc(u.email)+'</small></td><td>'+esc({pending:"待审核",approved:"已批准",rejected:"已拒绝"}[u.status]||u.status)+'</td></tr>';}).join("")+'</tbody></table></div></section>');
  });

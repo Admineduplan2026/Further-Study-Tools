@@ -64,6 +64,9 @@ module.exports = function (opts) {
       releaseLock: () => { lockHeld = false; }
     }) },
     PropertiesService: { getScriptProperties: () => ({ getProperty: k => (k in props ? props[k] : null), setProperty: (k, v) => { props[k] = String(v); } }) },
+    /* Claude API stand-in for the event translations (opts.fetch(url, options) -> {code, body}); none by default. */
+    UrlFetchApp: { fetch: (url, o) => { if (!opts.fetch) throw new Error("no network in tests"); const r = opts.fetch(url, o);
+      return { getResponseCode: () => r.code, getContentText: () => r.body }; } },
     MailApp: {
       getRemainingDailyQuota: () => quota.left,
       sendEmail: m => {

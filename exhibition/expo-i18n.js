@@ -962,6 +962,10 @@ window.EXPO_I18N={
 "活动名称",
 "Event title"
 ],
+"活动名称和简介会按访客选的语言显示。留空的话，系统会自动翻译成另一种语言（英文或中文）；你也可以自己填写或修改。": [
+"活动名称和简介会按访客选的语言显示。留空的话，系统会自动翻译成另一种语言（英文或中文）；你也可以自己填写或修改。",
+"The title and description are shown in the language each visitor chooses. Leave this empty and the system translates them into the other language (English or 中文) for you; you can also type or change it yourself."
+],
 "活动已取消 Event cancelled": [
 "活动已取消",
 "Event cancelled"
@@ -1126,6 +1130,14 @@ window.EXPO_I18N={
 "编辑活动",
 "Edit event"
 ],
+"翻译后的活动名称 Translated title": [
+"翻译后的活动名称",
+"Translated title"
+],
+"翻译后的简介 Translated description": [
+"翻译后的简介",
+"Translated description"
+],
 "老师": [
 "老师",
 "Teacher"
@@ -1153,6 +1165,10 @@ window.EXPO_I18N={
 "联络人姓名 Contact person": [
 "联络人姓名",
 "Contact person"
+],
+"英文／中文翻译（可选）Translation (optional)": [
+"英文／中文翻译（可选）",
+"English / 中文 translation (optional)"
 ],
 "草稿 Draft": [
 "草稿",

@@ -57,6 +57,15 @@ EDUPLAN home page cards. The form asks for name, email, phone, who they are (stu
 sign-in codes); otherwise the page tells the visitor to keep a screenshot. When an organiser cancels an event, its
 visitors get one email (Bcc). One email can sign up at most 10 times an hour.
 
+## English and 中文
+
+The exhibition site has an EN / 中文 switch (shared with the main site, localStorage `eduplan-lang`). Fixed texts are in
+`exhibition/expo-i18n.js`. Event titles and descriptions are shown in the visitor's language: the organiser writes them in
+one language and may type the translation under **英文／中文翻译 Translation**; left empty, Claude translates them when the
+event is saved or approved, using the chat's Script Properties `ANTHROPIC_API_KEY` and `CHAT_MODEL`. Without a key the
+event shows in its own language. An edited title or description gets a new translation. For events saved before this,
+run **expoTranslateAll** once in the Apps Script editor.
+
 ## Rules checked on the server
 
 - An event cannot be on a past date; its registration deadline must be before the event and not in the past; it needs at

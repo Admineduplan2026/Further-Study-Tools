@@ -189,3 +189,6 @@ main{display:block;outline:none}
 .xlang:hover{border-color:var(--brand)}
 .xbar .xbtn,.xlang{white-space:nowrap}
 .xbrand{flex:0 1 auto;min-width:0}.xbrand span{min-width:0}.xbrand b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xtr{margin:4px 0 14px;padding:10px 14px;border:1px dashed var(--line);border-radius:14px;background:var(--soft)}
+.xtr summary{cursor:pointer;font-weight:600;color:var(--brand-ink);min-height:32px;display:flex;align-items:center}
+.xtr[open] summary{margin-bottom:6px}

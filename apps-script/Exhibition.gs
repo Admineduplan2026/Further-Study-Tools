@@ -7,6 +7,12 @@
  * schools (column booth_capacity) that schools book and the organiser accepts or rejects. Mode "seats" opens only the
  * seats. Rows saved before the mode column existed (mode empty) used booth_capacity as their seats.
  *
+ * Event titles and descriptions are shown in English or 中文 as the visitor chooses: the organiser writes them in one
+ * language and may type the translation (title_tr, description_tr); left empty, it is made by Claude when the event is
+ * saved or approved (Script Property ANTHROPIC_API_KEY, the same key as the chat; CHAT_MODEL). tr_src remembers the text
+ * the translation was made from, so an edited title or description gets a fresh translation. Run expoTranslateAll once
+ * from the editor to translate events saved before this.
+ *
  * The website POSTs to the same /exec URL as everything else; doPost in Code.gs sends every "expo_*" action here:
  *   expo_public                                   upcoming published events (no sign-in, no contact details)
  *   expo_code {email} / expo_verify {email,code}  one-time email code, as for the student portfolio -> {token, me}
@@ -44,7 +50,8 @@ var EXPO_SITE_DEFAULT = 'https://admineduplan2026.github.io/Further-Study-Tools/
 var EXPO_COLS = {
   users: ['id', 'role', 'email', 'name', 'position', 'phone', 'org_name', 'school_type', 'website', 'status', 'review_note', 'consent_at', 'created_at'],
   events: ['id', 'organiser_id', 'title', 'description', 'date', 'start_time', 'end_time', 'venue', 'address', 'city', 'state', 'booth_capacity',
-    'registration_deadline', 'booth_fee', 'cover_image', 'status', 'review_note', 'approved_at', 'created_at', 'updated_at', 'seats', 'mode'],
+    'registration_deadline', 'booth_fee', 'cover_image', 'status', 'review_note', 'approved_at', 'created_at', 'updated_at', 'seats', 'mode',
+    'title_tr', 'description_tr', 'tr_src'],
   registrations: ['id', 'event_id', 'exhibitor_id', 'booths_requested', 'topics', 'special_needs', 'status', 'organiser_note', 'created_at', 'updated_at'],
   attendees: ['id', 'event_id', 'name', 'email', 'phone', 'who', 'school', 'people', 'status', 'consent_at', 'created_at', 'updated_at'],
   sessions: ['h', 'email', 'exp'],
@@ -340,7 +347,7 @@ function expoEventOut_(e, regs, today, org, att) {
   if (!att) att = expoStore_().table('attendees').all();
   if (!regs) regs = expoStore_().table('registrations').all();
   var cap = expoSeatsOf_(e), taken = expoGoing_(e.id, att), bcap = expoBoothsOf_(e), b = expoBooths_(e.id, regs);
-  return {
+  var out = {
     id: e.id, title: e.title, description: e.description, date: e.date, start_time: e.start_time, end_time: e.end_time, venue: e.venue,
     address: e.address, city: e.city, state: e.state, registration_deadline: e.registration_deadline, mode: e.mode === 'both' ? 'both' : 'seats',
     seats: cap, cover_image: e.cover_image, status: expoState_(e, today), organiser: org ? org.org_name : '',
@@ -349,6 +356,10 @@ function expoEventOut_(e, regs, today, org, att) {
     booths: bcap, booth_fee: bcap ? Number(e.booth_fee) || 0 : 0, booths_remaining: Math.max(0, bcap - b.taken), booths_full: bcap > 0 && b.taken >= bcap,
     booths_open: expoBoothsOpen_(e, today)
   };
+  var tr = expoTr_(e);
+  out.src_lang = tr.src; out.title_zh = tr.title_zh; out.title_en = tr.title_en; out.description_zh = tr.description_zh; out.description_en = tr.description_en;
+  out.title_tr = e.title_tr || ''; out.description_tr = e.description_tr || '';
+  return out;
 }
 
 function expoPublic_() {
@@ -373,7 +384,8 @@ function expoEventCheck_(f, today) {
     start_time: expoTime_(f.start_time), end_time: expoTime_(f.end_time), venue: expoText_(f.venue, 160), address: expoText_(f.address, 300),
     city: expoText_(f.city, 80), state: EXPO_STATES.indexOf(String(f.state)) >= 0 ? String(f.state) : '',
     seats: expoInt_(f.seats), registration_deadline: expoDate_(f.registration_deadline), mode: f.mode === 'both' ? 'both' : 'seats',
-    booth_capacity: f.mode === 'both' ? expoInt_(f.booths) : 0, booth_fee: f.mode === 'both' ? Number(f.booth_fee) : 0
+    booth_capacity: f.mode === 'both' ? expoInt_(f.booths) : 0, booth_fee: f.mode === 'both' ? Number(f.booth_fee) : 0,
+    title_tr: expoText_(f.title_tr, 140), description_tr: expoText_(f.description_tr, 3000, true)
   };
   var bad = [];
   ['title', 'description', 'date', 'start_time', 'end_time', 'venue', 'address', 'city', 'state', 'registration_deadline'].forEach(function (k) { if (!e[k]) bad.push(k); });
@@ -403,6 +415,7 @@ function expoEventSave_(who, body) {
     cover = expoSaveCover_(body.cover);
     if (cover.error) return cover;
   }
+  expoTrPrepare_(chk.e, String((body.event || {}).id || ''));
   var r = expoLocked_(function () {
     var st = expoStore_(), events = st.table('events'), id = String((body.event || {}).id || ''), old = id ? expoFind_('events', 'id', id) : null, e = chk.e;
     if (id && !old) return { error: 'not_found' };
@@ -735,13 +748,80 @@ function expoAdminEvent_(who, body) {
     if (org) mail = { to: org.email, title: e.title };
     return { ok: true, status: patch.status };
   });
-  if (r.ok && decision === 'approved') expoNotifySoon_();
+  if (r.ok && decision === 'approved') { expoTrFill_(String(body.event_id || '')); expoNotifySoon_(); }
   if (r.ok && mail) {
     expoMail_([mail.to], (decision === 'approved' ? '活动已发布：' : '活动未获批准：') + mail.title,
       decision === 'approved' ? '你的活动「' + mail.title + '」已通过审核并公开，参展学校现在可以报名摊位。\n' + expoSite_() + '#/org'
         : '你的活动「' + mail.title + '」未通过审核。' + (note ? '\n原因：' + note : '') + '\n你可以修改后再提交：' + expoSite_() + '#/org');
   }
   return r;
+}
+
+/* ---------- Event titles in English and 中文 ---------- */
+
+function expoIsZh_(s) { return /[\u4e00-\u9fff]/.test(String(s || '')); }
+function expoTrKey_(e) { return accountHash_('tr:' + (e.title || '') + '\n' + (e.description || '')); }
+/* The title and description in both languages; the translation is used only when it was made from the current text. */
+function expoTr_(e) {
+  var src = expoIsZh_(e.title) ? 'zh' : 'en', ok = e.tr_src && e.tr_src === expoTrKey_(e);
+  var t = ok && e.title_tr ? e.title_tr : e.title, d = ok && e.description_tr ? e.description_tr : e.description;
+  return src === 'zh' ? { src: src, title_zh: e.title, description_zh: e.description, title_en: t, description_en: d }
+    : { src: src, title_en: e.title, description_en: e.description, title_zh: t, description_zh: d };
+}
+/* Before an event is saved: keep a translation the organiser typed (or left as it was for unchanged text); otherwise ask
+   Claude for one. Without a key the event is saved untranslated and shown in its own language. */
+function expoTrPrepare_(e, id) {
+  var old = id ? expoFind_('events', 'id', id) : null, key = expoTrKey_(e);
+  var typedNew = old ? (e.title_tr !== (old.title_tr || '') || e.description_tr !== (old.description_tr || '')) : !!(e.title_tr || e.description_tr);
+  var same = old && old.tr_src === key;
+  if ((e.title_tr || e.description_tr) && (typedNew || same)) { e.tr_src = key; return; }
+  var t = expoTranslate_(e.title, e.description, expoIsZh_(e.title) ? 'en' : 'zh');
+  if (t) { e.title_tr = t.title; e.description_tr = t.description; e.tr_src = key; }
+  else { e.title_tr = ''; e.description_tr = ''; e.tr_src = ''; }
+}
+/* After approval: translate a published event that has no current translation yet. */
+function expoTrFill_(id) {
+  var e = expoFind_('events', 'id', id);
+  if (!e || (e.tr_src && e.tr_src === expoTrKey_(e))) return false;
+  var t = expoTranslate_(e.title, e.description, expoIsZh_(e.title) ? 'en' : 'zh');
+  if (!t) return false;
+  expoLocked_(function () { expoStore_().table('events').update('id', id, { title_tr: t.title, description_tr: t.description, tr_src: expoTrKey_(e) }); return { ok: true }; });
+  return true;
+}
+/* Run once from the editor (select expoTranslateAll, Run): translates every event that has no current translation. */
+function expoTranslateAll() {
+  var n = 0;
+  expoStore_().table('events').all().forEach(function (e) { if (e.status !== 'cancelled' && expoTrFill_(e.id)) n++; });
+  console.log('Translated ' + n + ' event(s).');
+}
+/* Asks Claude for the title and description in English or Simplified Chinese; {title, description} or null. */
+function expoTranslate_(title, description, to) {
+  var props = PropertiesService.getScriptProperties(), key = props.getProperty('ANTHROPIC_API_KEY');
+  if (!key || !title) return null;
+  var lang = to === 'en' ? 'English' : 'Simplified Chinese';
+  var req = {
+    model: props.getProperty('CHAT_MODEL') || 'claude-haiku-5-5', max_tokens: 3000,
+    system: 'You translate education event listings for a Malaysian study-guidance website. Translate the title and the ' +
+      'description into ' + lang + '. Keep the meaning exactly; add nothing. Keep names of universities, colleges, schools, ' +
+      'places, programmes and people as they are usually written in ' + lang + ' (keep the original when unsure), and keep ' +
+      'numbers, dates, times, prices and links unchanged. Keep line breaks. Reply with only a JSON object: {"title": "...", "description": "..."}.',
+    messages: [{ role: 'user', content: JSON.stringify({ title: title, description: description || '' }) }]
+  };
+  try {
+    var res = UrlFetchApp.fetch('https://api.anthropic.com/v1/messages', {
+      method: 'post', contentType: 'application/json', muteHttpExceptions: true,
+      headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' }, payload: JSON.stringify(req)
+    });
+    if (res.getResponseCode() !== 200) { console.warn('expo translate ' + res.getResponseCode() + ': ' + res.getContentText().slice(0, 300)); return null; }
+    var data = JSON.parse(res.getContentText());
+    var text = (data.content || []).filter(function (b) { return b.type === 'text'; }).map(function (b) { return b.text; }).join('');
+    var m = text.match(/\{[\s\S]*\}/), o = m && JSON.parse(m[0]);
+    if (!o || typeof o.title !== 'string' || !o.title.trim()) return null;
+    return { title: expoText_(o.title, 140), description: expoText_(o.description || '', 3000, true) };
+  } catch (err) {
+    console.warn('expo translate failed: ' + err);
+    return null;
+  }
 }
 
 /* ---------- Cover images and emails ---------- */
@@ -863,7 +943,7 @@ function expoNotifyRun_() {
 
 function expoNotifyOne_(to, e, org) {
   var place = [e.venue, e.address, e.city, e.state].filter(Boolean).join(', ');
-  var body = '有一个新的教育展 A new education exhibition is open on Eduplan:\n\n' + e.title + '\n' +
+  var body = '有一个新的教育展 A new education exhibition is open on Eduplan:\n\n' + e.title + (e.title_tr ? '\n' + e.title_tr : '') + '\n' +
     '日期 Date: ' + e.date + '  ' + e.start_time + '–' + e.end_time + '\n' +
     '地点 Venue: ' + place + '\n' + (org ? '主办方 Organiser: ' + org.org_name + '\n' : '') +
     (e.description ? '\n' + String(e.description).slice(0, 600) + '\n' : '') +

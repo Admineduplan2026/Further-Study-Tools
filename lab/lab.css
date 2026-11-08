@@ -676,3 +676,7 @@ body.introopen{overflow:hidden}
 .gadd .field:nth-child(2){flex:0 1 180px}
 .gadd input{font:inherit;min-height:44px;padding:8px 12px;border:1px solid #b9c1c9;border-radius:12px;width:100%}
 .gdone{margin-top:12px}.gdone summary{cursor:pointer;font-weight:500;min-height:36px}
+
+/* Exhibition titles come in both languages; the page language picks one. */
+html[lang="en"] .l-zh{display:none}
+html:not([lang="en"]) .l-en{display:none}
