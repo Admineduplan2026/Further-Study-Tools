@@ -81,10 +81,10 @@ function header(){
  document.body.className=role?"as-"+role:"";
  var links=role==="organiser"?[["#/org","我的活动 My events"],["#/org/new","开新活动 New event"]]:
   role==="exhibitor"?[["#/ex","浏览活动 Events"],["#/ex/my","我的报名 My bookings"]]:role==="admin"?[["#/admin","审核 Review"]]:[];
- head.innerHTML='<div class="xbar"><a class="xbrand" href="#/"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN"><span><b>Eduplan 教育展</b><small>Education Exhibition</small></span></a>'+
+ head.innerHTML='<div class="xbar"><a class="xbrand" href="#/"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN"><span><b>Eduplan 教育展</b>'+T("<small>Education Exhibition</small>","")+'</span></a>'+
   roleBadge(role)+'<span class="xsp"></span>'+
   '<button type="button" class="xlang" data-notr data-act="lang" aria-label="'+T("Switch to English","切换到中文")+'" lang="'+T("en","zh")+'">'+T("EN","中文")+'</button>'+
-  (me?'<button type="button" class="xbtn ghost sm" data-act="logout">登出<span class="xhide-s"> Sign out</span></button>':'<a class="xbtn ghost sm" href="#/login" title="主办方或参展学校登录 Organiser or exhibitor sign in">登录<span class="xhide-s"> Sign in</span></a>')+
+  (me?'<button type="button" class="xbtn ghost sm" data-act="logout">'+T("登出","Sign out")+'</button>':'<a class="xbtn ghost sm" href="#/login" title="主办方或参展学校登录 Organiser or exhibitor sign in">'+T("登录","Sign in")+'</a>')+
   '<a class="xhome" href="../" title="回到 EDUPLAN 主网站 Back to EDUPLAN" aria-label="回到 EDUPLAN 主网站 Back to EDUPLAN"><span class="xhome-i" aria-hidden="true">🏠</span><span class="xhome-t"><b>EDUPLAN</b><small>回到主网站</small></span></a>'+
   (showTip(me)?'<div class="xtip'+(TIP.seen?'':' pop')+'" role="note"><p>💡 登入 EDUPLAN 以便得到最新消息，可以<a href="../#portfolio" data-act="tip-go">点击这里</a>哦！</p>'+
    '<button type="button" class="xtip-x" data-act="tip-close" aria-label="关闭提示 Close">×</button></div>':'')+'</div>'+
