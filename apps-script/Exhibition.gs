@@ -3,9 +3,9 @@
  * students, parents and teachers sign up for a seat (no account), and Eduplan staff (admins) approve new organisers and
  * their events. Website: exhibition/ (exhibition/expo.js).
  *
- * Seats: an event's capacity (column booth_capacity, kept from the earlier booth version) is the number of seats; every
- * visitor sign-up takes as many seats as the people it brings. School booth booking has been retired: new exhibitor
- * accounts and new booth bookings are refused (old rows, if any, stay in the Registrations tab).
+ * Each event has talk seats for visitors (column seats) and, when the organiser opens them (mode "both"), booths for
+ * schools (column booth_capacity) that schools book and the organiser accepts or rejects. Mode "seats" opens only the
+ * seats. Rows saved before the mode column existed (mode empty) used booth_capacity as their seats.
  *
  * The website POSTs to the same /exec URL as everything else; doPost in Code.gs sends every "expo_*" action here:
  *   expo_public                                   upcoming published events (no sign-in, no contact details)
@@ -44,7 +44,7 @@ var EXPO_SITE_DEFAULT = 'https://admineduplan2026.github.io/Further-Study-Tools/
 var EXPO_COLS = {
   users: ['id', 'role', 'email', 'name', 'position', 'phone', 'org_name', 'school_type', 'website', 'status', 'review_note', 'consent_at', 'created_at'],
   events: ['id', 'organiser_id', 'title', 'description', 'date', 'start_time', 'end_time', 'venue', 'address', 'city', 'state', 'booth_capacity',
-    'registration_deadline', 'booth_fee', 'cover_image', 'status', 'review_note', 'approved_at', 'created_at', 'updated_at'],
+    'registration_deadline', 'booth_fee', 'cover_image', 'status', 'review_note', 'approved_at', 'created_at', 'updated_at', 'seats', 'mode'],
   registrations: ['id', 'event_id', 'exhibitor_id', 'booths_requested', 'topics', 'special_needs', 'status', 'organiser_note', 'created_at', 'updated_at'],
   attendees: ['id', 'event_id', 'name', 'email', 'phone', 'who', 'school', 'people', 'status', 'consent_at', 'created_at', 'updated_at'],
   sessions: ['h', 'email', 'exp'],
@@ -123,6 +123,12 @@ function expoSheetTable_(ss, name) {
     sh.getRange(1, 1, sh.getMaxRows(), cols.length).setNumberFormat('@');   // plain text: dates and phone numbers stay as typed
     sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setBackground('#e4f2fa');
     sh.setFrozenRows(1);
+  }
+  /* Columns added later (e.g. seats and mode on Events) get their header the first time the tab is read. */
+  else if (sh.getLastColumn() < cols.length) {
+    var have = sh.getLastColumn();
+    sh.getRange(1, have + 1, sh.getMaxRows(), cols.length - have).setNumberFormat('@');
+    sh.getRange(1, have + 1, 1, cols.length - have).setValues([cols.slice(have)]).setFontWeight('bold').setBackground('#e4f2fa');
   }
   var tz = ss.getSpreadsheetTimeZone();
   function read() {
@@ -266,7 +272,7 @@ function expoMe_(who) {
 function expoRegister_(who, body) {
   if (who.admin) return { error: 'admin_account' };
   var role = String(body.role || '');
-  if (role !== 'organiser') return { error: 'bad_role' };   // booths are retired: only organisers sign up
+  if (role !== 'organiser' && role !== 'exhibitor') return { error: 'bad_role' };
   if (body.consent !== true) return { error: 'consent' };
   var u = {
     role: role, email: who.email, name: expoText_(body.name, 100), position: expoText_(body.position, 100), phone: expoPhone_(body.phone),
@@ -324,15 +330,24 @@ function expoGoing_(eventId, att) {
 /* Visitors can sign up for a published event until its registration deadline (which may be the event day). */
 function expoCanAttend_(e, today) { return e.status === 'published' && e.date >= today && e.registration_deadline >= today; }
 
+/* Seats for visitors and booths for schools of an event (see the header: rows without a mode used booth_capacity as seats). */
+function expoSeatsOf_(e) { return e.mode ? Number(e.seats) || 0 : Number(e.booth_capacity) || 0; }
+function expoBoothsOf_(e) { return e.mode === 'both' ? Number(e.booth_capacity) || 0 : 0; }
+/* Schools can book while booths are open, the event is published and the deadline has not passed. */
+function expoBoothsOpen_(e, today) { return expoBoothsOf_(e) > 0 && expoOpen_(e, today); }
+
 function expoEventOut_(e, regs, today, org, att) {
   if (!att) att = expoStore_().table('attendees').all();
-  var cap = Number(e.booth_capacity) || 0, taken = expoGoing_(e.id, att);
+  if (!regs) regs = expoStore_().table('registrations').all();
+  var cap = expoSeatsOf_(e), taken = expoGoing_(e.id, att), bcap = expoBoothsOf_(e), b = expoBooths_(e.id, regs);
   return {
     id: e.id, title: e.title, description: e.description, date: e.date, start_time: e.start_time, end_time: e.end_time, venue: e.venue,
-    address: e.address, city: e.city, state: e.state, booth_capacity: cap, registration_deadline: e.registration_deadline,
+    address: e.address, city: e.city, state: e.state, registration_deadline: e.registration_deadline, mode: e.mode === 'both' ? 'both' : 'seats',
     seats: cap, cover_image: e.cover_image, status: expoState_(e, today), organiser: org ? org.org_name : '',
     remaining: Math.max(0, cap - taken), full: taken >= cap, open: expoOpen_(e, today),
-    going: taken, can_attend: expoCanAttend_(e, today) && taken < cap
+    going: taken, can_attend: expoCanAttend_(e, today) && taken < cap,
+    booths: bcap, booth_fee: bcap ? Number(e.booth_fee) || 0 : 0, booths_remaining: Math.max(0, bcap - b.taken), booths_full: bcap > 0 && b.taken >= bcap,
+    booths_open: expoBoothsOpen_(e, today)
   };
 }
 
@@ -357,7 +372,8 @@ function expoEventCheck_(f, today) {
     title: expoText_(f.title, 140), description: expoText_(f.description, 3000, true), date: expoDate_(f.date),
     start_time: expoTime_(f.start_time), end_time: expoTime_(f.end_time), venue: expoText_(f.venue, 160), address: expoText_(f.address, 300),
     city: expoText_(f.city, 80), state: EXPO_STATES.indexOf(String(f.state)) >= 0 ? String(f.state) : '',
-    booth_capacity: expoInt_(f.seats != null ? f.seats : f.booth_capacity), registration_deadline: expoDate_(f.registration_deadline), booth_fee: 0
+    seats: expoInt_(f.seats), registration_deadline: expoDate_(f.registration_deadline), mode: f.mode === 'both' ? 'both' : 'seats',
+    booth_capacity: f.mode === 'both' ? expoInt_(f.booths) : 0, booth_fee: f.mode === 'both' ? Number(f.booth_fee) : 0
   };
   var bad = [];
   ['title', 'description', 'date', 'start_time', 'end_time', 'venue', 'address', 'city', 'state', 'registration_deadline'].forEach(function (k) { if (!e[k]) bad.push(k); });
@@ -366,7 +382,12 @@ function expoEventCheck_(f, today) {
   if (e.end_time <= e.start_time) return { error: 'bad_time', fields: ['end_time'] };
   if (e.registration_deadline > e.date) return { error: 'deadline_after_event', fields: ['registration_deadline'] };
   if (e.registration_deadline < today) return { error: 'past_deadline', fields: ['registration_deadline'] };
-  if (!(e.booth_capacity > 0) || e.booth_capacity > EXPO_MAX_SEATS) return { error: 'bad_capacity', fields: ['seats'] };
+  if (!(e.seats > 0) || e.seats > EXPO_MAX_SEATS) return { error: 'bad_capacity', fields: ['seats'] };
+  if (e.mode === 'both') {
+    if (!(e.booth_capacity > 0) || e.booth_capacity > EXPO_MAX_BOOTHS) return { error: 'bad_booths', fields: ['booths'] };
+    if (!isFinite(e.booth_fee) || e.booth_fee < 0 || e.booth_fee > 1000000) return { error: 'bad_fee', fields: ['booth_fee'] };
+    e.booth_fee = Math.round(e.booth_fee * 100) / 100;
+  }
   return { e: e };
 }
 
@@ -388,8 +409,11 @@ function expoEventSave_(who, body) {
     if (old && old.organiser_id !== who.user.id) return { error: 'forbidden' };   // organisers only touch their own events
     if (old && old.status === 'cancelled') return { error: 'cancelled' };
     var att = old ? st.table('attendees').all() : [], taken = old ? expoGoing_(old.id, att) : 0;
-    if (e.booth_capacity < taken) return { error: 'capacity_below_booked', fields: ['seats'], booked: taken };
-    if (!submit && taken) return { error: 'has_registrations' };   // an event people signed up for cannot go back to draft
+    var b = old ? expoBooths_(old.id, st.table('registrations').all()) : { taken: 0, count: 0 };
+    if (e.seats < taken) return { error: 'capacity_below_booked', fields: ['seats'], booked: taken };
+    if (b.taken && e.mode !== 'both') return { error: 'has_booths', fields: ['mode'], booked: b.taken };   // schools have booked: booths stay open
+    if (e.booth_capacity < b.taken) return { error: 'booths_below_booked', fields: ['booths'], booked: b.taken };
+    if (!submit && (taken || b.count)) return { error: 'has_registrations' };   // an event people signed up for cannot go back to draft
     e.status = !submit ? 'draft' : old && old.approved_at ? 'published' : 'pending';
     e.updated_at = expoStamp_();
     if (cover) e.cover_image = cover;
@@ -468,7 +492,7 @@ function expoRegDecide_(who, body) {
     if (reg.status === 'withdrawn') return { error: 'withdrawn' };
     if (decision === 'accepted') {
       var b = expoBooths_(own.e.id, st.table('registrations').all().filter(function (x) { return x.id !== reg.id; }));
-      if (b.accepted + (Number(reg.booths_requested) || 0) > (Number(own.e.booth_capacity) || 0)) return { error: 'full' };
+      if (b.accepted + (Number(reg.booths_requested) || 0) > expoBoothsOf_(own.e)) return { error: 'full' };
     }
     st.table('registrations').update('id', reg.id, { status: decision, organiser_note: note, updated_at: expoStamp_() });
     var school = expoFind_('users', 'id', reg.exhibitor_id);
@@ -541,7 +565,7 @@ function expoAttend_(body) {
     var t = st.table('attendees'), all = t.all(), old = null, stamp = expoStamp_();
     all.forEach(function (a) { if (a.event_id === e.id && a.email === v.email) old = a; });
     /* Seats left for this sign-up: the earlier sign-up of the same email gives its seats back first. */
-    var left = (Number(e.booth_capacity) || 0) - expoGoing_(e.id, all) + (old && old.status === 'going' ? Number(old.people) || 1 : 0);
+    var left = expoSeatsOf_(e) - expoGoing_(e.id, all) + (old && old.status === 'going' ? Number(old.people) || 1 : 0);
     if (left <= 0) return { error: 'full', remaining: 0 };
     if (v.people > left) return { error: 'not_enough_seats', fields: ['people'], remaining: left };
     var row = { name: v.name, phone: v.phone, who: v.who, school: v.school, people: String(v.people), status: 'going', consent_at: stamp, updated_at: stamp };
@@ -587,7 +611,7 @@ function expoOpenEvents_(who, body) {
   var mine = {};
   regs.forEach(function (r) { if (r.exhibitor_id === who.user.id && r.status !== 'withdrawn') mine[r.event_id] = r.status; });
   var list = st.table('events').all().filter(function (e) {
-    return expoOpen_(e, today) && (!state || e.state === state) && (!city || e.city.toLowerCase().indexOf(city) >= 0) &&
+    return expoBoothsOpen_(e, today) && (!state || e.state === state) && (!city || e.city.toLowerCase().indexOf(city) >= 0) &&
       (!from || e.date >= from) && (!to || e.date <= to);
   }).sort(function (a, b) { return a.date.localeCompare(b.date); }).map(function (e) {
     var o = expoEventOut_(e, regs, today, expoById_(users, e.organiser_id));
@@ -597,11 +621,39 @@ function expoOpenEvents_(who, body) {
   return { events: list };
 }
 
-/* Booth booking is retired (events now have seats for visitors): new bookings are refused. */
 function expoApply_(who, body) {
   var deny = expoRole_(who, 'exhibitor');
   if (deny) return deny;
-  return { error: 'no_booths' };
+  var booths = expoInt_(body.booths == null || body.booths === '' ? 1 : body.booths);
+  var topics = expoText_(body.topics, 500, true), needs = expoText_(body.special_needs, 500, true), mail = null;
+  if (!(booths >= 1) || booths > EXPO_MAX_BOOTHS) return { error: 'bad_booths', fields: ['booths'] };
+  if (!topics) return { error: 'missing', fields: ['topics'] };
+  var r = expoLocked_(function () {
+    var today = expoToday_(), st = expoStore_(), e = expoFind_('events', 'id', String(body.event_id || ''));
+    if (!e || e.status === 'draft' || e.status === 'pending' || e.status === 'rejected') return { error: 'not_found' };
+    if (e.status === 'cancelled') return { error: 'cancelled' };
+    if (!expoBoothsOf_(e)) return { error: 'no_booths' };   // this event opened only talk seats
+    if (!expoOpen_(e, today)) return { error: 'closed' };
+    var regs = st.table('registrations'), all = regs.all(), prev = null;
+    for (var i = 0; i < all.length; i++) if (all[i].event_id === e.id && all[i].exhibitor_id === who.user.id) prev = all[i];
+    if (prev && prev.status !== 'withdrawn') return { error: 'duplicate' };   // one registration per school per event
+    var b = expoBooths_(e.id, all), left = expoBoothsOf_(e) - b.taken;
+    if (left <= 0) return { error: 'full', remaining: 0 };
+    if (booths > left) return { error: 'not_enough_booths', remaining: left, fields: ['booths'] };
+    var now = expoStamp_(), rec = { event_id: e.id, exhibitor_id: who.user.id, booths_requested: booths, topics: topics, special_needs: needs,
+      status: 'pending', organiser_note: '', updated_at: now };
+    if (prev) { regs.update('id', prev.id, rec); rec.id = prev.id; }   // a school that withdrew may apply again (same record)
+    else { rec.id = expoId_('REG'); rec.created_at = now; regs.insert(rec); }
+    var org = expoFind_('users', 'id', e.organiser_id);
+    if (org) mail = { to: org.email, title: e.title };
+    return { ok: true, id: rec.id, remaining: left - booths };
+  });
+  if (r.ok && mail) {
+    expoMail_([mail.to], '新的摊位报名：' + mail.title,
+      who.user.org_name + ' 报名了「' + mail.title + '」的 ' + booths + ' 个摊位。\n展示内容：' + topics + (needs ? '\n特别需求：' + needs : '') +
+      '\n\n请到主办方后台接受或拒绝：' + expoSite_() + '#/org');
+  }
+  return r;
 }
 
 function expoMyRegs_(who) {

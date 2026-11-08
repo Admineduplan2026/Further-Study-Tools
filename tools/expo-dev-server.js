@@ -4,7 +4,8 @@
    node tools/expo-dev-server.js [port]      then open http://localhost:8080/exhibition/
 
    Test accounts (ready to use, sign in with the code printed in this window):
-     organiser@test.local  approved organiser          admin@test.local    Eduplan admin */
+     organiser@test.local  approved organiser          admin@test.local    Eduplan admin
+     school@test.local     school (exhibitor) */
 const http = require("http"), fs = require("fs"), path = require("path");
 const root = path.join(__dirname, ".."), port = Number(process.argv[2]) || 8080;
 let seeding = true;
@@ -18,19 +19,20 @@ const expo = require("./expo-harness")({
   }
 });
 
-/* Ready-made account: an approved organiser. */
+/* Ready-made accounts: an approved organiser and a school. */
 function seed(email, role, extra) {
   const s = expo.signIn(email);
   return expo.call(Object.assign({ action: "expo_register", token: s.token, role, name: "Test " + role, position: "Manager", phone: "012-345 6789", consent: true }, extra)).me;
 }
 const org = seed("organiser@test.local", "organiser", { org_name: "Test Education Fair Sdn Bhd" });
+seed("school@test.local", "exhibitor", { org_name: "Test University", school_type: "university", website: "https://university.test" });
 const adminToken = expo.signIn("admin@test.local").token, orgToken = expo.signIn("organiser@test.local").token;
 expo.call({ action: "expo_admin_user", token: adminToken, user_id: org.id, decision: "approved" });
 /* One published sample event a month from now, so the exhibition list and the EDUPLAN home page have something to show. */
 const soon = d => new Date(Date.now() + d * 864e5 + 8 * 36e5).toISOString().slice(0, 10);
 const sample = expo.call({ action: "expo_event_save", token: orgToken, submit: true, event: { title: "Penang Education Fair (sample)", description: "A sample event for trying the site.",
   date: soon(30), start_time: "10:00", end_time: "17:00", venue: "Sample Hall", address: "1 Sample Road", city: "George Town", state: "Pulau Pinang",
-  seats: 100, registration_deadline: soon(20) } });
+  seats: 100, mode: "both", booths: 20, booth_fee: 300, registration_deadline: soon(20) } });
 expo.call({ action: "expo_admin_event", token: adminToken, event_id: sample.id, decision: "approved" });
 expo.mails.length = 0;
 seeding = false;
@@ -62,6 +64,6 @@ http.createServer((req, res) => {
   fs.createReadStream(file).pipe(res);
 }).listen(port, () => {
   console.log("Eduplan Exhibition (local, test data only): http://localhost:" + port + "/exhibition/");
-  console.log("Test accounts: organiser@test.local, admin@test.local");
+  console.log("Test accounts: organiser@test.local, school@test.local, admin@test.local");
   console.log("Sign-in codes are printed here. Data is lost when you stop this server (Ctrl+C).");
 });

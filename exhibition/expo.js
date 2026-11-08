@@ -1,5 +1,5 @@
-/* Eduplan 教育展 (Exhibition): organisers open education talks and fairs with limited seats, visitors sign up for a seat,
-   Eduplan admins approve. (School booth booking is retired; the old exhibitor pages stay only for existing accounts.)
+/* Eduplan 教育展 (Exhibition): organisers open education talks and fairs with limited talk seats for visitors and,
+   when they choose, booths for schools (exhibitors). Visitors sign up for a seat, schools book booths, Eduplan admins approve.
    Talks to the same Apps Script /exec as the main site (EDUPLAN_API_URL in ../assets/js/config.js), actions "expo_*"
    in apps-script/Exhibition.gs. The server checks every rule; the checks here only give quicker messages.
    Routes: #/  #/login/organiser|exhibitor  #/org  #/org/new  #/org/edit/<id>  #/org/regs/<id>  #/org/att/<id>  #/ex  #/ex/apply/<id>  #/ex/my  #/admin
@@ -24,13 +24,13 @@ var ERR={bad_email:"请输入正确的电邮地址。",wait:"验证码刚寄出�
  deadline_after_event:"报名截止日不能晚于活动日期。",past_deadline:"报名截止日不能早于今天。",bad_capacity:"名额必须是 1 到 5000 的整数。",
  bad_fee:"摊位费必须是 0 或以上的金额。",organiser_not_approved:"你的主办方账号还在等待 Eduplan 审核，暂时只能保存草稿。",
  capacity_below_booked:"名额不能少于已报名的人数。",has_registrations:"已经有人报名，活动不能改回草稿。",cancelled:"这个活动已取消。",
- not_found:"找不到这个活动或报名。",closed:"报名已截止。",not_enough_seats:"剩余名额不够。",no_booths:"摊位报名已停止，现在改为名额报名。",duplicate:"你的学校已经报名这个活动，不能重复报名。",full:"名额已满。",
- not_enough_booths:"剩余摊位不够。",bad_booths:"摊位数量必须是 1 或以上的整数。",withdrawn:"学校已撤回这个报名。",bad_status:"这个状态不能再更改。",
+ not_found:"找不到这个活动或报名。",closed:"报名已截止。",not_enough_seats:"剩余名额不够。",no_booths:"这个活动只开放讲座名额，没有学校摊位。",has_booths:"已经有学校报名摊位，不能关闭摊位。",booths_below_booked:"摊位总数不能少于已报名的摊位数。",duplicate:"你的学校已经报名这个活动，不能重复报名。",full:"名额已满。",
+ not_enough_booths:"剩余摊位不够。",bad_booths:"摊位数量必须是 1 到 1000 的整数。",withdrawn:"学校已撤回这个报名。",bad_status:"这个状态不能再更改。",
  bad_image:"封面图片只接受 JPG、PNG 或 WebP。",image_too_large:"封面图片不能超过 2 MB。",server:"系统出错，请稍后再试。",bad_request:"请求有误。",
  network:"连不上 Eduplan 伺服器，请检查网络后再试。",bad_people:"人数必须是 1 到 10 位。",event_over:"这个活动已经结束，不能再报名。",
  attend_many:"这个电邮报名太多次，请 1 小时后再试。"};
 var FIELD={title:"活动名称",description:"简介",date:"日期",start_time:"开始时间",end_time:"结束时间",venue:"场地名称",address:"地址",city:"城市",state:"州属",
- booth_capacity:"名额",seats:"讲座名额",registration_deadline:"报名截止日",booth_fee:"摊位费",org_name:"机构／学校名称",name:"联络人姓名",position:"职位",phone:"电话",
+ booth_capacity:"名额",seats:"讲座名额",mode:"开放什么报名",registration_deadline:"报名截止日",booth_fee:"摊位费",org_name:"机构／学校名称",name:"联络人姓名",position:"职位",phone:"电话",
  school_type:"学校类型",website:"学校官网",topics:"展示的科系或主题",booths:"摊位数量",email:"电邮",who:"身份",school:"就读学校",people:"人数"};
 
 function load(){try{return localStorage.getItem(TOKEN_KEY)||"";}catch(e){return "";}}
@@ -74,7 +74,7 @@ function header(){
   role==="exhibitor"?[["#/ex","浏览活动 Events"],["#/ex/my","我的报名 My bookings"]]:role==="admin"?[["#/admin","审核 Review"]]:[];
  head.innerHTML='<div class="xbar"><a class="xbrand" href="#/"><img src="'+esc(window.EDUPLAN_LOGO||"../assets/img/logo.png")+'" alt="EDUPLAN"><span><b>Eduplan 教育展</b><small>Education Exhibition</small></span></a>'+
   roleBadge(role)+'<span class="xsp"></span>'+
-  (me?'<button type="button" class="xbtn ghost sm" data-act="logout">登出 Sign out</button>':'<a class="xbtn ghost sm" href="#/login/organiser" title="主办方登录 Organiser sign in">主办方<span class="xhide-s">登录</span></a>')+
+  (me?'<button type="button" class="xbtn ghost sm" data-act="logout">登出<span class="xhide-s"> Sign out</span></button>':'<a class="xbtn ghost sm" href="#/login" title="主办方或参展学校登录 Organiser or exhibitor sign in">登录<span class="xhide-s"> Sign in</span></a>')+
   '<a class="xhome" href="../" title="回到 EDUPLAN 主网站 Back to EDUPLAN" aria-label="回到 EDUPLAN 主网站 Back to EDUPLAN"><span class="xhome-i" aria-hidden="true">🏠</span><span class="xhome-t"><b>EDUPLAN</b><small>回到主网站</small></span></a>'+
   (showTip(me)?'<div class="xtip'+(TIP.seen?'':' pop')+'" role="note"><p>💡 登入 EDUPLAN 以便得到最新消息，可以<a href="../#portfolio" data-act="tip-go">点击这里</a>哦！</p>'+
    '<button type="button" class="xtip-x" data-act="tip-close" aria-label="关闭提示 Close">×</button></div>':'')+'</div>'+
@@ -126,6 +126,7 @@ function eventView(id){
 function actions(e,open){
  return '<div class="xrow">'+(e.can_attend?'<a class="xbtn sm" href="#/join/'+esc(e.id)+'">报名参加 Register to attend</a>':
   e.status==="published"&&e.full?'<button class="xbtn sm" type="button" disabled>名额已满 Full</button>':'')+
+  (e.booths_open&&!e.booths_full?'<a class="xbtn ghost sm" href="#/ex/apply/'+esc(e.id)+'">学校报名摊位 Book a booth</a>':'')+
   (open?'':'<button type="button" class="xbtn ghost sm" data-act="toggle-share" aria-expanded="false">分享 Share</button>')+'</div>'+shareBox(e,open);
 }
 /* Share an event: the public event page link (#/e/<id>) to WhatsApp, Facebook, Telegram, X or email, the phone's own
@@ -206,14 +207,16 @@ function eventCard(e,opts){
   '<p class="xmeta">📍 '+esc([e.venue,e.city,e.state].filter(Boolean).join("，"))+'</p>'+
   (e.organiser?'<p class="xmeta">主办方 Organiser：'+esc(e.organiser)+'</p>':'')+
   '<p class="xmeta">免费报名 Free · 报名截止 Deadline：'+day(e.registration_deadline)+'</p>'+
-  '<div class="xpills">'+state+(opts.mine?pill("已报名："+(REG_STATUS[opts.mine]||opts.mine),"brand"):"")+'</div>'+
+  (e.booths?'<p class="xmeta">🏫 学校摊位 Booths：'+e.booths+' 个 · 摊位费 '+esc(rm(e.booth_fee))+'</p>':'')+
+  '<div class="xpills">'+state+(e.booths&&e.status==="published"&&e.open?(e.booths_full?pill("摊位已满","bad"):pill("摊位剩 "+e.booths_remaining+" 个","brand")):"")+(opts.mine?pill("已报名："+(REG_STATUS[opts.mine]||opts.mine),"brand"):"")+'</div>'+
   (opts.more||"")+'</div></article>';
 }
 function homeView(){
  var my=seq,me=S.me;
  page('<section class="xhero"><span class="xeye">Eduplan 教育展 · Education Exhibition</span><h1>升学讲座和教育展，名额有限，快来报名</h1>'+
-  '<p class="xlead">升学讲座和教育展，名额有限，学生、家长和老师免费报名。主办方（教育者、协会、学校）开办活动，所有新主办方和活动都先经 Eduplan 审核，避免假活动。</p>'+
-  '<div class="xroles"><a class="xrolecard r-organiser" href="'+(me&&me.role==="organiser"?"#/org":"#/login/organiser")+'"><span class="xri" aria-hidden="true">🎪</span><b>我是主办方</b><span>Organiser</span><small>开办讲座或教育展、查看报名名单</small></a></div></section>'+
+  '<p class="xlead">升学讲座和教育展，名额有限，学生、家长和老师免费报名。主办方（教育者、协会、学校）开办活动，大学和学院可以报名摊位。所有新主办方和活动都先经 Eduplan 审核，避免假活动。</p>'+
+  '<div class="xroles"><a class="xrolecard r-organiser" href="'+(me&&me.role==="organiser"?"#/org":"#/login/organiser")+'"><span class="xri" aria-hidden="true">🎪</span><b>我是主办方</b><span>Organiser</span><small>开办讲座或教育展、查看报名名单</small></a>'+
+  '<a class="xrolecard r-exhibitor" href="'+(me&&me.role==="exhibitor"?"#/ex":"#/login/exhibitor")+'"><span class="xri" aria-hidden="true">🏫</span><b>我是参展学校</b><span>Exhibitor</span><small>浏览教育展、报名摊位</small></a></div></section>'+
   '<section class="xsec"><h2>即将举行的教育展 <span>Upcoming exhibitions</span></h2><div id="xlist"><div class="xload" role="status"><i aria-hidden="true"></i>载入中…</div></div></section>');
  api("expo_public").then(function(r){
   if(done(my))return;var box=document.getElementById("xlist");if(!box)return;
@@ -232,7 +235,7 @@ function loginView(role){
  var who=L.role==="organiser"?"主办方 Organiser":L.role==="exhibitor"?"参展学校 Exhibitor":"";
  if(me&&!me.role)return registerView();
  page('<section class="xform narrow"><span class="xeye">'+(who?esc(who)+" · ":"")+'登录 Sign in</span><h1>用电邮登录</h1>'+
-  '<p class="xlead">主办方用电邮登录：我们会把 6 位数验证码寄到你的电邮，不需要密码。学生和家长报名参加不需要登录。</p>'+
+  '<p class="xlead">主办方和参展学校用电邮登录：我们会把 6 位数验证码寄到你的电邮，不需要密码。第一次登录时再选择账号类型。学生和家长报名参加不需要登录。</p>'+
   (L.msg?'<div class="xnote err" role="alert">'+esc(L.msg)+'</div>':'')+
   (L.step==="email"?'<form data-form="code"><label class="xf"><span>电邮 Email</span><input type="email" name="email" required autocomplete="email" value="'+esc(L.email)+'"></label>'+
    '<button class="xbtn" type="submit">寄验证码 Send code</button></form>'
@@ -242,16 +245,18 @@ function loginView(role){
  var f=app.querySelector("input");if(f)f.focus();
 }
 function registerView(){
- var org=true;
+ var L=S.login,role=L.role||"exhibitor",org=role==="organiser";
  page('<section class="xform"><span class="xeye">注册 Sign up</span><h1>完成注册</h1><p class="xlead">已用 <b>'+esc(S.me.email)+'</b> 登录。一个账号只能有一种角色，注册后不能更改。</p>'+
-  '<form data-form="register" novalidate><input type="hidden" name="role" value="organiser"><p class="xhint">注册为<b>主办方 Organiser</b>：开办讲座或教育展，需经 Eduplan 审核后才能发布活动。</p>'+
+  '<form data-form="register" novalidate><fieldset class="xf"><legend>账号类型 Account type</legend><div class="xchoice">'+
+   '<label><input type="radio" name="role" value="organiser"'+(org?" checked":"")+'> <b>主办方</b> Organiser<small>开办教育展。需经 Eduplan 审核后才能发布活动。</small></label>'+
+   '<label><input type="radio" name="role" value="exhibitor"'+(!org?" checked":"")+'> <b>参展学校</b> Exhibitor<small>大学、学院、中学报名摊位。</small></label></div></fieldset>'+
   field("org_name",org?"机构名称 Organisation name":"学校全名 School full name","text",true)+
   (org?"":'<label class="xf"><span>学校类型 School type *</span><select name="school_type" required><option value="">请选择</option>'+TYPES.map(function(t){return '<option value="'+t[0]+'">'+esc(t[1])+'</option>';}).join("")+'</select></label>')+
   field("name","联络人姓名 Contact person","text",true)+field("position","职位 Position","text",true)+
   '<label class="xf"><span>电邮 Email</span><input value="'+esc(S.me.email)+'" readonly></label>'+
   field("phone","电话 Phone","tel",true)+(org?"":field("website","学校官网 School website","url",true,"https://"))+
-  '<div class="xprivacy"><b>资料使用说明 How we use your details</b><p>我们只收集以上资料，用于开办和管理教育展活动，不收身份证号码。'+
-  '你的机构名称会显示在活动页面；联络资料只给 Eduplan 审核和联络用。'+
+  '<div class="xprivacy"><b>资料使用说明 How we use your details</b><p>我们只收集以上资料，用于开办和管理教育展活动和摊位，不收身份证号码。'+
+  (org?'你的机构名称会显示在活动页面；联络资料只给 Eduplan 审核和联络用。':'你的学校资料和联络人资料只提供给你报名的活动的主办方，不会公开。')+
   '你可以随时联络 Eduplan 删除账号。</p><label class="xcheck"><input type="checkbox" name="consent" required> 我已阅读并同意以上资料使用说明 I agree</label></div>'+
   '<button class="xbtn" type="submit">注册 Sign up</button></form></section>');
 }
@@ -285,11 +290,12 @@ function orgView(){
     var st=e.status;
     return '<article class="xcard row"><div class="xbody"><span class="xdate">'+day(e.date)+' · '+esc(e.start_time)+'–'+esc(e.end_time)+'</span><h3>'+esc(e.title)+'</h3>'+
      '<p class="xmeta">📍 '+esc([e.venue,e.city].join("，"))+'</p><div class="xpills">'+pill(EV_STATUS[st]||st,st==="published"?"ok":st==="cancelled"||st==="rejected"?"bad":"mute")+
-     pill("已报名 "+(e.going||0)+" / "+e.seats+" 个名额","brand")+(e.full?pill("名额已满","bad"):"")+'</div>'+
+     pill("讲座 "+(e.going||0)+" / "+e.seats+" 个名额","brand")+(e.full?pill("名额已满","bad"):"")+
+     (e.booths?pill("摊位 "+(e.accepted_booths+e.pending_booths)+" / "+e.booths,"brand")+(e.pending_booths?pill(e.pending_booths+" 个摊位待审核","warn"):""):"")+'</div>'+
      (st==="rejected"&&e.review_note?'<p class="xnote err sm">Eduplan 备注：'+esc(e.review_note)+'</p>':'')+
      (st==="pending"?'<p class="xmeta">Eduplan 审核通过后，活动会公开让学生和家长报名。</p>':'')+(st==="published"?shareBox(e,false):'')+
-     '<div class="xrow">'+(st!=="cancelled"?'<a class="xbtn sm" href="#/org/att/'+esc(e.id)+'">报名名单 Sign-ups ('+(e.visitors||0)+')</a>'+(st==="published"?'<button type="button" class="xbtn ghost sm" data-act="toggle-share" aria-expanded="false">分享 Share</button>':'')+'<a class="xbtn ghost sm" href="#/org/edit/'+esc(e.id)+'">编辑 Edit</a>'+
-      '<button type="button" class="xbtn ghost sm danger" data-act="cancel-event" data-id="'+esc(e.id)+'" data-title="'+esc(e.title)+'">取消活动 Cancel</button>':'<a class="xbtn ghost sm" href="#/org/att/'+esc(e.id)+'">报名名单 Sign-ups ('+(e.visitors||0)+')</a>')+'</div></div></article>';}).join("")+'</div>'
+     '<div class="xrow">'+(st!=="cancelled"?'<a class="xbtn sm" href="#/org/att/'+esc(e.id)+'">报名名单 Sign-ups ('+(e.visitors||0)+')</a>'+(e.booths||e.registrations?'<a class="xbtn sm" href="#/org/regs/'+esc(e.id)+'">摊位报名 Booths ('+e.registrations+')</a>':'')+(st==="published"?'<button type="button" class="xbtn ghost sm" data-act="toggle-share" aria-expanded="false">分享 Share</button>':'')+'<a class="xbtn ghost sm" href="#/org/edit/'+esc(e.id)+'">编辑 Edit</a>'+
+      '<button type="button" class="xbtn ghost sm danger" data-act="cancel-event" data-id="'+esc(e.id)+'" data-title="'+esc(e.title)+'">取消活动 Cancel</button>':'<a class="xbtn ghost sm" href="#/org/att/'+esc(e.id)+'">报名名单 Sign-ups ('+(e.visitors||0)+')</a>'+(e.registrations?'<a class="xbtn ghost sm" href="#/org/regs/'+esc(e.id)+'">摊位报名 Booths</a>':''))+'</div></div></article>';}).join("")+'</div>'
     :'<div class="xempty">你还没有开办活动。<a href="#/org/new">开第一个活动</a>。</div>'));
  });
 }
@@ -312,9 +318,14 @@ function eventForm(id){
    field("venue","场地名称 Venue","text",true,"",e.venue)+field("address","地址 Address","text",true,"",e.address)+
    '<div class="xgrid2">'+field("city","城市 City","text",true,"",e.city)+
    '<label class="xf"><span>州属 State *</span><select name="state" required><option value="">请选择</option>'+STATES.map(function(s){return '<option'+(e.state===s?" selected":"")+'>'+esc(s)+'</option>';}).join("")+'</select></label></div>'+
+   '<fieldset class="xf"><legend>开放什么报名 What to open *</legend><div class="xchoice">'+
+    '<label><input type="radio" name="mode" value="seats"'+(e.mode!=="both"?" checked":"")+'> <b>只开放讲座名额</b> Talk seats only<small>学生、家长和老师免费报名座位。</small></label>'+
+    '<label><input type="radio" name="mode" value="both"'+(e.mode==="both"?" checked":"")+'> <b>讲座名额 + 学校摊位</b> Seats and booths<small>另外让大学、学院报名摊位，由你接受或拒绝。</small></label></div></fieldset>'+
    '<div class="xgrid2">'+field("seats","讲座名额 Seats","number",true,"例如 100",e.seats,' min="1" max="5000" step="1" inputmode="numeric"')+
    field("registration_deadline","报名截止日 Deadline","date",true,"",e.registration_deadline,' min="'+t+'"')+'</div>'+
-   '<p class="xhint">学生和家长免费报名，每人可以替最多 10 人报名，名额满了就自动停止报名。报名截止日可以是活动当天。</p>'+
+   '<div class="xgrid2" data-booths'+(e.mode==="both"?'':' hidden')+'>'+field("booths","学校摊位 Booths","number",false,"例如 20",e.booths||"",' min="1" max="1000" step="1" inputmode="numeric"')+
+   field("booth_fee","摊位费 Booth fee (RM)","number",false,"0 = 免费",e.booths?e.booth_fee:0,' min="0" step="0.01" inputmode="decimal"')+'</div>'+
+   '<p class="xhint">学生和家长免费报名，每人可以替最多 10 人报名，名额满了就自动停止报名。报名截止日可以是活动当天，也是学校摊位的截止日。摊位费目前只显示，不做线上付款。</p>'+
    '<label class="xf"><span>封面图片 Cover image（可选，JPG/PNG/WebP）</span><input type="file" name="cover" accept="image/jpeg,image/png,image/webp"></label>'+
    (e.cover_image?'<img class="xcover sm" src="'+esc(e.cover_image)+'" alt="目前的封面">':'')+
    '<div class="xrow"><button class="xbtn" type="submit" data-submit="1">'+(e.approved?"保存并发布 Save &amp; publish":"提交 Eduplan 审核 Submit for review")+'</button>'+
@@ -341,6 +352,8 @@ function checkEvent(v){
  if(v.registration_deadline>v.date)return {error:"deadline_after_event",fields:["registration_deadline"]};
  if(v.registration_deadline<t)return {error:"past_deadline",fields:["registration_deadline"]};
  var n=Number(v.seats);if(!(n>0&&n<=5000)||Math.floor(n)!==n)return {error:"bad_capacity",fields:["seats"]};
+ if(v.mode==="both"){var k=Number(v.booths);if(!(k>0&&k<=1000)||Math.floor(k)!==k)return {error:"bad_booths",fields:["booths"]};
+  if(v.booth_fee===""||!(Number(v.booth_fee)>=0))return {error:"bad_fee",fields:["booth_fee"]};}
  return null;
 }
 function regsView(id){
@@ -351,7 +364,7 @@ function regsView(id){
   var live=e.status!=="cancelled";
   page('<nav class="xcrumb"><a href="#/org">我的活动</a> › '+esc(e.title)+'</nav><section class="xtop"><div><span class="xeye">主办方后台 · 管理报名</span><h1>'+esc(e.title)+'</h1>'+
    '<p class="xlead">'+day(e.date)+' · '+esc(e.venue)+'</p></div></section>'+
-   '<div class="xstats"><div><b>'+acc+'</b><span>已接受摊位</span></div><div><b>'+pen+'</b><span>待审核摊位</span></div><div><b>'+e.booth_capacity+'</b><span>摊位总数</span></div><div><b>'+e.remaining+'</b><span>剩余</span></div></div>'+
+   '<div class="xstats"><div><b>'+acc+'</b><span>已接受摊位</span></div><div><b>'+pen+'</b><span>待审核摊位</span></div><div><b>'+e.booths+'</b><span>摊位总数</span></div><div><b>'+e.booths_remaining+'</b><span>剩余</span></div></div>'+
    (!live?'<div class="xnote err">这个活动已取消，已报名的学校会看到「活动已取消」。</div>':'')+
    '<p class="xhint">学校的联络资料只给你（这个活动的主办方）看，请勿外传。</p>'+
    (r.registrations.length?'<div class="xlist">'+r.registrations.map(function(x){var s=x.school||{};
@@ -406,7 +419,7 @@ function browseView(){
   if(done(my))return;var box=document.getElementById("xlist");if(!box)return;
   if(r.error){box.innerHTML=failed(r);return;}
   box.innerHTML=r.events.length?'<div class="xgrid">'+r.events.map(function(e){
-   var act=e.my_status?'<a class="xbtn ghost sm" href="#/ex/my">查看我的报名 My booking</a>':e.full?'<button class="xbtn sm" type="button" disabled>已额满 Full</button>':'<a class="xbtn sm" href="#/ex/apply/'+esc(e.id)+'">报名摊位 Book a booth</a>';
+   var act=e.my_status?'<a class="xbtn ghost sm" href="#/ex/my">查看我的报名 My booking</a>':e.booths_full?'<button class="xbtn sm" type="button" disabled>已额满 Full</button>':'<a class="xbtn sm" href="#/ex/apply/'+esc(e.id)+'">报名摊位 Book a booth</a>';
    return eventCard(e,{mine:e.my_status,more:'<div class="xrow">'+act+'</div>'});}).join("")+'</div>'
    :'<div class="xempty">没有符合条件、还可以报名的活动。</div>';
  });
@@ -418,11 +431,11 @@ function applyView(id){
   var e=r.events.filter(function(x){return x.id===id;})[0];
   if(!e){page('<div class="xnote err">这个活动目前不接受报名（可能已截止、已额满、已取消或还没公开）。</div><a class="xbtn ghost" href="#/ex">浏览其他活动 Back</a>');return;}
   if(e.my_status){page('<div class="xnote warn">你的学校已经报名这个活动（'+esc(REG_STATUS[e.my_status]||e.my_status)+'），不能重复报名。</div><a class="xbtn" href="#/ex/my">查看我的报名</a>');return;}
-  if(e.full){page('<div class="xnote err">这个活动的摊位已额满。</div><a class="xbtn ghost" href="#/ex">浏览其他活动</a>');return;}
+  if(e.booths_full){page('<div class="xnote err">这个活动的摊位已额满。</div><a class="xbtn ghost" href="#/ex">浏览其他活动</a>');return;}
   page('<nav class="xcrumb"><a href="#/ex">浏览活动</a> › '+esc(e.title)+'</nav>'+eventCard(e)+
    (e.description?'<section class="xcard pad"><h2>活动简介</h2><p class="xpre">'+esc(e.description)+'</p><p class="xmeta">地址：'+esc(e.address)+'</p></section>':'')+
    '<section class="xform"><h2>报名摊位 Book a booth</h2><form data-form="apply" data-id="'+esc(e.id)+'" novalidate>'+
-   field("booths","需要几个摊位 Booths","number",true,"",1,' min="1" max="'+e.remaining+'" step="1" inputmode="numeric"')+'<p class="xhint">目前剩 '+e.remaining+' 个摊位。摊位费：'+esc(rm(e.booth_fee))+'（每个摊位，向主办方缴付）。</p>'+
+   field("booths","需要几个摊位 Booths","number",true,"",1,' min="1" max="'+e.booths_remaining+'" step="1" inputmode="numeric"')+'<p class="xhint">目前剩 '+e.booths_remaining+' 个摊位。摊位费：'+esc(rm(e.booth_fee))+'（每个摊位，向主办方缴付）。</p>'+
    '<label class="xf"><span>展示的科系或主题 Programmes or topics *</span><textarea name="topics" rows="3" required maxlength="500" placeholder="例如：医学、工程、商科；奖学金咨询"></textarea></label>'+
    '<label class="xf"><span>特别需求 Special needs（可选）</span><textarea name="special_needs" rows="2" maxlength="500" placeholder="例如：需要电源、2 张桌子、4 张椅子"></textarea></label>'+
    '<p class="xhint">报名后由主办方接受或拒绝。你的学校资料和联络人资料只会提供给这个活动的主办方。</p>'+
@@ -462,6 +475,10 @@ function adminView(){
 }
 
 /* ---------- Events ---------- */
+app.addEventListener("change",function(ev){var el=ev.target;
+ if(el.name==="mode"){var box=app.querySelector("[data-booths]");if(box)box.hidden=el.value!=="both";}
+ else if(el.name==="role"&&el.form&&el.form.getAttribute("data-form")==="register"){S.login.role=el.value;registerView();}
+});
 app.addEventListener("submit",function(ev){
  var f=ev.target,kind=f.getAttribute("data-form");if(!kind)return;ev.preventDefault();
  var v=formData(f),btn=ev.submitter||document.activeElement;
@@ -475,7 +492,7 @@ app.addEventListener("submit",function(ev){
  else if(kind==="event"){
   var submit=btn&&btn.getAttribute("data-submit")==="1",chk=checkEvent(v);
   if(chk){busy(f,false);formError(f,chk);return;}
-  var id=f.getAttribute("data-id");v.seats=Number(v.seats);if(id)v.id=id;
+  var id=f.getAttribute("data-id");v.seats=Number(v.seats);v.booths=Number(v.booths)||0;v.booth_fee=Number(v.booth_fee)||0;if(id)v.id=id;
   p=readCover(f.elements.cover&&f.elements.cover.files[0]).then(function(cover){return api("expo_event_save",{event:v,submit:submit,cover:cover||undefined});},function(e){return e;});
   after=function(r){S.mine=[];S.flash=r.status==="pending"?"已提交，Eduplan 审核通过后会公开让学生和家长报名。":r.status==="published"?"已保存并发布。":"草稿已保存。";go("#/org");};}
  else if(kind==="decide"){var d=btn&&btn.getAttribute("data-decision");p=api("expo_reg_decide",{reg_id:f.getAttribute("data-id"),decision:d,note:v.note});
