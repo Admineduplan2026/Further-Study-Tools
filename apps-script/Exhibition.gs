@@ -15,7 +15,11 @@
  *
  * The website POSTs to the same /exec URL as everything else; doPost in Code.gs sends every "expo_*" action here:
  *   expo_public                                   upcoming published events (no sign-in, no contact details)
- *   expo_code {email} / expo_verify {email,code}  one-time email code, as for the student portfolio -> {token, me}
+ *   expo_login {email,password}                    email and password -> {token, me}
+ *   expo_code {email,purpose} / expo_setpw {email,code,password}   create the login or reset the password: the emailed
+ *                                                 code proves the email once, then the password is set -> {token, me}
+ *   expo_google {credential}                       "Continue with Google" (Account.gs accountGoogleEmail_) -> {token, me}
+ *   expo_verify {email,code}                       older code-only sign-in, kept for pages still cached
  *   expo_me / expo_logout {token}
  *   expo_register {token, role, ...}              first sign-in: choose organiser or exhibitor (one role per account)
  *   Organiser: expo_event_save, expo_my_events, expo_event_regs, expo_reg_decide, expo_event_cancel
@@ -56,9 +60,10 @@ var EXPO_COLS = {
   attendees: ['id', 'event_id', 'name', 'email', 'phone', 'who', 'school', 'people', 'status', 'consent_at', 'created_at', 'updated_at'],
   sessions: ['h', 'email', 'exp'],
   notify: ['event_id', 'next_student', 'next_school', 'sent', 'created_at', 'done_at'],
-  unsubscribed: ['h', 'at']
+  unsubscribed: ['h', 'at'],
+  logins: ['email', 'pw', 'updated_at']   // passwords (Account.gs accountPwMake_), one row per email
 };
-var EXPO_TABS = { users: 'Users', events: 'Events', registrations: 'Registrations', attendees: 'Attendees', sessions: 'Sessions', notify: 'Notify', unsubscribed: 'Unsubscribed' };
+var EXPO_TABS = { users: 'Users', events: 'Events', registrations: 'Registrations', attendees: 'Attendees', sessions: 'Sessions', notify: 'Notify', unsubscribed: 'Unsubscribed', logins: 'Logins' };
 var EXPO_MAIL_RESERVE = 25;   // emails a day kept for sign-in codes and application notices
 var EXPO_STATES = ['Johor', 'Kedah', 'Kelantan', 'Melaka', 'Negeri Sembilan', 'Pahang', 'Perak', 'Perlis', 'Pulau Pinang', 'Sabah', 'Sarawak',
   'Selangor', 'Terengganu', 'W.P. Kuala Lumpur', 'W.P. Labuan', 'W.P. Putrajaya'];
@@ -74,6 +79,9 @@ function expoAction_(body) {
   if (a === 'expo_public') return expoPublic_();
   if (a === 'expo_code') return expoCode_(body);
   if (a === 'expo_verify') return expoVerify_(body);
+  if (a === 'expo_login') return expoLogin_(body);
+  if (a === 'expo_setpw') return expoSetPw_(body);
+  if (a === 'expo_google') return expoGoogle_(body);
   if (a === 'expo_unsub') return expoUnsub_(body);
   if (a === 'expo_attend') return expoAttend_(body);
   var who = expoAuth_(body.token);
@@ -125,7 +133,7 @@ function expoSheetTable_(ss, name) {
   var cols = EXPO_COLS[name], sh = ss.getSheetByName(EXPO_TABS[name]);
   if (!sh) {
     var first = ss.getSheets()[0];
-    sh = ss.getSheets().length === 1 && first.getLastRow() === 0 && !(first.getName() in { Users: 1, Events: 1, Registrations: 1, Attendees: 1, Sessions: 1, Notify: 1, Unsubscribed: 1 })
+    sh = ss.getSheets().length === 1 && first.getLastRow() === 0 && !(first.getName() in { Users: 1, Events: 1, Registrations: 1, Attendees: 1, Sessions: 1, Notify: 1, Unsubscribed: 1, Logins: 1 })
       ? first.setName(EXPO_TABS[name]) : ss.insertSheet(EXPO_TABS[name]);
     sh.getRange(1, 1, sh.getMaxRows(), cols.length).setNumberFormat('@');   // plain text: dates and phone numbers stay as typed
     sh.getRange(1, 1, 1, cols.length).setValues([cols]).setFontWeight('bold').setBackground('#e4f2fa');
@@ -226,34 +234,80 @@ function expoCode_(body) {
     return { ok: true };
   });
   if (r.error) return r;
+  var reset = body.purpose === 'reset';
   MailApp.sendEmail({
-    to: email, name: 'Eduplan 教育展', subject: 'Eduplan 教育展登录验证码 / Exhibition sign-in code: ' + code,
-    body: '你的 Eduplan 教育展登录验证码是 ' + code + '，' + ACCOUNT_CODE_MINUTES + ' 分钟内有效。\n' +
-      'Your Eduplan Exhibition sign-in code is ' + code + '. It expires in ' + ACCOUNT_CODE_MINUTES + ' minutes.\n\n' +
+    to: email, name: 'Eduplan 教育展', subject: (reset ? 'Eduplan 教育展重设密码 / Password reset code: ' : 'Eduplan 教育展验证码 / Exhibition verification code: ') + code,
+    body: '你的 Eduplan 教育展验证码是 ' + code + '，' + ACCOUNT_CODE_MINUTES + ' 分钟内有效，' + (reset ? '用来设定新密码。' : '用来确认电邮、设定密码。') + '\n' +
+      'Your Eduplan Exhibition verification code is ' + code + '. It expires in ' + ACCOUNT_CODE_MINUTES + ' minutes' + (reset ? ' and lets you set a new password.' : ' and confirms your email so you can set your password.') + '\n\n' +
       '如果你没有申请这个验证码，请忽略这封电邮。If you did not ask for this code, you can ignore this email.'
   });
   return { ok: true };
 }
 
+/* Checks (and uses up) the emailed code; null when right, otherwise {error}. Call inside the script lock. */
+function expoUseCode_(email, code) {
+  var cache = CacheService.getScriptCache(), k = 'expo-otp-' + accountHash_(email), rec = null;
+  try { rec = JSON.parse(cache.get(k) || 'null'); } catch (err) { rec = null; }
+  if (!rec) return { error: 'expired' };
+  if (rec.h !== accountHash_(code + ':' + email)) {
+    rec.n++;
+    if (rec.n >= ACCOUNT_CODE_TRIES) cache.remove(k); else cache.put(k, JSON.stringify(rec), ACCOUNT_CODE_MINUTES * 60);
+    return { error: 'bad_code' };
+  }
+  cache.remove(k);
+  return null;
+}
+/* A new session for an email: {token, me}. Call inside the script lock. */
+function expoSession_(email) {
+  var token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '').toLowerCase().slice(0, 64);
+  var h = accountHash_('expo-session:' + token);
+  expoStore_().table('sessions').insert({ h: h, email: email, exp: String(Date.now() + EXPO_SESSION_DAYS * 86400000) });
+  return { token: token, me: expoMe_(expoWho_(email, h)) };
+}
+
 function expoVerify_(body) {
   var email = accountEmail_(body.email), code = String(body.code || '').replace(/\D/g, '');
   if (!email || code.length !== 6) return { error: 'bad_code' };
-  var cache = CacheService.getScriptCache(), k = 'expo-otp-' + accountHash_(email);
   return expoLocked_(function () {
-    var rec = null;
-    try { rec = JSON.parse(cache.get(k) || 'null'); } catch (err) { rec = null; }
-    if (!rec) return { error: 'expired' };
-    if (rec.h !== accountHash_(code + ':' + email)) {
-      rec.n++;
-      if (rec.n >= ACCOUNT_CODE_TRIES) cache.remove(k); else cache.put(k, JSON.stringify(rec), ACCOUNT_CODE_MINUTES * 60);
-      return { error: 'bad_code' };
-    }
-    cache.remove(k);
-    var token = (Utilities.getUuid() + Utilities.getUuid()).replace(/-/g, '').toLowerCase().slice(0, 64);
-    var h = accountHash_('expo-session:' + token);
-    expoStore_().table('sessions').insert({ h: h, email: email, exp: String(Date.now() + EXPO_SESSION_DAYS * 86400000) });
-    return { token: token, me: expoMe_(expoWho_(email, h)) };
+    var bad = expoUseCode_(email, code);
+    return bad || expoSession_(email);
   });
+}
+
+/* Create the login or reset the password: the emailed code proves the email, then the password is saved. */
+function expoSetPw_(body) {
+  var email = accountEmail_(body.email), code = String(body.code || '').replace(/\D/g, '');
+  if (!email) return { error: 'bad_email' };
+  if (!accountPwOk_(body.password)) return { error: 'weak_password' };
+  if (code.length !== 6) return { error: 'bad_code' };
+  var hash = accountPwMake_(body.password);
+  return expoLocked_(function () {
+    var bad = expoUseCode_(email, code);
+    if (bad) return bad;
+    var t = expoStore_().table('logins'), row = { pw: hash, updated_at: expoStamp_() };
+    if (!t.update('email', email, row)) { row.email = email; t.insert(row); }
+    CacheService.getScriptCache().remove('expo-pwfail-' + accountHash_(email));
+    return expoSession_(email);
+  });
+}
+
+/* Email and password; the same answer for an unknown email and a wrong password. 8 wrong tries per email in 15 minutes. */
+function expoLogin_(body) {
+  var email = accountEmail_(body.email), pw = String(body.password == null ? '' : body.password);
+  if (!email || !pw) return { error: 'bad_login' };
+  var fk = 'expo-pwfail-' + accountHash_(email);
+  if (accountPwFails_(fk, false) >= ACCOUNT_PW_TRIES) return { error: 'locked' };
+  var rec = expoFind_('logins', 'email', email);
+  if (!rec || !accountPwCheck_(pw, rec.pw)) { accountPwFails_(fk, true); return { error: 'bad_login' }; }
+  CacheService.getScriptCache().remove(fk);
+  return expoLocked_(function () { return expoSession_(email); });
+}
+
+/* "Continue with Google" (Script Property GOOGLE_CLIENT_ID; the token is checked with Google in Account.gs). */
+function expoGoogle_(body) {
+  var g = accountGoogleEmail_(body.credential);
+  if (g.error) return g;
+  return expoLocked_(function () { return expoSession_(g.email); });
 }
 
 /* The caller of a request: {email, h, user (or null), admin}. */
@@ -980,7 +1034,7 @@ function expoUnsub_(body) {
 function expoSetup() {
   console.log('Email quota left today: ' + MailApp.getRemainingDailyQuota());
   expoStore_().table('users').all();
-  ['events', 'registrations', 'attendees', 'sessions', 'notify', 'unsubscribed'].forEach(function (t) { expoStore_().table(t).all(); });
+  ['events', 'registrations', 'attendees', 'sessions', 'notify', 'unsubscribed', 'logins'].forEach(function (t) { expoStore_().table(t).all(); });
   console.log('Eduplan Exhibitions: ' + SpreadsheetApp.openById(driveCleanId_(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID'))).getUrl());
   if (!ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'expoNotifyDaily'; }))
     ScriptApp.newTrigger('expoNotifyDaily').timeBased().everyDays(1).atHour(10).inTimezone(EXPO_TZ).create();

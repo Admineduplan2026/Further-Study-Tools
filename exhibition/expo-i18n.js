@@ -38,6 +38,14 @@ window.EXPO_I18N={
 "Eduplan 管理员",
 "Admin"
 ],
+"Google 登录没有成功，请再试一次，或用电邮和密码登录。": [
+"Google 登录没有成功，请再试一次，或用电邮和密码登录。",
+"Google sign-in did not work. Please try again, or use your email and password."
+],
+"Google 登录还没开通，请用电邮和密码登录。": [
+"Google 登录还没开通，请用电邮和密码登录。",
+"Google sign-in is not set up yet. Please use your email and password."
+],
 "← 所有教育展 All exhibitions": [
 "← 所有教育展",
 "← All exhibitions"
@@ -497,6 +505,14 @@ window.EXPO_I18N={
 "寄验证码 Send code": [
 "寄验证码",
 "Send code"
+],
+"密码至少要 8 个字符。": [
+"密码至少要 8 个字符。",
+"Use a password of at least 8 characters."
+],
+"密码错太多次，请 15 分钟后再试，或按「忘记密码」。": [
+"密码错太多次，请 15 分钟后再试，或按「忘记密码」。",
+"Too many wrong passwords. Please wait 15 minutes, or use “Forgot password”."
 ],
 "封面图片 Cover image（可选，JPG/PNG/WebP）": [
 "封面图片（可选，JPG/PNG/WebP）",
@@ -1045,6 +1061,10 @@ window.EXPO_I18N={
 "电邮 Email": [
 "电邮",
 "Email"
+],
+"电邮或密码不对。第一次用密码登录？请按「忘记密码」用电邮验证码设定密码。": [
+"电邮或密码不对。第一次用密码登录？请按「忘记密码」用电邮验证码设定密码。",
+"Wrong email or password. First time with a password? Use “Forgot password” to set one with a code from your email."
 ],
 "登出": [
 "登出",

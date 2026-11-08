@@ -1031,7 +1031,7 @@ function applySend(){
    Uploaded documents are never saved in the portfolio. Signing out removes the student's details from this browser. */
 S.prof=store("eduplan-profile")||{};
 var PF_KEY="eduplan-session",PF_AT="eduplan-at",PF_SECTIONS=["saved","quiz","consult","apply","results","profile"];
-var PF={s:store(PF_KEY),at:store(PF_AT)||{},step:"email",email:"",consent:false,msg:"",err:"",busy:false,dirty:false,saving:false,timer:null,loaded:0,del:false};
+var PF={s:store(PF_KEY),at:store(PF_AT)||{},step:"email",mode:"",pw:"",email:"",consent:false,msg:"",err:"",busy:false,dirty:false,saving:false,timer:null,loaded:0,del:false};
 if(PF.s&&!(PF.s.token&&PF.s.exp>Date.now()))PF.s=null;
 /* The website opens with the sign-in page (pfGate). Guests are let in only when sign-in cannot work: the artifact
    preview, or EDUPLAN's daily email limit reached / server unreachable (PF.guestOk), so students are never locked out. */
@@ -1043,7 +1043,10 @@ var PF_ERR={bad_email:"Enter an email like name@example.com.",consent:"Please ti
  bad_code:"That code is not right. Use the latest code EDUPLAN emailed you.",expired:"This code has expired. Ask for a new code.",
  busy:"EDUPLAN is busy right now. Please try again in a moment.",net:"EDUPLAN could not be reached. Check your connection and try again in a few minutes.",
  server:"EDUPLAN's server had a problem. Please try again in a few minutes. If it keeps happening, please tell EDUPLAN.",
- bad_request:"Something went wrong. Please try again."};
+ bad_request:"Something went wrong. Please try again.",
+ pw:"Enter your password.",weak_password:"Use a password of at least 8 characters.",bad_login:"Wrong email or password. First time with a password? Use “Forgot password” to set one with a code from your email.",
+ locked:"Too many wrong passwords. Please wait 15 minutes, or use “Forgot password”.",google_off:"Google sign-in is not set up yet. Please use your email and password.",
+ google_failed:"Google sign-in did not work. Please try again, or use your email and password.",declined:"Something went wrong. Please try again."};
 var STAR='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg>';
 
 /* Sign-in needs the live website's Apps Script; the Claude artifact preview keeps everything in the browser. */
@@ -1149,13 +1152,28 @@ document.addEventListener("visibilitychange",function(){
  else if(PF.s&&Date.now()-PF.loaded>60000)pfStart();
 });
 
-function pfSendCode(email,consent){
+/* Sign-in: email and password (mode "login"); creating an account ("register") or a forgotten password ("reset")
+   sets the password once with a 6-digit code emailed to prove the email (Account.gs account_register). */
+function pfMode(){return PF.mode==="reset"?"reset":sget("eduplan-pfmode")==="register"?"register":"login";}
+function pfLogin2(email,pw){
  PF.email=String(email||"").trim().toLowerCase();PF.err="";PF.msg="";
  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(PF.email)){PF.err=PF_ERR.bad_email;return rerender("pf-email");}
- PF.consent=!!consent;
- if(!PF.consent){PF.err=PF_ERR.consent;return rerender("pf-consent");}
+ if(!pw){PF.err=PF_ERR.pw;return rerender("pf-pw");}
  PF.busy=true;rerender();
- pfPost({action:"account_code",email:PF.email}).then(function(d){
+ pfPost({action:"account_login",email:PF.email,password:pw}).then(function(d){PF.busy=false;
+  if(d&&d.token){pfSignedIn(d);rerender();window.scrollTo(0,0);return;}
+  PF.err=PF_ERR[d&&d.error]||PF_ERR.bad_request;rerender("pf-pw");
+ }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender("pf-pw");});
+}
+/* Register or reset, step 1: the email (and for a new account the password and consent); a code is emailed. */
+function pfSendCode(email,consent,pw){
+ var reset=pfMode()==="reset";
+ PF.email=String(email||"").trim().toLowerCase();PF.err="";PF.msg="";
+ if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(PF.email)){PF.err=PF_ERR.bad_email;return rerender("pf-email");}
+ if(!reset){if(String(pw||"").length<8){PF.err=PF_ERR.weak_password;return rerender("pf-pw");}PF.pw=pw;
+  PF.consent=!!consent;if(!PF.consent){PF.err=PF_ERR.consent;return rerender("pf-consent");}}
+ PF.busy=true;rerender();
+ pfPost({action:"account_code",email:PF.email,purpose:reset?"reset":"signup"}).then(function(d){
   PF.busy=false;
   if(d&&d.ok){PF.step="code";PF.msg="We emailed a 6-digit code to "+PF.email+". It expires in 10 minutes.";return rerender("pf-code");}
   if(d&&d.error==="wait")PF.step="code";
@@ -1163,17 +1181,40 @@ function pfSendCode(email,consent){
   PF.err=PF_ERR[d&&d.error]||PF_ERR.bad_request;rerender(PF.step==="code"?"pf-code":"pf-email");
  }).catch(function(){PF.busy=false;PF.guestOk=true;PF.err=PF_ERR.net;rerender(PF.step==="code"?"pf-code":"pf-email");});
 }
-function pfVerify(code){
+/* Step 2: the code (and for a reset the new password): the password is saved and the student is signed in. */
+function pfVerify(code,pw){
  code=String(code||"").replace(/\D/g,"");PF.err="";
  if(code.length!==6){PF.err=PF_ERR.code;return rerender("pf-code");}
+ if(pfMode()==="reset"){if(String(pw||"").length<8){PF.err=PF_ERR.weak_password;return rerender("pf-pw");}PF.pw=pw;}
  PF.busy=true;rerender();
- pfPost({action:"account_verify",email:PF.email,code:code}).then(function(d){
+ pfPost({action:"account_register",email:PF.email,code:code,password:PF.pw}).then(function(d){
   PF.busy=false;
-  if(!d||!d.token){PF.err=PF_ERR[d&&d.error]||PF_ERR.bad_request;return rerender("pf-code");}
-  pfSignedIn(d);rerender();window.scrollTo(0,0);
+  if(!d||!d.token){PF.err=PF_ERR[d&&d.error]||PF_ERR.bad_request;return rerender(d&&d.error==="weak_password"?"pf-pw":"pf-code");}
+  PF.pw="";PF.mode="";pfSignedIn(d);rerender();window.scrollTo(0,0);
  }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender("pf-code");});
 }
-/* A verified code: keep the session and load the portfolio into this browser (My portfolio and the opening screens). */
+/* "Continue with Google" (Google Identity Services). Shown only when EDUPLAN_GOOGLE_CLIENT_ID is set in config.js. */
+var GSI={cb:null,state:0};
+function gsiReady(fn){
+ if(window.google&&google.accounts&&google.accounts.id){if(GSI.state<2){google.accounts.id.initialize({client_id:window.EDUPLAN_GOOGLE_CLIENT_ID,callback:function(r){if(GSI.cb&&r&&r.credential)GSI.cb(r.credential);},ux_mode:"popup"});GSI.state=2;}return fn();}
+ if(GSI.state===0){GSI.state=1;var sc=document.createElement("script");sc.src="https://accounts.google.com/gsi/client";sc.async=true;sc.onload=function(){gsiReady(function(){window.dispatchEvent(new CustomEvent("eduplan:gsi"));});};document.head.appendChild(sc);}
+ window.addEventListener("eduplan:gsi",function once(){window.removeEventListener("eduplan:gsi",once);fn();});
+}
+function googleButton(el,cb){
+ if(!el||!window.EDUPLAN_GOOGLE_CLIENT_ID||!pfLive())return;
+ GSI.cb=cb;
+ gsiReady(function(){if(!document.body.contains(el))return;el.innerHTML="";
+  google.accounts.id.renderButton(el,{type:"standard",theme:"outline",size:"large",text:"continue_with",shape:"pill",logo_alignment:"left",
+   locale:document.documentElement.lang==="zh-Hans"?"zh_CN":"en",width:Math.max(220,Math.min(380,el.clientWidth||320))});});
+}
+function pfGoogle(cred){
+ PF.err="";PF.busy=true;rerender();
+ pfPost({action:"account_google",credential:cred}).then(function(d){PF.busy=false;
+  if(d&&d.token){PF.mode="";pfSignedIn(d);rerender();window.scrollTo(0,0);return;}
+  PF.err=PF_ERR[d&&d.error]||PF_ERR.google_failed;rerender();
+ }).catch(function(){PF.busy=false;PF.err=PF_ERR.net;rerender();});
+}
+/* Signed in (password, code or Google): keep the session and load the portfolio into this browser (My portfolio and the opening screens). */
 function pfSignedIn(d){
  PF.s={token:d.token,email:d.email,exp:Date.now()+(d.days||30)*864e5};
  if(d.staff)PF.s.staff=true;   /* staff (Account.gs STAFF_EMAILS): the staff page #staff opens after signing in */
@@ -1187,14 +1228,19 @@ function pfSignedIn(d){
  if(PF.s.staff){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}pfStatus("Staff account: opening the staff portal…");setTimeout(function(){location.hash="#staff";},400);}
 }
 /* Sign-in for other screens (the lab's opening screens): the same account and portfolio as My portfolio. */
-window.EDUPLAN_ACCOUNT={live:pfLive,errors:PF_ERR,
- sendCode:function(email){PF.email=String(email||"").trim().toLowerCase();PF.consent=true;return pfPost({action:"account_code",email:PF.email});},
- verify:function(email,code){return pfPost({action:"account_verify",email:String(email||"").trim().toLowerCase(),code:String(code||"").replace(/\D/g,"")}).then(function(d){
-  if(d&&d.token){pfSignedIn(d);render(true);}return d;});}};
+function pfDone(d){if(d&&d.token){pfSignedIn(d);render(true);}return d;}
+window.EDUPLAN_ACCOUNT={live:pfLive,errors:PF_ERR,googleButton:googleButton,
+ login:function(email,pw){return pfPost({action:"account_login",email:String(email||"").trim().toLowerCase(),password:pw}).then(pfDone);},
+ sendCode:function(email,purpose){PF.email=String(email||"").trim().toLowerCase();PF.consent=true;return pfPost({action:"account_code",email:PF.email,purpose:purpose||"signup"});},
+ register:function(email,code,pw){return pfPost({action:"account_register",email:String(email||"").trim().toLowerCase(),code:String(code||"").replace(/\D/g,""),password:pw}).then(pfDone);},
+ google:function(cred){return pfPost({action:"account_google",credential:cred}).then(pfDone);},
+ verify:function(email,code){return pfPost({action:"account_verify",email:String(email||"").trim().toLowerCase(),code:String(code||"").replace(/\D/g,"")}).then(pfDone);}};
 function pfAction(act){
  if(act==="guest"){PF.guest=true;sset("eduplan-guest","1");PF.err="";if(HOST&&HOST.locked&&sget("eduplan-pfmode")){sset("eduplan-pfmode","");location.hash="#home";return;}rerender();window.scrollTo(0,0);return;}
- if(act==="again"){pfSendCode(PF.email,true);return;}
+ if(act==="again"){pfSendCode(PF.email,true,PF.pw);return;}
  if(act==="other"){PF.step="email";PF.err="";PF.msg="";rerender("pf-email");return;}
+ if(act==="m-login"||act==="m-register"||act==="m-reset"){var m=act.slice(2);PF.mode=m==="reset"?"reset":"";PF.step="email";PF.err="";PF.msg="";if(m!=="reset")sset("eduplan-pfmode",m==="register"?"register":"signin");rerender("pf-email");return;}
+ if(act==="show-pw"){var pe=document.getElementById("pf-pw");if(pe){pe.type=pe.type==="password"?"text":"password";}return;}
  if(act==="quiz-restart"){S.guide={step:0,answers:[],tie:null};quizSave();location.hash="#guided";return;}
  if(act==="delete"){PF.del=true;rerender("pf-del-yes");return;}
  if(act==="keep"){PF.del=false;rerender();return;}
@@ -1221,10 +1267,10 @@ function toggleSave(id){
 
 /* First layer: signing in asks only for an email, a one-time code and agreement to how the portfolio is used. */
 function pfAsk(){return '<div class="pfask"><span class="sl">To sign in we only ask for</span><ul>'+
-  '<li><b>Your email</b><span>Your account; we send the sign-in code and reminders here.</span></li>'+
-  '<li><b>A one-time code</b><span>Proves the email is yours. No password to remember.</span></li>'+
+  '<li><b>Your email and a password</b><span>Your account. Your browser or Google can remember the password for next time.</span></li>'+
+  '<li><b>A one-time code, only once</b><span>When you create the account, a code from your email proves it is yours.</span></li>'+
   '<li><b>Your agreement</b><span>To how EDUPLAN uses your portfolio (Malaysia’s Personal Data Protection Act 2010).</span></li></ul>'+
-  '<p class="hint">Everything else is optional, or asked only when you apply. We never ask for a password or card details. <a href="#privacy">What we ask for, and when</a></p></div>';}
+  '<p class="hint">Everything else is optional, or asked only when you apply. We never ask for card details. <a href="#privacy">What we ask for, and when</a></p></div>';}
 function pfLogin(gate){
  var err=PF.err?'<span class="err" id="pf-err">'+esc(PF.err)+'</span>':'',inv=PF.err?' aria-invalid="true" aria-describedby="pf-err"':'',dis=PF.busy?' disabled':'';
  var msg=PF.msg?'<p class="note" role="status">'+esc(PF.msg)+'</p>':'';
@@ -1232,26 +1278,41 @@ function pfLogin(gate){
  if(!pfLive()){var pm=sget("eduplan-pfmode"),member=HOST&&HOST.locked&&!HOST.locked("guided");
   return '<section class="panel pflogin"><h2>'+(pm==="register"?'Register':'Sign in')+'</h2><p class="muted">Registering and signing in work on the live EDUPLAN website. In this preview, your saved programmes and quiz result stay in this browser.</p>'+pfAsk()+
   (gate||(pm&&!member)?'<p class="muted">Tap below to try everything a member can do in this preview.</p><div class="row"><button type="button" class="btn" data-pf="guest">Continue to the preview</button></div>':'')+'</section>';}
- if(PF.step==="code")return '<section class="panel pflogin"><h2>Enter your code</h2>'+msg+
-  '<form class="fields" id="pf-code-form" novalidate><div class="field"><label for="pf-code">6-digit code</label>'+
-  '<input id="pf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+inv+'>'+err+'<span class="hint">Sent to <span data-notr>'+esc(PF.email)+'</span>. Check your spam folder if it is not in your inbox.</span></div>'+
-  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Checking…':'Sign in')+'</button>'+
+ var mode=pfMode(),pwf=function(label,auto,hint){return '<div class="field"><label for="pf-pw">'+label+'</label><div class="pwrow">'+
+   '<input id="pf-pw" type="password" autocomplete="'+auto+'"'+(auto==="new-password"?' minlength="8"':'')+(PF.err===PF_ERR.pw||PF.err===PF_ERR.weak_password||PF.err===PF_ERR.bad_login||PF.err===PF_ERR.locked?inv:'')+'>'+
+   '<button type="button" class="btn ghost pwshow" data-pf="show-pw" aria-label="Show or hide the password">Show</button></div>'+
+   (PF.err===PF_ERR.pw||PF.err===PF_ERR.weak_password||PF.err===PF_ERR.bad_login||PF.err===PF_ERR.locked?err:'')+(hint?'<span class="hint">'+hint+'</span>':'')+'</div>';};
+ var google=window.EDUPLAN_GOOGLE_CLIENT_ID?'<div class="pfor"><span>or</span></div><div class="pfgoogle" id="pf-google" aria-label="Continue with Google"></div>'+
+   '<p class="hint">By continuing with Google you agree to how EDUPLAN keeps your portfolio. <a href="#privacy">Privacy</a></p>':'';
+ var emailField='<div class="field"><label for="pf-email">Email</label><input id="pf-email" type="email" autocomplete="username" value="'+esc(PF.email)+'"'+(PF.err===PF_ERR.bad_email?inv:'')+'>'+(PF.err===PF_ERR.bad_email?err:'')+'</div>';
+ var other=PF.err&&[PF_ERR.bad_email,PF_ERR.pw,PF_ERR.weak_password,PF_ERR.bad_login,PF_ERR.locked,PF_ERR.consent,PF_ERR.code,PF_ERR.bad_code,PF_ERR.expired].indexOf(PF.err)<0?'<p class="err" role="alert">'+esc(PF.err)+'</p>':'';
+ if(PF.step==="code")return '<section class="panel pflogin"><h2>'+(mode==="reset"?'Set a new password':'Confirm your email')+'</h2>'+msg+other+
+  '<form class="fields" id="pf-code-form" novalidate><input type="email" autocomplete="username" value="'+esc(PF.email)+'" hidden><div class="field"><label for="pf-code">6-digit code</label>'+
+  '<input id="pf-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+(PF.err===PF_ERR.code||PF.err===PF_ERR.bad_code||PF.err===PF_ERR.expired?inv:'')+'>'+(PF.err===PF_ERR.code||PF.err===PF_ERR.bad_code||PF.err===PF_ERR.expired?err:'')+
+  '<span class="hint">Sent to <span data-notr>'+esc(PF.email)+'</span>. Check your spam folder if it is not in your inbox.</span></div>'+
+  (mode==="reset"?pwf("New password","new-password","At least 8 characters."):'')+
+  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Checking…':mode==="reset"?'Save password and sign in':'Create my account')+'</button>'+
   '<button type="button" class="btn ghost" data-pf="again"'+dis+'>Send a new code</button><button type="button" class="btn ghost" data-pf="other">Use another email</button></div></form>'+guest+'</section>';
- var mode=gate?"":sget("eduplan-pfmode");
- return '<section class="panel pflogin"><h2>'+(gate?'Sign in to continue':mode==="register"?'Register: create your free account':mode==="signin"?'Sign in to your account':'Sign in or create your portfolio')+'</h2>'+msg+
-  (mode==="register"?'<p class="muted">Enter your email and we send you a 6-digit code. No password needed.</p>':mode==="signin"?'<p class="muted">Enter the email you registered with. We send you a 6-digit code to sign in.</p>':'')+pfAsk()+
-  '<form class="fields" id="pf-email-form" novalidate><div class="field"><label for="pf-email">Email</label>'+
-  '<input id="pf-email" type="email" autocomplete="email" value="'+esc(PF.email)+'"'+(PF.err&&PF.err!==PF_ERR.consent?inv:'')+'>'+(PF.err&&PF.err!==PF_ERR.consent?err:'')+
-  '<span class="hint">No password needed. Each time you sign in, we email you a 6-digit code.</span></div>'+
+ if(mode==="reset")return '<section class="panel pflogin"><h2>Forgot your password?</h2>'+msg+other+
+  '<p class="muted">Enter your email. We send you a 6-digit code, then you choose a new password.</p>'+
+  '<form class="fields" id="pf-email-form" novalidate>'+emailField+
+  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Sending…':'Email me a code')+'</button><button type="button" class="btn ghost" data-pf="m-login">Back to sign in</button></div></form>'+guest+'</section>';
+ if(mode==="register")return '<section class="panel pflogin"><h2>'+(gate?'Create your free account':'Register: create your free account')+'</h2>'+msg+other+pfAsk()+
+  '<form class="fields" id="pf-email-form" novalidate>'+emailField+pwf("Choose a password","new-password","At least 8 characters. Your browser can save it for next time.")+
   '<div class="field"><label class="check"><input type="checkbox" id="pf-consent"'+(PF.consent?' checked':'')+(PF.err===PF_ERR.consent?inv:'')+'><span>I agree that EDUPLAN keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only EDUPLAN staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+(PF.err===PF_ERR.consent?err:'')+'</div>'+
-  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Sending…':'Email me a code')+'</button></div></form>'+
-  (mode==="register"?'<p class="hint">Already have an account? <button type="button" class="linkbtn" data-role="signin">Sign in</button></p>':mode==="signin"?'<p class="hint">First time here? <button type="button" class="linkbtn" data-role="register">Register</button></p>':'')+guest+'</section>';
+  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Sending…':'Create account')+'</button></div>'+
+  '<p class="hint">We email you a 6-digit code once to confirm the email is yours.</p></form>'+google+
+  '<p class="hint">Already have an account? <button type="button" class="linkbtn" data-pf="m-login">Sign in</button></p>'+guest+'</section>';
+ return '<section class="panel pflogin"><h2>'+(gate?'Sign in to continue':'Sign in to your account')+'</h2>'+msg+other+
+  '<form class="fields" id="pf-login-form" novalidate>'+emailField+pwf("Password","current-password","")+
+  '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Signing in…':'Sign in')+'</button><button type="button" class="linkbtn" data-pf="m-reset">Forgot password?</button></div></form>'+google+
+  '<p class="hint">First time here? <button type="button" class="linkbtn" data-pf="m-register">Create a free account</button></p>'+guest+'</section>';
 }
 /* The first page of the website until the student signs in. The page they asked for opens after signing in. */
 V.gate=function(){
  var intro=!PF.gateShown;PF.gateShown=true;   /* animate only the first time it appears */
  return '<section class="gate'+(intro?' intro':'')+'"><div class="gatecopy stack"><span class="eyebrow">Welcome to EDUPLAN</span><h1>Find your course, university and scholarship</h1>'+
-  '<p class="lead">Sign in with your email to start. It is free, there is no password, and your progress is saved so you can continue on any device.</p>'+
+  '<p class="lead">Sign in with your email and password, or with Google. It is free, and your progress is saved so you can continue on any device.</p>'+
   '<ul class="gatelist">'+["Courses, fees and entry requirements from partner universities","Scholarships you can apply for","An AI study assistant and free counsellors","One application form for your chosen university"]
    .map(function(t,k){return '<li style="--i:'+k+'">'+esc(t)+'</li>';}).join("")+'</ul></div>'+pfLogin(true)+'</section>';
 };
@@ -1837,6 +1898,7 @@ function render(keepScroll){
  S.view=r;
  app.innerHTML=V[r]();
  reveal();fsFilter();if(r==="compare"||r==="fit")cmpAnimate();
+ var gb=document.getElementById("pf-google");if(gb)googleButton(gb,pfGoogle);
  var navKey={"guided":"","home":""}[r];
  if(navKey===undefined)navKey=r.indexOf("scholarships-")===0?"scholarships":r;
  Array.prototype.forEach.call(document.querySelectorAll("nav.main a"),function(a){if(a.getAttribute("data-nav")===navKey)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current");});
@@ -1920,8 +1982,9 @@ app.addEventListener("submit",function(ev){
   if(A.step<APPLY_STEPS.length){A.step++;applySave();rerender();window.scrollTo(0,0);var f=app.querySelector("#apply-form input,#apply-form select,#apply-form textarea");if(f)f.focus({preventScroll:true});}
   else{A.complete=true;applySave();location.hash="#stay";}
   return;}
- if(ev.target.id==="pf-email-form"){ev.preventDefault();var pe=document.getElementById("pf-email"),pc=document.getElementById("pf-consent");pfSendCode(pe?pe.value:"",pc&&pc.checked);return;}
- if(ev.target.id==="pf-code-form"){ev.preventDefault();var pk=document.getElementById("pf-code");pfVerify(pk?pk.value:"");return;}
+ if(ev.target.id==="pf-login-form"){ev.preventDefault();var le=document.getElementById("pf-email"),lp=document.getElementById("pf-pw");pfLogin2(le?le.value:"",lp?lp.value:"");return;}
+ if(ev.target.id==="pf-email-form"){ev.preventDefault();var pe=document.getElementById("pf-email"),pc=document.getElementById("pf-consent"),pp=document.getElementById("pf-pw");pfSendCode(pe?pe.value:"",pc&&pc.checked,pp?pp.value:"");return;}
+ if(ev.target.id==="pf-code-form"){ev.preventDefault();var pk=document.getElementById("pf-code"),pq=document.getElementById("pf-pw");pfVerify(pk?pk.value:"",pq?pq.value:"");return;}
  if(ev.target.id==="stay-form"){ev.preventDefault();var B=S.app,es={};
   if(!B.v.acc)es.acc="Please choose one.";if(B.v.acc==="Yes"){if(!B.v.acc_type)es.acc_type="Please choose one.";if(!B.v.acc_room)es.acc_room="Please choose one.";}
   B.err=es;var k2=Object.keys(es)[0];if(k2){rerender("ap-"+k2);return;}

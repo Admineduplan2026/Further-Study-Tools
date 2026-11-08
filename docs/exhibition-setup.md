@@ -37,7 +37,7 @@ instead of quietly starting new, empty sheets in that account's Drive.
 | Admin (EXPO_ADMIN_EMAILS) | Approve or reject organisers and submitted events | Sign up as organiser or school |
 | Visitor 参加者 (students, parents, teachers; no account) | Sign up for seats until the deadline (`#/join/<id>`), up to 10 people per sign-up; the same email again updates it | See other visitors; sign up for events in review, cancelled, past the deadline or full |
 
-One account has one role, chosen at sign-up. Sign-in is a 6-digit code by email (no password), as for students.
+One account has one role, chosen at sign-up. Sign-in is email and password (tab Logins; a code is emailed once to create the login or reset a forgotten password), or Continue with Google, as for students (see docs/student-portfolio-setup.md).
 
 ## Visitors: 报名参加
 

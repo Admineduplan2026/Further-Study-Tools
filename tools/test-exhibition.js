@@ -378,5 +378,53 @@ test("without a typed translation, Claude translates on save and on approval", (
   assert.strictEqual(ev.title_en, "EN: 升学讲座"); assert.strictEqual(ev.description_en, "EN: 免费"); assert.strictEqual(ev.title_zh, "升学讲座");
 });
 
+console.log("Passwords and Google");
+test("a password is set once with the emailed code, then signing in needs only the email and password", () => {
+  const h = require("./expo-harness")({ admins: ["admin@test.local"], today: TODAY, quiet: true });
+  assert.ok(h.call({ action: "expo_code", email: "pw@test.local", purpose: "signup" }).ok);
+  assert.ok(/验证码|verification/.test(h.mails[h.mails.length - 1].subject));
+  assert.strictEqual(h.call({ action: "expo_setpw", email: "pw@test.local", code: h.codes["pw@test.local"], password: "short" }).error, "weak_password");
+  assert.strictEqual(h.call({ action: "expo_setpw", email: "pw@test.local", code: "000000", password: "long enough 1" }).error, "bad_code");
+  const r = h.call({ action: "expo_setpw", email: "pw@test.local", code: h.codes["pw@test.local"], password: "long enough 1" });
+  assert.ok(r.token && r.me && r.me.email === "pw@test.local", JSON.stringify(r));
+  assert.ok(!JSON.stringify(h.tables.logins).includes("long enough 1"), "the password itself is never stored");
+  assert.ok(/^p1\$\d+\$[0-9a-f]+\$[0-9a-f]{64}$/.test(h.tables.logins[0].pw));
+  const ok = h.call({ action: "expo_login", email: "PW@test.local", password: "long enough 1" });
+  assert.ok(ok.token && ok.token !== r.token);
+  assert.ok(h.call({ action: "expo_me", token: ok.token }).me);
+  assert.strictEqual(h.call({ action: "expo_login", email: "pw@test.local", password: "wrong pass" }).error, "bad_login");
+  assert.strictEqual(h.call({ action: "expo_login", email: "nobody@test.local", password: "long enough 1" }).error, "bad_login", "same answer for an unknown email");
+});
+test("too many wrong passwords lock the email for a while; a reset with the emailed code opens it again", () => {
+  const h = require("./expo-harness")({ admins: [], today: TODAY, quiet: true });
+  h.call({ action: "expo_code", email: "x@test.local" });
+  h.call({ action: "expo_setpw", email: "x@test.local", code: h.codes["x@test.local"], password: "right password" });
+  for (let i = 0; i < 8; i++) assert.strictEqual(h.call({ action: "expo_login", email: "x@test.local", password: "nope nope " + i }).error, "bad_login");
+  assert.strictEqual(h.call({ action: "expo_login", email: "x@test.local", password: "right password" }).error, "locked");
+  h.signIn("x@test.local");   // clears the code wait so a new code can be asked for
+  h.call({ action: "expo_code", email: "x@test.local", purpose: "reset" });
+  assert.ok(/password/i.test(h.mails[h.mails.length - 1].subject));
+  assert.ok(h.call({ action: "expo_setpw", email: "x@test.local", code: h.codes["x@test.local"], password: "new password" }).token);
+  assert.ok(h.call({ action: "expo_login", email: "x@test.local", password: "new password" }).token);
+  assert.strictEqual(h.call({ action: "expo_login", email: "x@test.local", password: "right password" }).error, "bad_login");
+});
+test("Google sign-in accepts only a verified email in a token meant for EDUPLAN", () => {
+  let info = {};
+  const h = require("./expo-harness")({ admins: [], today: TODAY, quiet: true, fetch: url => {
+    assert.ok(url.startsWith("https://oauth2.googleapis.com/tokeninfo?id_token="));
+    return { code: 200, body: JSON.stringify(info) }; } });
+  const tok = "aaa.bbb.ccc", good = { aud: "client-1", iss: "https://accounts.google.com", email: "G@Test.local", email_verified: "true", exp: String(Math.floor(Date.now() / 1000) + 600) };
+  assert.strictEqual(h.call({ action: "expo_google", credential: tok }).error, "google_off");
+  h.props.GOOGLE_CLIENT_ID = "client-1";
+  info = good;
+  const r = h.call({ action: "expo_google", credential: tok });
+  assert.ok(r.token && r.me.email === "g@test.local", JSON.stringify(r));
+  [{ aud: "other" }, { email_verified: "false" }, { iss: "evil.example" }, { exp: "1" }].forEach(bad => {
+    info = Object.assign({}, good, bad);
+    assert.strictEqual(h.call({ action: "expo_google", credential: tok }).error, "google_failed", JSON.stringify(bad));
+  });
+  assert.strictEqual(h.call({ action: "expo_google", credential: "not a token" }).error, "google_failed");
+});
+
 console.log("\n" + passed + " passed, " + failed + " failed");
 process.exit(failed ? 1 : 0);

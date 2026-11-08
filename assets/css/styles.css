@@ -74,7 +74,7 @@ form.fields,.fields{display:flex;flex-direction:column;gap:18px}
 .field{display:flex;flex-direction:column;gap:6px;min-width:0}
 .field label,.legend{font-size:14px;font-weight:500}
 .hint{font-size:13px;color:var(--muted)}
-input[type=text],input[type=tel],input[type=email],input[type=date],input[type=month],select,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid #b9c1c9;border-radius:12px;padding:11px 14px;min-height:48px;width:100%}
+input[type=text],input[type=tel],input[type=email],input[type=password],input[type=date],input[type=month],select,textarea{font:inherit;color:var(--ink);background:#fff;border:1px solid #b9c1c9;border-radius:12px;padding:11px 14px;min-height:48px;width:100%}
 textarea{min-height:110px;resize:vertical}
 .err{font-size:13px;color:var(--err)}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
@@ -861,3 +861,12 @@ select.rxadd{min-height:36px;padding:4px 10px;font-size:13px;width:auto;max-widt
  .unigrid .uplace{display:none}
  .unigrid .textlink{display:none}
 }
+
+/* Password sign-in: show/hide button beside the field, and the Google button */
+.pwrow{display:flex;gap:8px;align-items:stretch}
+.pwrow input{flex:1;min-width:0}
+.pwshow{flex:none;min-height:44px;padding:0 14px}
+.pfor{display:flex;align-items:center;gap:12px;margin:16px 0 10px;color:var(--muted,#58616c);font-size:13px}
+.pfor::before,.pfor::after{content:"";flex:1;height:1px;background:var(--line,#dfe6ec)}
+.pfgoogle{min-height:44px;max-width:380px}
+.linkbtn{background:none;border:0;padding:0 4px;color:var(--brand,#0a6ea8);font:inherit;text-decoration:underline;cursor:pointer;min-height:44px}

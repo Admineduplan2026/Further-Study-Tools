@@ -964,30 +964,41 @@ function interests(){
    d.classList.add("out");setTimeout(function(){d.remove();document.body.classList.remove("introopen");render(true);},300);}});
  setTimeout(function(){var f=d.querySelector("[data-ip]");if(f)f.focus({preventScroll:true});},50);
  return true;}
-/* Second screen: sign in (or register: the first sign-in creates the account) with an email code, or continue as a
-   guest. It uses the same account as My portfolio (app.js EDUPLAN_ACCOUNT): signing in here loads the portfolio, and
-   My portfolio shows the student signed in. Skipped when already signed in, or once chosen in this tab. */
+/* Second screen: sign in with email and password (or Google), create an account (a code emailed once confirms the
+   email, then the password is set), or continue as a guest. It uses the same account as My portfolio (app.js
+   EDUPLAN_ACCOUNT). Skipped when already signed in, or once chosen in this tab. */
 function account(){
  var done=false;try{done=!!sessionStorage.getItem("eduplan-acct");}catch(e){}
  if(S.session||done||/^#(privacy|portfolio)/.test(location.hash)||document.querySelector(".iacct"))return false;
- var AC=window.EDUPLAN_ACCOUNT,live=!!(AC&&AC.live()),st={step:"email",email:"",consent:false,err:"",msg:"",busy:false,errAt:""};
+ var AC=window.EDUPLAN_ACCOUNT,live=!!(AC&&AC.live()),st={mode:"login",step:"form",email:"",pw:"",consent:false,err:"",msg:"",busy:false,errAt:""};
  var d=document.createElement("div");d.className="intro iacct";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","iacct-h");
  function E(k){return (AC&&AC.errors[k])||"Something went wrong. Please try again.";}
  function draw(focus){
   var err=function(at){return st.err&&st.errAt===at?'<span class="err" id="ia-err" role="alert">'+esc(st.err)+'</span>':'';},dis=st.busy?' disabled':'';
+  var inv=function(at){return st.errAt===at&&st.err?' aria-invalid="true" aria-describedby="ia-err"':'';};
+  var email='<div class="field"><label for="ia-email">Email</label><input id="ia-email" type="email" autocomplete="username" value="'+esc(st.email)+'"'+inv("email")+'>'+err("email")+'</div>';
+  var pw=function(label,auto,hint){return '<div class="field"><label for="ia-pw">'+label+'</label><div class="pwrow"><input id="ia-pw" type="password" autocomplete="'+auto+'"'+inv("pw")+'>'+
+   '<button type="button" class="btn ghost pwshow" data-ia="showpw" aria-label="Show or hide the password">Show</button></div>'+err("pw")+(hint?'<span class="hint">'+hint+'</span>':'')+'</div>';};
+  var google=window.EDUPLAN_GOOGLE_CLIENT_ID?'<div class="pfor"><span>or</span></div><div class="pfgoogle" id="ia-google"></div><p class="hint">By continuing with Google you agree to how EDUPLAN keeps your portfolio.</p>':'';
+  var other=st.err&&st.errAt==="top"?'<p class="err" role="alert">'+esc(st.err)+'</p>':'';
   var form=!live?'<p class="iam">Signing in works on the live EDUPLAN website. In this preview you can try everything as a guest.</p>'+
     '<div class="row"><button type="button" class="btn" data-onb="guest">Continue to the preview</button></div>'
-   :st.step==="code"?'<form class="fields" data-iaform="code" novalidate><p class="iam" role="status">'+esc(st.msg)+'</p>'+
-    '<div class="field"><label for="ia-code">6-digit code</label><input id="ia-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+(st.errAt==="code"?' aria-invalid="true" aria-describedby="ia-err"':'')+'>'+err("code")+
+   :st.step==="code"?'<form class="fields" data-iaform="code" novalidate><p class="iam" role="status">'+esc(st.msg)+'</p>'+other+
+    '<input type="email" autocomplete="username" value="'+esc(st.email)+'" hidden>'+
+    '<div class="field"><label for="ia-code">6-digit code</label><input id="ia-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6"'+inv("code")+'>'+err("code")+
     '<span class="hint">Sent to <span data-notr>'+esc(st.email)+'</span>. Check your spam folder if it is not in your inbox.</span></div>'+
-    '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Checking…':'Sign in')+'</button>'+
+    (st.mode==="reset"?pw("New password","new-password","At least 8 characters."):'')+
+    '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Checking…':st.mode==="reset"?'Save password and sign in':'Create my account')+'</button>'+
     '<button type="button" class="btn ghost" data-ia="again"'+dis+'>Send a new code</button><button type="button" class="btn ghost" data-ia="other">Use another email</button></div></form>'
-   :'<form class="fields" data-iaform="email" novalidate>'+
-    '<div class="field"><label for="ia-email">Email</label><input id="ia-email" type="email" autocomplete="email" value="'+esc(st.email)+'"'+(st.errAt==="email"?' aria-invalid="true" aria-describedby="ia-err"':'')+'>'+err("email")+
-    '<span class="hint">No password needed. We email you a 6-digit code. New here? This creates your free account.</span></div>'+
-    '<div class="field"><label class="check"><input type="checkbox" id="ia-consent"'+(st.consent?' checked':'')+'><span>I agree that EDUPLAN keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only EDUPLAN staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+err("consent")+'</div>'+
-    '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Sending…':'Email me a code')+'</button></div>'+
-    '<p class="hint"><a href="#privacy" data-ia="privacy">What we ask for, and when</a></p></form>';
+   :st.mode==="reset"?'<form class="fields" data-iaform="send" novalidate>'+other+'<p class="iam">Enter your email. We send you a 6-digit code, then you choose a new password.</p>'+email+
+    '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Sending…':'Email me a code')+'</button><button type="button" class="btn ghost" data-ia="m-login">Back to sign in</button></div></form>'
+   :st.mode==="register"?'<form class="fields" data-iaform="send" novalidate>'+other+email+pw("Choose a password","new-password","At least 8 characters. Your browser can save it for next time.")+
+    '<div class="field"><label class="check"><input type="checkbox" id="ia-consent"'+(st.consent?' checked':'')+inv("consent")+'><span>I agree that EDUPLAN keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only EDUPLAN staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+err("consent")+'</div>'+
+    '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Sending…':'Create account')+'</button></div>'+
+    '<p class="hint">We email you a 6-digit code once to confirm the email is yours. Already have an account? <button type="button" class="linkbtn" data-ia="m-login">Sign in</button></p></form>'+google
+   :'<form class="fields" data-iaform="login" novalidate>'+other+email+pw("Password","current-password","")+
+    '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Signing in…':'Sign in')+'</button><button type="button" class="linkbtn" data-ia="m-reset">Forgot password?</button></div>'+
+    '<p class="hint">First time here? <button type="button" class="linkbtn" data-ia="m-register">Create a free account</button> · <a href="#privacy" data-ia="privacy">What we ask for, and when</a></p></form>'+google;
   var box=d.querySelector(".iform");
   if(box){box.classList.add("still");box.innerHTML=form;}   /* only the form changes: no replayed animation */
   else d.innerHTML=langBox()+'<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
@@ -996,39 +1007,52 @@ function account(){
    '<div class="iform">'+form+'</div>'+
    '<button type="button" class="iskip" data-onb="guest">Continue as guest <span aria-hidden="true">→</span></button>'+
    '<p class="ipcount">Guests can browse and search; sign in any time from My portfolio.</p></div>';
+  var g=d.querySelector("#ia-google");if(g&&AC.googleButton)AC.googleButton(g,google_);
   if(focus){var el=d.querySelector(focus);if(el)el.focus({preventScroll:true});}}
  function close(guest){try{sessionStorage.setItem("eduplan-acct","1");}catch(e){}
   if(guest&&!live)ls("eduplan-role","preview");
   d.classList.add("out");setTimeout(function(){d.remove();if(!interests())document.body.classList.remove("introopen");render(true);},300);}
- function send(){var em=String(st.email||"").trim().toLowerCase();st.err="";
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){st.err=E("bad_email");st.errAt="email";return draw("#ia-email");}
-  if(!st.consent){st.err=E("consent");st.errAt="consent";return draw("#ia-consent");}
+ function fail(r,at,focus){st.busy=false;st.err=E(r&&r.error||"bad_request");st.errAt=at;draw(focus);}
+ function signedIn(r){if(r&&r.token){S.session=ls("eduplan-session");close(false);return true;}return false;}
+ function okEmail(){var em=String(st.email||"").trim().toLowerCase();if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){st.err=E("bad_email");st.errAt="email";draw("#ia-email");return "";}return em;}
+ function login(){st.err="";var em=okEmail();if(!em)return;
+  if(!st.pw){st.err=E("pw");st.errAt="pw";return draw("#ia-pw");}
   st.email=em;st.busy=true;draw();
-  AC.sendCode(em).then(function(r){st.busy=false;
+  AC.login(em,st.pw).then(function(r){if(!signedIn(r))fail(r,"pw","#ia-pw");}).catch(function(){fail({error:"net"},"top");});}
+ function send(){st.err="";var em=okEmail();if(!em)return;
+  if(st.mode==="register"){if(String(st.pw||"").length<8){st.err=E("weak_password");st.errAt="pw";return draw("#ia-pw");}
+   if(!st.consent){st.err=E("consent");st.errAt="consent";return draw("#ia-consent");}}
+  st.email=em;st.busy=true;draw();
+  AC.sendCode(em,st.mode==="reset"?"reset":"signup").then(function(r){st.busy=false;
    if(r&&r.ok){st.step="code";st.msg="We emailed a 6-digit code to "+em+". It expires in 10 minutes.";return draw("#ia-code");}
    if(r&&r.error==="wait"){st.step="code";st.msg="";st.err=E("wait");st.errAt="code";return draw("#ia-code");}
-   st.err=E(r&&r.error||"bad_request");st.errAt="email";draw("#ia-email");
-  }).catch(function(){st.busy=false;st.err=E("net");st.errAt="email";draw("#ia-email");});}
- function verify(code){code=String(code||"").replace(/\D/g,"");st.err="";
+   fail(r,"email","#ia-email");
+  }).catch(function(){fail({error:"net"},"email","#ia-email");});}
+ function verify(code,newPw){code=String(code||"").replace(/\D/g,"");st.err="";
   if(code.length!==6){st.err=E("code");st.errAt="code";return draw("#ia-code");}
+  if(st.mode==="reset"){if(String(newPw||"").length<8){st.err=E("weak_password");st.errAt="pw";return draw("#ia-pw");}st.pw=newPw;}
   st.busy=true;draw();
-  AC.verify(st.email,code).then(function(r){st.busy=false;
-   if(r&&r.token){S.session=ls("eduplan-session");close(false);return;}
-   st.err=E(r&&r.error||"bad_request");st.errAt="code";draw("#ia-code");
-  }).catch(function(){st.busy=false;st.err=E("net");st.errAt="code";draw("#ia-code");});}
+  AC.register(st.email,code,st.pw).then(function(r){if(!signedIn(r))fail(r,r&&r.error==="weak_password"?"pw":"code",r&&r.error==="weak_password"?"#ia-pw":"#ia-code");})
+   .catch(function(){fail({error:"net"},"code","#ia-code");});}
+ function google_(cred){st.err="";st.busy=true;draw();
+  AC.google(cred).then(function(r){if(!signedIn(r))fail(r,"top");}).catch(function(){fail({error:"net"},"top");});}
  draw();document.body.appendChild(d);document.body.classList.add("introopen");
  setTimeout(function(){var f=d.querySelector("#ia-email,[data-onb]");if(f)f.focus({preventScroll:true});},50);
- d.addEventListener("input",function(ev){if(ev.target.id==="ia-email")st.email=ev.target.value;});
+ d.addEventListener("input",function(ev){if(ev.target.id==="ia-email")st.email=ev.target.value;if(ev.target.id==="ia-pw"&&st.step!=="code")st.pw=ev.target.value;});
  d.addEventListener("change",function(ev){if(ev.target.id==="ia-consent")st.consent=ev.target.checked;});
- d.addEventListener("submit",function(ev){ev.preventDefault();var k=ev.target.getAttribute("data-iaform");
-  if(k==="email"){var e=d.querySelector("#ia-email"),c=d.querySelector("#ia-consent");st.email=e?e.value:"";st.consent=!!(c&&c.checked);send();}
-  else if(k==="code"){var cd=d.querySelector("#ia-code");verify(cd?cd.value:"");}});
+ d.addEventListener("submit",function(ev){ev.preventDefault();var k=ev.target.getAttribute("data-iaform"),e=d.querySelector("#ia-email"),p=d.querySelector("#ia-pw"),c=d.querySelector("#ia-consent");
+  if(e)st.email=e.value;if(c)st.consent=c.checked;
+  if(k==="login"){st.pw=p?p.value:"";login();}
+  else if(k==="send"){if(p)st.pw=p.value;send();}
+  else if(k==="code"){var cd=d.querySelector("#ia-code");verify(cd?cd.value:"",p?p.value:"");}});
  d.addEventListener("click",function(ev){var b=ev.target.closest("[data-onb],[data-ia]");if(!b)return;
   if(b.getAttribute("data-onb")==="guest"){close(true);return;}
   var a=b.getAttribute("data-ia");
   if(a==="privacy"){try{sessionStorage.setItem("eduplan-acct","1");}catch(e){}d.remove();document.body.classList.remove("introopen");return;}
-  if(a==="other"){st.step="email";st.err="";st.msg="";draw("#ia-email");return;}
-  if(a==="again"){st.step="email";send();}});
+  if(a==="showpw"){var pe=d.querySelector("#ia-pw");if(pe)pe.type=pe.type==="password"?"text":"password";return;}
+  if(a==="m-login"||a==="m-register"||a==="m-reset"){st.mode=a.slice(2);st.step="form";st.err="";st.msg="";draw("#ia-email");return;}
+  if(a==="other"){st.step="form";st.err="";st.msg="";draw("#ia-email");return;}
+  if(a==="again"){st.step="form";send();}});
  return true;}
 window.addEventListener("eduplan:signedin",function(){S.session=ls("eduplan-session");STAFF.links=null;STAFF.err="";GOALS.list=null;GOALS.err="";});
 function intro(){

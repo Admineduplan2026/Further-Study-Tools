@@ -17,7 +17,7 @@ function tx(s){return window.EXPO_TX?window.EXPO_TX(s,LANG):s;}
 function evT(e){return (LANG==="en"?e.title_en:e.title_zh)||e.title||"";}
 function evD(e){return (LANG==="en"?e.description_en:e.description_zh)||e.description||"";}
 var app=document.getElementById("app"),head=document.getElementById("xhead");
-var S={token:load(),me:null,checked:false,login:{email:"",step:"email",role:"",msg:""},mine:[],flash:""};
+var S={token:load(),me:null,checked:false,login:{email:"",step:"email",mode:"login",pw:"",role:"",msg:""},mine:[],flash:""};
 var STATES=["Johor","Kedah","Kelantan","Melaka","Negeri Sembilan","Pahang","Perak","Perlis","Pulau Pinang","Sabah","Sarawak","Selangor","Terengganu","W.P. Kuala Lumpur","W.P. Labuan","W.P. Putrajaya"];
 var TYPES=[["university","大学 University"],["college","学院 College"],["secondary","中学 Secondary school"],["other","其他 Other"]];
 var ROLE={organiser:["主办方后台","Organiser"],exhibitor:["参展学校","Exhibitor"],admin:["Eduplan 管理员","Admin"]};
@@ -37,7 +37,9 @@ var ERR={bad_email:"请输入正确的电邮地址。",wait:"验证码刚寄出�
  not_enough_booths:"剩余摊位不够。",bad_booths:"摊位数量必须是 1 到 1000 的整数。",withdrawn:"学校已撤回这个报名。",bad_status:"这个状态不能再更改。",
  bad_image:"封面图片只接受 JPG、PNG 或 WebP。",image_too_large:"封面图片不能超过 2 MB。",server:"系统出错，请稍后再试。",bad_request:"请求有误。",
  network:"连不上 Eduplan 伺服器，请检查网络后再试。",bad_people:"人数必须是 1 到 10 位。",event_over:"这个活动已经结束，不能再报名。",
- attend_many:"这个电邮报名太多次，请 1 小时后再试。"};
+ attend_many:"这个电邮报名太多次，请 1 小时后再试。",
+ bad_login:"电邮或密码不对。第一次用密码登录？请按「忘记密码」用电邮验证码设定密码。",locked:"密码错太多次，请 15 分钟后再试，或按「忘记密码」。",
+ weak_password:"密码至少要 8 个字符。",google_off:"Google 登录还没开通，请用电邮和密码登录。",google_failed:"Google 登录没有成功，请再试一次，或用电邮和密码登录。"};
 var FIELD={title:"活动名称",description:"简介",date:"日期",start_time:"开始时间",end_time:"结束时间",venue:"场地名称",address:"地址",city:"城市",state:"州属",
  booth_capacity:"名额",seats:"讲座名额",mode:"开放什么报名",registration_deadline:"报名截止日",booth_fee:"摊位费",org_name:"机构／学校名称",name:"联络人姓名",position:"职位",phone:"电话",
  school_type:"学校类型",website:"学校官网",topics:"展示的科系或主题",booths:"摊位数量",email:"电邮",who:"身份",school:"就读学校",people:"人数"};
@@ -238,22 +240,56 @@ function homeView(){
 }
 
 /* ---------- Sign in and sign up ---------- */
+/* Sign in with email and password, or with Google. Creating a login or a forgotten password: a code emailed once
+   proves the email (expo_code), then the password is saved (expo_setpw). Then the account type is chosen (registerView). */
 function loginView(role){
  var L=S.login,me=S.me;
  if(me&&me.role){go(home(me.role));return;}
  if(role)L.role=role;
- var who=L.role==="organiser"?"主办方 Organiser":L.role==="exhibitor"?"参展学校 Exhibitor":"";
+ var who=L.role==="organiser"?T("主办方","Organiser"):L.role==="exhibitor"?T("参展学校","Exhibitor"):"";
  if(me&&!me.role)return registerView();
- page('<section class="xform narrow"><span class="xeye">'+(who?esc(who)+" · ":"")+'登录 Sign in</span><h1>用电邮登录</h1>'+
-  '<p class="xlead">主办方和参展学校用电邮登录：我们会把 6 位数验证码寄到你的电邮，不需要密码。第一次登录时再选择账号类型。学生和家长报名参加不需要登录。</p>'+
-  (L.msg?'<div class="xnote err" role="alert">'+esc(L.msg)+'</div>':'')+
-  (L.step==="email"?'<form data-form="code"><label class="xf"><span>电邮 Email</span><input type="email" name="email" required autocomplete="email" value="'+esc(L.email)+'"></label>'+
-   '<button class="xbtn" type="submit">寄验证码 Send code</button></form>'
-  :'<form data-form="verify"><p>'+T('验证码已寄到 <b>'+esc(L.email)+'</b>，10 分钟内有效。','We sent a code to <b>'+esc(L.email)+'</b>. It is valid for 10 minutes.')+'</p><label class="xf"><span>验证码 Code</span><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>'+
-   '<div class="xrow"><button class="xbtn" type="submit">登录 Sign in</button><button type="button" class="xbtn ghost" data-act="relogin">换电邮或重寄 Change email</button></div></form>')+'</section>');
+ var email='<label class="xf"><span>'+T("电邮","Email")+'</span><input type="email" name="email" required autocomplete="username" value="'+esc(L.email)+'"></label>';
+ var pw=function(label,auto,hint){return '<label class="xf"><span>'+label+'</span><span class="xpw"><input type="password" name="password" required autocomplete="'+auto+'"'+(auto==="new-password"?' minlength="8"':'')+'>'+
+  '<button type="button" class="xbtn ghost sm" data-act="showpw">'+T("显示","Show")+'</button></span>'+(hint?'<small class="xhint">'+hint+'</small>':'')+'</label>';};
+ var google=window.EDUPLAN_GOOGLE_CLIENT_ID?'<div class="xor"><span>'+T("或","or")+'</span></div><div class="xgoogle" id="x-google"></div>':'';
+ var head='<section class="xform narrow"><span class="xeye">'+(who?esc(who)+" · ":"")+T("登录","Sign in")+'</span>';
+ var note=L.msg?'<div class="xnote err" role="alert">'+esc(L.msg)+'</div>':'';
+ var html;
+ if(L.step==="code")html=head+'<h1>'+(L.mode==="reset"?T("设定新密码","Set a new password"):T("确认电邮","Confirm your email"))+'</h1>'+note+
+  '<form data-form="pwset" novalidate><input type="email" autocomplete="username" value="'+esc(L.email)+'" hidden><p>'+T('验证码已寄到 <b>'+esc(L.email)+'</b>，10 分钟内有效。','We sent a code to <b>'+esc(L.email)+'</b>. It is valid for 10 minutes.')+'</p>'+
+  '<label class="xf"><span>'+T("验证码","Code")+'</span><input name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" required></label>'+
+  (L.mode==="reset"?pw(T("新密码","New password"),"new-password",T("至少 8 个字符。","At least 8 characters.")):'')+
+  '<div class="xrow"><button class="xbtn" type="submit">'+(L.mode==="reset"?T("保存密码并登录","Save password and sign in"):T("完成并登录","Finish and sign in"))+'</button><button type="button" class="xbtn ghost" data-act="relogin">'+T("换电邮或重寄","Change email")+'</button></div></form></section>';
+ else if(L.mode==="reset")html=head+'<h1>'+T("忘记密码","Forgot your password?")+'</h1>'+note+'<p class="xlead">'+T("输入电邮，我们寄 6 位数验证码给你，然后设定新密码。","Enter your email. We send you a 6-digit code, then you choose a new password.")+'</p>'+
+  '<form data-form="pwsend" novalidate>'+email+'<div class="xrow"><button class="xbtn" type="submit">'+T("寄验证码","Send code")+'</button><button type="button" class="xbtn ghost" data-act="m-login">'+T("返回登录","Back to sign in")+'</button></div></form></section>';
+ else if(L.mode==="register")html=head+'<h1>'+T("建立登录","Create your login")+'</h1>'+note+'<p class="xlead">'+T("主办方和参展学校用电邮和密码登录。我们会寄一次验证码确认电邮是你的，之后只用密码。","Organisers and exhibitors sign in with email and a password. We email a code once to confirm the email is yours; after that you only need the password.")+'</p>'+
+  '<form data-form="pwsend" novalidate>'+email+pw(T("设定密码","Choose a password"),"new-password",T("至少 8 个字符，浏览器可以帮你记住。","At least 8 characters. Your browser can remember it."))+
+  '<div class="xrow"><button class="xbtn" type="submit">'+T("寄验证码","Send code")+'</button></div></form>'+google+
+  '<p class="xhint">'+T("已经有登录？","Already have a login?")+' <a href="#" data-act="m-login">'+T("登录","Sign in")+'</a></p></section>';
+ else html=head+'<h1>'+T("登录","Sign in")+'</h1>'+note+'<p class="xlead">'+T("主办方和参展学校用电邮和密码登录，第一次登录后再选择账号类型。学生和家长报名参加不需要登录。","Organisers and exhibitors sign in with email and password, then choose an account type the first time. Students and parents do not need to sign in to register.")+'</p>'+
+  '<form data-form="pwlogin" novalidate>'+email+pw(T("密码","Password"),"current-password","")+
+  '<div class="xrow"><button class="xbtn" type="submit">'+T("登录","Sign in")+'</button><a href="#" class="xlink" data-act="m-reset">'+T("忘记密码？","Forgot password?")+'</a></div></form>'+google+
+  '<p class="xhint">'+T("第一次使用？","First time here?")+' <a href="#" data-act="m-register">'+T("建立登录","Create a login")+'</a></p></section>';
+ page(html);
  L.msg="";
- var f=app.querySelector("input");if(f)f.focus();
+ var g=document.getElementById("x-google");if(g)gsiButton(g);
+ var f=app.querySelector("input:not([hidden])");if(f)f.focus();
 }
+/* "Continue with Google" (Google Identity Services), when EDUPLAN_GOOGLE_CLIENT_ID is set in ../assets/js/config.js. */
+var GSI={state:0,wait:[]};
+function gsiButton(el){
+ function draw(){if(!document.body.contains(el))return;el.innerHTML="";google.accounts.id.renderButton(el,{type:"standard",theme:"outline",size:"large",text:"continue_with",shape:"pill",
+  locale:LANG==="en"?"en":"zh_CN",width:Math.max(220,Math.min(380,el.clientWidth||320))});}
+ if(GSI.state===2)return draw();
+ GSI.wait.push(draw);if(GSI.state===1)return;GSI.state=1;
+ var sc=document.createElement("script");sc.src="https://accounts.google.com/gsi/client";sc.async=true;
+ sc.onload=function(){google.accounts.id.initialize({client_id:window.EDUPLAN_GOOGLE_CLIENT_ID,ux_mode:"popup",callback:function(r){if(!r||!r.credential)return;
+   api("expo_google",{credential:r.credential}).then(function(d){if(d&&d.token)signedIn(d);else{S.login.msg=errText(d||{error:"google_failed"});render();}});}});
+  GSI.state=2;GSI.wait.splice(0).forEach(function(f){f();});};
+ document.head.appendChild(sc);
+}
+function signedIn(r){setToken(r.token);S.me=r.me;S.checked=true;S.login.step="email";S.login.mode="login";S.login.pw="";
+ if(r.me.role){S.flash=T("已登录。","Signed in.");go(home(r.me.role));}else render();}
 function registerView(){
  var L=S.login,role=L.role||"exhibitor",org=role==="organiser";
  page('<section class="xform"><span class="xeye">注册 Sign up</span><h1>完成注册</h1><p class="xlead">'+T('已用 <b>'+esc(S.me.email)+'</b> 登录。一个账号只能有一种角色，注册后不能更改。','Signed in as <b>'+esc(S.me.email)+'</b>. One account has one role, which cannot be changed later.')+'</p>'+
@@ -499,7 +535,13 @@ app.addEventListener("submit",function(ev){
  if(kind==="filter"){F=v;render();return;}
  busy(f,true);
  var p,after;
- if(kind==="code"){S.login.email=v.email;p=api("expo_code",{email:v.email});after=function(){S.login.step="code";render();};}
+ if(kind==="pwlogin"){S.login.email=v.email;if(!v.email||!v.password){busy(f,false);formError(f,{error:"missing"});return;}
+  p=api("expo_login",{email:v.email,password:v.password});after=signedIn;}
+ else if(kind==="pwsend"){S.login.email=v.email;if(S.login.mode==="register"){if(String(v.password||"").length<8){busy(f,false);formError(f,{error:"weak_password"});return;}S.login.pw=v.password;}
+  p=api("expo_code",{email:v.email,purpose:S.login.mode==="reset"?"reset":"signup"});after=function(){S.login.step="code";render();};}
+ else if(kind==="pwset"){if(S.login.mode==="reset"){if(String(v.password||"").length<8){busy(f,false);formError(f,{error:"weak_password"});return;}S.login.pw=v.password;}
+  p=api("expo_setpw",{email:S.login.email,code:v.code,password:S.login.pw});after=signedIn;}
+ else if(kind==="code"){S.login.email=v.email;p=api("expo_code",{email:v.email});after=function(){S.login.step="code";render();};}
  else if(kind==="verify"){p=api("expo_verify",{email:S.login.email,code:v.code});after=function(r){setToken(r.token);S.me=r.me;S.checked=true;S.login.step="email";
   if(r.me.role){S.flash="已登录 Signed in。";go(home(r.me.role));}else render();};}
  else if(kind==="register"){S.login.role=v.role;p=api("expo_register",v);after=function(r){S.me=r.me;S.flash=r.me.role==="organiser"?"注册成功！你的主办方账号正在等待 Eduplan 审核，审核通过前可以先保存草稿。":"注册成功！现在可以浏览教育展并报名摊位。";go(home(r.me.role));};}
@@ -533,6 +575,8 @@ document.addEventListener("click",function(ev){
  var b=ev.target.closest&&ev.target.closest("[data-act]");if(!b)return;var a=b.getAttribute("data-act");
  if(a==="logout"){api("expo_logout").then(function(){setToken("");S.me=null;S.mine=[];go("#/");});}
  else if(a==="relogin"){S.login.step="email";render();}
+ else if(a==="m-login"||a==="m-register"||a==="m-reset"){ev.preventDefault();S.login.mode=a.slice(2);S.login.step="email";S.login.msg="";render();}
+ else if(a==="showpw"){var pi=b.parentNode.querySelector("input");if(pi)pi.type=pi.type==="password"?"text":"password";}
  else if(a==="att-csv"){attCsv(b.getAttribute("data-title"));}
  else if(a==="tip-close"){closeTip();}
  else if(a==="lang"){setLang(LANG==="en"?"zh":"en");}

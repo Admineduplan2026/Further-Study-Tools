@@ -51,7 +51,9 @@ module.exports = function (opts) {
         return p.year + "-" + p.month + "-" + p.day + "T" + p.hour + ":" + p.minute + ":" + p.second;
       },
       base64Decode: s => Array.from(Buffer.from(s, "base64")),
-      computeHmacSha256Signature: (v, k) => Array.from(crypto.createHmac("sha256", String(k)).update(String(v), "utf8").digest()).map(b => (b > 127 ? b - 256 : b)),
+      computeHmacSha256Signature: (v, k) => { const buf = x => Array.isArray(x) ? Buffer.from(x.map(b => b & 255)) : Buffer.from(String(x), "utf8");
+        return Array.from(crypto.createHmac("sha256", buf(k)).update(buf(v)).digest()).map(b => (b > 127 ? b - 256 : b)); },
+      newBlob: x => ({ getBytes: () => Array.from(Buffer.from(String(x), "utf8")).map(b => (b > 127 ? b - 256 : b)) }),
       base64EncodeWebSafe: bytes => Buffer.from(bytes.map(b => b & 255)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_")
     },
     CacheService: { getScriptCache: () => ({

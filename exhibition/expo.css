@@ -192,3 +192,8 @@ main{display:block;outline:none}
 .xtr{margin:4px 0 14px;padding:10px 14px;border:1px dashed var(--line);border-radius:14px;background:var(--soft)}
 .xtr summary{cursor:pointer;font-weight:600;color:var(--brand-ink);min-height:32px;display:flex;align-items:center}
 .xtr[open] summary{margin-bottom:6px}
+.xpw{display:flex;gap:8px;align-items:stretch}.xpw input{flex:1;min-width:0}
+.xor{display:flex;align-items:center;gap:12px;margin:18px 0 10px;color:var(--muted);font-size:13px}
+.xor::before,.xor::after{content:"";flex:1;height:1px;background:var(--line)}
+.xgoogle{min-height:44px;max-width:380px}
+.xlink{align-self:center;font-size:14px}

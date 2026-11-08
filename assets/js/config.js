@@ -4,6 +4,10 @@
    When set, the website loads the published sheet data on top of those files; if the API cannot be
    reached, the website keeps showing the local data. See docs/google-sheet-api-setup.md. */
 window.EDUPLAN_API_URL="https://script.google.com/macros/s/AKfycbwVtqrntxp2HITILIGk0pnV7Wk8FghGodcwKJTJGPazu1LdnmAOUYGKErbCeSzqaryp/exec";
+/* EDUPLAN_GOOGLE_CLIENT_ID: the OAuth client ID for "Continue with Google" (Google Cloud > APIs & Services > Credentials,
+   a Web application client with this website as an authorised JavaScript origin). It is public by design. The same ID
+   goes in the Apps Script Property GOOGLE_CLIENT_ID. Leave it empty to hide the Google button. */
+window.EDUPLAN_GOOGLE_CLIENT_ID="";
 /* EDUPLAN_SITE_URL: the public website address, used for the share links of programmes. */
 window.EDUPLAN_SITE_URL="https://admineduplan2026.github.io/Further-Study-Tools/";
 /* EDUPLAN_EXHIBITION_URL: the Eduplan 教育展 (Exhibition) website, opened by the "About Exhibition" button in About us and

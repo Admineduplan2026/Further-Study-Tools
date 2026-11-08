@@ -121,3 +121,28 @@ The top of #staff is a shared to-do list of long-term goals (apps-script/StaffGo
 date; a countdown shows the time left to the nearest goal that is not done (it turns red when the time is up). Staff tick
 a goal when it is done, add new ones with the form, or delete one (click ✕ twice). The goals are kept in the tab
 **Staff goals** of Eduplan School Data, made automatically the first time.
+
+
+## Sign-in: password and Google
+
+Students and staff sign in with their **email and a password**. The first time (Create account) and when a password is
+forgotten (Forgot password), EDUPLAN emails a 6-digit code once to prove the email is theirs, then the password is saved.
+Browsers and Google Password Manager offer to remember it, so later sign-ins are one tap. Passwords are never stored:
+only a salted, repeated HMAC-SHA-256 in column L "Password (do not edit)" of Eduplan Student Portfolios (added
+automatically). Eight wrong passwords lock that email for 15 minutes. Students who used the old code-only sign-in set a
+password with **Forgot password** (or Create account) the first time.
+
+### Turn on "Continue with Google"
+
+1. Signed in as admin.eduplan, open https://console.cloud.google.com/ and create (or pick) a project, e.g. "EDUPLAN".
+2. **APIs & Services → OAuth consent screen**: User type **External**, app name EDUPLAN, support email admin.eduplan,
+   scopes: just the defaults (email, profile, openid). Publish the app (In production).
+3. **APIs & Services → Credentials → Create credentials → OAuth client ID**: type **Web application**. Under
+   **Authorised JavaScript origins** add `https://admineduplan2026.github.io` (and later your own domain, e.g.
+   `https://eduplan.com.my`). No redirect URI is needed.
+4. Copy the **Client ID** (ends in `.apps.googleusercontent.com`). It is public, not a secret.
+5. Put it in `assets/js/config.js` as `window.EDUPLAN_GOOGLE_CLIENT_ID="…"` (or give it to Claude to do), and in Apps
+   Script **Project Settings → Script Properties** as `GOOGLE_CLIENT_ID`. Deploy a new version.
+
+The website then shows a "Continue with Google" button on the sign-in screens (main site and exhibition). The server
+checks each Google token with Google (audience, issuer, expiry and a verified email) before signing anyone in.
