@@ -7,7 +7,7 @@ window.EDUPLAN_API_URL="https://script.google.com/macros/s/AKfycbwVtqrntxp2HITIL
 /* EDUPLAN_GOOGLE_CLIENT_ID: the OAuth client ID for "Continue with Google" (Google Cloud > APIs & Services > Credentials,
    a Web application client with this website as an authorised JavaScript origin). It is public by design. The same ID
    goes in the Apps Script Property GOOGLE_CLIENT_ID. Leave it empty to hide the Google button. */
-window.EDUPLAN_GOOGLE_CLIENT_ID="";
+window.EDUPLAN_GOOGLE_CLIENT_ID="506099753176-4sjstrjgmtvbjf35qd6jp3pcao53kd06.apps.googleusercontent.com";
 /* EDUPLAN_SITE_URL: the public website address, used for the share links of programmes. */
 window.EDUPLAN_SITE_URL="https://admineduplan2026.github.io/Further-Study-Tools/";
 /* EDUPLAN_EXHIBITION_URL: the Eduplan 教育展 (Exhibition) website, opened by the "About Exhibition" button in About us and
