@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>AI Grab 小游戏 — 接满 100 个换积分</title>
+<meta name="description" content="R&R Development 小游戏：接住 100 个 AI 道具得 1 积分，积分可兑换礼物。">
+<link rel="icon" type="image/svg+xml" href="../logo/rr-mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #05060f; --bg-2: #0b0d1f; --card: rgba(255, 255, 255, .05); --line: rgba(255, 255, 255, .1);
+    --text: #eef0ff; --muted: #9aa0c3; --c1: #7c5cff; --c2: #00e5ff; --c3: #ff4fd8; --gold: #ffc940; --red: #ff5470;
+    --grad: linear-gradient(120deg, var(--c1), var(--c2) 50%, var(--c3));
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { overflow-x: clip; }
+  body { font-family: "Inter", "Noto Sans SC", system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.55;
+    background-image: radial-gradient(800px 400px at 10% -10%, rgba(124, 92, 255, .25), transparent 60%), radial-gradient(700px 400px at 100% 0%, rgba(0, 229, 255, .14), transparent 60%); }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: 0; color: inherit; }
+  h1, h2, h3, .num { font-family: "Space Grotesk", "Noto Sans SC", sans-serif; }
+  .container { width: min(1180px, 100% - 32px); margin-inline: auto; }
+
+  .groupbar { border-bottom: 1px solid var(--line); font-size: .85rem; }
+  .groupbar .container { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; flex-wrap: wrap; }
+  .groupbar a.back { display: flex; align-items: center; gap: 10px; font-weight: 600; }
+  .groupbar a.back img { width: 30px; height: 30px; border-radius: 8px; }
+  .wallet { display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(255, 201, 64, .12); border: 1px solid rgba(255, 201, 64, .4); font-weight: 700; color: var(--gold); }
+  .wallet.bump { animation: bump .5s; }
+  @keyframes bump { 40% { transform: scale(1.25); } }
+
+  .head { text-align: center; padding: 34px 0 18px; }
+  .head .tag { display: inline-block; font-size: .78rem; letter-spacing: .18em; color: var(--c2); font-weight: 700; text-transform: uppercase; margin-bottom: 10px; }
+  .head h1 { font-size: clamp(1.9rem, 4.5vw, 3rem); line-height: 1.15; }
+  .grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .head p { color: var(--muted); margin-top: 8px; }
+
+  .layout { display: grid; grid-template-columns: 1fr 340px; gap: 22px; align-items: start; padding-bottom: 30px; }
+
+  /* Game stage */
+  .stage { position: relative; border-radius: 24px; overflow: hidden; border: 1px solid var(--line); background: var(--bg-2); aspect-ratio: 4 / 3.3; touch-action: none; user-select: none; }
+  canvas { display: block; width: 100%; height: 100%; }
+  .hud { position: absolute; top: 12px; left: 12px; right: 12px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; font-weight: 700; font-size: .92rem; }
+  .hud > div { background: rgba(5, 6, 15, .6); backdrop-filter: blur(8px); border: 1px solid var(--line); border-radius: 12px; padding: 6px 12px; }
+  .overlay { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 24px; background: rgba(5, 6, 15, .78); backdrop-filter: blur(6px); transition: opacity .3s; }
+  .overlay.hide { opacity: 0; pointer-events: none; }
+  .overlay h2 { font-size: clamp(1.5rem, 3.5vw, 2.2rem); margin-bottom: 6px; }
+  .overlay p { color: var(--muted); margin-bottom: 18px; }
+  .legend { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 22px; font-size: .88rem; }
+  .legend span { padding: 6px 12px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); }
+  .big-btn { padding: 15px 34px; border-radius: 999px; font-weight: 700; font-size: 1.05rem; background: var(--grad); background-size: 200% auto; animation: shine 4s linear infinite; box-shadow: 0 14px 40px -12px rgba(124, 92, 255, .9); transition: transform .2s; }
+  .big-btn:hover { transform: translateY(-3px) scale(1.03); }
+  @keyframes shine { to { background-position: 200% center; } }
+  .result-num { font-size: 3rem; font-weight: 700; }
+  .hint { color: var(--muted); font-size: .82rem; margin-top: 14px; }
+
+  /* Side panel */
+  .panel { display: grid; gap: 16px; }
+  .box { background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; }
+  .box h3 { font-size: 1.05rem; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .ring-wrap { display: flex; align-items: center; gap: 18px; }
+  .ring { position: relative; width: 120px; height: 120px; flex: 0 0 120px; }
+  .ring svg { transform: rotate(-90deg); }
+  .ring .val { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; }
+  .ring .val b { font-family: "Space Grotesk", sans-serif; font-size: 1.7rem; display: block; line-height: 1; }
+  .ring .val small { color: var(--muted); font-size: .75rem; }
+  .ring circle.prog { transition: stroke-dashoffset .5s cubic-bezier(.2, .8, .2, 1); }
+  .ring-info p { color: var(--muted); font-size: .88rem; }
+  .ring-info b { color: var(--text); }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .stats div { background: rgba(255, 255, 255, .03); border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .stats b { display: block; font-family: "Space Grotesk", sans-serif; font-size: 1.25rem; }
+  .stats small { color: var(--muted); font-size: .75rem; }
+  .rules { list-style: none; display: grid; gap: 8px; font-size: .88rem; color: var(--muted); }
+  .rules b { color: var(--text); }
+
+  /* Rewards */
+  section.rewards { padding: 30px 0 60px; }
+  .sec-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+  .sec-head h2 { font-size: 1.7rem; }
+  .sec-head p { color: var(--muted); }
+  .gifts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .gift { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; transition: transform .25s, border-color .25s, box-shadow .25s; }
+  .gift:hover { transform: translateY(-6px); border-color: rgba(124, 92, 255, .6); box-shadow: 0 20px 50px -24px rgba(124, 92, 255, .8); }
+  .gift .ic { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; font-size: 2rem; background: linear-gradient(135deg, rgba(124, 92, 255, .25), rgba(0, 229, 255, .12)); margin-bottom: 14px; }
+  .gift h3 { font-size: 1rem; }
+  .gift p { color: var(--muted); font-size: .85rem; margin: 4px 0 14px; flex: 1; }
+  .gift .from { position: absolute; top: 14px; right: 14px; font-size: .7rem; padding: 3px 8px; border-radius: 999px; background: rgba(255, 255, 255, .08); color: var(--muted); }
+  .gift-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .cost { font-weight: 700; color: var(--gold); }
+  .redeem { padding: 8px 16px; border-radius: 999px; font-weight: 700; font-size: .85rem; background: var(--grad); }
+  .redeem:disabled { background: rgba(255, 255, 255, .08); color: var(--muted); cursor: not-allowed; }
+  .stock { font-size: .72rem; color: var(--muted); margin-top: 8px; }
+  .bar { height: 4px; border-radius: 4px; background: rgba(255, 255, 255, .08); overflow: hidden; margin-top: 4px; }
+  .bar i { display: block; height: 100%; background: var(--gold); }
+
+  .history { margin-top: 26px; }
+  .history table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  .history th, .history td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+  .history th { color: var(--muted); font-weight: 600; }
+  .code { font-family: ui-monospace, monospace; color: var(--c2); letter-spacing: .05em; }
+  .empty { color: var(--muted); font-size: .9rem; padding: 10px 0; }
+
+  /* Modal */
+  .modal { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; padding: 16px; background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s; }
+  .modal.show { opacity: 1; pointer-events: auto; }
+  .dialog { width: min(420px, 100%); background: var(--bg-2); border: 1px solid var(--line); border-radius: 24px; padding: 28px; text-align: center; transform: scale(.92); transition: transform .3s cubic-bezier(.2, .8, .2, 1.3); }
+  .modal.show .dialog { transform: none; }
+  .dialog .ic { font-size: 3.2rem; margin-bottom: 8px; }
+  .dialog h3 { font-size: 1.3rem; margin-bottom: 6px; }
+  .dialog p { color: var(--muted); margin-bottom: 18px; font-size: .93rem; }
+  .dialog .code-box { font-family: ui-monospace, monospace; font-size: 1.3rem; letter-spacing: .12em; padding: 12px; border-radius: 12px; border: 1px dashed var(--c2); color: var(--c2); margin-bottom: 18px; }
+  .dialog .acts { display: flex; gap: 10px; justify-content: center; }
+  .btn-ghost { padding: 12px 22px; border-radius: 999px; border: 1px solid var(--line); background: var(--card); font-weight: 600; }
+
+  .confetti { position: fixed; top: -20px; z-index: 95; font-size: 1.4rem; pointer-events: none; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(720deg); } }
+
+  footer { border-top: 1px solid var(--line); padding: 26px 0; color: var(--muted); font-size: .82rem; }
+
+  @media (max-width: 960px) {
+    .layout { grid-template-columns: 1fr; }
+    .panel { grid-template-columns: 1fr 1fr; }
+    .gifts { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .panel, .gifts { grid-template-columns: 1fr; }
+    .stage { aspect-ratio: 3 / 4; }
+    .history th:nth-child(3), .history td:nth-child(3) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="groupbar">
+  <div class="container">
+    <a class="back" href="../index.html"><img src="../logo/rr-mark.svg" alt="">← R&amp;R Development</a>
+    <div class="wallet" id="wallet">🪙 <span id="walletPts">0</span> 积分</div>
+  </div>
+</div>
+
+<div class="container head">
+  <span class="tag">Mini Game · 限时活动</span>
+  <h1>AI Grab：<span class="grad">接满 100 个，得 1 积分</span></h1>
+  <p>移动篮子接住掉下来的 AI 道具，积分可以兑换礼物 🎁</p>
+</div>
+
+<div class="container layout">
+  <div class="stage" id="stage">
+    <canvas id="cv"></canvas>
+    <div class="hud" id="hud" style="display:none">
+      <div><span id="hLives">❤️❤️❤️</span></div>
+      <div>🎯 本局 <span id="hScore">0</span></div>
+      <div>⏱️ <span id="hTime">60</span>s</div>
+    </div>
+    <div class="overlay" id="overlay">
+      <div id="ovContent"></div>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <div class="box">
+      <h3>🎯 积分进度</h3>
+      <div class="ring-wrap">
+        <div class="ring">
+          <svg width="120" height="120" viewBox="0 0 120 120">
+            <defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7c5cff"/><stop offset="1" stop-color="#00e5ff"/></linearGradient></defs>
+            <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="12"/>
+            <circle class="prog" id="ringProg" cx="60" cy="60" r="50" fill="none" stroke="url(#rg)" stroke-width="12" stroke-linecap="round" stroke-dasharray="314.16" stroke-dashoffset="314.16"/>
+          </svg>
+          <div class="val"><div><b id="ringNum">0</b><small>/ 100</small></div></div>
+        </div>
+        <div class="ring-info">
+          <p>再接 <b id="toNext">100</b> 个<br>就能得到 <b>1 积分</b></p>
+          <p style="margin-top:8px">今日已得 <b id="todayPts">0</b> / <span id="dailyCap">5</span> 积分</p>
+        </div>
+      </div>
+      <div class="stats">
+        <div><b id="sTotal">0</b><small>累计接住</small></div>
+        <div><b id="sBest">0</b><small>单局最高</small></div>
+      </div>
+    </div>
+    <div class="box">
+      <h3>📜 活动规则</h3>
+      <ul class="rules">
+        <li>🤖 💡 🎓 🛡️ ⚡ 接住 <b>+1</b></li>
+        <li>🪙 金币接住 <b>+5</b></li>
+        <li>🐛 接到 Bug 会 <b>扣 1 颗心</b>，3 颗心用完或 60 秒到就结束</li>
+        <li>累计每接满 <b>100 个 = 1 积分</b>，进度会跨局累计</li>
+        <li>每人每天最多获得 <b id="capRule">5</b> 积分</li>
+      </ul>
+    </div>
+  </aside>
+</div>
+
+<section class="container rewards" id="rewards">
+  <div class="sec-head">
+    <div><h2>🎁 积分兑换礼物</h2><p>积分越多，礼物越好</p></div>
+  </div>
+  <div class="gifts" id="gifts"></div>
+
+  <div class="history box">
+    <h3>🧾 我的兑换记录</h3>
+    <div id="history"></div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    © <span class="yr"></span> R&amp;R Development Sdn. Bhd. · 本页为活动示范版：积分保存在你自己的浏览器里，礼物与库存为示例。正式活动需登录账号，并以公司公布的条款为准。
+  </div>
+</footer>
+
+<div class="modal" id="modal"><div class="dialog" id="dialog"></div></div>
+
+<script>
+  /* ================= Activity settings (edit these) ================= */
+  const CATCHES_PER_POINT = 100;   // grab 100 items = 1 point
+  const DAILY_POINT_CAP = 5;       // max points one player can earn per day
+  const ROUND_SECONDS = 60;
+  // Sample gifts; replace with the real reward list and stock.
+  const GIFTS = [
+    { id: "sticker", ic: "✨", name: "R&R 限量贴纸组", desc: "5 款 AI 主题贴纸", cost: 1, stock: 200, from: "周边" },
+    { id: "coffee", ic: "☕", name: "咖啡券 RM10", desc: "合作咖啡店通用", cost: 3, stock: 80, from: "生活" },
+    { id: "edu", ic: "🎓", name: "Eduplan 一对一升学咨询", desc: "30 分钟专属顾问", cost: 5, stock: 50, from: "Eduplan" },
+    { id: "ins", ic: "🛡️", name: "保单健康检查", desc: "持牌顾问帮你检查保单缺口", cost: 5, stock: 50, from: "保障通" },
+    { id: "gig", ic: "⚡", name: "GigGo 优先推荐 7 天", desc: "求职时排在前面", cost: 8, stock: 100, from: "兼职通" },
+    { id: "tee", ic: "👕", name: "R&R AI 联名 T 恤", desc: "限量设计款", cost: 10, stock: 30, from: "周边" },
+    { id: "aitool", ic: "🤖", name: "专属 AI 小工具体验", desc: "R&R 为你定制一个 AI 助手（1 个月）", cost: 20, stock: 10, from: "R&R" },
+    { id: "earbuds", ic: "🎧", name: "无线蓝牙耳机", desc: "大奖！数量有限", cost: 30, stock: 5, from: "大奖" }
+  ];
+
+  /* ================= Saved progress (browser only, demo) ================= */
+  const KEY = "rnr-grab-v1";
+  const today = () => new Date().toISOString().slice(0, 10);
+  let save = { points: 0, progress: 0, total: 0, best: 0, day: today(), dayPts: 0, redeemed: [], stockUsed: {} };
+  try { Object.assign(save, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
+  if (save.day !== today()) { save.day = today(); save.dayPts = 0; }
+  const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} };
+
+  const $ = s => document.querySelector(s);
+  $("#dailyCap").textContent = DAILY_POINT_CAP; $("#capRule").textContent = DAILY_POINT_CAP;
+
+  function updatePanel() {
+    $("#walletPts").textContent = save.points;
+    $("#ringNum").textContent = save.progress;
+    $("#toNext").textContent = CATCHES_PER_POINT - save.progress;
+    $("#ringProg").style.strokeDashoffset = 314.16 * (1 - save.progress / CATCHES_PER_POINT);
+    $("#todayPts").textContent = save.dayPts;
+    $("#sTotal").textContent = save.total.toLocaleString();
+    $("#sBest").textContent = save.best;
+    renderGifts();
+  }
+
+  // Adds caught items to the running total and converts every full 100 into a point.
+  function addCatches(n) {
+    save.total += n;
+    if (save.dayPts >= DAILY_POINT_CAP) return 0;
+    save.progress += n;
+    let earned = 0;
+    while (save.progress >= CATCHES_PER_POINT && save.dayPts < DAILY_POINT_CAP) {
+      save.progress -= CATCHES_PER_POINT; save.points++; save.dayPts++; earned++;
+    }
+    if (save.dayPts >= DAILY_POINT_CAP) save.progress = 0;
+    return earned;
+  }
+
+  /* ================= Game ================= */
+  const cv = $("#cv"), ctx = cv.getContext("2d"), stage = $("#stage");
+  const GOOD = ["🤖", "💡", "🎓", "🛡️", "⚡"];
+  let W, H, dpr, running = false, items = [], pops = [], basket, score, lives, timeLeft, spawnT, lastT, elapsed;
+  const keys = {};
+
+  function resize() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = stage.clientWidth; H = stage.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (basket) basket.y = H - 46;
+  }
+  window.addEventListener("resize", resize);
+
+  function reset() {
+    items = []; pops = []; score = 0; lives = 3; timeLeft = ROUND_SECONDS; spawnT = 0; elapsed = 0;
+    basket = { x: W / 2, y: H - 46, w: Math.max(84, W * .16), tx: W / 2 };
+  }
+
+  function spawn() {
+    const r = Math.random(), speedUp = 1 + elapsed / 40;
+    let kind, ic;
+    if (r < .14 + Math.min(elapsed / 300, .1)) { kind = "bug"; ic = "🐛"; }
+    else if (r < .21) { kind = "gold"; ic = "🪙"; }
+    else { kind = "good"; ic = GOOD[Math.floor(Math.random() * GOOD.length)]; }
+    items.push({ x: 24 + Math.random() * (W - 48), y: -30, vy: (110 + Math.random() * 90) * speedUp, ic, kind, rot: Math.random() * 6, vr: (Math.random() - .5) * 3 });
+  }
+
+  function pop(x, y, text, color) { pops.push({ x, y, text, color, life: 1 }); }
+
+  function loop(t) {
+    if (!running) return;
+    const dt = Math.min((t - lastT) / 1000, .05); lastT = t; elapsed += dt;
+    timeLeft -= dt;
+    if (keys.ArrowLeft || keys.a) basket.tx -= 620 * dt;
+    if (keys.ArrowRight || keys.d) basket.tx += 620 * dt;
+    basket.tx = Math.max(basket.w / 2, Math.min(W - basket.w / 2, basket.tx));
+    basket.x += (basket.tx - basket.x) * Math.min(1, dt * 18);
+
+    spawnT -= dt;
+    if (spawnT <= 0) { spawn(); spawnT = Math.max(.22, .62 - elapsed / 120); }
+
+    for (const it of items) {
+      it.y += it.vy * dt; it.rot += it.vr * dt;
+      const caught = it.y > basket.y - 26 && it.y < basket.y + 10 && Math.abs(it.x - basket.x) < basket.w / 2 + 6;
+      if (caught) {
+        it.dead = true;
+        if (it.kind === "bug") { lives--; pop(it.x, it.y - 10, "−❤️", "#ff5470"); stage.animate([{ transform: "translateX(-6px)" }, { transform: "translateX(6px)" }, { transform: "none" }], 260); }
+        else { const v = it.kind === "gold" ? 5 : 1; score += v; pop(it.x, it.y - 10, "+" + v, it.kind === "gold" ? "#ffc940" : "#00e5ff"); }
+      } else if (it.y > H + 30) it.dead = true;
+    }
+    items = items.filter(i => !i.dead);
+    for (const p of pops) { p.y -= 50 * dt; p.life -= dt * 1.4; }
+    pops = pops.filter(p => p.life > 0);
+
+    $("#hScore").textContent = score; $("#hLives").textContent = "❤️".repeat(Math.max(lives, 0)) || "💔";
+    $("#hTime").textContent = Math.max(0, Math.ceil(timeLeft));
+    draw();
+    if (lives <= 0 || timeLeft <= 0) return endRound();
+    requestAnimationFrame(loop);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+    // grid backdrop
+    ctx.strokeStyle = "rgba(124,92,255,.08)"; ctx.lineWidth = 1;
+    for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
+    for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
+    // items
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    for (const it of items) {
+      ctx.save(); ctx.translate(it.x, it.y); ctx.rotate(it.rot * .3);
+      if (it.kind === "gold") { ctx.shadowColor = "#ffc940"; ctx.shadowBlur = 18; }
+      ctx.font = "30px serif"; ctx.fillText(it.ic, 0, 0); ctx.restore();
+    }
+    // basket
+    if (basket) {
+      const { x, y, w } = basket, g = ctx.createLinearGradient(x - w / 2, 0, x + w / 2, 0);
+      g.addColorStop(0, "#7c5cff"); g.addColorStop(.5, "#00e5ff"); g.addColorStop(1, "#ff4fd8");
+      ctx.shadowColor = "#7c5cff"; ctx.shadowBlur = 20;
+      ctx.fillStyle = g; ctx.beginPath(); ctx.roundRect(x - w / 2, y - 8, w, 26, [6, 6, 16, 16]); ctx.fill();
+      ctx.shadowBlur = 0; ctx.fillStyle = "rgba(5,6,15,.55)";
+      ctx.font = "bold 13px 'Space Grotesk', sans-serif"; ctx.fillText("R&R", x, y + 5);
+    }
+    // floating score pops
+    for (const p of pops) { ctx.globalAlpha = Math.max(p.life, 0); ctx.fillStyle = p.color; ctx.font = "bold 20px 'Space Grotesk', sans-serif"; ctx.fillText(p.text, p.x, p.y); }
+    ctx.globalAlpha = 1;
+  }
+
+  function startRound() {
+    resize(); reset(); running = true; lastT = performance.now();
+    $("#overlay").classList.add("hide"); $("#hud").style.display = "flex";
+    requestAnimationFrame(loop);
+  }
+
+  function endRound() {
+    running = false; $("#hud").style.display = "none";
+    const before = save.points;
+    const earned = addCatches(score);
+    save.best = Math.max(save.best, score); persist(); updatePanel();
+    if (earned) { $("#wallet").classList.remove("bump"); void $("#wallet").offsetWidth; $("#wallet").classList.add("bump"); confetti(); }
+    const capped = save.dayPts >= DAILY_POINT_CAP;
+    showOverlay(`
+      <h2>${lives <= 0 ? "💥 Bug 太多了！" : "⏱️ 时间到！"}</h2>
+      <div class="result-num grad">${score}</div>
+      <p>本局接住 ${score} 个${earned ? `<br>🎉 恭喜获得 <b style="color:var(--gold)">${earned} 积分</b>（共 ${before + earned} 积分）` : capped ? "<br>今天的积分已经拿满了，明天再来吧！" : `<br>再接 ${CATCHES_PER_POINT - save.progress} 个就能拿到下一个积分`}</p>
+      <button class="big-btn" id="playBtn">再玩一局 ▶</button>
+      <div class="hint"><a href="#rewards" style="color:var(--c2)">去兑换礼物 ↓</a></div>`);
+  }
+
+  function showOverlay(html) {
+    $("#ovContent").innerHTML = html; $("#overlay").classList.remove("hide");
+    $("#playBtn").addEventListener("click", startRound);
+  }
+
+  // Controls: mouse, touch, keyboard
+  function pointerTo(clientX) { if (!basket) return; const r = stage.getBoundingClientRect(); basket.tx = clientX - r.left; }
+  stage.addEventListener("pointermove", e => pointerTo(e.clientX));
+  stage.addEventListener("pointerdown", e => pointerTo(e.clientX));
+  window.addEventListener("keydown", e => { keys[e.key] = true; if (running && ["ArrowLeft", "ArrowRight"].includes(e.key)) e.preventDefault(); });
+  window.addEventListener("keyup", e => { keys[e.key] = false; });
+
+  /* ================= Rewards ================= */
+  function stockLeft(g) { return g.stock - (save.stockUsed[g.id] || 0); }
+  function renderGifts() {
+    $("#gifts").innerHTML = GIFTS.map(g => {
+      const left = stockLeft(g), can = save.points >= g.cost && left > 0;
+      return `<div class="gift"><span class="from">${g.from}</span><div class="ic">${g.ic}</div>
+        <h3>${g.name}</h3><p>${g.desc}</p>
+        <div class="gift-foot"><span class="cost">🪙 ${g.cost} 积分</span>
+          <button class="redeem" data-id="${g.id}" ${can ? "" : "disabled"}>${left <= 0 ? "已换完" : can ? "兑换" : `差 ${Math.max(g.cost - save.points, 0)}`}</button></div>
+        <div class="stock">剩余 ${left} / ${g.stock}</div><div class="bar"><i style="width:${left / g.stock * 100}%"></i></div></div>`;
+    }).join("");
+    $("#history").innerHTML = save.redeemed.length ? `<table><thead><tr><th>礼物</th><th>兑换码</th><th>日期</th></tr></thead><tbody>${
+      save.redeemed.slice().reverse().map(r => `<tr><td>${r.ic} ${r.name}</td><td class="code">${r.code}</td><td>${r.date}</td></tr>`).join("")}</tbody></table>`
+      : `<div class="empty">还没有兑换记录，先去玩一局吧！</div>`;
+  }
+
+  function openModal(html) { $("#dialog").innerHTML = html; $("#modal").classList.add("show"); }
+  function closeModal() { $("#modal").classList.remove("show"); }
+  $("#modal").addEventListener("click", e => { if (e.target.id === "modal" || e.target.closest("[data-close]")) closeModal(); });
+
+  $("#gifts").addEventListener("click", e => {
+    const b = e.target.closest(".redeem"); if (!b || b.disabled) return;
+    const g = GIFTS.find(x => x.id === b.dataset.id);
+    openModal(`<div class="ic">${g.ic}</div><h3>兑换「${g.name}」？</h3><p>将扣除 <b style="color:var(--gold)">${g.cost} 积分</b>，兑换后剩 ${save.points - g.cost} 积分。</p>
+      <div class="acts"><button class="btn-ghost" data-close>取消</button><button class="big-btn" id="confirm">确认兑换</button></div>`);
+    $("#confirm").addEventListener("click", () => {
+      if (save.points < g.cost || stockLeft(g) <= 0) return closeModal();
+      const code = "RR-" + Math.random().toString(36).slice(2, 6).toUpperCase() + "-" + Math.random().toString(36).slice(2, 6).toUpperCase();
+      save.points -= g.cost; save.stockUsed[g.id] = (save.stockUsed[g.id] || 0) + 1;
+      save.redeemed.push({ ic: g.ic, name: g.name, code, date: new Date().toLocaleDateString("zh-CN") });
+      persist(); updatePanel(); confetti();
+      openModal(`<div class="ic">🎉</div><h3>兑换成功！</h3><p>请截图保存你的兑换码，领取礼物时出示给工作人员。</p>
+        <div class="code-box">${code}</div><div class="acts"><button class="big-btn" data-close>好的</button></div>`);
+    });
+  });
+
+  function confetti() {
+    const bits = ["🎉", "✨", "🪙", "⭐", "🎁"];
+    for (let i = 0; i < 28; i++) {
+      const s = document.createElement("span"); s.className = "confetti"; s.textContent = bits[i % bits.length];
+      s.style.left = Math.random() * 100 + "vw"; s.style.animationDuration = 1.6 + Math.random() * 1.6 + "s"; s.style.animationDelay = Math.random() * .4 + "s";
+      document.body.appendChild(s); setTimeout(() => s.remove(), 3800);
+    }
+  }
+
+  /* ================= Init ================= */
+  document.querySelectorAll(".yr").forEach(y => y.textContent = new Date().getFullYear());
+  resize(); reset(); draw(); updatePanel();
+  showOverlay(`<h2>🎮 AI Grab</h2><p>用鼠标、手指或 ← → 键移动篮子</p>
+    <div class="legend"><span>🤖💡🎓🛡️⚡ +1</span><span>🪙 +5</span><span>🐛 −❤️</span></div>
+    <button class="big-btn" id="playBtn">开始游戏 ▶</button>
+    <div class="hint">每接满 ${CATCHES_PER_POINT} 个 = 1 积分</div>`);
+</script>
+</body>
+</html>

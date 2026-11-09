@@ -184,6 +184,23 @@
   .portal-go .arrow { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 255, 255, .25); transition: transform .3s; }
   .portal:hover .portal-go .arrow { transform: translateX(6px); }
 
+  /* Mini game teaser */
+  .game-box {
+    position: relative; overflow: hidden; border-radius: 32px; padding: 54px 50px;
+    display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: center;
+    background: linear-gradient(135deg, rgba(255, 201, 64, .14), rgba(124, 92, 255, .2) 55%, rgba(0, 229, 255, .12));
+    border: 1px solid rgba(255, 201, 64, .35);
+  }
+  .game-steps { display: flex; gap: 10px; flex-wrap: wrap; margin: 22px 0 28px; }
+  .game-steps span { padding: 8px 14px; border-radius: 12px; background: rgba(5, 6, 15, .5); border: 1px solid var(--card-border); font-size: .9rem; }
+  .game-steps i { font-style: normal; color: #ffc940; }
+  .rain { position: relative; height: 280px; border-radius: 24px; background: rgba(5, 6, 15, .55); border: 1px solid var(--card-border); overflow: hidden; }
+  .rain span { position: absolute; top: -40px; font-size: 1.8rem; animation: rainFall linear infinite; }
+  @keyframes rainFall { to { transform: translateY(340px) rotate(200deg); } }
+  .rain .bk { position: absolute; bottom: 22px; left: 50%; width: 110px; height: 26px; margin-left: -55px; border-radius: 6px 6px 16px 16px; background: var(--grad); box-shadow: 0 0 24px rgba(124, 92, 255, .8); animation: slide 4s ease-in-out infinite; display: grid; place-items: center; font: 700 .8rem "Space Grotesk", sans-serif; color: rgba(5, 6, 15, .6); }
+  @keyframes slide { 0%, 100% { transform: translateX(-90px); } 50% { transform: translateX(90px); } }
+  .rain .pt { position: absolute; top: 16px; right: 16px; padding: 6px 12px; border-radius: 999px; background: rgba(255, 201, 64, .15); border: 1px solid rgba(255, 201, 64, .5); color: #ffc940; font-weight: 700; font-size: .85rem; }
+
   /* Vision */
   .vision-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 60px; align-items: center; }
   .vision-quote { font-size: clamp(1.5rem, 3vw, 2.2rem); font-family: "Space Grotesk", "Noto Sans SC", sans-serif; line-height: 1.35; margin: 22px 0; }
@@ -297,7 +314,7 @@
 
   /* ---------- Responsive ---------- */
   @media (max-width: 960px) {
-    .vision-grid, .demo, .cta-box { grid-template-columns: 1fr; }
+    .vision-grid, .demo, .cta-box, .game-box { grid-template-columns: 1fr; }
     .cards { grid-template-columns: 1fr 1fr; }
     .portals { grid-template-columns: 1fr; max-width: 520px; margin-inline: auto; }
     .stats { grid-template-columns: 1fr 1fr; }
@@ -316,7 +333,7 @@
     .nav-right .btn { display: none; }
     .cards, .timeline { grid-template-columns: 1fr; }
     section { padding: 90px 0; }
-    .cta-box { padding: 44px 22px; }
+    .cta-box, .game-box { padding: 44px 22px; }
     .chip.k2 { right: 0; }
     .cursor-glow { display: none; }
   }
@@ -341,6 +358,7 @@
       <a href="#services" data-i18n="nav.services">Services</a>
       <a href="#process" data-i18n="nav.process">Process</a>
       <a href="#demo" data-i18n="nav.demo">Demo</a>
+      <a href="#game" data-i18n="nav.game">Game</a>
       <a href="#contact" data-i18n="nav.contact">Contact</a>
     </div>
     <div class="nav-right">
@@ -519,6 +537,35 @@
   </div>
 </section>
 
+<!-- ============ MINI GAME ============ -->
+<section id="game">
+  <div class="container">
+    <div class="game-box reveal">
+      <div>
+        <span class="eyebrow" data-i18n="game.eyebrow">Mini Game · Limited-time Event</span>
+        <h2 class="section-title" data-i18n-html="game.title">Grab 100, <span class="grad-text">earn 1 point</span></h2>
+        <p class="section-sub" data-i18n="game.sub">Catch falling AI items in the R&amp;R basket. Every 100 catches earns a point — redeem points for gifts.</p>
+        <div class="game-steps">
+          <span><i>①</i> <span data-i18n="game.s1">Catch 100 items</span></span>
+          <span><i>②</i> <span data-i18n="game.s2">Get 1 point</span></span>
+          <span><i>③</i> <span data-i18n="game.s3">Redeem gifts 🎁</span></span>
+        </div>
+        <a href="game/index.html" class="btn btn-primary"><span data-i18n="game.cta">Play Now</span> 🎮</a>
+      </div>
+      <a class="rain" href="game/index.html" aria-label="Play AI Grab">
+        <span style="left:12%;animation-duration:3.2s">🤖</span>
+        <span style="left:32%;animation-duration:2.6s;animation-delay:-1s">💡</span>
+        <span style="left:52%;animation-duration:3.6s;animation-delay:-2s">🪙</span>
+        <span style="left:70%;animation-duration:2.9s;animation-delay:-.5s">🎓</span>
+        <span style="left:86%;animation-duration:3.3s;animation-delay:-1.6s">⚡</span>
+        <span style="left:42%;animation-duration:4s;animation-delay:-3s">🐛</span>
+        <span class="pt">🪙 100 = 1 pt</span>
+        <span class="bk">R&amp;R</span>
+      </a>
+    </div>
+  </div>
+</section>
+
 <!-- ============ CONTACT ============ -->
 <section id="contact">
   <div class="container">
@@ -560,7 +607,7 @@
   /* ================= i18n ================= */
   const I18N = {
     zh: {
-      "nav.platforms": "平台", "nav.vision": "愿景", "nav.services": "服务", "nav.process": "流程", "nav.demo": "演示", "nav.contact": "联系我们", "nav.cta": "立即开始",
+      "nav.platforms": "平台", "nav.vision": "愿景", "nav.services": "服务", "nav.process": "流程", "nav.demo": "演示", "nav.game": "小游戏", "nav.contact": "联系我们", "nav.cta": "立即开始",
       "hero.badge": "欢迎来到 AI 时代", "hero.l1": "每个人都值得拥有", "hero.l2": "专属自己的 AI。", "hero.we": "我们打造",
       "hero.cta1": "打造我的 AI 工具", "hero.cta2": "探索我们的平台",
       "plat.eyebrow": "我们的平台", "plat.title": "三大平台，<span class=\"grad-text\">一个 AI 生态</span>",
@@ -598,6 +645,9 @@
       "demo.eyebrow": "实时预览", "demo.title": "想象一个<span class=\"grad-text\">懂你业务</span>的 AI",
       "demo.sub": "这就是拥有专属 AI 的感觉 —— 说你的语言、懂你的产品、全天候为你工作。",
       "demo.cta": "我也想要", "demo.name": "你的公司 AI", "demo.online": "● 在线",
+      "game.eyebrow": "小游戏 · 限时活动", "game.title": "接满 100 个，<span class=\"grad-text\">得 1 积分</span>",
+      "game.sub": "用 R&R 篮子接住掉下来的 AI 道具，每接满 100 个得 1 积分，积分可以兑换礼物。",
+      "game.s1": "接住 100 个", "game.s2": "得到 1 积分", "game.s3": "兑换礼物 🎁", "game.cta": "马上玩",
       "cta.eyebrow": "一起打造", "cta.title": "准备好拥有<span class=\"grad-text\">你的 AI</span>了吗？",
       "cta.sub": "告诉我们你的想法，我们的团队将为你提供免费咨询，探讨 AI 如何改变你的业务。",
       "form.name": "你的名字", "form.email": "电子邮箱", "form.msg": "说说你的想法……",
