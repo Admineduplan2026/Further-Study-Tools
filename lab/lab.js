@@ -387,9 +387,9 @@ function recommended(){
    if(q.fac&&p.fac&&p.fac.code===q.fac){sc+=2;why=why||"Your last search: "+p.fac.name;}
    S.saved.forEach(function(id){var s=prog(id);if(s&&s!==p&&s.fac&&s.fac===p.fac){sc+=1;why=why||"Like the programmes you saved";}});
    if(S.saved.indexOf(p.id)>=0)sc-=5;return {p:p,sc:sc,why:why};}).filter(function(x){return x.sc>0;}).sort(function(a,b){return b.sc-a.sc;}).slice(0,6);
- if(!scored.length)return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div>'+expoCards()+'<div class="empty">Take the interest quiz or save a few programmes, and we will recommend courses for you here. '+
+ if(!scored.length)return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div>'+'<div class="empty">Take the interest quiz or save a few programmes, and we will recommend courses for you here. '+
   '<button type="button" class="linkbtn" data-mode="guidance">Start the quiz '+ARROW+'</button></div></section>';
- return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div>'+expoCards()+'<div class="cards">'+scored.map(function(x){return card(x.p,x.why);}).join("")+'</div></section>';
+ return '<section class="sec"><div class="sh"><h2>Recommended for you</h2></div>'+'<div class="cards">'+scored.map(function(x){return card(x.p,x.why);}).join("")+'</div></section>';
 }
 function trust(){
  if(!D.inst.length)return '';   /* no numbers until the sheet data has arrived: popular() says it is loading or failed */
@@ -427,8 +427,12 @@ function mtabs(){var h=location.hash||"#home",n=S.saved.length;
   tab("#universities",'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 10l9-6 9 6M5 10v9h14v-9M9 19v-5h6v5"></path></svg>',"Explore",/^#(universities|faculty|scholarships)/.test(h))+
   tab("#saved",'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z"></path></svg>'+(n?'<b class="mbadge">'+n+'</b>':''),"Saved",h==="#saved")+
   tab("#portfolio",'<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"></path></svg>',"Portfolio",/^#(portfolio|fit|compare)/.test(h))+'</nav>';}
-function home(){if(locked())return hero()+'<div class="page">'+continueRow()+popular()+trust()+'</div>';
- return mapp()+hero()+'<div class="page">'+recommended()+popular()+schTracker()+continueRow()+(L.mode==="guidance"?'':offers())+activities()+trust()+'</div>';}
+/* The latest EDUPLAN activities (Exhibition.gs expo_public): their own section near the top of the home page, for
+   everyone (signed in or not), with a link to all activities. */
+function upcoming(){loadExpo();var c=expoCards(),u=window.EDUPLAN_EXHIBITION_URL;if(!c)return '';
+ return '<section class="sec"><div class="sh"><h2>Upcoming activities</h2>'+(u?'<a class="lmore" href="'+esc(u)+'" target="_blank" rel="noopener">See all <span aria-hidden="true">→</span></a>':'')+'</div>'+c+'</section>';}
+function home(){if(locked())return hero()+'<div class="page">'+upcoming()+continueRow()+popular()+trust()+'</div>';
+ return mapp()+hero()+'<div class="page">'+upcoming()+recommended()+popular()+schTracker()+continueRow()+(L.mode==="guidance"?'':offers())+activities()+trust()+'</div>';}
 /* Eduplan 教育展 and other activities beyond the study search: the address and the cards come from assets/js/config.js
    (EDUPLAN_EXHIBITION_URL, EDUPLAN_ACTIVITIES), so a new address or a new activity is a change there only. They open in
    a new tab: each activity is its own website. */
