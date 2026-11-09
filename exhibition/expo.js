@@ -38,7 +38,7 @@ var ERR={bad_email:"请输入正确的电邮地址。",wait:"验证码刚寄出�
  bad_image:"封面图片只接受 JPG、PNG 或 WebP。",image_too_large:"封面图片不能超过 2 MB。",server:"系统出错，请稍后再试。",bad_request:"请求有误。",
  network:"连不上 Eduplan 伺服器，请检查网络后再试。",bad_people:"人数必须是 1 到 10 位。",event_over:"这个活动已经结束，不能再报名。",
  attend_many:"这个电邮报名太多次，请 1 小时后再试。",
- bad_login:"电邮或密码不对。第一次用密码登录？请按「忘记密码」用电邮验证码设定密码。",locked:"密码错太多次，请 15 分钟后再试，或按「忘记密码」。",
+ bad_login:"电邮或密码不对。如果你以前是用电邮验证码登录的，还没有密码，请按上面的「用验证码设定一次密码」。",locked:"密码错太多次，请 15 分钟后再试，或按「忘记密码」。",
  weak_password:"密码至少要 8 个字符。",google_off:"Google 登录还没开通，请用电邮和密码登录。",google_failed:"Google 登录没有成功，请再试一次，或用电邮和密码登录。"};
 var FIELD={title:"活动名称",description:"简介",date:"日期",start_time:"开始时间",end_time:"结束时间",venue:"场地名称",address:"地址",city:"城市",state:"州属",
  booth_capacity:"名额",seats:"讲座名额",mode:"开放什么报名",registration_deadline:"报名截止日",booth_fee:"摊位费",org_name:"机构／学校名称",name:"联络人姓名",position:"职位",phone:"电话",
@@ -272,6 +272,7 @@ function loginView(role){
   '<div class="xrow"><button class="xbtn" type="submit">'+T("寄验证码","Send code")+'</button></div></form>'+google+
   '<p class="xhint">'+T("已经有登录？","Already have a login?")+' <a href="#" data-act="m-login">'+T("登录","Sign in")+'</a></p></section>';
  else html=head+'<h1>'+T("登录","Sign in")+'</h1>'+note+'<p class="xlead">'+T("主办方和参展学校用电邮和密码登录，第一次登录后再选择账号类型。学生和家长报名参加不需要登录。","Organisers and exhibitors sign in with email and password, then choose an account type the first time. Students and parents do not need to sign in to register.")+'</p>'+
+  '<p class="xnote">'+T("以前用电邮验证码登录的？你还没有密码，","Signed in before with an email code? You have no password yet: ")+'<a href="#" data-act="m-reset">'+T("用验证码设定一次密码","set one once with a code")+'</a>'+T("，账号和资料不变。","; your account stays the same.")+'</p>'+
   '<form data-form="pwlogin" novalidate>'+email+pw(T("密码","Password"),"current-password","")+
   '<div class="xrow"><button class="xbtn" type="submit">'+T("登录","Sign in")+'</button><a href="#" class="xlink" data-act="m-reset">'+T("忘记密码？","Forgot password?")+'</a></div></form>'+google+
   '<p class="xhint">'+T("第一次使用？","First time here?")+' <a href="#" data-act="m-register">'+T("建立登录","Create a login")+'</a></p></section>';

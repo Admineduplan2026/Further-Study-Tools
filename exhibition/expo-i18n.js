@@ -1070,9 +1070,9 @@ window.EXPO_I18N={
 "电邮",
 "Email"
 ],
-"电邮或密码不对。第一次用密码登录？请按「忘记密码」用电邮验证码设定密码。": [
-"电邮或密码不对。第一次用密码登录？请按「忘记密码」用电邮验证码设定密码。",
-"Wrong email or password. First time with a password? Use “Forgot password” to set one with a code from your email."
+"电邮或密码不对。如果你以前是用电邮验证码登录的，还没有密码，请按上面的「用验证码设定一次密码」。": [
+"电邮或密码不对。如果你以前是用电邮验证码登录的，还没有密码，请按上面的「用验证码设定一次密码」。",
+"Wrong email or password. If you signed in before with an email code, you have no password yet: use “set one once with a code” above."
 ],
 "登出": [
 "登出",

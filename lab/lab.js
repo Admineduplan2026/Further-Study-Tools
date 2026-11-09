@@ -1086,7 +1086,8 @@ function account(){
     '<div class="field"><label class="check"><input type="checkbox" id="ia-consent"'+(st.consent?' checked':'')+inv("consent")+'><span>I agree that EDUPLAN keeps my portfolio (saved programmes, quiz result, results, profile, consultation request and application details) to guide me with my studies. Only EDUPLAN staff can see it; it goes to a university only when I submit an application. I can delete it at any time. If I am under 18, I have asked my parent or guardian.</span></label>'+err("consent")+'</div>'+
     '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Sending…':'Create account')+'</button></div>'+
     '<p class="hint">We email you a 6-digit code once to confirm the email is yours. Already have an account? <button type="button" class="linkbtn" data-ia="m-login">Sign in</button></p></form>'+google
-   :'<form class="fields" data-iaform="login" novalidate>'+other+email+pw("Password","current-password","")+
+   :'<form class="fields" data-iaform="login" novalidate>'+other+'<p class="iam"><b>Signed up before with an email code?</b> <span>Set a password once:</span> <button type="button" class="linkbtn" data-ia="m-reset">Set my password</button></p>'+email+pw("Password","current-password","")+
+    (st.err===E("bad_login")?'<div class="row"><button type="button" class="btn ghost" data-ia="setpw-now"'+dis+'>Email me a code to set my password</button></div>':'')+
     '<div class="row"><button type="submit" class="btn"'+dis+'>'+(st.busy?'Signing in…':'Sign in')+'</button><button type="button" class="linkbtn" data-ia="m-reset">Forgot password?</button></div>'+
     '<p class="hint">First time here? <button type="button" class="linkbtn" data-ia="m-register">Create a free account</button> · <a href="#privacy" data-ia="privacy">What we ask for, and when</a></p></form>'+google;
   var box=d.querySelector(".iform");
@@ -1140,6 +1141,7 @@ function account(){
   var a=b.getAttribute("data-ia");
   if(a==="privacy"){try{sessionStorage.setItem("eduplan-acct","1");}catch(e){}d.remove();document.body.classList.remove("introopen");return;}
   if(a==="showpw"){var pe=d.querySelector("#ia-pw");if(pe)pe.type=pe.type==="password"?"text":"password";return;}
+  if(a==="setpw-now"){st.mode="reset";st.step="form";send();return;}
   if(a==="m-login"||a==="m-register"||a==="m-reset"){st.mode=a.slice(2);st.step="form";st.err="";st.msg="";draw("#ia-email");return;}
   if(a==="other"){st.step="form";st.err="";st.msg="";draw("#ia-email");return;}
   if(a==="again"){st.step="form";send();}});

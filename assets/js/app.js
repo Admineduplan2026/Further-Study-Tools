@@ -1044,7 +1044,7 @@ var PF_ERR={bad_email:"Enter an email like name@example.com.",consent:"Please ti
  busy:"EDUPLAN is busy right now. Please try again in a moment.",net:"EDUPLAN could not be reached. Check your connection and try again in a few minutes.",
  server:"EDUPLAN's server had a problem. Please try again in a few minutes. If it keeps happening, please tell EDUPLAN.",
  bad_request:"Something went wrong. Please try again.",
- pw:"Enter your password.",weak_password:"Use a password of at least 8 characters.",bad_login:"Wrong email or password. First time with a password? Use “Forgot password” to set one with a code from your email.",
+ pw:"Enter your password.",weak_password:"Use a password of at least 8 characters.",bad_login:"Wrong email or password. If you signed up before with an email code, you have no password yet: set one with the button below.",
  locked:"Too many wrong passwords. Please wait 15 minutes, or use “Forgot password”.",google_off:"Google sign-in is not set up yet. Please use your email and password.",
  google_failed:"Google sign-in did not work. Please try again, or use your email and password.",declined:"Something went wrong. Please try again."};
 var STAR='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.8 5.7 6.2.9-4.5 4.4 1 6.2L12 17.3 6.5 20.2l1-6.2L3 9.6l6.2-.9z"></path></svg>';
@@ -1239,6 +1239,7 @@ function pfAction(act){
  if(act==="guest"){PF.guest=true;sset("eduplan-guest","1");PF.err="";if(HOST&&HOST.locked&&sget("eduplan-pfmode")){sset("eduplan-pfmode","");location.hash="#home";return;}rerender();window.scrollTo(0,0);return;}
  if(act==="again"){pfSendCode(PF.email,true,PF.pw);return;}
  if(act==="other"){PF.step="email";PF.err="";PF.msg="";rerender("pf-email");return;}
+ if(act==="setpw-now"){var em=document.getElementById("pf-email");PF.mode="reset";PF.step="email";pfSendCode(em?em.value:PF.email,true,"");return;}
  if(act==="m-login"||act==="m-register"||act==="m-reset"){var m=act.slice(2);PF.mode=m==="reset"?"reset":"";PF.step="email";PF.err="";PF.msg="";if(m!=="reset")sset("eduplan-pfmode",m==="register"?"register":"signin");rerender("pf-email");return;}
  if(act==="show-pw"){var pe=document.getElementById("pf-pw");if(pe){pe.type=pe.type==="password"?"text":"password";}return;}
  if(act==="quiz-restart"){S.guide={step:0,answers:[],tie:null};quizSave();location.hash="#guided";return;}
@@ -1304,7 +1305,9 @@ function pfLogin(gate){
   '<p class="hint">We email you a 6-digit code once to confirm the email is yours.</p></form>'+google+
   '<p class="hint">Already have an account? <button type="button" class="linkbtn" data-pf="m-login">Sign in</button></p>'+guest+'</section>';
  return '<section class="panel pflogin"><h2>'+(gate?'Sign in to continue':'Sign in to your account')+'</h2>'+msg+other+
+  '<p class="note pfold"><b>Signed up before with an email code?</b> <span>You have no password yet. Set one once with a code from your email; your portfolio stays the same.</span> <button type="button" class="linkbtn" data-pf="m-reset">Set my password</button></p>'+
   '<form class="fields" id="pf-login-form" novalidate>'+emailField+pwf("Password","current-password","")+
+  (PF.err===PF_ERR.bad_login?'<div class="row"><button type="button" class="btn ghost" data-pf="setpw-now"'+dis+'>Email me a code to set my password</button></div>':'')+
   '<div class="row"><button type="submit" class="btn"'+dis+'>'+(PF.busy?'Signing in…':'Sign in')+'</button><button type="button" class="linkbtn" data-pf="m-reset">Forgot password?</button></div></form>'+google+
   '<p class="hint">First time here? <button type="button" class="linkbtn" data-pf="m-register">Create a free account</button></p>'+guest+'</section>';
 }
