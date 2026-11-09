@@ -61,6 +61,7 @@ function accountAction_(body) {
     case 'account_staff': return accountStaffLinks_(body);
     case 'account_goals': return accountGoals_(body);   // StaffGoals.gs
     case 'account_news': return accountNews_(body);     // News.gs
+    case 'account_game': return accountGame_(body);     // Rewards.gs
   }
   return { error: 'bad_request' };
 }

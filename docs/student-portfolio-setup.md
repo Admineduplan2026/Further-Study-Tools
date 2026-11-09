@@ -163,3 +163,17 @@ The wording uses ANTHROPIC_API_KEY (as the chat); without it the draft is a plai
 WhatsApp (phase two): in My profile, students can tick "I agree that EDUPLAN may send me study and activity updates on
 WhatsApp". The staff page counts them. Sending by WhatsApp needs the WhatsApp Business Platform (Meta Business
 verification, a phone number for the API and approved message templates) and is not built yet.
+
+
+## Mini game points and Exchange gifts (#rewards)
+
+Students who are signed in collect the EDUPLAN tools they catch in the mini game (#game): every **100 caught = 1 point**.
+Points are exchanged for gifts on **Exchange gifts** (menu, `#rewards`). Checks on the server: each game is started on
+the server and counted once, at least 25 seconds later, at most 60 per game and 600 a day (6 points). A browser game
+cannot be made fully cheat-proof, so keep gifts modest.
+
+Set up once: run **rewardsSetup** in the Apps Script editor. Then, in Eduplan School Data → **Gifts**, add one row per gift:
+`gift_id` (G1, G2 …), `name`, `name_zh`, `points` (cost), `stock` (empty = no limit), `image_url` (https, optional),
+`active` (Yes to show it), `note`. Exchanges appear in Eduplan Student Portfolios → **Redemptions** with status
+Pending; staff get an email, hand over the gift and change the status (e.g. Collected). To give points back, set the
+status to Cancelled and lower `spent` in **Game points** for that student.

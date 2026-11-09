@@ -686,3 +686,20 @@ html:not([lang="en"]) .l-en{display:none}
 .newsf input{width:100%}
 .newsf .row{flex-wrap:wrap;gap:8px}
 .lmore{font-weight:600;text-decoration:none;color:var(--brand);display:inline-flex;align-items:center;gap:4px;min-height:44px}
+
+/* Mini game points and Exchange gifts (#rewards) */
+.gpts{margin:6px 0 0;font-size:14px}.gpts a{font-weight:600}
+.gptres{font-size:14px;line-height:1.5;margin:4px 0 10px}
+.rwbal{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:center;padding:18px;border-radius:20px;background:#fff;border:1px solid var(--line,#dfe6ec)}
+.rwk{display:block;font-size:13px;color:var(--muted,#58616c);font-weight:600}
+.rwp{font-size:44px;line-height:1;color:var(--brand,#0a6ea8)}
+.rwprog{flex:1;min-width:220px}
+.rwbar{height:12px;border-radius:999px;background:var(--soft,#eef3f7);overflow:hidden;margin:6px 0}
+.rwbar i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--brand,#0a6ea8),#7b4bd8,#ff9f6b)}
+.rwgifts{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px}
+.rwgift{display:flex;flex-direction:column;gap:6px;padding:14px;border-radius:18px;background:#fff;border:1px solid var(--line,#dfe6ec);min-width:0}
+.rwgift img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px}
+.rwgi{font-size:44px;line-height:1.2}
+.rwcost b{font-size:20px;color:var(--brand,#0a6ea8)}
+.rwgift .btn{margin-top:auto}
+.rwhero .row{margin-top:12px}.rwhero .rwplay{background:#fff;color:var(--brand,#0a6ea8)}

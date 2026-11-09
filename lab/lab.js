@@ -555,6 +555,7 @@ function menu(){
   (S.session&&S.session.staff?item("#staff","Staff portal","EDUPLAN sheets, folders and reviews"):'')+
   item("#portfolio","My portfolio","Saved programmes, quiz result and application")+
   item("#about","About us","Who we are and how we guide you")+
+  item("#rewards","Exchange gifts","Mini game points for gifts")+
   '<span class="mlabel">Explore</span>'+
   item("#faculty","Faculties","Choose a faculty, then a course")+
   item("#universities","Universities","Programmes by university and level")+
@@ -783,16 +784,48 @@ function staffView(){var se=ls("eduplan-session"),site=window.EDUPLAN_SITE_URL||
    preview, where scrolling to a section of a long page does not always move. */
 function gameView(){return '<div class="page gpage"><p><a class="glink" href="#about">← About us</a></p>'+gameBox()+'</div>';}
 function gameBox(){return '<section class="sec agame rv" id="agame" aria-labelledby="agame-h"><div class="gcard"><div class="ghead"><span class="axpill dark"><i aria-hidden="true"></i><span>Mini game</span></span>'+
-  '<h2 id="agame-h">Catch your future</h2><p class="muted">Catch the EDUPLAN tools as they fall and learn what each one does. Miss ⏰ and 🌀: deadlines and guesswork cost you points. 30 seconds.</p></div>'+
+  '<h2 id="agame-h">Catch your future</h2><p class="muted">Catch the EDUPLAN tools as they fall and learn what each one does. Miss ⏰ and 🌀: deadlines and guesswork cost you points. 30 seconds.</p>'+
+  '<p class="gpts">🎁 <span>Signed in: every 100 tools you catch give you 1 point to exchange for gifts.</span> <a href="#rewards">Exchange gifts</a></p></div>'+
   '<div class="gstage"><canvas class="gcv" tabindex="0" aria-label="Game area. Use the left and right arrow keys to move the basket."></canvas>'+
   '<div class="ghud" aria-hidden="true"><span>⭐ <b class="gsc" data-notr>0</b></span><span>⏱️ <b class="gtm" data-notr>30</b></span></div>'+
   '<div class="gover" data-g="start"><b class="gbig">🧺</b><p>Move with ← → or drag. Ready?</p><button type="button" class="axgo" data-act="gstart">▶ <span>Start the game</span></button></div></div>'+
   '<div class="gpad"><button type="button" class="gbtn" data-gmove="-1" aria-label="Move left">◀</button><button type="button" class="gbtn" data-gmove="1" aria-label="Move right">▶</button></div>'+
   '<p class="gfact" role="status" aria-live="polite"></p><div class="gfound"></div></div></section>';}
 var G=null;
+/* Rewards (#rewards, Rewards.gs): points from the mini game (100 tools caught = 1 point) exchanged for gifts. */
+var REW={d:null,busy:false,err:"",msg:""};
+function rewCall(extra){var se=ls("eduplan-session");if(!live||!se||!se.token)return;REW.busy=true;
+ var body={action:"account_game",token:se.token};Object.keys(extra||{}).forEach(function(k){body[k]=extra[k];});
+ post(body).then(function(r){REW.busy=false;if(r&&!r.error){REW.d=r;REW.err="";if(r.redeemed)REW.msg=r.redeemed;}else REW.err=r&&r.error||"server";if(L.view==="rewards")render(true);})
+  .catch(function(){REW.busy=false;REW.err="server";if(L.view==="rewards")render(true);});}
+var REW_ERR={not_enough_points:"You do not have enough points for this gift yet.",out_of_stock:"This gift has run out.",not_found:"This gift is no longer offered.",signed_out:"Please sign in again.",busy:"Busy. Please try again.",server:"Something went wrong. Please try again."};
+function rewardsView(){var se=ls("eduplan-session"),head='<section class="hero sthero rwhero"><div class="hwrap"><span class="eyebrow">EDUPLAN</span><h1>Exchange gifts</h1>'+
+  '<p class="lead">Play the mini game: every 100 EDUPLAN tools you catch give you 1 point. Exchange your points for gifts.</p><div class="row"><a class="btn rwplay" href="#game">🎮 <span>Play the mini game</span></a></div></div></section>';
+ if(!live)return head+'<div class="page"><div class="empty">Points and gifts work on the live EDUPLAN website.</div></div>';
+ if(!se||!se.token||!(se.exp>Date.now()))return head+'<div class="page"><div class="empty">Sign in to collect points and exchange gifts. <a href="#portfolio">Sign in</a></div></div>';
+ if(!REW.d&&!REW.busy&&!REW.err)rewCall({op:"status"});
+ var d=REW.d;if(!d)return head+'<div class="page"><div class="lnote" role="status">'+(REW.err?esc(REW_ERR[REW.err]||REW_ERR.server):'Loading…')+'</div></div>';
+ var zh=document.documentElement.lang==="zh-Hans",pct=Math.round(100*d.progress/d.per_point);
+ var bal='<section class="sec"><div class="rwbal"><div><span class="rwk">Your points</span><b class="rwp" data-notr>'+d.points+'</b></div>'+
+  '<div class="rwprog"><span class="rwk">Next point</span><div class="rwbar" role="progressbar" aria-valuemin="0" aria-valuemax="'+d.per_point+'" aria-valuenow="'+d.progress+'"><i style="width:'+pct+'%"></i></div>'+
+  '<span class="hint"><b data-notr>'+d.progress+' / '+d.per_point+'</b> <span>tools caught</span> · <span>All time:</span> <b data-notr>'+d.caught+'</b></span></div></div>'+
+  (REW.msg?'<p class="note" role="status"><span>Exchanged! Reference</span> <b data-notr>'+esc(REW.msg)+'</b>. <span>EDUPLAN will contact you about collecting your gift.</span></p>':'')+
+  (REW.err?'<p class="err" role="alert">'+esc(REW_ERR[REW.err]||REW_ERR.server)+'</p>':'')+'</section>';
+ var gifts=(d.gifts||[]).length?'<div class="rwgifts">'+d.gifts.map(function(g){var can=d.points>=g.points&&g.left!==0;
+   return '<article class="rwgift">'+(g.image?'<img src="'+esc(g.image)+'" alt="" loading="lazy">':'<span class="rwgi" aria-hidden="true">🎁</span>')+
+    '<b data-notr>'+esc(zh&&g.name_zh?g.name_zh:g.name)+'</b><span class="rwcost"><b data-notr>'+g.points+'</b> <span>points</span></span>'+
+    (g.left!=null?'<span class="hint">'+(g.left?'<span>Left:</span> <b data-notr>'+g.left+'</b>':'<span>Out of stock</span>')+'</span>':'')+(g.note?'<span class="hint" data-notr>'+esc(g.note)+'</span>':'')+
+    '<button type="button" class="btn sm" data-rw="'+esc(g.id)+'" data-rwn="'+esc(g.name)+'" data-rwp="'+g.points+'"'+(can&&!REW.busy?'':' disabled')+'>Exchange</button></article>';}).join("")+'</div>'
+  :'<div class="empty">Gifts are coming soon. Keep playing to collect points!</div>';
+ var mine=(d.mine||[]).length?'<details class="gdone" open><summary><span>My exchanges</span></summary><ul class="goals">'+d.mine.map(function(m){
+   return '<li class="goal'+(m.status==="Done"||m.status==="Collected"?' isdone':'')+'"><span class="gt" data-notr>'+esc(m.gift)+'</span><span class="gmeta"><span class="gdue" data-notr>'+esc(m.time)+' · '+esc(m.id)+'</span><span class="gpill">'+esc(m.status)+'</span></span></li>';}).join("")+'</ul></details>':'';
+ return head+'<div class="page">'+bal+'<section class="sec"><div class="sh"><h2>Gifts</h2></div>'+gifts+mine+'</section></div>';}
+document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&e.target.closest("[data-rw]");if(!t)return;
+ if(!confirm("Exchange "+t.getAttribute("data-rwp")+" points for \""+t.getAttribute("data-rwn")+"\"?"))return;REW.msg="";rewCall({op:"redeem",gift_id:t.getAttribute("data-rw")});render(true);});
 function gameStart(){var c=app.querySelector(".gcv");if(!c)return;var stage=c.parentNode,ov=stage.querySelector(".gover"),x=c.getContext("2d"),dpr=Math.min(2,window.devicePixelRatio||1),facts=gameFacts();
  var W=c.clientWidth,H=c.clientHeight;c.width=W*dpr;c.height=H*dpr;x.setTransform(dpr,0,0,dpr,0,0);
- G={c:c,x:x,W:W,H:H,bx:W/2,dir:0,items:[],score:0,t0:performance.now(),last:performance.now(),spawn:0,got:{},facts:facts,on:true};
+ G={c:c,x:x,W:W,H:H,bx:W/2,dir:0,items:[],score:0,caught:0,gid:"",t0:performance.now(),last:performance.now(),spawn:0,got:{},facts:facts,on:true};
+ var se=ls("eduplan-session"),g0=G;if(live&&se&&se.token&&se.exp>Date.now())post({action:"account_game",op:"start",token:se.token}).then(function(r){if(r&&r.gid)g0.gid=r.gid;}).catch(function(){});
  ov.hidden=true;app.querySelector(".gfound").innerHTML="";app.querySelector(".gfact").textContent="";c.focus({preventScroll:true});requestAnimationFrame(gameTick);}
 function gameTick(now){var g=G;if(!g||!g.on)return;if(!g.c.isConnected){G=null;return;}
  var dt=Math.min(50,now-g.last),x=g.x,W=g.W,H=g.H,left=Math.max(0,30-Math.floor((now-g.t0)/1000));g.last=now;
@@ -802,14 +835,22 @@ function gameTick(now){var g=G;if(!g||!g.on)return;if(!g.c.isConnected){G=null;r
  x.clearRect(0,0,W,H);
  for(var i=g.items.length-1;i>=0;i--){var o=g.items[i];o.y+=o.v*dt;x.font="30px serif";x.textAlign="center";x.textBaseline="middle";x.fillText(o.e,o.x,o.y);
   if(o.y>H-58&&o.y<H-20&&Math.abs(o.x-g.bx)<40){g.items.splice(i,1);
-   if(o.bad){g.score=Math.max(0,g.score-2);gameMsg('<span data-notr>−2 · '+o.it[0]+'</span> <span>'+esc(o.it[1])+'</span>');}else{g.score+=1;if(!g.got[o.it[1]]){g.got[o.it[1]]=1;gameMsg('<span aria-hidden="true">'+o.it[0]+'</span> <b>'+esc(o.it[1])+'</b> <span>'+esc(o.it[2])+'</span>');}}
+   if(o.bad){g.score=Math.max(0,g.score-2);gameMsg('<span data-notr>−2 · '+o.it[0]+'</span> <span>'+esc(o.it[1])+'</span>');}else{g.score+=1;g.caught++;if(!g.got[o.it[1]]){g.got[o.it[1]]=1;gameMsg('<span aria-hidden="true">'+o.it[0]+'</span> <b>'+esc(o.it[1])+'</b> <span>'+esc(o.it[2])+'</span>');}}
    app.querySelector(".gsc").textContent=g.score;}else if(o.y>H+30)g.items.splice(i,1);}
  x.font="40px serif";x.fillText("🧺",g.bx,H-34);
  app.querySelector(".gtm").textContent=left;
  if(left<=0)return gameEnd();requestAnimationFrame(gameTick);}
 function gameMsg(h){var el=app.querySelector(".gfact");if(el)el.innerHTML=h;}
-function gameEnd(){var g=G;g.on=false;var ov=app.querySelector(".gover"),n=Object.keys(g.got).length;
- ov.innerHTML='<b class="gbig">🏆 <span data-notr>'+g.score+'</span></b><p><span>You found</span> <b data-notr>'+n+' / '+g.facts.length+'</b> <span>EDUPLAN tools.</span></p><button type="button" class="axgo" data-act="gstart">↻ <span>Play again</span></button>';ov.hidden=false;
+function gameEnd(){var g=G;g.on=false;var ov=app.querySelector(".gover"),n=Object.keys(g.got).length,se=ls("eduplan-session");
+ ov.innerHTML='<b class="gbig">🏆 <span data-notr>'+g.score+'</span></b><p><span>You found</span> <b data-notr>'+n+' / '+g.facts.length+'</b> <span>EDUPLAN tools.</span></p>'+
+  '<p class="gptres" role="status">'+(g.gid?'<span>Saving your catch…</span>':live?'<span>Sign in to collect points: every 100 tools caught = 1 point for gifts.</span> <a href="#portfolio">Sign in</a>':'')+'</p>'+
+  '<button type="button" class="axgo" data-act="gstart">↻ <span>Play again</span></button>';ov.hidden=false;
+ if(g.gid&&se&&se.token)post({action:"account_game",op:"end",token:se.token,gid:g.gid,caught:g.caught}).then(function(r){var el=ov.querySelector(".gptres");if(!el||!r)return;
+   if(r.error==="too_fast"||r.error==="bad_game"){el.innerHTML='<span>This round could not be counted.</span>';return;}if(r.error){el.innerHTML='<span>Your catch could not be saved.</span>';return;}
+   REW.d=null;el.innerHTML=(r.new_points?'<b>🎉 <span>You earned</span> <span data-notr>'+r.new_points+'</span> <span>point!</span></b><br>':'')+
+    '<span>Caught this round:</span> <b data-notr>'+(r.added||0)+'</b> · <span>Next point:</span> <b data-notr>'+r.progress+' / '+r.per_point+'</b> · <span>Your points:</span> <b data-notr>'+r.points+'</b>'+
+    (r.day_limit?'<br><span>Daily limit reached. Come back tomorrow.</span>':'')+' <a href="#rewards">Exchange gifts</a>';})
+  .catch(function(){var el=ov.querySelector(".gptres");if(el)el.innerHTML='<span>Your catch could not be saved.</span>';});
  app.querySelector(".gfound").innerHTML='<h3>What EDUPLAN does for you</h3><ul>'+g.facts.map(function(f){var ok=g.got[f[1]];return '<li class="'+(ok?'ok':'')+'"><span class="gi" aria-hidden="true">'+f[0]+'</span><span><b>'+esc(f[1])+'</b> '+(ok?'':'<span class="pill">Not caught</span>')+'<br><span class="muted">'+esc(f[2])+'</span></span></li>';}).join("")+'</ul>'+
   '<div class="pact"><button type="button" class="btn sm" data-mode="interest">Start exploring</button><a class="btn ghost sm" href="'+esc(mainLink("#consultation"))+'">Book a free consultation</a></div>';
  var b=ov.querySelector("button");if(b)b.focus({preventScroll:true});}
@@ -881,7 +922,7 @@ var top=document.getElementById("top"),app=document.getElementById("app"),helpBo
 function staffSession(){var se=ls("eduplan-session");return !!(se&&se.staff&&se.token&&se.exp>Date.now());}
 function route(){var h=(location.hash||"#home").slice(1);
  if((h===""||h==="home")&&staffSession()){h="staff";try{history.replaceState(null,"","#staff");}catch(e){}}
- L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about",game:"game",staff:"staff"}[h]||"home");}
+ L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about",game:"game",staff:"staff",rewards:"rewards"}[h]||"home");}
 function chrome(){
  S.saved=ls("eduplan-saved")||[];S.quiz=ls("eduplan-quiz")||S.quiz;S.session=ls("eduplan-session");if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
  var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"")+(L.info?modeInfo():"");if(lang)top.querySelector(".bar").appendChild(lang);
@@ -894,7 +935,7 @@ function render(keep){
  document.body.classList.toggle("lab-own",L.view!=="app");
  if(L.view==="app"){sheet.innerHTML="";document.body.classList.remove("locked");return;}   /* the main app draws this page */
  if(L.view==="results"&&locked())L.view="home";
- app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():L.view==="game"?gameView():L.view==="staff"?staffView():home();
+ app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():L.view==="game"?gameView():L.view==="staff"?staffView():L.view==="rewards"?rewardsView():home();
  sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
  if(L.view==="about"){aboutFx();aboutNet();}
  if(L.view==="game")aboutFx();
