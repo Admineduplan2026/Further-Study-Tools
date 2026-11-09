@@ -41,7 +41,7 @@
  * action checks the caller's role and that the event or registration is theirs. Writes run inside the script lock, so
  * two schools booking the last booth at the same moment cannot both get it.
  *
- * Data: private spreadsheet "EDUPLAN Activitys" in "Eduplan Databases/5. Exhibitions (private)" (Drive.gs) with the
+ * Data: private spreadsheet "Eduplan Exhibitions" in "Eduplan Databases/5. Exhibitions (private)" (Drive.gs) with the
  * tabs Users, Events, Registrations, Attendees and Sessions. Event cover images go to "Event covers (public links)" in the same
  * folder and are viewable by anyone with the link. School contact details are only sent to the organiser of the event
  * the school registered for. Session tokens and codes are kept only as SHA-256 hashes (Account.gs helpers).
@@ -119,12 +119,12 @@ function expoAction_(body) {
 
 /* ---------- Storage: one table per tab, rows as objects of strings ---------- */
 
-/* The tables of "EDUPLAN Activitys"; tools/test-exhibition.js replaces this with an in-memory store. */
+/* The tables of "Eduplan Exhibitions"; tools/test-exhibition.js replaces this with an in-memory store. */
 function expoStore_() {
   if (expoStore_.cached) return expoStore_.cached;
   var props = PropertiesService.getScriptProperties(), id = props.getProperty('EXPO_SHEET_ID'), ss = id && driveSheetLive_(id);
   if (!ss) {
-    ss = SpreadsheetApp.create('EDUPLAN Activitys');
+    ss = SpreadsheetApp.create('Eduplan Exhibitions');
     DriveApp.getFileById(ss.getId()).moveTo(driveFolder_('expo'));
     props.setProperty('EXPO_SHEET_ID', ss.getId());
   }
@@ -1105,12 +1105,12 @@ function expoUnsub_(body) {
 }
 
 /* Run once from the editor (select expoSetup, Run): asks for the Drive, Sheets and email permissions the exhibition
-   needs (tick "Select all" on Google's consent screen), creates "EDUPLAN Activitys" and checks EXPO_ADMIN_EMAILS. */
+   needs (tick "Select all" on Google's consent screen), creates "Eduplan Exhibitions" and checks EXPO_ADMIN_EMAILS. */
 function expoSetup() {
   console.log('Email quota left today: ' + MailApp.getRemainingDailyQuota());
   expoStore_().table('users').all();
   ['events', 'registrations', 'attendees', 'sessions', 'notify', 'unsubscribed', 'logins'].forEach(function (t) { expoStore_().table(t).all(); });
-  console.log('EDUPLAN Activitys: ' + SpreadsheetApp.openById(driveCleanId_(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID'))).getUrl());
+  console.log('Eduplan Exhibitions: ' + SpreadsheetApp.openById(driveCleanId_(PropertiesService.getScriptProperties().getProperty('EXPO_SHEET_ID'))).getUrl());
   if (!ScriptApp.getProjectTriggers().some(function (t) { return t.getHandlerFunction() === 'expoNotifyDaily'; }))
     ScriptApp.newTrigger('expoNotifyDaily').timeBased().everyDays(1).atHour(10).inTimezone(EXPO_TZ).create();
   console.log('New-event emails: students with an account ' + expoStudentEmails_().length + ', daily trigger on.');

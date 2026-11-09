@@ -680,3 +680,8 @@ body.introopen{overflow:hidden}
 /* Exhibition titles come in both languages; the page language picks one. */
 html[lang="en"] .l-zh{display:none}
 html:not([lang="en"]) .l-en{display:none}
+
+/* Staff: latest news email */
+.newsf textarea{width:100%;min-height:260px;font:inherit;line-height:1.5}
+.newsf input{width:100%}
+.newsf .row{flex-wrap:wrap;gap:8px}

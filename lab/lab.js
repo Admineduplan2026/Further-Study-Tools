@@ -713,8 +713,46 @@ document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&
  t.setAttribute("data-sure","1");t.textContent="Delete?";setTimeout(function(){if(t.isConnected){t.removeAttribute("data-sure");t.textContent="✕";}},3000);});
 document.addEventListener("submit",function(e){if(!e.target||e.target.id!=="goal-form")return;e.preventDefault();
  var ti=document.getElementById("goal-title"),du=document.getElementById("goal-due");goalsCall({op:"add",title:ti.value,due:du.value});});
+/* Latest news (News.gs): AI drafts an update email, staff edit and approve it, then it is emailed to students. */
+var NEWS={d:null,err:"",busy:false,msg:""};
+function newsCall(extra){var se=ls("eduplan-session");if(!live||!se||!se.token||!se.staff)return;NEWS.busy=true;NEWS.msg="";if(L.view==="staff"&&extra&&extra.op!=="get")render(true);
+ var body={action:"account_news",token:se.token};Object.keys(extra||{}).forEach(function(k){body[k]=extra[k];});
+ post(body).then(function(r){NEWS.busy=false;if(r&&!r.error){NEWS.d=r;NEWS.err="";NEWS.msg=extra&&extra.op==="approve"?"Approved. Sending starts in about a minute.":extra&&extra.op==="save"?"Saved.":"";}
+  else{NEWS.err=r&&r.error||"server";if(!NEWS.d&&NEWS.err!=="no_changes")NEWS.d=null;}if(L.view==="staff")render(true);})
+  .catch(function(){NEWS.busy=false;NEWS.err="server";if(L.view==="staff")render(true);});}
+var NEWS_ERR={no_changes:"Nothing new since the last news.",sending:"The last news is still being sent. Try again when it has finished.",missing:"Write a subject and a message.",
+ not_found:"There is no draft. Make one first.",forbidden:"This email is not on the staff list.",busy:"Busy. Please try again in a moment.",server:"Something went wrong. Please try again."};
+function newsBox(){var n=NEWS.d,dis=NEWS.busy?' disabled':'';
+ if(!n)return '<section class="sec"><div class="sh"><h2>Latest news email</h2></div>'+(NEWS.err&&NEWS.err!=="no_changes"?'<div class="empty">'+esc(NEWS_ERR[NEWS.err]||NEWS_ERR.server)+'</div>':'<div class="lnote" role="status">Loading…</div>')+'</section>';
+ var d=n.draft,j=n.job,sending=j&&!j.done_at;
+ var head='<p class="hint">AI writes an email about what is new (activities, schools, programmes, scholarships). Nothing is sent until you approve it. It goes to <b data-notr>'+n.recipients+'</b> <span>students with an account</span>.'+
+  ' <span>WhatsApp updates: </span><b data-notr>'+n.whatsapp+'</b> <span>students agreed so far.</span></p>';
+ var status=sending?'<div class="lnote" role="status"><span>Sending:</span> <b data-notr>'+j.sent+' / '+j.total+'</b>. <span>Free Gmail sends about 75 a day, so a long list takes a few days.</span></div>':'';
+ var msg=(NEWS.msg?'<p class="note" role="status">'+esc(NEWS.msg)+'</p>':'')+(NEWS.err?'<p class="err" role="alert">'+esc(NEWS_ERR[NEWS.err]||NEWS_ERR.server)+'</p>':'');
+ var form=d?'<form id="news-form" class="newsf">'+(d.counts?'<p class="hint"><span>New in this draft:</span> <span data-notr>'+d.counts.ev+'</span> <span>activities</span> · <span data-notr>'+d.counts.inst+'</span> <span>schools</span> · <span data-notr>'+d.counts.prog+'</span> <span>programmes</span> · <span data-notr>'+d.counts.sch+'</span> <span>scholarships</span>'+(d.ai?'':' · <span>written without AI (no API key)</span>')+'</p>':'')+
+   '<label class="field"><span>Subject</span><input id="news-subject" maxlength="150" value="'+esc(d.subject)+'" data-notr></label>'+
+   '<label class="field"><span>Message</span><textarea id="news-body" rows="14" maxlength="6000" data-notr>'+esc(d.body)+'</textarea></label>'+
+   '<p class="hint">Check every date, place and link. A stop link is added at the end of each email.</p>'+
+   '<div class="row"><button type="submit" class="btn ghost"'+dis+'>Save changes</button>'+
+   '<button type="button" class="btn" data-news="approve"'+dis+(sending?' disabled':'')+'>Approve and send</button>'+
+   '<button type="button" class="btn ghost" data-news="discard"'+dis+'>Do not send</button></div></form>'
+  :'<div class="row"><button type="button" class="btn" data-news="draft"'+dis+(sending?' disabled':'')+'>'+(NEWS.busy?'Writing…':'Write a draft now')+'</button></div><p class="hint">A draft is also made every Monday when something is new, and staff get an email.</p>';
+ var log=(n.log||[]).length?'<details class="gdone"><summary><span>Sent before</span></summary><ul class="goals">'+n.log.map(function(x){return '<li class="goal isdone"><span class="gt" data-notr>'+esc(x.subject)+'</span><span class="gmeta"><span class="gdue" data-notr>'+esc(x.at)+'</span><span class="gpill ok"><b data-notr>'+x.sent+'</b> <span>sent</span></span></span></li>';}).join("")+'</ul></details>':'';
+ return '<section class="sec"><div class="sh"><h2>Latest news email</h2></div>'+head+status+msg+form+log+'</section>';}
+document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&e.target.closest("[data-news]");if(!t)return;var op=t.getAttribute("data-news");
+ if(op==="approve"){var su=document.getElementById("news-subject"),bo=document.getElementById("news-body");
+  if(!confirm("Send this email to "+(NEWS.d?NEWS.d.recipients:"")+" students now?"))return;
+  /* save the latest edits first, then approve */
+  var se=ls("eduplan-session");NEWS.busy=true;render(true);
+  post({action:"account_news",token:se.token,op:"save",subject:su?su.value:"",body:bo?bo.value:""}).then(function(r){NEWS.busy=false;if(r&&r.error){NEWS.err=r.error;render(true);return;}newsCall({op:"approve"});})
+   .catch(function(){NEWS.busy=false;NEWS.err="server";render(true);});return;}
+ if(op==="discard"&&!confirm("Drop this draft? Its changes will not be announced."))return;
+ newsCall({op:op});});
+document.addEventListener("submit",function(e){if(!e.target||e.target.id!=="news-form")return;e.preventDefault();
+ newsCall({op:"save",subject:document.getElementById("news-subject").value,body:document.getElementById("news-body").value});});
 function loadStaff(){var se=ls("eduplan-session");
  if(se&&se.staff&&!GOALS.list&&!GOALS.busy)goalsCall({});
+ if(se&&se.staff&&!NEWS.d&&!NEWS.busy&&!NEWS.err)newsCall({op:"get"});
  if(app.querySelector(".gcd")&&!GOALS.timer)GOALS.timer=setInterval(goalsTick,1000);
  if(!live||!se||!se.token||!se.staff||STAFF.busy||STAFF.links)return;STAFF.busy=true;
  post({action:"account_staff",token:se.token}).then(function(r){STAFF.busy=false;
@@ -734,7 +772,7 @@ function staffView(){var se=ls("eduplan-session"),site=window.EDUPLAN_SITE_URL||
  var web=[{key:"w-site",url:site,t:["EDUPLAN website","The student website","🌐"]},{key:"w-expo",url:ex,t:["EDUPLAN Activity website","For organisers and schools","🎪"]},
   {key:"w-manual",url:"https://github.com/Admineduplan2026/Further-Study-Tools/tree/claude/website-eduplan-artifacts-mb4z44/docs",t:["Guides","How each part of EDUPLAN works","📘"]}]
   .filter(function(x){return x.url;}).map(function(x){STAFF_TEXT[x.key]=x.t;return {key:x.key,url:x.url};});
- return head+'<div class="page">'+goalsBox()+body+group("web",web)+'</div>';}
+ return head+'<div class="page">'+goalsBox()+newsBox()+body+group("web",web)+'</div>';}
 /* The game on its own page (#game), opened from About us: a page of its own works in every browser and in the Claude
    preview, where scrolling to a section of a long page does not always move. */
 function gameView(){return '<div class="page gpage"><p><a class="glink" href="#about">← About us</a></p>'+gameBox()+'</div>';}

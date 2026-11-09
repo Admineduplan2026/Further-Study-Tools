@@ -146,3 +146,20 @@ password with **Forgot password** (or Create account) the first time.
 
 The website then shows a "Continue with Google" button on the sign-in screens (main site and exhibition). The server
 checks each Google token with Google (audience, issuer, expiry and a verified email) before signing anyone in.
+
+
+## Latest news email (staff page)
+
+On **#staff**, "Latest news email" shows a draft that Claude writes from what is new on the website since the last news:
+new activities (with date, place and share link), schools, programmes and scholarships. Staff check and edit it, then
+**Approve and send**; nothing is sent before that. It is emailed in the background to every student with an account
+(each email has a stop link; people who stopped activity emails are skipped), about 75 a day on a free Gmail account,
+continuing the next day. **Do not send** drops the draft and treats its changes as announced.
+
+Set up once: run **newsSetup** in the Apps Script editor. It records today's website as already announced, makes a draft
+every Monday at 8am when something is new (staff in STAFF_EMAILS get an email to review it) and continues sending daily.
+The wording uses ANTHROPIC_API_KEY (as the chat); without it the draft is a plain bilingual list.
+
+WhatsApp (phase two): in My profile, students can tick "I agree that EDUPLAN may send me study and activity updates on
+WhatsApp". The staff page counts them. Sending by WhatsApp needs the WhatsApp Business Platform (Meta Business
+verification, a phone number for the API and approved message templates) and is not built yet.

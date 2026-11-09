@@ -60,6 +60,7 @@ function accountAction_(body) {
     case 'account_delete': return accountDelete_(body);
     case 'account_staff': return accountStaffLinks_(body);
     case 'account_goals': return accountGoals_(body);   // StaffGoals.gs
+    case 'account_news': return accountNews_(body);     // News.gs
   }
   return { error: 'bad_request' };
 }

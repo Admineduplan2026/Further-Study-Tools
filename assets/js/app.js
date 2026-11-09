@@ -1512,6 +1512,7 @@ function pfProfile(){var p=S.prof||{},fi=p.fields||[];
   '<div class="fields" id="pf-prof">'+
   '<div class="field"><span class="legend">Your name</span>'+idBox()+'</div>'+
   '<div class="field"><label for="pr-phone">WhatsApp number <span class="hint">(optional)</span></label><input id="pr-phone" data-prof="phone" type="tel" autocomplete="tel" placeholder="012-345 6789" value="'+esc(p.phone||"")+'"><span class="hint">For counsellor follow-ups and deadline reminders.</span></div>'+
+  '<div class="field"><label class="check"><input type="checkbox" data-profwa'+(p.wa_ok?' checked':'')+'><span>I agree that EDUPLAN may send me study and activity updates on WhatsApp. I can stop at any time.</span></label></div>'+
   '<div class="field"><label for="pr-status">Where are you now? <span class="hint">(optional)</span></label><select id="pr-status" data-prof="status"><option value="">Choose</option>'+PROF_STATUS.map(function(x){return '<option'+(p.status===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
   '<div class="field"><label for="pr-home">Your postcode <span class="hint">(optional)</span></label>'+homeSelect("pr-home")+'<span class="hint">Used to show how far each university is from home when you compare programmes.</span></div>'+
   '<div class="field"><label for="pr-region">Where would you like to study? <span class="hint">(optional)</span></label><select id="pr-region" data-prof="region"><option value="">Anywhere in Malaysia</option>'+MY_STATES.map(function(x){return '<option'+(p.region===x?' selected':'')+'>'+esc(x)+'</option>';}).join("")+'</select></div>'+
@@ -1520,6 +1521,7 @@ function pfProfile(){var p=S.prof||{},fi=p.fields||[];
 document.addEventListener("change",function(ev){var t=ev.target;if(!t||!t.closest||!t.closest("#pf-prof"))return;S.prof=S.prof||{};
  if(t.hasAttribute("data-proff")){var c=t.getAttribute("data-proff"),a=(S.prof.fields||[]).filter(function(x){return x!==c;});if(t.checked)a.push(c);S.prof.fields=a;}
  else if(t.hasAttribute("data-prof"))S.prof[t.getAttribute("data-prof")]=t.value.trim();
+ else if(t.hasAttribute("data-profwa"))S.prof.wa_ok=t.checked?new Date().toISOString():"";   /* WhatsApp updates: when the student agreed */
  store("eduplan-profile",S.prof);pfTouch("profile");});
 V.portfolio=function(){
  /* Live website: the portfolio is filled in only after signing in. */
