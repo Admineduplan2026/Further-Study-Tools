@@ -1,0 +1,432 @@
+<title>ShiftProof 兼职通</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@500&display=swap">
+<style>
+/* Layout: sticky top bar + tabbed single-page app; cards only for jobs/people, a "trust meter" is the signature element */
+:root{
+  --bg:#F4F6F8; --surface:#FFFFFF; --ink:#13202B; --muted:#5B6873; --line:#DCE2E7;
+  --accent:#0E7C66; --accent-ink:#FFFFFF; --accent-soft:#DDF1EB;
+  --gold:#D99A1E; --gold-soft:#FBEFD3; --warn:#B4442C; --warn-soft:#F8E1DA;
+  --display:"Bricolage Grotesque","Noto Sans SC",system-ui,sans-serif;
+  --body:"Noto Sans SC",system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F171D; --surface:#17222A; --ink:#E7EEF2; --muted:#93A3AE; --line:#2A3943;
+  --accent:#3CC4A2; --accent-ink:#06231C; --accent-soft:#163A33;
+  --gold:#F0B848; --gold-soft:#3A2F17; --warn:#F08A70; --warn-soft:#3E2219; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F171D; --surface:#17222A; --ink:#E7EEF2; --muted:#93A3AE; --line:#2A3943;
+  --accent:#3CC4A2; --accent-ink:#06231C; --accent-soft:#163A33;
+  --gold:#F0B848; --gold-soft:#3A2F17; --warn:#F08A70; --warn-soft:#3E2219; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{max-width:1120px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+h1,h2,h3{font-family:var(--display);line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,5vw,50px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(22px,3vw,30px);font-weight:800}
+h3{font-size:17px;font-weight:600}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+
+/* top bar */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:9;background:var(--surface);border-bottom:1px solid var(--line)}
+.top .wrap{display:flex;align-items:center;gap:16px;padding-block:10px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;font-size:20px;text-decoration:none;color:var(--ink)}
+.seal{width:28px;height:28px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-size:15px}
+nav.tabs{display:flex;gap:4px;overflow-x:auto;flex:1;min-width:0}
+nav.tabs a{padding:7px 12px;border-radius:999px;color:var(--muted);text-decoration:none;white-space:nowrap;font-weight:500}
+nav.tabs a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+.role{display:flex;border:1px solid var(--line);border-radius:999px;padding:3px}
+.role button{border:0;background:none;padding:5px 12px;border-radius:999px;cursor:pointer;font-size:13px;color:var(--muted)}
+.role button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid transparent;background:var(--accent);color:var(--accent-ink);padding:10px 18px;border-radius:var(--r);font-weight:700;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.small{padding:6px 12px;font-size:13px}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+main{padding-block:28px 64px}
+section.view{display:grid;gap:24px}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.2fr 1fr;gap:28px;align-items:center}
+.hero p.lead{font-size:17px;color:var(--muted);max-width:52ch;margin-top:12px}
+.hero .cta{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+.search{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.search input,.search select{padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);min-width:0}
+.search input{flex:2 1 200px}.search select{flex:1 1 130px}
+.stats{display:flex;gap:28px;flex-wrap:wrap;margin-top:22px}
+.stats b{display:block;font-family:var(--display);font-size:24px}
+.stats span{font-size:13px;color:var(--muted)}
+
+/* trust meter – signature element */
+.trustcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:14px}
+.who{display:flex;gap:12px;align-items:center}
+.avatar{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-family:var(--display);background:var(--gold-soft);color:var(--gold);flex:none}
+.meter{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.meter i{height:8px;border-radius:4px;background:var(--line)}
+.meter i.on{background:var(--accent)}
+.checks{display:grid;gap:6px;list-style:none;padding:0;margin:0;font-size:14px}
+.checks li{display:flex;gap:8px;align-items:baseline}
+.checks .ok{color:var(--accent);font-weight:700}
+.checks .no{color:var(--muted)}
+.score{font-family:var(--display);font-size:34px;font-weight:800;line-height:1}
+.score small{font-size:14px;color:var(--muted);font-weight:600}
+
+/* lists */
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid var(--line);background:var(--surface);padding:5px 12px;border-radius:999px;cursor:pointer;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
+.card .row{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.pay{font-family:var(--mono);font-weight:500;white-space:nowrap}
+.meta{display:flex;gap:12px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px}
+.badge.v{background:var(--accent-soft);color:var(--accent)}
+.badge.g{background:var(--gold-soft);color:var(--gold)}
+.badge.w{background:var(--warn-soft);color:var(--warn)}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:12px;border:1px solid var(--line);padding:1px 8px;border-radius:6px;color:var(--muted)}
+.empty{padding:28px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:var(--r)}
+
+/* verify */
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:grid;gap:6px;align-content:start}
+.step .n{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.step.done{border-color:var(--accent)}
+.step.done .n{color:var(--accent)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:14px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+label.f{display:grid;gap:4px;font-size:14px;font-weight:500}
+label.f input,label.f select,label.f textarea{padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);background:var(--bg);width:100%}
+.drop{border:1.5px dashed var(--line);border-radius:var(--r);padding:16px;text-align:center;color:var(--muted);cursor:pointer;display:block}
+.drop.ok{border-color:var(--accent);color:var(--accent)}
+.quiz{display:grid;gap:10px}
+.opt{display:flex;gap:8px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:var(--r);cursor:pointer}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.note{font-size:13px;color:var(--muted)}
+
+/* pricing */
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.plan{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:12px;align-content:start}
+.plan.hot{border:2px solid var(--accent)}
+.plan .price{font-family:var(--display);font-size:30px;font-weight:800}
+.plan ul{margin:0;padding-left:18px;display:grid;gap:4px;font-size:14px}
+table.rev{width:100%;border-collapse:collapse;font-size:14px}
+table.rev th,table.rev td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+table.rev th{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.scroll{overflow-x:auto}
+
+/* modal + toast */
+dialog{border:1px solid var(--line);border-radius:14px;background:var(--surface);color:var(--ink);max-width:min(560px,calc(100vw - 32px));width:100%;padding:22px}
+dialog::backdrop{background:rgba(10,20,25,.5)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:999px;font-weight:500;z-index:20}
+
+@media (max-width:820px){
+  .hero,.two{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr 1fr}
+  .plans{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:no-preference){.card{transition:transform .15s}.card:hover{transform:translateY(-2px)}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#home"><span class="seal">✓</span>ShiftProof</a>
+    <nav class="tabs" aria-label="主导航">
+      <a href="#home">首页</a>
+      <a href="#jobs">找兼职</a>
+      <a href="#talent">找人才</a>
+      <a href="#verify">实名 + 实力认证</a>
+      <a href="#post">发布职位</a>
+      <a href="#pricing">收费方案</a>
+    </nav>
+    <div class="role" role="group" aria-label="我是">
+      <button id="role-seeker" aria-pressed="true">我找工作</button>
+      <button id="role-recruiter" aria-pressed="false">我在招人</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+<!-- HOME -->
+<section class="view" id="v-home">
+  <div class="hero">
+    <div>
+      <p class="eyebrow">兼职招聘 · 每个人都经过认证</p>
+      <h1>真人、真实力、真准时。兼职招聘不再靠运气。</h1>
+      <p class="lead">每位求职者都完成身份核对、自拍比对和技能测验；每位雇主都完成公司注册（SSM）认证。看信任分数，几分钟就能配对。</p>
+      <form class="search" id="home-search">
+        <input id="hs-q" placeholder="例如：咖啡师、补习、活动助理" aria-label="关键词">
+        <select id="hs-loc" aria-label="地区"></select>
+        <button class="btn" type="submit">搜索兼职</button>
+      </form>
+      <div class="stats">
+        <div><b class="mono">4 步</b><span>完成认证</span></div>
+        <div><b class="mono">24 小时</b><span>内人工审核</span></div>
+        <div><b class="mono">0 RM</b><span>求职者永久免费</span></div>
+      </div>
+    </div>
+    <div class="trustcard" aria-label="信任卡示例">
+      <p class="eyebrow">信任卡示例</p>
+      <div class="who"><div class="avatar">LW</div><div><h3>Lim Wei Ling</h3><p class="muted" style="font-size:13px">咖啡师 · Petaling Jaya</p></div><div style="margin-left:auto;text-align:right"><div class="score">92<small>/100</small></div><span class="note">信任分</span></div></div>
+      <div class="meter"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      <ul class="checks">
+        <li><span class="ok">✓</span>手机号码 OTP 已验证</li>
+        <li><span class="ok">✓</span>身份证 + 自拍活体比对通过</li>
+        <li><span class="ok">✓</span>咖啡师技能测验 <span class="mono">&nbsp;88%</span></li>
+        <li><span class="ok">✓</span>完成 23 份工作 · 准时率 <span class="mono">&nbsp;98%</span></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="panel">
+      <p class="eyebrow">求职者</p>
+      <h2>认证一次，到处被优先录取</h2>
+      <p class="muted">建立个人档案、做技能测验，信任分越高越排前面。按小时结算，工资透明。</p>
+      <div><a class="btn" href="#verify">开始认证</a></div>
+    </div>
+    <div class="panel">
+      <p class="eyebrow">雇主 / Recruiter</p>
+      <h2>只看已核实的真人</h2>
+      <p class="muted">按技能分、准时率、评价筛选。不来上班的人会被扣分，你不用再赌。</p>
+      <div><a class="btn" href="#post">发布职位</a> <a class="btn ghost" href="#talent">浏览人才</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- JOBS -->
+<section class="view" id="v-jobs" hidden>
+  <div class="toolbar">
+    <div><h2>找兼职</h2><p class="muted" id="jobs-count"></p></div>
+    <div class="search" style="margin:0">
+      <input id="jq" placeholder="搜索职位或公司" aria-label="搜索职位">
+      <select id="jloc" aria-label="地区"></select>
+    </div>
+  </div>
+  <div class="chips" id="jcats"></div>
+  <div class="grid" id="jobs-list"></div>
+</section>
+
+<!-- TALENT -->
+<section class="view" id="v-talent" hidden>
+  <div class="toolbar">
+    <div><h2>找人才</h2><p class="muted">只显示已完成身份核对的求职者。</p></div>
+    <label class="f" style="flex-direction:row;display:flex;align-items:center;gap:8px">最低信任分
+      <input type="range" id="tmin" min="0" max="100" step="5" value="60" style="width:140px">
+      <span class="mono" id="tmin-v">60</span></label>
+  </div>
+  <div class="chips" id="tcats"></div>
+  <div class="grid" id="talent-list"></div>
+</section>
+
+<!-- VERIFY -->
+<section class="view" id="v-verify" hidden>
+  <div><p class="eyebrow">实名 + 实力认证</p><h2>四步完成认证，拿到你的信任分</h2>
+  <p class="muted" style="margin-top:6px">这是演示流程：资料只存在你的浏览器里，不会上传。</p></div>
+  <div class="steps" id="steps"></div>
+  <div class="two">
+    <div class="panel" id="step-panel"></div>
+    <div class="trustcard" id="my-card"></div>
+  </div>
+</section>
+
+<!-- POST -->
+<section class="view" id="v-post" hidden>
+  <div><p class="eyebrow">雇主</p><h2>发布兼职职位</h2></div>
+  <div class="two">
+    <form class="panel" id="post-form">
+      <label class="f">职位名称<input id="p-title" required value="周末活动助理"></label>
+      <label class="f">公司名称<input id="p-co" required value="Brightline Events Sdn Bhd"></label>
+      <div class="two" style="gap:12px">
+        <label class="f">类别<select id="p-cat"></select></label>
+        <label class="f">地区<select id="p-loc"></select></label>
+      </div>
+      <div class="two" style="gap:12px">
+        <label class="f">时薪 (RM)<input id="p-pay" type="number" min="7" step="0.5" required value="15"></label>
+        <label class="f">时段<input id="p-time" required value="周六、日 10am–6pm"></label>
+      </div>
+      <label class="f">要求的最低信任分<select id="p-min"><option>0</option><option>50</option><option selected>70</option><option>85</option></select></label>
+      <label class="f">工作内容<textarea id="p-desc" rows="3">协助布置场地、签到与引导来宾。需会基本英语与华语。</textarea></label>
+      <label class="opt"><input type="checkbox" id="p-boost"> 置顶推广 7 天（RM 29）</label>
+      <button class="btn" type="submit">发布职位</button>
+      <p class="note">时薪低于 RM 7（马来西亚最低工资按小时计）会被拒绝。</p>
+    </form>
+    <div class="panel">
+      <h3>为什么要认证公司？</h3>
+      <p class="muted">已通过 SSM 公司注册认证的雇主会显示绿色徽章，求职者申请率更高。未认证雇主每月只能发布 1 个职位。</p>
+      <ul class="checks">
+        <li><span class="ok">✓</span>上传 SSM 注册文件</li>
+        <li><span class="ok">✓</span>负责人身份核对</li>
+        <li><span class="ok">✓</span>工资由平台托管，完工后放款</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="view" id="v-pricing" hidden>
+  <div><p class="eyebrow">收费方案</p><h2>求职者免费，雇主按需付费</h2></div>
+  <div class="plans">
+    <div class="plan"><h3>Starter</h3><div class="price mono">RM 0</div><p class="muted">小店偶尔请人</p>
+      <ul><li>每月 1 个职位</li><li>查看信任分</li><li>站内聊天</li></ul></div>
+    <div class="plan hot"><span class="badge v" style="justify-self:start">最多人选</span><h3>Pro</h3><div class="price mono">RM 99<small class="muted" style="font-size:14px">/月</small></div><p class="muted">餐饮、零售、活动公司</p>
+      <ul><li>无限职位</li><li>按技能分、准时率筛选人才</li><li>主动邀请认证人才</li><li>每月 2 次免费置顶</li></ul></div>
+    <div class="plan"><h3>Agency</h3><div class="price mono">RM 399<small class="muted" style="font-size:14px">/月</small></div><p class="muted">人力中介、连锁品牌</p>
+      <ul><li>多个分店 / 招聘员账号</li><li>批量排班与考勤</li><li>API 与报表</li><li>专属客服</li></ul></div>
+  </div>
+  <div class="panel">
+    <h3>平台的收入来源</h3>
+    <div class="scroll"><table class="rev">
+      <thead><tr><th>收入来源</th><th>谁付钱</th><th>建议价格</th><th>说明</th></tr></thead>
+      <tbody>
+        <tr><td>订阅</td><td>雇主</td><td class="mono">RM 99–399 / 月</td><td>稳定的主要收入</td></tr>
+        <tr><td>成功录用费</td><td>雇主</td><td class="mono">时薪总额 8–12%</td><td>经平台托管工资时抽成</td></tr>
+        <tr><td>置顶 / 紧急招聘</td><td>雇主</td><td class="mono">RM 19–49 / 次</td><td>“今天就要人”标签</td></tr>
+        <tr><td>高级认证</td><td>求职者（可选）</td><td class="mono">RM 9.90 一次</td><td>无犯罪记录、证书核对</td></tr>
+        <tr><td>技能课程</td><td>求职者</td><td class="mono">RM 19–59</td><td>与培训机构分成</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+</main>
+
+<dialog id="dlg"></dialog>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const LOCS=["全部地区","Kuala Lumpur","Petaling Jaya","Subang Jaya","Penang","Johor Bahru","Ipoh"];
+const CATS=["全部","餐饮","零售","补习","活动","设计","仓库"];
+const SEED_JOBS=[
+ {id:1,title:"咖啡师（周末班）",co:"Kopi Lane Café",cat:"餐饮",loc:"Petaling Jaya",pay:13,time:"周六、日 8am–2pm",min:70,v:true,boost:true,desc:"会拉花优先，提供培训。"},
+ {id:2,title:"小学数学补习老师",co:"Bright Minds Tuition",cat:"补习",loc:"Subang Jaya",pay:35,time:"周一、三 4pm–7pm",min:85,v:true,desc:"需通过数学测验 80% 以上。"},
+ {id:3,title:"商场促销员",co:"FreshMart Sdn Bhd",cat:"零售",loc:"Kuala Lumpur",pay:12,time:"周五–日 11am–9pm",min:50,v:true,desc:"推广新饮品，需会三语。"},
+ {id:4,title:"婚礼活动助理",co:"Brightline Events",cat:"活动",loc:"Penang",pay:15,time:"本周六 9am–11pm",min:70,v:true,urgent:true,desc:"签到、引导、布置。"},
+ {id:5,title:"社媒海报设计",co:"Mamak Lab",cat:"设计",loc:"Kuala Lumpur",pay:40,time:"远程 · 每周约 6 小时",min:60,v:false,desc:"每周 5 张 Instagram 海报。"},
+ {id:6,title:"仓库打包员",co:"ParcelGo Logistics",cat:"仓库",loc:"Johor Bahru",pay:11,time:"周一–五 6pm–11pm",min:50,v:true,desc:"能站立工作，准时最重要。"},
+ {id:7,title:"奶茶店收银",co:"Teh Tarik Co.",cat:"餐饮",loc:"Ipoh",pay:10,time:"平日 5pm–10pm",min:50,v:false,desc:"简单收银与清洁。"}
+];
+const TALENT=[
+ {n:"Lim Wei Ling",i:"LW",cat:"餐饮",loc:"Petaling Jaya",score:92,skill:"咖啡师 88%",jobs:23,ontime:98,lv:4,tags:["拉花","收银","华/英/马"]},
+ {n:"Muhammad Aiman",i:"MA",cat:"仓库",loc:"Johor Bahru",score:81,skill:"仓储安全 90%",jobs:41,ontime:95,lv:4,tags:["叉车证","夜班"]},
+ {n:"Priya Nair",i:"PN",cat:"补习",loc:"Subang Jaya",score:95,skill:"数学 96%",jobs:12,ontime:100,lv:4,tags:["SPM 数学","英文"]},
+ {n:"Tan Jia Hao",i:"TJ",cat:"设计",loc:"Kuala Lumpur",score:74,skill:"Canva/Figma 82%",jobs:6,ontime:92,lv:3,tags:["海报","短视频"]},
+ {n:"Nurul Izzah",i:"NI",cat:"活动",loc:"Penang",score:88,skill:"客户服务 85%",jobs:19,ontime:97,lv:4,tags:["司仪","签到"]},
+ {n:"Chong Mei Xin",i:"CM",cat:"零售",loc:"Kuala Lumpur",score:66,skill:"销售 70%",jobs:3,ontime:90,lv:3,tags:["促销","三语"]},
+ {n:"Kevin Raj",i:"KR",cat:"餐饮",loc:"Ipoh",score:58,skill:"未测验",jobs:1,ontime:100,lv:2,tags:["厨房帮手"]}
+];
+const QUIZ=[
+ {q:"顾客点了一杯 Iced Latte，但你发现牛奶用完了。你先做什么？",a:["直接用奶精代替","告诉顾客并提供替代选项","请顾客去别家"],c:1},
+ {q:"时薪 RM 13，一班 6 小时，这班工资是多少？",a:["RM 78","RM 68","RM 86"],c:0},
+ {q:"你上班会迟到 15 分钟，应该怎样做？",a:["到了再解释","上班前立刻通知主管","不去了"],c:1}
+];
+
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let jobs=store.get("sp_jobs",null)||SEED_JOBS.slice();
+let me=store.get("sp_me",{phone:false,id:false,selfie:false,quiz:null,name:"",applied:[]});
+let state={jcat:"全部",tcat:"全部",step:0};
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2600)}
+function fillSel(sel,arr,skipFirst){sel.innerHTML=arr.slice(skipFirst?1:0).map(x=>`<option>${esc(x)}</option>`).join("")}
+fillSel($("#hs-loc"),LOCS);fillSel($("#jloc"),LOCS);fillSel($("#p-loc"),LOCS,1);fillSel($("#p-cat"),CATS,1);
+
+function myScore(){let s=0;if(me.phone)s+=15;if(me.id)s+=30;if(me.selfie)s+=25;if(me.quiz!=null)s+=Math.round(me.quiz*30);return s}
+function myLevel(){return [me.phone,me.id,me.selfie,me.quiz!=null].filter(Boolean).length}
+
+/* routing */
+const VIEWS=["home","jobs","talent","verify","post","pricing"];
+function route(){const h=location.hash.slice(1);const v=VIEWS.includes(h)?h:"home";
+  VIEWS.forEach(x=>$("#v-"+x).hidden=x!==v);
+  document.querySelectorAll("nav.tabs a").forEach(a=>{if(a.getAttribute("href")==="#"+v)a.setAttribute("aria-current","page");else a.removeAttribute("aria-current")});
+  if(v==="jobs")renderJobs();if(v==="talent")renderTalent();if(v==="verify")renderVerify();window.scrollTo(0,0)}
+addEventListener("hashchange",route);
+
+/* role toggle */
+function setRole(r){$("#role-seeker").setAttribute("aria-pressed",r==="seeker");$("#role-recruiter").setAttribute("aria-pressed",r==="recruiter");store.set("sp_role",r)}
+$("#role-seeker").onclick=()=>{setRole("seeker");location.hash="jobs"};
+$("#role-recruiter").onclick=()=>{setRole("recruiter");location.hash="talent"};
+setRole(store.get("sp_role","seeker"));
+
+/* jobs */
+function chips(el,key,render){el.innerHTML=CATS.map(c=>`<button class="chip" aria-pressed="${state[key]===c}">${c}</button>`).join("");
+  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{state[key]=b.textContent;render()})}
+function renderJobs(){chips($("#jcats"),"jcat",renderJobs);
+  const q=$("#jq").value.trim().toLowerCase(),loc=$("#jloc").value;
+  const list=jobs.filter(j=>(state.jcat==="全部"||j.cat===state.jcat)&&(loc==="全部地区"||j.loc===loc)&&(!q||(j.title+j.co+j.desc).toLowerCase().includes(q)))
+    .sort((a,b)=>(b.boost?1:0)-(a.boost?1:0));
+  $("#jobs-count").textContent=`${list.length} 个职位 · 你的信任分 ${myScore()}`;
+  $("#jobs-list").innerHTML=list.length?list.map(j=>{const ok=myScore()>=j.min,applied=me.applied.includes(j.id);return `
+   <article class="card"><div class="row"><div style="min-width:0"><h3>${esc(j.title)}</h3><p class="muted" style="font-size:14px">${esc(j.co)}</p></div><div class="pay">RM ${Number(j.pay).toFixed(2)}<span class="muted">/时</span></div></div>
+   <div class="tags">${j.v?'<span class="badge v">✓ 已认证雇主</span>':'<span class="badge w">雇主未认证</span>'}${j.boost?'<span class="badge g">置顶</span>':''}${j.urgent?'<span class="badge g">急聘</span>':''}</div>
+   <div class="meta"><span>📍 ${esc(j.loc)}</span><span>🕒 ${esc(j.time)}</span></div>
+   <p style="font-size:14px">${esc(j.desc)}</p>
+   <div class="row" style="align-items:center"><span class="note">需信任分 ≥ <span class="mono">${j.min}</span></span>
+   <button class="btn small${ok?'':' ghost'}" data-apply="${j.id}" ${applied?'disabled':''}>${applied?'已申请':ok?'一键申请':'先去认证'}</button></div></article>`}).join("")
+   :`<div class="empty">没有符合的职位。试试换个地区或类别。</div>`;
+  document.querySelectorAll("[data-apply]").forEach(b=>b.onclick=()=>{const j=jobs.find(x=>x.id==b.dataset.apply);
+    if(myScore()<j.min){toast(`这个职位需要信任分 ${j.min}，你现在是 ${myScore()}`);location.hash="verify";return}
+    me.applied.push(j.id);store.set("sp_me",me);toast("已申请，雇主会在站内聊天联系你");renderJobs()})}
+$("#jq").oninput=renderJobs;$("#jloc").onchange=renderJobs;
+$("#home-search").onsubmit=e=>{e.preventDefault();$("#jq").value=$("#hs-q").value;$("#jloc").value=$("#hs-loc").value;location.hash="jobs"};
+
+/* talent */
+function renderTalent(){chips($("#tcats"),"tcat",renderTalent);const min=+$("#tmin").value;$("#tmin-v").textContent=min;
+  const list=TALENT.filter(t=>(state.tcat==="全部"||t.cat===state.tcat)&&t.score>=min).sort((a,b)=>b.score-a.score);
+  $("#talent-list").innerHTML=list.length?list.map(t=>`<article class="card">
+   <div class="who"><div class="avatar">${t.i}</div><div style="min-width:0"><h3>${esc(t.n)}</h3><p class="muted" style="font-size:13px">${t.cat} · ${t.loc}</p></div><div style="margin-left:auto;text-align:right"><div class="score" style="font-size:26px">${t.score}</div><span class="note">信任分</span></div></div>
+   <div class="meter">${[1,2,3,4].map(k=>`<i class="${k<=t.lv?'on':''}"></i>`).join("")}</div>
+   <div class="meta"><span>🧪 ${t.skill}</span><span>✅ ${t.jobs} 份工作</span><span>⏱ 准时 <span class="mono">${t.ontime}%</span></span></div>
+   <div class="tags">${t.tags.map(x=>`<span class="tag">${esc(x)}</span>`).join("")}</div>
+   <button class="btn small" data-invite="${esc(t.n)}" style="justify-self:start">邀请面试</button></article>`).join("")
+   :`<div class="empty">没有人达到这个信任分。把滑杆调低一点试试。</div>`;
+  document.querySelectorAll("[data-invite]").forEach(b=>b.onclick=()=>toast(`已向 ${b.dataset.invite} 发送邀请（Pro 方案功能）`))}
+$("#tmin").oninput=renderTalent;
+
+/* verify */
+const STEPS=[["手机 OTP","确认号码真实"],["身份证","上传 MyKad / 护照"],["自拍比对","活体检测，防假账号"],["技能测验","证明你真的会"]];
+function stepDone(i){return [me.phone,me.id,me.selfie,me.quiz!=null][i]}
+function renderVerify(){
+  $("#steps").innerHTML=STEPS.map((s,i)=>`<button class="step${stepDone(i)?' done':''}" data-step="${i}" style="text-align:left;cursor:pointer;${state.step===i?'outline:2px solid var(--gold)':''}"><span class="n">步骤 ${i+1} ${stepDone(i)?'· 完成 ✓':''}</span><h3>${s[0]}</h3><span class="note">${s[1]}</span></button>`).join("");
+  document.querySelectorAll("[data-step]").forEach(b=>b.onclick=()=>{state.step=+b.dataset.step;renderVerify()});
+  const p=$("#step-panel"),i=state.step;
+  if(i===0)p.innerHTML=`<h3>手机号码验证</h3><label class="f">你的名字<input id="v-name" value="${esc(me.name||"Lee Ka Yan")}"></label><label class="f">手机号码<input id="v-phone" value="012-345 6789" inputmode="tel"></label><label class="f">输入 6 位验证码（演示：任意 6 位数字）<input id="v-otp" class="mono" maxlength="6" inputmode="numeric" placeholder="123456"></label><button class="btn" id="v-go">验证</button>`;
+  if(i===1)p.innerHTML=`<h3>身份证核对</h3><p class="muted">上传身份证正面。系统用 OCR 读取姓名，再与档案比对。号码只保留后 4 位。</p><label class="drop${me.id?' ok':''}" for="v-file">${me.id?'✓ 已上传':'点击选择照片'}</label><input type="file" id="v-file" accept="image/*" hidden><button class="btn" id="v-go" ${me.id?'disabled':''}>提交审核</button>`;
+  if(i===2)p.innerHTML=`<h3>自拍活体比对</h3><p class="muted">正式版会用摄像头请你眨眼、转头，再和身份证照片比对。这里用上传一张自拍代替。</p><label class="drop${me.selfie?' ok':''}" for="v-file">${me.selfie?'✓ 已上传自拍':'上传一张自拍'}</label><input type="file" id="v-file" accept="image/*" hidden><button class="btn" id="v-go" ${me.selfie?'disabled':''}>开始比对</button>`;
+  if(i===3)p.innerHTML=`<h3>技能测验：餐饮服务</h3><form class="quiz" id="quiz">${QUIZ.map((q,k)=>`<fieldset style="border:0;padding:0;margin:0;display:grid;gap:6px"><legend style="font-weight:500;margin-bottom:6px">${k+1}. ${q.q}</legend>${q.a.map((a,j)=>`<label class="opt"><input type="radio" name="q${k}" value="${j}" required> ${a}</label>`).join("")}</fieldset>`).join("")}<button class="btn" type="submit">交卷</button></form>${me.quiz!=null?`<p class="note">上次成绩：<span class="mono">${Math.round(me.quiz*100)}%</span></p>`:''}`;
+  const go=$("#v-go"),file=$("#v-file");
+  if(file)file.onchange=()=>{if(file.files[0]){p.querySelector(".drop").classList.add("ok");p.querySelector(".drop").textContent="✓ "+file.files[0].name}};
+  if(go)go.onclick=()=>{
+    if(i===0){if(!/^\d{6}$/.test($("#v-otp").value)){toast("验证码要 6 位数字");return}me.phone=true;me.name=$("#v-name").value.trim()||"新用户"}
+    if(i>0&&!(file&&file.files[0])){toast("请先选择一张照片");return}
+    if(i===1)me.id=true;if(i===2)me.selfie=true;
+    store.set("sp_me",me);toast(`${STEPS[i][0]} 完成，信任分 +`);state.step=Math.min(3,i+1);renderVerify()};
+  const qf=$("#quiz");if(qf)qf.onsubmit=e=>{e.preventDefault();let c=0;QUIZ.forEach((q,k)=>{if(+qf["q"+k].value===q.c)c++});me.quiz=c/QUIZ.length;store.set("sp_me",me);toast(`答对 ${c}/${QUIZ.length}`);renderVerify()};
+  const s=myScore(),lv=myLevel();
+  $("#my-card").innerHTML=`<p class="eyebrow">你的信任卡</p><div class="who"><div class="avatar">${esc((me.name||"你").slice(0,2).toUpperCase())}</div><div><h3>${esc(me.name||"未命名")}</h3><p class="note">${lv}/4 项完成</p></div><div style="margin-left:auto;text-align:right"><div class="score">${s}<small>/100</small></div><span class="note">信任分</span></div></div>
+   <div class="meter">${[1,2,3,4].map(k=>`<i class="${k<=lv?'on':''}"></i>`).join("")}</div>
+   <ul class="checks">${STEPS.map((x,k)=>`<li><span class="${stepDone(k)?'ok':'no'}">${stepDone(k)?'✓':'○'}</span>${x[0]}${k===3&&me.quiz!=null?` <span class="mono">&nbsp;${Math.round(me.quiz*100)}%</span>`:''}</li>`).join("")}</ul>
+   ${lv===4?'<a class="btn" href="#jobs">去申请兼职</a>':'<p class="note">完成全部步骤，可以申请需要信任分 70 以上的职位。</p>'}
+   <button class="btn ghost small" id="reset" style="justify-self:start">清除演示资料</button>`;
+  $("#reset").onclick=()=>{me={phone:false,id:false,selfie:false,quiz:null,name:"",applied:[]};store.set("sp_me",me);state.step=0;renderVerify();toast("已清除")}}
+
+/* post */
+$("#post-form").onsubmit=e=>{e.preventDefault();const pay=+$("#p-pay").value;if(pay<7){toast("时薪不能低于 RM 7");return}
+  const j={id:Date.now(),title:$("#p-title").value,co:$("#p-co").value,cat:$("#p-cat").value,loc:$("#p-loc").value,pay,time:$("#p-time").value,min:+$("#p-min").value,v:false,boost:$("#p-boost").checked,desc:$("#p-desc").value};
+  jobs.unshift(j);store.set("sp_jobs",jobs);toast("职位已发布");state.jcat="全部";$("#jq").value="";$("#jloc").value="全部地区";location.hash="jobs"};
+
+route();
+</script>
