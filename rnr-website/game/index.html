@@ -77,6 +77,41 @@
   .rules { list-style: none; display: grid; gap: 8px; font-size: .88rem; color: var(--muted); }
   .rules b { color: var(--text); }
 
+  /* Daily tasks + leaderboard */
+  section.daily { padding: 10px 0 20px; }
+  .daily-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .tasks { display: grid; gap: 16px; }
+  .days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 14px; }
+  .day { text-align: center; padding: 10px 2px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255, 255, 255, .03); font-size: .72rem; color: var(--muted); }
+  .day b { display: block; font-family: "Space Grotesk", sans-serif; font-size: .95rem; color: var(--text); }
+  .day.done { background: rgba(0, 229, 255, .12); border-color: rgba(0, 229, 255, .5); }
+  .day.done b::after { content: " ✓"; color: var(--c2); }
+  .day.next { border-color: var(--gold); box-shadow: 0 0 0 1px var(--gold) inset; animation: glow 1.6s ease-in-out infinite; }
+  .day.big b { color: var(--gold); }
+  @keyframes glow { 50% { box-shadow: 0 0 18px -2px rgba(255, 201, 64, .7), 0 0 0 1px var(--gold) inset; } }
+  .task-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .task-row p { color: var(--muted); font-size: .88rem; }
+  .task-row p b { color: var(--text); }
+  .sm-btn { padding: 10px 20px; border-radius: 999px; font-weight: 700; font-size: .9rem; background: var(--grad); transition: transform .2s; }
+  .sm-btn:hover:not(:disabled) { transform: translateY(-2px); }
+  .sm-btn:disabled { background: rgba(255, 255, 255, .08); color: var(--muted); cursor: not-allowed; }
+  .rounds { display: flex; gap: 6px; margin-top: 10px; }
+  .rounds i { width: 22px; height: 8px; border-radius: 4px; background: rgba(255, 255, 255, .1); }
+  .rounds i.on { background: var(--grad); }
+  .lb-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .lb-head h3 { margin: 0; }
+  .name-in { display: flex; gap: 6px; }
+  .name-in input { width: 120px; padding: 7px 10px; border-radius: 10px; border: 1px solid var(--line); background: rgba(5, 6, 15, .6); color: var(--text); font: inherit; font-size: .85rem; }
+  .name-in button { padding: 7px 12px; border-radius: 10px; background: var(--card); border: 1px solid var(--line); font-size: .85rem; }
+  .lb { list-style: none; display: grid; gap: 6px; }
+  .lb li { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 12px; background: rgba(255, 255, 255, .03); border: 1px solid transparent; font-size: .9rem; animation: rowIn .4s both; }
+  @keyframes rowIn { from { opacity: 0; transform: translateX(-10px); } }
+  .lb li.me { border-color: var(--c2); background: rgba(0, 229, 255, .08); }
+  .lb .rk { font-family: "Space Grotesk", sans-serif; font-weight: 700; text-align: center; color: var(--muted); }
+  .lb li:nth-child(1) .rk, .lb li:nth-child(2) .rk, .lb li:nth-child(3) .rk { font-size: 1.15rem; }
+  .lb .sc { font-family: "Space Grotesk", sans-serif; font-weight: 700; }
+  .lb-note { font-size: .75rem; color: var(--muted); margin-top: 10px; }
+
   /* Rewards */
   section.rewards { padding: 30px 0 60px; }
   .sec-head { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -124,6 +159,7 @@
   @media (max-width: 960px) {
     .layout { grid-template-columns: 1fr; }
     .panel { grid-template-columns: 1fr 1fr; }
+    .daily-grid { grid-template-columns: 1fr; }
     .gifts { grid-template-columns: 1fr 1fr; }
   }
   @media (max-width: 640px) {
@@ -190,11 +226,42 @@
         <li>🪙 金币接住 <b>+5</b></li>
         <li>🐛 接到 Bug 会 <b>扣 1 颗心</b>，3 颗心用完或 60 秒到就结束</li>
         <li>累计每接满 <b>100 个 = 1 积分</b>，进度会跨局累计</li>
-        <li>每人每天最多获得 <b id="capRule">5</b> 积分</li>
+        <li>每人每天最多获得 <b id="capRule">5</b> 积分，免费玩 <b>5 次</b>，分享可多玩 2 次</li>
+        <li>每天签到送积分进度，连续 7 天再送 1 整个积分</li>
       </ul>
     </div>
   </aside>
 </div>
+
+<section class="container daily" id="daily">
+  <div class="daily-grid">
+    <div class="tasks">
+      <div class="box">
+        <h3>📅 每日签到 <span style="color:var(--muted);font-weight:500;font-size:.85rem">· 连续签到奖励更多</span></h3>
+        <div class="days" id="days"></div>
+        <div class="task-row"><p id="checkinText"></p><button class="sm-btn" id="checkinBtn">签到</button></div>
+      </div>
+      <div class="box">
+        <h3>🎮 今日游戏次数</h3>
+        <div class="task-row">
+          <div><p>还剩 <b id="roundsLeft">5</b> 次 · 每天 <span id="roundsBase">5</span> 次</p><div class="rounds" id="roundsBar"></div></div>
+        </div>
+      </div>
+      <div class="box">
+        <h3>📣 分享给朋友</h3>
+        <div class="task-row"><p>分享活动链接，今天多玩 <b>2 次</b>（每天 1 次）</p><button class="sm-btn" id="shareBtn">分享</button></div>
+      </div>
+    </div>
+    <div class="box">
+      <div class="lb-head">
+        <h3>🏆 本周排行榜</h3>
+        <div class="name-in"><input id="nameIn" maxlength="12" placeholder="你的昵称"><button id="nameBtn">保存</button></div>
+      </div>
+      <ol class="lb" id="lb"></ol>
+      <div class="lb-note">按本周单局最高分排名 · 其他玩家为示例数据，正式版会显示所有真实玩家。</div>
+    </div>
+  </div>
+</section>
 
 <section class="container rewards" id="rewards">
   <div class="sec-head">
@@ -221,6 +288,12 @@
   const CATCHES_PER_POINT = 100;   // grab 100 items = 1 point
   const DAILY_POINT_CAP = 5;       // max points one player can earn per day
   const ROUND_SECONDS = 60;
+  const DAILY_ROUNDS = 5;          // free rounds per day
+  const SHARE_BONUS_ROUNDS = 2;    // extra rounds for sharing (once a day)
+  // Check-in rewards in catches for streak days 1–7; day 7 is a full point.
+  const CHECKIN_REWARDS = [10, 10, 20, 20, 30, 30, 100];
+  // Sample rivals for the demo leaderboard; replace with real players from the backend.
+  const RIVALS = [["Aiman", 186], ["Mei Ling", 171], ["Kumar", 158], ["Jia Hui", 142], ["Farah", 127], ["Wei Jie", 113], ["Daniel", 96], ["Siti", 84], ["Hao Ran", 71]];
   // Sample gifts; replace with the real reward list and stock.
   const GIFTS = [
     { id: "sticker", ic: "✨", name: "R&R 限量贴纸组", desc: "5 款 AI 主题贴纸", cost: 1, stock: 200, from: "周边" },
@@ -236,9 +309,16 @@
   /* ================= Saved progress (browser only, demo) ================= */
   const KEY = "rnr-grab-v1";
   const today = () => new Date().toISOString().slice(0, 10);
-  let save = { points: 0, progress: 0, total: 0, best: 0, day: today(), dayPts: 0, redeemed: [], stockUsed: {} };
+  let save = { points: 0, progress: 0, total: 0, best: 0, day: today(), dayPts: 0, redeemed: [], stockUsed: {},
+    roundsUsed: 0, shared: false, lastCheckin: "", streak: 0, week: "", weekBest: 0, name: "" };
   try { Object.assign(save, JSON.parse(localStorage.getItem(KEY)) || {}); } catch (e) {}
-  if (save.day !== today()) { save.day = today(); save.dayPts = 0; }
+  // Week key = date of this week's Monday, so the leaderboard resets weekly.
+  const weekKey = () => { const d = new Date(); d.setDate(d.getDate() - (d.getDay() + 6) % 7); return d.toISOString().slice(0, 10); };
+  const dayDiff = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+  if (save.day !== today()) { save.day = today(); save.dayPts = 0; save.roundsUsed = 0; save.shared = false; }
+  if (save.week !== weekKey()) { save.week = weekKey(); save.weekBest = 0; }
+  const roundsAllowed = () => DAILY_ROUNDS + (save.shared ? SHARE_BONUS_ROUNDS : 0);
+  const roundsLeft = () => Math.max(roundsAllowed() - save.roundsUsed, 0);
   const persist = () => { try { localStorage.setItem(KEY, JSON.stringify(save)); } catch (e) {} };
 
   const $ = s => document.querySelector(s);
@@ -252,7 +332,7 @@
     $("#todayPts").textContent = save.dayPts;
     $("#sTotal").textContent = save.total.toLocaleString();
     $("#sBest").textContent = save.best;
-    renderGifts();
+    renderGifts(); renderDaily(); renderBoard();
   }
 
   // Adds caught items to the running total and converts every full 100 into a point.
@@ -358,6 +438,8 @@
   }
 
   function startRound() {
+    if (roundsLeft() <= 0) return showNoRounds();
+    save.roundsUsed++; persist(); renderDaily();
     resize(); reset(); running = true; lastT = performance.now();
     $("#overlay").classList.add("hide"); $("#hud").style.display = "flex";
     requestAnimationFrame(loop);
@@ -367,21 +449,87 @@
     running = false; $("#hud").style.display = "none";
     const before = save.points;
     const earned = addCatches(score);
-    save.best = Math.max(save.best, score); persist(); updatePanel();
+    save.best = Math.max(save.best, score); save.weekBest = Math.max(save.weekBest, score); persist(); updatePanel();
     if (earned) { $("#wallet").classList.remove("bump"); void $("#wallet").offsetWidth; $("#wallet").classList.add("bump"); confetti(); }
     const capped = save.dayPts >= DAILY_POINT_CAP;
     showOverlay(`
       <h2>${lives <= 0 ? "💥 Bug 太多了！" : "⏱️ 时间到！"}</h2>
       <div class="result-num grad">${score}</div>
       <p>本局接住 ${score} 个${earned ? `<br>🎉 恭喜获得 <b style="color:var(--gold)">${earned} 积分</b>（共 ${before + earned} 积分）` : capped ? "<br>今天的积分已经拿满了，明天再来吧！" : `<br>再接 ${CATCHES_PER_POINT - save.progress} 个就能拿到下一个积分`}</p>
-      <button class="big-btn" id="playBtn">再玩一局 ▶</button>
+      <button class="big-btn" id="playBtn">${roundsLeft() ? `再玩一局 ▶（剩 ${roundsLeft()} 次）` : "今天次数用完了"}</button>
       <div class="hint"><a href="#rewards" style="color:var(--c2)">去兑换礼物 ↓</a></div>`);
   }
 
   function showOverlay(html) {
     $("#ovContent").innerHTML = html; $("#overlay").classList.remove("hide");
-    $("#playBtn").addEventListener("click", startRound);
+    $("#playBtn")?.addEventListener("click", startRound);
   }
+  function showNoRounds() {
+    showOverlay(`<h2>😴 今天的次数用完了</h2><p>${save.shared ? "明天再来吧！记得先签到领奖励。" : `分享给朋友，马上多玩 ${SHARE_BONUS_ROUNDS} 次！`}</p>
+      ${save.shared ? "" : `<button class="big-btn" id="ovShare">📣 分享活动</button>`}`);
+    $("#ovShare")?.addEventListener("click", share);
+  }
+
+  /* ================= Daily check-in, share, leaderboard ================= */
+  // Streak continues if the last check-in was yesterday; after day 7 it starts over.
+  function nextStreakDay() {
+    if (!save.lastCheckin || dayDiff(save.lastCheckin, today()) > 1) return 1;
+    return save.streak >= 7 ? 1 : save.streak + 1;
+  }
+  function renderDaily() {
+    const checked = save.lastCheckin === today();
+    const shown = checked ? save.streak : nextStreakDay() - 1;
+    $("#days").innerHTML = CHECKIN_REWARDS.map((r, i) =>
+      `<div class="day ${i < shown ? "done" : ""} ${!checked && i === shown ? "next" : ""} ${i === 6 ? "big" : ""}"><b>+${r}</b>第 ${i + 1} 天</div>`).join("");
+    $("#checkinText").innerHTML = checked
+      ? `今天已签到 ✅ 已连续 <b>${save.streak}</b> 天，明天再来！`
+      : `今天签到可得 <b>+${CHECKIN_REWARDS[nextStreakDay() - 1]} 个</b>，直接算进积分进度`;
+    $("#checkinBtn").disabled = checked; $("#checkinBtn").textContent = checked ? "已签到" : "签到";
+    $("#roundsLeft").textContent = roundsLeft(); $("#roundsBase").textContent = DAILY_ROUNDS;
+    $("#roundsBar").innerHTML = Array.from({ length: roundsAllowed() }, (_, i) => `<i class="${i < roundsLeft() ? "on" : ""}"></i>`).join("");
+    $("#shareBtn").disabled = save.shared; $("#shareBtn").textContent = save.shared ? "今天已分享" : "分享";
+  }
+  $("#checkinBtn").addEventListener("click", () => {
+    if (save.lastCheckin === today()) return;
+    save.streak = nextStreakDay(); save.lastCheckin = today();
+    const bonus = CHECKIN_REWARDS[save.streak - 1], earned = addCatches(bonus);
+    persist(); updatePanel(); confetti();
+    openModal(`<div class="ic">📅</div><h3>签到成功！第 ${save.streak} 天</h3><p>获得 <b style="color:var(--c2)">+${bonus} 个</b> 积分进度${earned ? `，并升级成 <b style="color:var(--gold)">${earned} 积分</b> 🎉` : ""}${save.dayPts >= DAILY_POINT_CAP && !earned ? "（今天积分已达上限）" : ""}</p>
+      <div class="acts"><button class="big-btn" data-close>好的</button></div>`);
+  });
+
+  async function share() {
+    if (save.shared) return;
+    const data = { title: "AI Grab 小游戏", text: "接满 100 个就能换积分，积分兑换礼物！一起来玩 🎮", url: location.href };
+    let ok = false;
+    try {
+      if (navigator.share) { await navigator.share(data); ok = true; }
+      else { await navigator.clipboard.writeText(data.text + " " + data.url); ok = true; }
+    } catch (e) { ok = e && e.name !== "AbortError"; }
+    if (!ok) return;
+    save.shared = true; persist(); renderDaily();
+    openModal(`<div class="ic">📣</div><h3>谢谢分享！</h3><p>${navigator.share ? "" : "活动链接已复制，发给朋友吧。<br>"}今天多了 <b style="color:var(--c2)">${SHARE_BONUS_ROUNDS} 次</b>游戏机会。</p>
+      <div class="acts"><button class="big-btn" id="goPlay" data-close>马上玩</button></div>`);
+    $("#goPlay").addEventListener("click", () => { document.getElementById("stage").scrollIntoView({ behavior: "smooth", block: "center" }); if (!running) startRound(); });
+  }
+  $("#shareBtn").addEventListener("click", share);
+
+  function renderBoard() {
+    const me = save.name || "你";
+    const rows = RIVALS.map(([n, s]) => ({ n, s })).concat(save.weekBest ? [{ n: me, s: save.weekBest, me: true }] : []).sort((a, b) => b.s - a.s);
+    const myRank = rows.findIndex(r => r.me);
+    const shown = rows.slice(0, 8);
+    if (myRank >= 8) shown.push(rows[myRank]);
+    const medal = i => ["🥇", "🥈", "🥉"][i] || i + 1;
+    $("#lb").innerHTML = shown.map((r, i) => {
+      const rank = r.me ? myRank : i;
+      return `<li class="${r.me ? "me" : ""}" style="animation-delay:${i * .04}s"><span class="rk">${medal(rank)}</span><span>${r.n}${r.me ? " (我)" : ""}</span><span class="sc">${r.s}</span></li>`;
+    }).join("") + (save.weekBest ? "" : `<li class="me"><span class="rk">—</span><span>${me} · 玩一局就能上榜！</span><span class="sc">0</span></li>`);
+  }
+  $("#nameIn").value = save.name;
+  $("#nameBtn").addEventListener("click", () => {
+    save.name = $("#nameIn").value.trim().slice(0, 12); persist(); renderBoard();
+  });
 
   // Controls: mouse, touch, keyboard
   function pointerTo(clientX) { if (!basket) return; const r = stage.getBoundingClientRect(); basket.tx = clientX - r.left; }
@@ -441,7 +589,7 @@
   showOverlay(`<h2>🎮 AI Grab</h2><p>用鼠标、手指或 ← → 键移动篮子</p>
     <div class="legend"><span>🤖💡🎓🛡️⚡ +1</span><span>🪙 +5</span><span>🐛 −❤️</span></div>
     <button class="big-btn" id="playBtn">开始游戏 ▶</button>
-    <div class="hint">每接满 ${CATCHES_PER_POINT} 个 = 1 积分</div>`);
+    <div class="hint">每接满 ${CATCHES_PER_POINT} 个 = 1 积分 · 今天还剩 ${roundsLeft()} 次</div>`);
 </script>
 </body>
 </html>
