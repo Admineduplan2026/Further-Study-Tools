@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eduplan — 升学教育平台</title>
+<meta name="description" content="Eduplan 升学教育平台：像订酒店一样搜索、比较并申请大专与大学。R&R Development Sdn. Bhd. 旗下平台。">
+<link rel="icon" type="image/svg+xml" href="../logo/rr-mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --blue: #2f7bff; --blue-d: #1a56d6; --orange: #ff8a00; --amber: #ffb020;
+    --ink: #172033; --muted: #66718a; --line: #e4e8f0; --bg: #f5f7fb; --white: #fff;
+    --green: #12a454; --red: #e8364b;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; overflow-x: clip; }
+  body { font-family: "Plus Jakarta Sans", "Noto Sans SC", system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.55; overflow-x: hidden; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: 0; }
+  .container { width: min(1180px, 100% - 32px); margin-inline: auto; }
+
+  /* R&R group bar */
+  .groupbar { background: #0b0d1f; color: #c9cde6; font-size: .8rem; }
+  .groupbar .container { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; flex-wrap: wrap; }
+  .groupbar a.back { display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600; }
+  .groupbar a.back img { width: 22px; height: 22px; border-radius: 6px; }
+  .switch { display: flex; gap: 6px; }
+  .switch a { padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .15); transition: background .2s; }
+  .switch a:hover { background: rgba(255, 255, 255, .1); }
+  .switch a.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* Header */
+  header.top { background: var(--white); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 40; }
+  header.top .container { display: flex; align-items: center; gap: 28px; height: 66px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.3rem; }
+  .brand .mk { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: linear-gradient(135deg, var(--blue), var(--amber)); color: #fff; font-size: 1.1rem; }
+  .brand small { color: var(--orange); font-weight: 700; margin-left: 2px; }
+  .menu { display: flex; gap: 22px; font-size: .93rem; font-weight: 500; color: var(--muted); }
+  .menu a:hover { color: var(--blue); }
+  .hdr-right { margin-left: auto; display: flex; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 10px; padding: 10px 18px; font-weight: 700; font-size: .92rem; transition: transform .2s, box-shadow .2s, background .2s; }
+  .btn-blue { background: var(--blue); color: #fff; }
+  .btn-blue:hover { background: var(--blue-d); transform: translateY(-2px); box-shadow: 0 10px 24px -8px var(--blue); }
+  .btn-line { border: 1.5px solid var(--blue); color: var(--blue); background: #fff; }
+  .btn-line:hover { background: #eef4ff; }
+
+  /* Hero + search */
+  .hero { position: relative; padding: 56px 0 120px; color: #fff; overflow: hidden;
+    background: radial-gradient(1000px 400px at 80% -10%, rgba(255, 176, 32, .45), transparent 60%), linear-gradient(135deg, #1747b8, var(--blue) 55%, #3fa0ff); }
+  .hero::after { content: ""; position: absolute; inset: auto 0 -1px 0; height: 60px; background: var(--bg); clip-path: ellipse(70% 100% at 50% 100%); }
+  .hero .floaty { position: absolute; font-size: 2.4rem; opacity: .55; animation: drift 9s ease-in-out infinite; }
+  @keyframes drift { 50% { transform: translateY(-18px) rotate(8deg); } }
+  .hero h1 { font-size: clamp(1.9rem, 4.2vw, 3rem); font-weight: 800; line-height: 1.15; max-width: 720px; }
+  .hero h1 em { font-style: normal; color: var(--amber); }
+  .hero p.lead { opacity: .9; margin: 12px 0 28px; max-width: 620px; font-size: 1.05rem; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab { padding: 10px 18px; border-radius: 12px 12px 0 0; background: rgba(255, 255, 255, .18); color: #fff; font-weight: 600; font-size: .9rem; }
+  .tab.on { background: #fff; color: var(--blue); }
+  .searchbox { position: relative; z-index: 2; background: #fff; color: var(--ink); border-radius: 0 16px 16px 16px; padding: 18px; box-shadow: 0 24px 60px -20px rgba(10, 30, 80, .45);
+    display: grid; grid-template-columns: 2fr 1.1fr 1.1fr 1.1fr auto; gap: 10px; }
+  .field { border: 1.5px solid var(--line); border-radius: 12px; padding: 8px 14px; transition: border-color .2s; }
+  .field:focus-within { border-color: var(--blue); }
+  .field label { display: block; font-size: .72rem; color: var(--muted); font-weight: 600; }
+  .field input, .field select { width: 100%; border: 0; outline: 0; font: inherit; font-weight: 600; font-size: .95rem; background: transparent; color: var(--ink); padding: 2px 0; }
+  .searchbox .btn { padding: 0 28px; font-size: 1rem; border-radius: 12px; background: var(--orange); }
+  .searchbox .btn:hover { background: #e67a00; box-shadow: 0 10px 24px -8px var(--orange); }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; font-size: .85rem; }
+  .chips span { opacity: .85; }
+  .chip { padding: 5px 12px; border-radius: 999px; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .3); color: #fff; font-size: .82rem; }
+  .chip:hover { background: rgba(255, 255, 255, .28); }
+
+  /* Promo strip */
+  .promos { margin-top: -70px; position: relative; z-index: 3; display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .promo { border-radius: 16px; padding: 20px 22px; color: #fff; display: flex; gap: 14px; align-items: center; box-shadow: 0 16px 40px -18px rgba(10, 30, 80, .5); transition: transform .25s; }
+  .promo:hover { transform: translateY(-4px); }
+  .promo .ic { font-size: 2rem; }
+  .promo b { display: block; font-size: 1.02rem; }
+  .promo small { opacity: .9; }
+  .p1 { background: linear-gradient(135deg, #ff8a00, #ff4f6d); }
+  .p2 { background: linear-gradient(135deg, #12a454, #0bbfa0); }
+  .p3 { background: linear-gradient(135deg, #7c5cff, #2f7bff); }
+
+  section { padding: 56px 0; }
+  .sec-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .sec-head h2 { font-size: 1.6rem; font-weight: 800; }
+  .sec-head p { color: var(--muted); }
+
+  /* Paths (3 segmentation approaches) */
+  .paths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .path { background: #fff; border: 1px solid var(--line); border-radius: 18px; padding: 24px; transition: transform .25s, box-shadow .25s, border-color .25s; cursor: pointer; }
+  .path:hover, .path.on { transform: translateY(-4px); box-shadow: 0 18px 40px -20px rgba(47, 123, 255, .55); border-color: var(--blue); }
+  .path .ic { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; font-size: 1.5rem; margin-bottom: 14px; background: #eef4ff; }
+  .path h3 { font-size: 1.12rem; margin-bottom: 6px; }
+  .path p { color: var(--muted); font-size: .92rem; }
+
+  /* Filters + listing */
+  .filterbar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 18px; }
+  .fchip { padding: 8px 16px; border-radius: 999px; background: #fff; border: 1.5px solid var(--line); font-weight: 600; font-size: .88rem; color: var(--muted); transition: all .2s; }
+  .fchip:hover { border-color: var(--blue); color: var(--blue); }
+  .fchip.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .sort { margin-left: auto; border: 1.5px solid var(--line); border-radius: 999px; padding: 8px 14px; font: inherit; font-size: .88rem; font-weight: 600; background: #fff; color: var(--ink); }
+  .results-note { color: var(--muted); font-size: .9rem; margin-bottom: 14px; }
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .uni { background: #fff; border-radius: 18px; overflow: hidden; border: 1px solid var(--line); display: flex; flex-direction: column; transition: transform .25s, box-shadow .25s; animation: pop .45s cubic-bezier(.2, .8, .2, 1.1) both; }
+  .uni:hover { transform: translateY(-6px); box-shadow: 0 22px 44px -22px rgba(23, 32, 51, .45); }
+  @keyframes pop { from { opacity: 0; transform: translateY(16px) scale(.97); } }
+  .uni-img { position: relative; height: 150px; display: grid; place-items: center; font-size: 3.4rem; }
+  .uni-img .deal { position: absolute; top: 12px; left: 12px; background: var(--red); color: #fff; font-size: .74rem; font-weight: 700; padding: 4px 9px; border-radius: 8px; }
+  .uni-img .fav { position: absolute; top: 10px; right: 10px; width: 34px; height: 34px; border-radius: 50%; background: rgba(255, 255, 255, .92); display: grid; place-items: center; font-size: 1rem; transition: transform .2s; }
+  .uni-img .fav:hover { transform: scale(1.15); }
+  .uni-img .fav.on { color: var(--red); }
+  .uni-body { padding: 16px 18px 18px; display: flex; flex-direction: column; flex: 1; }
+  .uni-body h3 { font-size: 1.05rem; line-height: 1.3; }
+  .loc { color: var(--muted); font-size: .84rem; margin: 3px 0 10px; }
+  .rating { display: flex; align-items: center; gap: 8px; font-size: .85rem; margin-bottom: 10px; }
+  .score { background: var(--blue); color: #fff; font-weight: 800; padding: 3px 8px; border-radius: 8px 8px 8px 2px; }
+  .rating b { color: var(--blue); }
+  .rating span { color: var(--muted); }
+  .tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tag { font-size: .74rem; padding: 3px 9px; border-radius: 6px; background: #f0f3f9; color: #4a5672; font-weight: 600; }
+  .tag.sch { background: #e7f7ee; color: var(--green); }
+  .price-row { margin-top: auto; display: flex; align-items: end; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--line); }
+  .price small { display: block; color: var(--muted); font-size: .74rem; }
+  .price s { color: #a0a8bb; font-size: .82rem; margin-right: 4px; }
+  .price b { font-size: 1.2rem; color: var(--red); }
+  .empty { grid-column: 1 / -1; text-align: center; padding: 50px 0; color: var(--muted); }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; counter-reset: s; }
+  .stp { background: #fff; border-radius: 18px; padding: 22px; border: 1px solid var(--line); position: relative; }
+  .stp::before { counter-increment: s; content: counter(s); position: absolute; top: -14px; left: 20px; width: 30px; height: 30px; border-radius: 50%; background: var(--orange); color: #fff; font-weight: 800; display: grid; place-items: center; font-size: .9rem; }
+  .stp .ic { font-size: 1.8rem; margin: 6px 0 10px; }
+  .stp h3 { font-size: 1.02rem; margin-bottom: 4px; }
+  .stp p { color: var(--muted); font-size: .9rem; }
+
+  /* Stats band */
+  .band { background: linear-gradient(135deg, #1747b8, var(--blue)); color: #fff; border-radius: 24px; padding: 34px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; text-align: center; }
+  .band b { display: block; font-size: 2rem; font-weight: 800; }
+  .band span { opacity: .85; font-size: .9rem; }
+
+  /* CTA */
+  .cta { background: #fff; border: 1px solid var(--line); border-radius: 24px; padding: 36px; display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; }
+  .cta h2 { font-size: 1.5rem; font-weight: 800; }
+  .cta p { color: var(--muted); }
+
+  footer { background: #0f1629; color: #9aa3bd; padding: 34px 0; margin-top: 40px; font-size: .88rem; }
+  footer .container { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer a { color: #fff; }
+  .note { font-size: .78rem; color: #8a93ad; margin-top: 6px; }
+
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 160px); visibility: hidden; background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: .92rem; transition: transform .35s cubic-bezier(.2, .8, .2, 1.2), visibility .35s; z-index: 99; max-width: calc(100% - 32px); }
+  .toast.show { transform: translate(-50%, 0); visibility: visible; }
+
+  @media (max-width: 960px) {
+    .menu { display: none; }
+    .searchbox { grid-template-columns: 1fr 1fr; }
+    .searchbox .field:first-child, .searchbox .btn { grid-column: 1 / -1; }
+    .searchbox .btn { padding: 14px; }
+    .grid, .paths { grid-template-columns: 1fr 1fr; }
+    .steps, .band { grid-template-columns: 1fr 1fr; }
+    .promos { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 640px) {
+    .grid, .paths, .steps { grid-template-columns: 1fr; }
+    .searchbox { grid-template-columns: 1fr; }
+    .hdr-right .btn-line { display: none; }
+    .sort { margin-left: 0; }
+    .switch a span { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="groupbar">
+  <div class="container">
+    <a class="back" href="../index.html"><img src="../logo/rr-mark.svg" alt="">← R&amp;R Development</a>
+    <div class="switch">
+      <a class="on" href="../edu/index.html">🎓 <span>Eduplan</span></a>
+      <a href="../insurance/index.html">🛡️ <span>保障通</span></a>
+      <a href="../jobs/index.html">⚡ <span>兼职通</span></a>
+    </div>
+  </div>
+</div>
+
+<header class="top">
+  <div class="container">
+    <a href="#" class="brand"><span class="mk">🎓</span>Eduplan<small>升学</small></a>
+    <nav class="menu">
+      <a href="#search">找院校</a>
+      <a href="#paths">升学路径</a>
+      <a href="#scholarship">奖学金</a>
+      <a href="#how">申请流程</a>
+    </nav>
+    <div class="hdr-right">
+      <button class="btn btn-line" data-toast="登录功能即将开放">登录</button>
+      <button class="btn btn-blue" data-toast="注册功能即将开放">免费注册</button>
+    </div>
+  </div>
+</header>
+
+<section class="hero" id="search">
+  <span class="floaty" style="top:30px;right:8%">🎓</span>
+  <span class="floaty" style="top:120px;right:22%;animation-delay:-3s">📚</span>
+  <span class="floaty" style="top:60px;right:38%;animation-delay:-6s;font-size:1.8rem">✈️</span>
+  <div class="container">
+    <h1>找到最适合你的<em>大学与课程</em>，<br>像订酒店一样简单。</h1>
+    <p class="lead">搜索、比较学费与评分，一键申请，还能配对奖学金。</p>
+    <div class="tabs">
+      <button class="tab on">🏫 大学 / 学院</button>
+      <button class="tab" data-toast="Foundation / Diploma 搜索即将开放">📘 预科 / 文凭</button>
+      <button class="tab" data-toast="海外升学搜索即将开放">🌏 海外升学</button>
+    </div>
+    <form class="searchbox" id="searchForm">
+      <div class="field"><label>想读什么？</label><input id="q" placeholder="例如：商科、计算机、医学、院校名称"></div>
+      <div class="field"><label>地区</label>
+        <select id="area"><option value="">全部地区</option><option>吉隆坡</option><option>雪兰莪</option><option>槟城</option><option>柔佛</option><option>沙巴 / 砂拉越</option></select></div>
+      <div class="field"><label>每年学费预算</label>
+        <select id="budget"><option value="">不限</option><option value="20000">RM 20,000 以下</option><option value="35000">RM 35,000 以下</option><option value="50000">RM 50,000 以下</option></select></div>
+      <div class="field"><label>入学月份</label>
+        <select id="intake"><option value="">任何时候</option><option>一月</option><option>三月</option><option>七月</option><option>九月</option></select></div>
+      <button class="btn" type="submit">🔍 搜索</button>
+    </form>
+    <div class="chips"><span>热门搜索：</span>
+      <button class="chip" data-q="计算机">计算机 / AI</button>
+      <button class="chip" data-q="商科">商科</button>
+      <button class="chip" data-q="医学">医学 / 护理</button>
+      <button class="chip" data-q="设计">设计</button>
+      <button class="chip" data-q="工程">工程</button>
+    </div>
+  </div>
+</section>
+
+<div class="container promos">
+  <a href="#scholarship" class="promo p1"><span class="ic">🔥</span><div><b>早鸟优惠 · 学费最高减 20%</b><small>部分院校一月入学</small></div></a>
+  <a href="#scholarship" class="promo p2"><span class="ic">🏅</span><div><b>奖学金配对</b><small>输入成绩，看看你能拿多少</small></div></a>
+  <a href="#how" class="promo p3"><span class="ic">🤖</span><div><b>AI 升学顾问</b><small>24 小时回答你的升学问题</small></div></a>
+</div>
+
+<section id="paths">
+  <div class="container">
+    <div class="sec-head"><div><h2>三种升学路径，总有一条适合你</h2><p>选择一种方式，我们帮你筛选院校</p></div></div>
+    <div class="paths">
+      <div class="path" data-path="interest"><div class="ic">💡</div><h3>兴趣导向 Interest-based</h3><p>从你喜欢的领域出发，推荐对口课程与院校。</p></div>
+      <div class="path" data-path="scholarship" id="scholarship"><div class="ic">🏅</div><h3>奖学金导向 Scholarship-based</h3><p>根据成绩配对奖学金与学费减免，读书更省钱。</p></div>
+      <div class="path" data-path="budget"><div class="ic">💰</div><h3>预算导向 Budget-based</h3><p>设定每年预算，只看负担得起的好选择。</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:10px">
+  <div class="container">
+    <div class="sec-head"><div><h2>热门院校</h2><p>评分、学费与优惠一目了然</p></div></div>
+    <div class="filterbar" id="fields">
+      <button class="fchip on" data-f="">全部</button>
+      <button class="fchip" data-f="计算机">💻 计算机 / AI</button>
+      <button class="fchip" data-f="商科">📊 商科</button>
+      <button class="fchip" data-f="医学">🩺 医学 / 护理</button>
+      <button class="fchip" data-f="工程">⚙️ 工程</button>
+      <button class="fchip" data-f="设计">🎨 设计</button>
+      <select class="sort" id="sort">
+        <option value="pop">排序：最受欢迎</option>
+        <option value="low">学费：低到高</option>
+        <option value="rate">评分：高到低</option>
+      </select>
+    </div>
+    <div class="results-note" id="note"></div>
+    <div class="grid" id="grid"></div>
+  </div>
+</section>
+
+<section id="how">
+  <div class="container">
+    <div class="sec-head"><div><h2>4 步完成申请</h2><p>从搜索到入学，全程线上追踪</p></div></div>
+    <div class="steps">
+      <div class="stp"><div class="ic">🔍</div><h3>搜索比较</h3><p>按兴趣、预算、地区筛选院校与课程。</p></div>
+      <div class="stp"><div class="ic">📝</div><h3>一键申请</h3><p>填一次资料，就能申请多间院校。</p></div>
+      <div class="stp"><div class="ic">🏅</div><h3>奖学金配对</h3><p>系统自动推荐你符合条件的奖学金。</p></div>
+      <div class="stp"><div class="ic">🎉</div><h3>确认入学</h3><p>随时查看录取进度，顾问协助办理报到。</p></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="container">
+    <div class="band">
+      <div><b data-count="120">0</b><span>合作院校目标</span></div>
+      <div><b data-count="3000">0</b><span>课程选择目标</span></div>
+      <div><b data-count="3">0</b><span>升学路径</span></div>
+      <div><b>24/7</b><span>AI 升学顾问</span></div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="container">
+    <div class="cta">
+      <div><h2>不知道读什么？让 AI 顾问帮你</h2><p>回答几个问题，3 分钟得到你的专属升学建议。</p></div>
+      <button class="btn btn-blue" style="padding:14px 26px" data-toast="AI 升学顾问即将上线 🚀">开始免费咨询 →</button>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div>© <span class="yr"></span> Eduplan 升学教育平台 · 由 <a href="../index.html">R&amp;R Development Sdn. Bhd.</a> 营运
+      <div class="note">页面上的院校名称、学费、评分与优惠均为示例数据，仅供展示。</div></div>
+    <div><a href="../insurance/index.html">保障通</a> · <a href="../jobs/index.html">兼职通</a></div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // Sample listings for the demo; replace with real institution data from the backend.
+  const UNIS = [
+    { name: "Klang Valley University", area: "吉隆坡", emoji: "🏛️", bg: "linear-gradient(135deg,#dbe8ff,#b9d2ff)", fields: ["商科", "计算机"], score: 9.1, reviews: 1284, fee: 32000, old: 38000, intake: ["一月", "九月"], sch: true, deal: "-16%", pop: 98 },
+    { name: "Penang Institute of Technology", area: "槟城", emoji: "⚙️", bg: "linear-gradient(135deg,#ffe9cc,#ffd29a)", fields: ["工程", "计算机"], score: 8.8, reviews: 842, fee: 27500, intake: ["三月", "九月"], sch: true, pop: 90 },
+    { name: "Sunrise College KL", area: "吉隆坡", emoji: "🎨", bg: "linear-gradient(135deg,#ffe0ef,#ffc2df)", fields: ["设计", "商科"], score: 8.5, reviews: 516, fee: 18900, old: 21000, intake: ["一月", "三月", "七月"], sch: false, deal: "-10%", pop: 85 },
+    { name: "Johor Medical University", area: "柔佛", emoji: "🩺", bg: "linear-gradient(135deg,#dcf7ea,#b4ebd0)", fields: ["医学"], score: 9.3, reviews: 963, fee: 48000, intake: ["九月"], sch: true, pop: 88 },
+    { name: "Selangor Digital Academy", area: "雪兰莪", emoji: "💻", bg: "linear-gradient(135deg,#e6e1ff,#cfc4ff)", fields: ["计算机", "设计"], score: 8.9, reviews: 701, fee: 22800, old: 26800, intake: ["一月", "七月"], sch: true, deal: "-15%", pop: 93 },
+    { name: "Borneo International University", area: "沙巴 / 砂拉越", emoji: "🌿", bg: "linear-gradient(135deg,#e2f5d9,#c4eab0)", fields: ["商科", "工程"], score: 8.3, reviews: 388, fee: 16500, intake: ["三月", "九月"], sch: true, pop: 76 },
+    { name: "Pacific Nursing College", area: "雪兰莪", emoji: "💉", bg: "linear-gradient(135deg,#d9f3ff,#b0e3ff)", fields: ["医学"], score: 8.6, reviews: 455, fee: 19800, intake: ["一月", "七月"], sch: false, pop: 80 },
+    { name: "Metro Business School", area: "吉隆坡", emoji: "📊", bg: "linear-gradient(135deg,#fff3c9,#ffe28a)", fields: ["商科"], score: 8.7, reviews: 1022, fee: 29900, old: 33000, intake: ["一月", "三月", "九月"], sch: true, deal: "-9%", pop: 91 },
+    { name: "Northern Engineering Institute", area: "槟城", emoji: "🔧", bg: "linear-gradient(135deg,#e8eaf0,#cfd5e2)", fields: ["工程"], score: 8.4, reviews: 297, fee: 24500, intake: ["七月"], sch: false, pop: 70 }
+  ];
+
+  const state = { q: "", area: "", budget: 0, intake: "", field: "", sort: "pop", path: "" };
+  const favs = new Set();
+  const $ = s => document.querySelector(s);
+
+  function label(score) { return score >= 9 ? "非常出色" : score >= 8.5 ? "很棒" : "好"; }
+
+  function render() {
+    let list = UNIS.filter(u => {
+      const hay = u.name + u.area + u.fields.join("");
+      if (state.q && !hay.toLowerCase().includes(state.q.toLowerCase())) return false;
+      if (state.area && u.area !== state.area) return false;
+      if (state.budget && u.fee > state.budget) return false;
+      if (state.intake && !u.intake.includes(state.intake)) return false;
+      if (state.field && !u.fields.includes(state.field)) return false;
+      if (state.path === "scholarship" && !u.sch) return false;
+      return true;
+    });
+    const sorters = { pop: (a, b) => b.pop - a.pop, low: (a, b) => a.fee - b.fee, rate: (a, b) => b.score - a.score };
+    list.sort(state.path === "budget" ? sorters.low : sorters[state.sort]);
+
+    const bits = [state.q && `“${state.q}”`, state.area, state.field, state.intake && state.intake + "入学", state.budget && `RM ${state.budget.toLocaleString()} 以下`,
+      state.path === "scholarship" && "有奖学金", state.path === "budget" && "按学费排序"].filter(Boolean);
+    $("#note").textContent = `找到 ${list.length} 间院校` + (bits.length ? " · " + bits.join(" · ") : "");
+
+    $("#grid").innerHTML = list.length ? list.map((u, i) => `
+      <article class="uni" style="animation-delay:${i * 0.05}s">
+        <div class="uni-img" style="background:${u.bg}">${u.emoji}
+          ${u.deal ? `<span class="deal">${u.deal} 早鸟价</span>` : ""}
+          <button class="fav ${favs.has(u.name) ? "on" : ""}" data-fav="${u.name}" aria-label="收藏">${favs.has(u.name) ? "♥" : "♡"}</button>
+        </div>
+        <div class="uni-body">
+          <h3>${u.name}</h3>
+          <div class="loc">📍 ${u.area} · 入学：${u.intake.join(" / ")}</div>
+          <div class="rating"><span class="score">${u.score}</span><b>${label(u.score)}</b><span>${u.reviews.toLocaleString()} 条学生评价</span></div>
+          <div class="tags">${u.fields.map(f => `<span class="tag">${f}</span>`).join("")}${u.sch ? `<span class="tag sch">🏅 有奖学金</span>` : ""}</div>
+          <div class="price-row">
+            <div class="price"><small>每年学费起</small>${u.old ? `<s>RM ${u.old.toLocaleString()}</s>` : ""}<b>RM ${u.fee.toLocaleString()}</b></div>
+            <button class="btn btn-blue" data-apply="${u.name}">申请</button>
+          </div>
+        </div>
+      </article>`).join("") : `<div class="empty">😕 没有符合条件的院校，试试放宽筛选条件。</div>`;
+  }
+
+  function toast(msg) {
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2400);
+  }
+
+  $("#searchForm").addEventListener("submit", e => {
+    e.preventDefault();
+    state.q = $("#q").value.trim(); state.area = $("#area").value;
+    state.budget = +$("#budget").value || 0; state.intake = $("#intake").value;
+    render(); document.getElementById("grid").scrollIntoView({ behavior: "smooth", block: "start" });
+  });
+  document.querySelectorAll(".chip[data-q]").forEach(c => c.addEventListener("click", () => {
+    $("#q").value = c.dataset.q; $("#searchForm").requestSubmit();
+  }));
+  document.querySelectorAll(".fchip").forEach(c => c.addEventListener("click", () => {
+    document.querySelectorAll(".fchip").forEach(x => x.classList.remove("on"));
+    c.classList.add("on"); state.field = c.dataset.f; render();
+  }));
+  $("#sort").addEventListener("change", e => { state.sort = e.target.value; state.path = state.path === "budget" ? "" : state.path; render(); });
+  document.querySelectorAll(".path").forEach(p => p.addEventListener("click", () => {
+    const on = p.classList.contains("on");
+    document.querySelectorAll(".path").forEach(x => x.classList.remove("on"));
+    state.path = on ? "" : p.dataset.path;
+    if (!on) p.classList.add("on");
+    if (state.path === "interest") { toast("💡 选一个你感兴趣的领域吧"); document.getElementById("fields").scrollIntoView({ behavior: "smooth", block: "center" }); }
+    render();
+  }));
+  $("#grid").addEventListener("click", e => {
+    const f = e.target.closest("[data-fav]"), a = e.target.closest("[data-apply]");
+    if (f) { favs.has(f.dataset.fav) ? favs.delete(f.dataset.fav) : favs.add(f.dataset.fav); render(); }
+    if (a) toast(`✅ 已加入申请清单：${a.dataset.apply}`);
+  });
+  document.querySelectorAll("[data-toast]").forEach(b => b.addEventListener("click", () => toast(b.dataset.toast)));
+
+  // Count-up for the stats band
+  new IntersectionObserver((entries, io) => entries.forEach(en => {
+    if (!en.isIntersecting) return;
+    en.target.querySelectorAll("[data-count]").forEach(el => {
+      const target = +el.dataset.count, t0 = performance.now();
+      (function step(now) {
+        const p = Math.min((now - t0) / 1400, 1);
+        el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3))).toLocaleString() + (target >= 100 ? "+" : "");
+        if (p < 1) requestAnimationFrame(step);
+      })(t0);
+    });
+    io.unobserve(en.target);
+  }), { threshold: .4 }).observe(document.querySelector(".band"));
+
+  document.querySelectorAll(".yr").forEach(y => y.textContent = new Date().getFullYear());
+  render();
+</script>
+</body>
+</html>

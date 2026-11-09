@@ -145,6 +145,45 @@
   .reveal { opacity: 0; transform: translateY(40px); transition: opacity .9s cubic-bezier(.2, .8, .2, 1), transform .9s cubic-bezier(.2, .8, .2, 1); }
   .reveal.in { opacity: 1; transform: none; }
 
+  /* Portals */
+  .portals { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 60px; }
+  .portal {
+    --pc: #7c5cff; --pc2: #00e5ff;
+    position: relative; display: flex; flex-direction: column; border-radius: 26px; overflow: hidden;
+    background: var(--card); border: 1px solid var(--card-border);
+    transition: transform .35s cubic-bezier(.2, .8, .2, 1), box-shadow .35s, border-color .35s;
+  }
+  .portal.edu { --pc: #2f7bff; --pc2: #ffb020; }
+  .portal.ins { --pc: #00b39b; --pc2: #7c5cff; }
+  .portal.job { --pc: #00b14f; --pc2: #00e5ff; }
+  .portal:hover { transform: translateY(-10px); border-color: var(--pc); box-shadow: 0 30px 70px -20px var(--pc); }
+  .portal-top {
+    position: relative; height: 170px; display: grid; place-items: center; overflow: hidden;
+    background: linear-gradient(135deg, var(--pc), var(--pc2));
+  }
+  .portal-top::before, .portal-top::after {
+    content: ""; position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .16);
+  }
+  .portal-top::before { width: 220px; height: 220px; top: -90px; right: -60px; animation: float 10s ease-in-out infinite; }
+  .portal-top::after { width: 140px; height: 140px; bottom: -70px; left: -30px; animation: float 12s ease-in-out infinite reverse; }
+  .portal-icon { position: relative; z-index: 1; font-size: 4rem; filter: drop-shadow(0 10px 20px rgba(0, 0, 0, .3)); animation: bob 4s ease-in-out infinite; }
+  .portal-no { position: absolute; top: 16px; left: 18px; z-index: 1; font-family: "Space Grotesk", sans-serif; font-weight: 700; color: rgba(255, 255, 255, .85); font-size: .85rem; letter-spacing: .1em; }
+  .portal-tag { position: absolute; top: 14px; right: 16px; z-index: 1; font-size: .72rem; padding: 4px 10px; border-radius: 999px; background: rgba(0, 0, 0, .25); color: #fff; backdrop-filter: blur(6px); }
+  .portal-body { padding: 28px 26px 26px; display: flex; flex-direction: column; flex: 1; }
+  .portal-body h3 { font-size: 1.45rem; margin-bottom: 4px; }
+  .portal-body .sub { color: var(--pc2); font-size: .85rem; font-weight: 600; margin-bottom: 14px; }
+  .portal.edu .sub { color: #ffc65c; }
+  .portal-body p { color: var(--muted); font-size: .95rem; margin-bottom: 18px; }
+  .portal-body ul { list-style: none; display: grid; gap: 8px; margin-bottom: 26px; font-size: .92rem; }
+  .portal-body li::before { content: "✦ "; color: var(--pc); }
+  .portal-go {
+    margin-top: auto; display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-radius: 14px; font-weight: 600;
+    background: linear-gradient(135deg, var(--pc), var(--pc2)); color: #fff;
+  }
+  .portal-go .arrow { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 255, 255, .25); transition: transform .3s; }
+  .portal:hover .portal-go .arrow { transform: translateX(6px); }
+
   /* Vision */
   .vision-grid { display: grid; grid-template-columns: 1.1fr .9fr; gap: 60px; align-items: center; }
   .vision-quote { font-size: clamp(1.5rem, 3vw, 2.2rem); font-family: "Space Grotesk", "Noto Sans SC", sans-serif; line-height: 1.35; margin: 22px 0; }
@@ -260,6 +299,7 @@
   @media (max-width: 960px) {
     .vision-grid, .demo, .cta-box { grid-template-columns: 1fr; }
     .cards { grid-template-columns: 1fr 1fr; }
+    .portals { grid-template-columns: 1fr; max-width: 520px; margin-inline: auto; }
     .stats { grid-template-columns: 1fr 1fr; }
     .timeline { grid-template-columns: 1fr 1fr; row-gap: 46px; }
     .timeline::before, .timeline .progress { display: none; }
@@ -296,6 +336,7 @@
       <span>R&amp;R Development<small>SDN. BHD.</small></span>
     </a>
     <div class="nav-links" id="navLinks">
+      <a href="#platforms" data-i18n="nav.platforms">Platforms</a>
       <a href="#vision" data-i18n="nav.vision">Vision</a>
       <a href="#services" data-i18n="nav.services">Services</a>
       <a href="#process" data-i18n="nav.process">Process</a>
@@ -325,7 +366,7 @@
     </div>
     <div class="hero-cta">
       <a href="#contact" class="btn btn-primary"><span data-i18n="hero.cta1">Build My AI Tool</span> →</a>
-      <a href="#demo" class="btn btn-ghost" data-i18n="hero.cta2">See It in Action</a>
+      <a href="#platforms" class="btn btn-ghost" data-i18n="hero.cta2">Explore Our Platforms</a>
     </div>
   </div>
   <div class="scroll-hint"></div>
@@ -335,6 +376,61 @@
 <div class="marquee">
   <div class="marquee-track" id="marquee"></div>
 </div>
+
+<!-- ============ PLATFORMS ============ -->
+<section id="platforms">
+  <div class="container">
+    <div class="center reveal">
+      <span class="eyebrow" data-i18n="plat.eyebrow">Our Platforms</span>
+      <h2 class="section-title" data-i18n-html="plat.title">Three platforms, <span class="grad-text">one AI ecosystem</span></h2>
+      <p class="section-sub" data-i18n="plat.sub">Click any platform below to go straight to its homepage.</p>
+    </div>
+    <div class="portals">
+      <a class="portal edu reveal" href="edu/index.html">
+        <div class="portal-top"><span class="portal-no">01</span><span class="portal-tag" data-i18n="plat.1tag">Education</span><span class="portal-icon">🎓</span></div>
+        <div class="portal-body">
+          <h3>Eduplan <span data-i18n="plat.1cn">升学</span></h3>
+          <div class="sub" data-i18n="plat.1sub">Further-study platform</div>
+          <p data-i18n="plat.1d">Search, compare and apply to colleges and universities — as easy as booking a hotel.</p>
+          <ul>
+            <li data-i18n="plat.1f1">Compare fees, ratings &amp; intakes</li>
+            <li data-i18n="plat.1f2">Scholarship &amp; interest matching</li>
+            <li data-i18n="plat.1f3">One-click application tracking</li>
+          </ul>
+          <span class="portal-go"><span data-i18n="plat.go">Enter Homepage</span><span class="arrow">→</span></span>
+        </div>
+      </a>
+      <a class="portal ins reveal" href="insurance/index.html">
+        <div class="portal-top"><span class="portal-no">02</span><span class="portal-tag" data-i18n="plat.2tag">Insurance</span><span class="portal-icon">🛡️</span></div>
+        <div class="portal-body">
+          <h3>CareShield <span data-i18n="plat.2cn">保障通</span></h3>
+          <div class="sub" data-i18n="plat.2sub">Insurance &amp; life-insurance assistance</div>
+          <p data-i18n="plat.2d">Understand what cover you need, compare plans and get help with claims from licensed advisors.</p>
+          <ul>
+            <li data-i18n="plat.2f1">AI needs check in 1 minute</li>
+            <li data-i18n="plat.2f2">Side-by-side plan comparison</li>
+            <li data-i18n="plat.2f3">Claim assistance, start to finish</li>
+          </ul>
+          <span class="portal-go"><span data-i18n="plat.go">Enter Homepage</span><span class="arrow">→</span></span>
+        </div>
+      </a>
+      <a class="portal job reveal" href="jobs/index.html">
+        <div class="portal-top"><span class="portal-no">03</span><span class="portal-tag" data-i18n="plat.3tag">Part-time Jobs</span><span class="portal-icon">⚡</span></div>
+        <div class="portal-body">
+          <h3>GigGo <span data-i18n="plat.3cn">兼职通</span></h3>
+          <div class="sub" data-i18n="plat.3sub">Part-time hiring platform</div>
+          <p data-i18n="plat.3d">Find shifts near you and get paid fast — or hire reliable part-timers in minutes.</p>
+          <ul>
+            <li data-i18n="plat.3f1">Jobs near you, on a map</li>
+            <li data-i18n="plat.3f2">Fast pay after each shift</li>
+            <li data-i18n="plat.3f3">Verified workers &amp; ratings</li>
+          </ul>
+          <span class="portal-go"><span data-i18n="plat.go">Enter Homepage</span><span class="arrow">→</span></span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
 
 <!-- ============ VISION ============ -->
 <section id="vision">
@@ -464,9 +560,20 @@
   /* ================= i18n ================= */
   const I18N = {
     zh: {
-      "nav.vision": "愿景", "nav.services": "服务", "nav.process": "流程", "nav.demo": "演示", "nav.contact": "联系我们", "nav.cta": "立即开始",
+      "nav.platforms": "平台", "nav.vision": "愿景", "nav.services": "服务", "nav.process": "流程", "nav.demo": "演示", "nav.contact": "联系我们", "nav.cta": "立即开始",
       "hero.badge": "欢迎来到 AI 时代", "hero.l1": "每个人都值得拥有", "hero.l2": "专属自己的 AI。", "hero.we": "我们打造",
-      "hero.cta1": "打造我的 AI 工具", "hero.cta2": "看看效果",
+      "hero.cta1": "打造我的 AI 工具", "hero.cta2": "探索我们的平台",
+      "plat.eyebrow": "我们的平台", "plat.title": "三大平台，<span class=\"grad-text\">一个 AI 生态</span>",
+      "plat.sub": "点击下方任一平台，直接进入它的主页。", "plat.go": "进入主页",
+      "plat.1tag": "教育", "plat.1cn": "升学", "plat.1sub": "升学教育平台",
+      "plat.1d": "像订酒店一样，轻松搜索、比较并申请大专院校与大学。",
+      "plat.1f1": "比较学费、评分与开课日期", "plat.1f2": "奖学金与兴趣配对", "plat.1f3": "一键追踪申请进度",
+      "plat.2tag": "保险", "plat.2cn": "保障通", "plat.2sub": "保险与寿险协助平台",
+      "plat.2d": "了解你需要什么保障、比较计划，并由持牌顾问协助理赔。",
+      "plat.2f1": "1 分钟 AI 保障需求检测", "plat.2f2": "计划并排比较", "plat.2f3": "理赔全程协助",
+      "plat.3tag": "兼职", "plat.3cn": "兼职通", "plat.3sub": "兼职招聘平台",
+      "plat.3d": "找到附近的兼职、快速拿到工资 —— 或在几分钟内请到可靠的兼职人员。",
+      "plat.3f1": "地图上看附近工作", "plat.3f2": "每班结束快速发薪", "plat.3f3": "实名认证与评分",
       "vision.eyebrow": "我们的愿景",
       "vision.title": "别只是旁观 AI 浪潮，<br><span class=\"grad-text\">乘风而上。</span>",
       "vision.quote": "“在这个 AI 时代，所有人都需要跟上 AI 潮流，并且拥有属于自己独有的 AI 工具。”",

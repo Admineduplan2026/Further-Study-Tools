@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GigGo 兼职通 — 附近兼职，快速发薪</title>
+<meta name="description" content="GigGo 兼职通：找到附近的兼职、每班结束快速发薪；商家几分钟请到可靠兼职人员。R&R Development Sdn. Bhd. 旗下平台。">
+<link rel="icon" type="image/svg+xml" href="../logo/rr-mark.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --g: #00b14f; --g-d: #009241; --g-soft: #e5f7ec; --dark: #0d1f16;
+    --ink: #17221c; --muted: #61706a; --line: #e3ebe6; --bg: #f6f9f7; --white: #fff; --amber: #ffb300;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; overflow-x: clip; }
+  body { font-family: "Plus Jakarta Sans", "Noto Sans SC", system-ui, sans-serif; background: var(--bg); color: var(--ink); line-height: 1.55; overflow-x: hidden; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; cursor: pointer; border: 0; }
+  .container { width: min(1180px, 100% - 32px); margin-inline: auto; }
+
+  .groupbar { background: #0b0d1f; color: #c9cde6; font-size: .8rem; }
+  .groupbar .container { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 0; flex-wrap: wrap; }
+  .groupbar a.back { display: flex; align-items: center; gap: 8px; color: #fff; font-weight: 600; }
+  .groupbar a.back img { width: 22px; height: 22px; border-radius: 6px; }
+  .switch { display: flex; gap: 6px; }
+  .switch a { padding: 3px 10px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .15); transition: background .2s; }
+  .switch a:hover { background: rgba(255, 255, 255, .1); }
+  .switch a.on { background: var(--g); border-color: var(--g); color: #fff; }
+
+  header.top { background: #fff; border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 40; }
+  header.top .container { display: flex; align-items: center; gap: 28px; height: 66px; }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.35rem; color: var(--g); }
+  .brand .mk { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: var(--g); color: #fff; font-size: 1.1rem; }
+  .brand small { color: var(--ink); font-weight: 700; font-size: 1rem; }
+  .menu { display: flex; gap: 22px; font-size: .93rem; font-weight: 500; color: var(--muted); }
+  .menu a:hover { color: var(--g); }
+  .hdr-right { margin-left: auto; display: flex; gap: 10px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; border-radius: 999px; padding: 11px 20px; font-weight: 700; font-size: .92rem; transition: transform .2s, box-shadow .2s, background .2s; }
+  .btn-g { background: var(--g); color: #fff; }
+  .btn-g:hover { background: var(--g-d); transform: translateY(-2px); box-shadow: 0 10px 24px -8px var(--g); }
+  .btn-w { background: #fff; color: var(--ink); border: 1.5px solid var(--line); }
+  .btn-w:hover { border-color: var(--g); color: var(--g); }
+
+  /* Hero */
+  .hero { position: relative; overflow: hidden; background: linear-gradient(160deg, #00b14f, #00a346 50%, #008f3d); color: #fff; padding: 60px 0 0; }
+  .hero::before { content: ""; position: absolute; inset: 0; background-image: radial-gradient(rgba(255, 255, 255, .14) 1.5px, transparent 1.5px); background-size: 26px 26px; mask-image: linear-gradient(180deg, #000, transparent 85%); }
+  .hero .container { position: relative; display: grid; grid-template-columns: 1.1fr .9fr; gap: 40px; align-items: end; }
+  .hero-text { padding-bottom: 70px; }
+  .role { display: inline-flex; background: rgba(0, 0, 0, .18); border-radius: 999px; padding: 4px; margin-bottom: 22px; }
+  .role button { padding: 9px 20px; border-radius: 999px; color: #fff; font-weight: 700; font-size: .9rem; background: transparent; transition: all .25s; }
+  .role button.on { background: #fff; color: var(--g-d); }
+  .hero h1 { font-size: clamp(2.1rem, 4.6vw, 3.4rem); font-weight: 800; line-height: 1.12; }
+  .hero h1 em { font-style: normal; color: var(--amber); }
+  .hero p.lead { opacity: .92; font-size: 1.08rem; margin: 14px 0 26px; max-width: 520px; }
+  .where { display: flex; background: #fff; border-radius: 16px; padding: 6px; max-width: 560px; box-shadow: 0 20px 40px -20px rgba(0, 0, 0, .4); }
+  .where span { display: grid; place-items: center; padding: 0 12px; font-size: 1.2rem; }
+  .where input { flex: 1; border: 0; outline: 0; font: inherit; font-size: 1rem; color: var(--ink); min-width: 0; }
+  .where .btn { border-radius: 12px; }
+  .hero-stats { display: flex; gap: 26px; margin-top: 28px; flex-wrap: wrap; }
+  .hero-stats b { display: block; font-size: 1.5rem; }
+  .hero-stats span { opacity: .85; font-size: .85rem; }
+
+  /* Phone mockup */
+  .phone { justify-self: center; width: 290px; height: 470px; background: #fff; border-radius: 40px 40px 0 0; border: 10px solid #0d1f16; border-bottom: 0; position: relative; overflow: hidden; box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, .5); color: var(--ink); }
+  .phone::before { content: ""; position: absolute; top: 8px; left: 50%; width: 80px; height: 20px; margin-left: -40px; background: #0d1f16; border-radius: 999px; z-index: 3; }
+  .map { position: relative; height: 210px; background: #e8f1ea; overflow: hidden;
+    background-image: linear-gradient(90deg, rgba(255, 255, 255, .9) 6px, transparent 6px), linear-gradient(rgba(255, 255, 255, .9) 6px, transparent 6px);
+    background-size: 70px 60px; }
+  .map .road { position: absolute; background: #fff; }
+  .me { position: absolute; left: 50%; top: 55%; width: 16px; height: 16px; margin: -8px; border-radius: 50%; background: #2f7bff; border: 3px solid #fff; box-shadow: 0 0 0 0 rgba(47, 123, 255, .5); animation: ping 2s infinite; z-index: 2; }
+  @keyframes ping { 70% { box-shadow: 0 0 0 26px rgba(47, 123, 255, 0); } 100% { box-shadow: 0 0 0 0 rgba(47, 123, 255, 0); } }
+  .pin { position: absolute; font-size: 1.3rem; animation: drop .6s cubic-bezier(.2, .8, .2, 1.3) both, hover 3s ease-in-out infinite; filter: drop-shadow(0 4px 4px rgba(0, 0, 0, .25)); }
+  @keyframes drop { from { transform: translateY(-40px); opacity: 0; } }
+  @keyframes hover { 50% { transform: translateY(-5px); } }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; top: 190px; background: #fff; border-radius: 22px 22px 0 0; padding: 14px 14px 0; box-shadow: 0 -8px 20px rgba(0, 0, 0, .08); }
+  .sheet::before { content: ""; display: block; width: 40px; height: 4px; border-radius: 4px; background: #d6ddd8; margin: 0 auto 10px; }
+  .sheet h4 { font-size: .9rem; margin-bottom: 8px; }
+  .mini { display: flex; gap: 10px; align-items: center; padding: 10px; border-radius: 14px; border: 1px solid var(--line); margin-bottom: 8px; animation: slideUp .5s both; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } }
+  .mini .ic { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; background: var(--g-soft); font-size: 1.1rem; }
+  .mini b { display: block; font-size: .82rem; }
+  .mini small { color: var(--muted); font-size: .72rem; }
+  .mini .pay { margin-left: auto; font-weight: 800; color: var(--g); font-size: .85rem; }
+
+  section { padding: 60px 0; }
+  .sec-head { display: flex; align-items: end; justify-content: space-between; gap: 16px; margin-bottom: 22px; flex-wrap: wrap; }
+  .sec-head h2 { font-size: 1.7rem; font-weight: 800; }
+  .sec-head p { color: var(--muted); }
+
+  /* Categories */
+  .cats { display: grid; grid-template-columns: repeat(8, 1fr); gap: 12px; }
+  .cat { background: #fff; border: 1.5px solid var(--line); border-radius: 18px; padding: 16px 8px; text-align: center; font-weight: 600; font-size: .86rem; transition: all .2s; }
+  .cat .ic { font-size: 1.9rem; display: block; margin-bottom: 6px; transition: transform .3s; }
+  .cat:hover { border-color: var(--g); transform: translateY(-4px); }
+  .cat:hover .ic { transform: scale(1.15) rotate(-6deg); }
+  .cat.on { border-color: var(--g); background: var(--g-soft); color: var(--g-d); }
+
+  /* Job list */
+  .toolbar { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+  .tg { padding: 8px 16px; border-radius: 999px; background: #fff; border: 1.5px solid var(--line); font-weight: 600; font-size: .86rem; color: var(--muted); }
+  .tg.on { background: var(--dark); border-color: var(--dark); color: #fff; }
+  .count { margin-left: auto; color: var(--muted); font-size: .9rem; }
+  .jobs { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+  .job { background: #fff; border: 1px solid var(--line); border-radius: 20px; padding: 18px; display: flex; gap: 14px; transition: transform .25s, box-shadow .25s; animation: slideUp .45s both; }
+  .job:hover { transform: translateY(-4px); box-shadow: 0 18px 36px -22px rgba(0, 120, 60, .55); }
+  .job .ic { flex: 0 0 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; font-size: 1.6rem; background: var(--g-soft); }
+  .job-main { flex: 1; min-width: 0; }
+  .job-main h3 { font-size: 1.02rem; }
+  .job-main .co { color: var(--muted); font-size: .84rem; }
+  .meta { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 12px; }
+  .meta span { font-size: .75rem; padding: 3px 9px; border-radius: 6px; background: #f0f4f1; color: #48564f; font-weight: 600; }
+  .meta .hot { background: #fff4d6; color: #9a6a00; }
+  .meta .fast { background: var(--g-soft); color: var(--g-d); }
+  .job-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .rate b { font-size: 1.25rem; color: var(--g-d); }
+  .rate small { color: var(--muted); }
+  .job .btn { padding: 9px 18px; }
+  .job .btn.done { background: var(--dark); }
+
+  /* Why */
+  .why { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .w { background: #fff; border-radius: 20px; padding: 22px; border: 1px solid var(--line); }
+  .w .ic { font-size: 1.8rem; }
+  .w h3 { font-size: 1.02rem; margin: 10px 0 4px; }
+  .w p { color: var(--muted); font-size: .9rem; }
+
+  /* Employer band */
+  .employer { background: var(--dark); color: #fff; border-radius: 28px; padding: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 30px; align-items: center; position: relative; overflow: hidden; }
+  .employer::after { content: "⚡"; position: absolute; right: -20px; bottom: -60px; font-size: 14rem; opacity: .06; }
+  .employer h2 { font-size: 1.9rem; font-weight: 800; }
+  .employer h2 em { font-style: normal; color: var(--g); }
+  .employer p { opacity: .8; margin: 10px 0 22px; }
+  .esteps { display: grid; gap: 12px; position: relative; z-index: 1; }
+  .es { display: flex; gap: 14px; align-items: center; background: rgba(255, 255, 255, .06); border: 1px solid rgba(255, 255, 255, .1); border-radius: 16px; padding: 14px 16px; }
+  .es .n { flex: 0 0 34px; height: 34px; border-radius: 50%; background: var(--g); display: grid; place-items: center; font-weight: 800; }
+  .es small { display: block; opacity: .7; }
+
+  footer { background: #0a1710; color: #93a69b; padding: 34px 0; margin-top: 40px; font-size: .88rem; }
+  footer .container { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer a { color: #fff; }
+  .note { font-size: .78rem; color: #75887d; margin-top: 6px; }
+
+  .toast { position: fixed; left: 50%; bottom: 26px; transform: translate(-50%, 160px); visibility: hidden; background: var(--ink); color: #fff; padding: 12px 20px; border-radius: 12px; font-size: .92rem; transition: transform .35s cubic-bezier(.2, .8, .2, 1.2), visibility .35s; z-index: 99; max-width: calc(100% - 32px); }
+  .toast.show { transform: translate(-50%, 0); visibility: visible; }
+
+  @media (max-width: 960px) {
+    .menu { display: none; }
+    .hero .container, .employer { grid-template-columns: 1fr; }
+    .hero-text { padding-bottom: 10px; }
+    .cats { grid-template-columns: repeat(4, 1fr); }
+    .jobs { grid-template-columns: 1fr; }
+    .why { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 640px) {
+    .why { grid-template-columns: 1fr; }
+    .hdr-right .btn-w { display: none; }
+    .employer { padding: 28px 20px; }
+    .switch a span { display: none; }
+    .count { margin-left: 0; width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="groupbar">
+  <div class="container">
+    <a class="back" href="../index.html"><img src="../logo/rr-mark.svg" alt="">← R&amp;R Development</a>
+    <div class="switch">
+      <a href="../edu/index.html">🎓 <span>Eduplan</span></a>
+      <a href="../insurance/index.html">🛡️ <span>保障通</span></a>
+      <a class="on" href="../jobs/index.html">⚡ <span>兼职通</span></a>
+    </div>
+  </div>
+</div>
+
+<header class="top">
+  <div class="container">
+    <a href="#" class="brand"><span class="mk">⚡</span>GigGo<small>兼职通</small></a>
+    <nav class="menu">
+      <a href="#nearby">附近工作</a>
+      <a href="#why">为什么选我们</a>
+      <a href="#employer">商家招聘</a>
+    </nav>
+    <div class="hdr-right">
+      <button class="btn btn-w" data-toast="登录功能即将开放">登录</button>
+      <a class="btn btn-g" href="#employer">我要请人</a>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <div class="hero-text">
+      <div class="role" id="role">
+        <button class="on" data-r="worker">🙋 我要找兼职</button>
+        <button data-r="boss">🏪 我要请人</button>
+      </div>
+      <h1 id="heroTitle">附近有工作，<br><em>今天就能上工。</em></h1>
+      <p class="lead" id="heroLead">打开地图，看看身边的兼职。做完一班，工资快速入账。</p>
+      <form class="where" id="whereForm">
+        <span>📍</span>
+        <input id="where" placeholder="输入你的地区，例如：Cheras、Puchong、SS2">
+        <button class="btn btn-g" type="submit" id="whereBtn">找工作</button>
+      </form>
+      <div class="hero-stats">
+        <div><b>⚡ 快速</b><span>每班结束发薪</span></div>
+        <div><b>✅ 实名</b><span>认证商家与人员</span></div>
+        <div><b>⭐ 评分</b><span>双向互评系统</span></div>
+      </div>
+    </div>
+
+    <div class="phone" aria-hidden="true">
+      <div class="map">
+        <div class="road" style="left:0;right:0;top:40%;height:12px;transform:rotate(-8deg)"></div>
+        <div class="road" style="top:0;bottom:0;left:30%;width:10px;transform:rotate(12deg)"></div>
+        <span class="pin" style="left:18%;top:20%;animation-delay:.2s,.2s">☕</span>
+        <span class="pin" style="left:68%;top:18%;animation-delay:.5s,.5s">📦</span>
+        <span class="pin" style="left:78%;top:58%;animation-delay:.8s,.8s">🎪</span>
+        <span class="pin" style="left:22%;top:66%;animation-delay:1.1s,1.1s">🛒</span>
+        <span class="me"></span>
+      </div>
+      <div class="sheet">
+        <h4>📍 你附近 4 份工作</h4>
+        <div class="mini" style="animation-delay:.6s"><span class="ic">☕</span><div><b>咖啡店服务员</b><small>0.8 km · 今天 2pm</small></div><span class="pay">RM14/h</span></div>
+        <div class="mini" style="animation-delay:.8s"><span class="ic">📦</span><div><b>仓库理货员</b><small>1.5 km · 明天 9am</small></div><span class="pay">RM13/h</span></div>
+        <div class="mini" style="animation-delay:1s"><span class="ic">🎪</span><div><b>活动工作人员</b><small>2.1 km · 周六</small></div><span class="pay">RM18/h</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-bottom:20px">
+  <div class="container">
+    <div class="sec-head"><div><h2>想做什么工作？</h2><p>点选类别，马上看附近的职位</p></div></div>
+    <div class="cats" id="cats">
+      <button class="cat on" data-c=""><span class="ic">✨</span>全部</button>
+      <button class="cat" data-c="餐饮"><span class="ic">☕</span>餐饮</button>
+      <button class="cat" data-c="零售"><span class="ic">🛒</span>零售</button>
+      <button class="cat" data-c="活动"><span class="ic">🎪</span>活动</button>
+      <button class="cat" data-c="物流"><span class="ic">📦</span>物流 / 仓库</button>
+      <button class="cat" data-c="家教"><span class="ic">📚</span>家教</button>
+      <button class="cat" data-c="清洁"><span class="ic">🧹</span>清洁</button>
+      <button class="cat" data-c="推广"><span class="ic">📣</span>推广</button>
+    </div>
+  </div>
+</section>
+
+<section id="nearby">
+  <div class="container">
+    <div class="sec-head"><div><h2>附近的兼职</h2><p>按距离排序 · 时薪清楚列明</p></div></div>
+    <div class="toolbar">
+      <button class="tg on" data-t="all">全部时间</button>
+      <button class="tg" data-t="today">🔥 今天</button>
+      <button class="tg" data-t="weekend">周末</button>
+      <button class="tg" data-t="fast">⚡ 当天发薪</button>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="jobs" id="jobs"></div>
+  </div>
+</section>
+
+<section id="why">
+  <div class="container">
+    <div class="sec-head"><div><h2>为什么选择 GigGo？</h2></div></div>
+    <div class="why">
+      <div class="w"><div class="ic">📍</div><h3>就在你附近</h3><p>按距离推荐工作，省下通勤时间。</p></div>
+      <div class="w"><div class="ic">💸</div><h3>快速发薪</h3><p>完成工作、商家确认后，工资转入你的电子钱包。</p></div>
+      <div class="w"><div class="ic">🛡️</div><h3>实名认证</h3><p>商家与兼职人员都经过身份验证，更安心。</p></div>
+      <div class="w"><div class="ic">⭐</div><h3>评分越高，机会越多</h3><p>好评让你优先获得高薪工作。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="employer">
+  <div class="container">
+    <div class="employer">
+      <div>
+        <h2>缺人手？<br><em>几分钟</em>请到兼职。</h2>
+        <p>餐厅、零售、活动、仓库 —— 发布职位后，系统马上推送给附近合适的兼职人员。</p>
+        <button class="btn btn-g" data-toast="商家后台即将开放，敬请期待 🚀">免费发布职位 →</button>
+      </div>
+      <div class="esteps">
+        <div class="es"><span class="n">1</span><div><b>发布职位</b><small>填写时间、地点与时薪</small></div></div>
+        <div class="es"><span class="n">2</span><div><b>AI 智能配对</b><small>推荐附近评分高的人选</small></div></div>
+        <div class="es"><span class="n">3</span><div><b>确认上工</b><small>打卡签到，工时自动记录</small></div></div>
+        <div class="es"><span class="n">4</span><div><b>一键付款与评分</b><small>平台代发工资，互相评分</small></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div>© <span class="yr"></span> GigGo 兼职通 · 由 <a href="../index.html">R&amp;R Development Sdn. Bhd.</a> 营运
+      <div class="note">页面上的职位、商家、距离与时薪均为示例数据，仅供展示。</div></div>
+    <div><a href="../edu/index.html">Eduplan</a> · <a href="../insurance/index.html">保障通</a></div>
+  </div>
+</footer>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  function toast(msg) {
+    const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+  document.querySelectorAll("[data-toast]").forEach(b => b.addEventListener("click", () => toast(b.dataset.toast)));
+
+  // Sample jobs for the demo; replace with live listings from the backend.
+  const JOBS = [
+    { t: "咖啡店服务员", co: "Brew Corner · Cheras", c: "餐饮", ic: "☕", km: 0.8, when: "今天 2pm – 8pm", tags: ["today"], rate: 14, fast: true, hot: true },
+    { t: "超市补货员", co: "FreshMart · Taman Connaught", c: "零售", ic: "🛒", km: 1.2, when: "今天 6pm – 11pm", tags: ["today"], rate: 12, fast: true },
+    { t: "仓库理货员", co: "SwiftPack Logistics · Balakong", c: "物流", ic: "📦", km: 1.5, when: "明天 9am – 6pm", tags: [], rate: 13, fast: false },
+    { t: "活动工作人员（音乐节）", co: "Starlight Events · Bukit Jalil", c: "活动", ic: "🎪", km: 2.1, when: "周六 4pm – 12am", tags: ["weekend"], rate: 18, fast: true, hot: true },
+    { t: "小学数学家教", co: "家长发布 · Taman Midah", c: "家教", ic: "📚", km: 2.4, when: "每周二、四 7pm", tags: [], rate: 35, fast: false },
+    { t: "餐厅厨房助手", co: "Mama Kitchen · Cheras", c: "餐饮", ic: "🍳", km: 2.9, when: "周日 10am – 4pm", tags: ["weekend"], rate: 13, fast: true },
+    { t: "办公室清洁", co: "CleanPro Services · Sri Petaling", c: "清洁", ic: "🧹", km: 3.3, when: "今天 7pm – 10pm", tags: ["today"], rate: 15, fast: true },
+    { t: "商场路演推广员", co: "BrandUp Marketing · Mid Valley", c: "推广", ic: "📣", km: 4.0, when: "周六、周日 11am – 7pm", tags: ["weekend"], rate: 16, fast: false, hot: true }
+  ];
+  const state = { c: "", t: "all" };
+  const applied = new Set();
+
+  function render() {
+    const list = JOBS.filter(j => (!state.c || j.c === state.c) &&
+      (state.t === "all" || (state.t === "fast" ? j.fast : j.tags.includes(state.t)))).sort((a, b) => a.km - b.km);
+    $("#count").textContent = `共 ${list.length} 份工作`;
+    $("#jobs").innerHTML = list.length ? list.map((j, i) => `
+      <article class="job" style="animation-delay:${i * 0.05}s">
+        <span class="ic">${j.ic}</span>
+        <div class="job-main">
+          <h3>${j.t}</h3>
+          <div class="co">${j.co}</div>
+          <div class="meta">
+            <span>📍 ${j.km} km</span><span>🕒 ${j.when}</span>
+            ${j.fast ? `<span class="fast">⚡ 当天发薪</span>` : ""}${j.hot ? `<span class="hot">🔥 热门</span>` : ""}
+          </div>
+          <div class="job-foot">
+            <div class="rate"><b>RM ${j.rate}</b><small> / 小时</small></div>
+            <button class="btn btn-g ${applied.has(j.t) ? "done" : ""}" data-apply="${j.t}">${applied.has(j.t) ? "✓ 已申请" : "立即申请"}</button>
+          </div>
+        </div>
+      </article>`).join("") : `<p style="color:var(--muted);padding:30px 0">这个类别暂时没有工作，换个条件试试 👀</p>`;
+  }
+
+  document.querySelectorAll(".cat").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".cat").forEach(x => x.classList.remove("on"));
+    b.classList.add("on"); state.c = b.dataset.c; render();
+    document.getElementById("nearby").scrollIntoView({ behavior: "smooth" });
+  }));
+  document.querySelectorAll(".tg").forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(".tg").forEach(x => x.classList.remove("on"));
+    b.classList.add("on"); state.t = b.dataset.t; render();
+  }));
+  $("#jobs").addEventListener("click", e => {
+    const b = e.target.closest("[data-apply]"); if (!b) return;
+    if (applied.has(b.dataset.apply)) return;
+    applied.add(b.dataset.apply); render(); toast(`✅ 已申请「${b.dataset.apply}」，商家确认后会通知你`);
+  });
+
+  // Worker / employer toggle swaps the hero copy
+  const COPY = {
+    worker: ["附近有工作，<br><em>今天就能上工。</em>", "打开地图，看看身边的兼职。做完一班，工资快速入账。", "输入你的地区，例如：Cheras、Puchong、SS2", "找工作"],
+    boss: ["缺人手？<br><em>几分钟请到人。</em>", "发布职位，系统马上推送给附近已认证的兼职人员。", "输入你的店铺地区", "发布职位"]
+  };
+  let role = "worker";
+  document.querySelectorAll("#role button").forEach(b => b.addEventListener("click", () => {
+    role = b.dataset.r;
+    document.querySelectorAll("#role button").forEach(x => x.classList.toggle("on", x === b));
+    const [h, l, ph, btn] = COPY[role];
+    $("#heroTitle").innerHTML = h; $("#heroLead").textContent = l; $("#where").placeholder = ph; $("#whereBtn").textContent = btn;
+  }));
+  $("#whereForm").addEventListener("submit", e => {
+    e.preventDefault();
+    const area = $("#where").value.trim();
+    if (role === "boss") { toast("🏪 商家后台即将开放，敬请期待"); return; }
+    toast(area ? `📍 正在显示「${area}」附近的工作` : "📍 正在显示你附近的工作");
+    document.getElementById("nearby").scrollIntoView({ behavior: "smooth" });
+  });
+
+  document.querySelectorAll(".yr").forEach(y => y.textContent = new Date().getFullYear());
+  render();
+</script>
+</body>
+</html>
