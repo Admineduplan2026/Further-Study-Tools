@@ -31,4 +31,8 @@ ctx.newsSendNow();
 assert.deepStrictEqual(mails.map(m=>m.to).sort(),['a@x.com','b@x.com']);assert.ok(mails.every(m=>m.subject==='Hello'&&/Edited body/.test(m.body)&&/#\/unsub\//.test(m.body)));
 r=ctx.accountNews_({token:'staff',op:'get'});assert.ok(r.job.done_at);assert.strictEqual(r.log[0].sent,2);
 assert.strictEqual(ctx.accountNews_({token:'staff',op:'draft'}).error,'no_changes','after sending, the same items are not news again');
+r=ctx.accountNews_({token:'staff',op:'draft',all:true});assert.ok(r.draft&&/APU讲座/.test(r.draft.body)&&r.draft.counts.ev===2,'all upcoming activities');
+ctx.accountNews_({token:'staff',op:'discard'});
+r=ctx.accountNews_({token:'staff',op:'blank'});assert.ok(r.draft&&r.draft.body==='');
+assert.strictEqual(ctx.accountNews_({token:'staff',op:'approve'}).job.done_at,'','a blank draft can be written, saved and approved');
 console.log('news tests passed');

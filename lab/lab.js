@@ -740,7 +740,9 @@ function newsBox(){var n=NEWS.d,dis=NEWS.busy?' disabled':'';
    '<div class="row"><button type="submit" class="btn ghost"'+dis+'>Save changes</button>'+
    '<button type="button" class="btn" data-news="approve"'+dis+(sending?' disabled':'')+'>Approve and send</button>'+
    '<button type="button" class="btn ghost" data-news="discard"'+dis+'>Do not send</button></div></form>'
-  :'<div class="row"><button type="button" class="btn" data-news="draft"'+dis+(sending?' disabled':'')+'>'+(NEWS.busy?'Writing…':'Write a draft now')+'</button></div><p class="hint">A draft is also made every Monday when something is new, and staff get an email.</p>';
+  :'<div class="row"><button type="button" class="btn" data-news="draft"'+dis+(sending?' disabled':'')+'>'+(NEWS.busy?'Writing…':'Write a draft now')+'</button>'+
+   '<button type="button" class="btn ghost" data-news="draft-all"'+dis+(sending?' disabled':'')+'>All upcoming activities</button>'+
+   '<button type="button" class="btn ghost" data-news="blank"'+dis+(sending?' disabled':'')+'>Write my own message</button></div><p class="hint">A draft is also made every Monday when something is new, and staff get an email.</p>';
  var log=(n.log||[]).length?'<details class="gdone"><summary><span>Sent before</span></summary><ul class="goals">'+n.log.map(function(x){return '<li class="goal isdone"><span class="gt" data-notr>'+esc(x.subject)+'</span><span class="gmeta"><span class="gdue" data-notr>'+esc(x.at)+'</span><span class="gpill ok"><b data-notr>'+x.sent+'</b> <span>sent</span></span></span></li>';}).join("")+'</ul></details>':'';
  return '<section class="sec"><div class="sh"><h2>Latest news email</h2></div>'+head+status+msg+form+log+'</section>';}
 document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&e.target.closest("[data-news]");if(!t)return;var op=t.getAttribute("data-news");
@@ -751,7 +753,7 @@ document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&
   post({action:"account_news",token:se.token,op:"save",subject:su?su.value:"",body:bo?bo.value:""}).then(function(r){NEWS.busy=false;if(r&&r.error){NEWS.err=r.error;render(true);return;}newsCall({op:"approve"});})
    .catch(function(){NEWS.busy=false;NEWS.err="server";render(true);});return;}
  if(op==="discard"&&!confirm("Drop this draft? Its changes will not be announced."))return;
- newsCall({op:op});});
+ newsCall(op==="draft-all"?{op:"draft",all:true}:{op:op});});
 document.addEventListener("submit",function(e){if(!e.target||e.target.id!=="news-form")return;e.preventDefault();
  newsCall({op:"save",subject:document.getElementById("news-subject").value,body:document.getElementById("news-body").value});});
 function loadStaff(){var se=ls("eduplan-session");

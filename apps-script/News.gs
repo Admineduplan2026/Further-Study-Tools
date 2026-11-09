@@ -6,7 +6,9 @@
  *
  * The website POSTs {"action":"account_news","token":<staff session>,"op":...} (Account.gs sends it here):
  *   op "get"      the current draft, how many people it would go to, the sending progress and the last sends
- *   op "draft"    makes a new draft from the changes since the last news (Claude, or a plain list without a key)
+ *   op "draft"    makes a new draft from the changes since the last news (Claude, or a plain list without a key);
+ *                 with "all": true it covers every upcoming activity, even ones announced before
+ *   op "blank"    an empty draft that staff write themselves
  *   op "save"     saves the staff member's edits {subject, body}
  *   op "approve"  sends the draft (in batches within the Gmail quota; the daily trigger carries on the next day)
  *   op "discard"  drops the draft; its changes count as announced, so the next draft starts after them
@@ -101,9 +103,11 @@ function newsWrite_(c) {
     body: ('你好！EDUPLAN 网站有以下更新：\nHi! Here is what is new on EDUPLAN:\n\n' + facts).slice(0, NEWS_MAX_BODY) };
 }
 
-/* A new draft from the changes now; {error: 'no_changes'} when nothing is new. */
-function newsDraft_(by) {
-  var now = newsNow_(), c = newsChanges_(now), n = newsCount_(c);
+/* A new draft from the changes now; {error: 'no_changes'} when nothing is new. allEvents: every upcoming activity. */
+function newsDraft_(by, allEvents) {
+  var now = newsNow_(), c = newsChanges_(now);
+  if (allEvents) c.ev = now.items.ev.map(function (x) { return x.t; });
+  var n = newsCount_(c);
   if (!n) return { error: 'no_changes' };
   var w = newsWrite_(c);
   var draft = { subject: w.subject, body: w.body, ai: w.ai, counts: { ev: c.ev.length, inst: c.inst.length, prog: c.prog.length, sch: c.sch.length },
@@ -138,8 +142,12 @@ function accountNews_(body) {
     var job = newsGet_('NEWS_JOB');
     if (op === 'draft') {
       if (job && !job.done_at) return { error: 'sending' };
-      var r = newsDraft_(who.email);
+      var r = newsDraft_(who.email, body.all === true);
       if (r.error) return r;
+    } else if (op === 'blank') {
+      if (job && !job.done_at) return { error: 'sending' };
+      newsSet_('NEWS_DRAFT', { subject: 'EDUPLAN 最新消息 · News from EDUPLAN', body: '', ai: true, counts: null, seen: newsNow_().seen,
+        made_at: newsStamp_(), made_by: who.email });
     } else if (op === 'save') {
       var d = newsGet_('NEWS_DRAFT');
       if (!d) return { error: 'not_found' };
