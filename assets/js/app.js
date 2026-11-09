@@ -2045,11 +2045,23 @@ function applyApi(d){
 
 /* A snapshot of the sheet data embedded in the page (used by the Claude artifact, which cannot call the API). */
 if(window.EDUPLAN_SHEET_DATA)applyApi(window.EDUPLAN_SHEET_DATA);
+/* Fast start: the school data from the last visit (kept in this browser up to 14 days) is shown at once, and the
+   Apps Script, which can take a few seconds, is asked in the background; the page redraws only if the data changed.
+   One request serves the whole page: lab/lab.js uses window.EDUPLAN_API (cached copy and the same request). */
+var API_CACHE="eduplan-api-cache",apiCache=null;
+if(window.EDUPLAN_API_URL&&window.fetch&&!window.EDUPLAN_SHEET_DATA){
+ try{var ct=localStorage.getItem(API_CACHE);if(ct){var co=JSON.parse(ct);if(co&&co.d&&Date.now()-co.at<14*864e5)apiCache={text:JSON.stringify(co.d),d:co.d};}}catch(e){apiCache=null;}
+ if(apiCache&&applyApi(apiCache.d))API_DONE=true;
+}
 render(false);
 pfStart();
 if(window.EDUPLAN_API_URL&&window.fetch){
- fetch(window.EDUPLAN_API_URL).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
-  .then(function(d){API_DONE=true;if(applyApi(d))render(true);else render(true);})
+ window.EDUPLAN_API={cached:apiCache&&apiCache.d,promise:fetch(window.EDUPLAN_API_URL).then(function(r){if(!r.ok)throw new Error(r.status);return r.text();})
+  .then(function(t){var d=JSON.parse(t),same=!!(apiCache&&apiCache.text===JSON.stringify(d));
+   if(!same&&d&&d.version===1){try{localStorage.setItem(API_CACHE,JSON.stringify({at:Date.now(),d:d}));}catch(e){try{localStorage.removeItem(API_CACHE);}catch(e2){}}}
+   else if(same){try{localStorage.setItem(API_CACHE,JSON.stringify({at:Date.now(),d:d}));}catch(e){}}
+   return {d:d,same:same};})};
+ window.EDUPLAN_API.promise.then(function(x){var was=API_DONE;API_DONE=true;if(x.same&&was)return;applyApi(x.d);render(true);})
   .catch(function(){API_DONE=true;render(true);/* keep the local data */});
 }
 })();

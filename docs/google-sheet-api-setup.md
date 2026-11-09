@@ -150,3 +150,13 @@ node tools/sync-artifact.js <sheet-values.json> <artifact.html> <out.html>
 `sheet-values.json` 是各分页从第 1 行开始的资料：Master 的 `foundation`、`lists`，以及
 `schools`（文件夹里每份学校 Sheet 的 `institutions`、`programmes`、`campus`）。
 每天早上 5:47（马来西亚时间）由 Claude 自动读取文件夹里所有学校 Sheet、执行并重新发布 artifact。
+
+
+## Speed
+
+- **Background refresh**: run **apiWarmSetup** once in the Apps Script editor. Every 10 minutes it checks the school
+  sheets and rebuilds the cached data only when something changed, so visitors get the ready copy (a full rebuild reads
+  every school sheet and can take many seconds). Sheet edits show on the website within about 10 minutes.
+- **In the browser**: the website keeps the last school data for up to 14 days and shows it at once on the next visit,
+  while one request fetches the latest in the background; the page redraws only if the data changed.
+- **中文 course details** (assets/js/content-zh.js, the largest file) load only for visitors who use 中文.

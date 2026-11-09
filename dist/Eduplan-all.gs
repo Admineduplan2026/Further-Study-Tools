@@ -26,8 +26,9 @@
  * POST <url> {"action":"account_...",...} -> student sign-in and portfolio autosave (Account.gs, docs/student-portfolio-setup.md)
  * POST <url> {"action":"expo_...",...}    -> Eduplan Exhibition: organisers, schools and booths (Exhibition.gs, docs/exhibition-setup.md)
  * Menu Eduplan > Check school documents with AI -> compares each school sheet with its "documents" folder (Verify.gs, docs/document-check.md)
- * Edits show up within about a minute: each request compares the folder's last-edit times
- * (checked at most every FRESH_SECONDS) with the cached copy.
+ * Edits show up within about 10 minutes: the folder's last-edit times are compared with the cached copy at most every
+ * FRESH_SECONDS, and the apiWarm trigger (run apiWarmSetup once) does that check and any rebuild in the background
+ * every 10 minutes, so visitors get the ready copy instead of waiting for the sheets to be read.
  *
  * Only the public columns listed in FIELDS are returned. Internal columns
  * (contact_person, contact_email) are never sent to the website.
@@ -54,7 +55,7 @@ var KEY_ROW = 2;      // row holding the API keys
 var FIRST_ROW = 4;    // first data row
 var CACHE_KEY = 'eduplan-api-v2';
 var FINANCE_RE = /financ|banking|investment|fintech|actuarial/i;   // programme names listed under the Finance course too
-var FRESH_SECONDS = 30;       // how often the folder's last-edit times are re-checked
+var FRESH_SECONDS = 900;      // how often a request re-checks the folder's last-edit times (apiWarm checks every 10 minutes)
 var CACHE_SECONDS = 21600;    // cached JSON is kept up to 6 hours, but replaced as soon as a sheet changes
 
 // Public fields per sheet. Fields ending in * are required.
@@ -115,6 +116,22 @@ function apiJson_(noCache) {
     cachePut_(cache, key, json);
   }
   return json;
+}
+
+/* Background refresh (time trigger every 10 minutes): checks the sheets' last-edit times and rebuilds the cached JSON
+   only when something changed, so a visitor never waits for the sheets to be read. */
+function apiWarm() {
+  var cache = CacheService.getScriptCache(), stamp = editStamp_();
+  cache.put(CACHE_KEY + ':stamp', stamp, FRESH_SECONDS);
+  var key = CACHE_KEY + ':' + stamp;
+  if (!cacheGet_(cache, key)) cachePut_(cache, key, JSON.stringify(buildFromSheets_()));
+}
+/* Run once from the editor (select apiWarmSetup, Run): turns on the 10-minute background refresh. */
+function apiWarmSetup() {
+  ScriptApp.getProjectTriggers().forEach(function (t) { if (t.getHandlerFunction() === 'apiWarm') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('apiWarm').timeBased().everyMinutes(10).create();
+  apiWarm();
+  console.log('Background refresh on: the school data is rebuilt within 10 minutes of a change.');
 }
 
 /* CacheService keeps at most 100 KB per value, so the JSON is stored in numbered pieces. */

@@ -372,7 +372,11 @@ function subjZh(s){return s.split(/(, | and | or )/).map(function(x){return x===
 /* Other pages (lab/lab-zh.js) add their own text: window.EDUPLAN_ZH_EXTRA={text:{...},patterns:[[regex,replacement],...]}. */
 (function(x){if(!x)return;Object.keys(x.text||{}).forEach(function(k){ZH[k]=x.text[k];});(x.patterns||[]).forEach(function(p){ZH_PATTERNS.unshift(p);});})(window.EDUPLAN_ZH_EXTRA);
 /* Course details from the school sheets (names, structures, entry rules, notes): Chinese kept in assets/js/content-zh.js, made by tools/content-zh.md. */
-if(window.EDUPLAN_CONTENT_ZH)Object.keys(window.EDUPLAN_CONTENT_ZH).forEach(function(k){if(!Object.prototype.hasOwnProperty.call(ZH,k))ZH[k]=window.EDUPLAN_CONTENT_ZH[k];});
+function addContent(){if(window.EDUPLAN_CONTENT_ZH)Object.keys(window.EDUPLAN_CONTENT_ZH).forEach(function(k){if(!Object.prototype.hasOwnProperty.call(ZH,k))ZH[k]=window.EDUPLAN_CONTENT_ZH[k];});}
+addContent();
+/* The course-detail Chinese (content-zh.js) is loaded only for 中文: on switching, fetch it, then translate again. */
+function needContent(then){if(window.EDUPLAN_CONTENT_ZH||!window.EDUPLAN_CONTENT_ZH_SRC){then();return;}
+ var sc=document.createElement("script");sc.src=window.EDUPLAN_CONTENT_ZH_SRC;sc.onload=function(){addContent();then();};sc.onerror=then;document.head.appendChild(sc);}
 /* Quiz questions and options carry their own Chinese in quiz-data.js. */
 if(window.EDUPLAN_QUIZ)(window.EDUPLAN_QUIZ.questions||[]).forEach(function(q){ZH[q.q]=q.zh;q.a.forEach(function(a){ZH[a[0]]=a[1];});});
 if(window.EDUPLAN_FIT){var FQ=window.EDUPLAN_FIT;(FQ.bands||[]).forEach(function(b){ZH[b[1]]=b[2];});(FQ.common||[]).concat.apply(FQ.common||[],Object.keys(FQ.fields||{}).map(function(c){return FQ.fields[c].questions;})).forEach(function(q){ZH[q.q]=q.zh;q.a.forEach(function(a){ZH[a[0]]=a[1];});});}
@@ -428,6 +432,6 @@ if(nav){
 /* Any EN / 中文 switch on the page (the header, and the opening screens in lab/lab.js). */
 document.addEventListener("click",function(ev){var b=ev.target.closest&&ev.target.closest(".lang button[data-lang]");if(!b||b.getAttribute("data-lang")===lang)return;
  lang=b.getAttribute("data-lang");try{localStorage.setItem("eduplan-lang",lang);}catch(e){}
- apply();});
+ apply();if(lang==="zh")needContent(apply);});
 apply();
 })();

@@ -328,6 +328,11 @@ var LIVE=API&&window.fetch&&!PREVIEW?"loading":"done";
 function loadLive(){if(LIVE==="done")return;LIVE="loading";
  fetch(API).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
   .then(function(d){LIVE=useData(d)?"done":"failed";render(true);}).catch(function(){LIVE="failed";render(true);});}
+/* First load: app.js already has the school data from the last visit (shown at once) and the one live request. */
+function startLive(){var A=window.EDUPLAN_API;if(!A||LIVE==="done")return loadLive();
+ if(A.cached&&useData(A.cached)){LIVE="done";render(true);}
+ A.promise.then(function(x){if(x.same&&LIVE==="done")return;LIVE=useData(x.d)?"done":(LIVE==="done"?"done":"failed");render(true);})
+  .catch(function(){if(LIVE!=="done")LIVE="failed";render(true);});}
 function popular(){
  if(!D.inst.length&&LIVE!=="done")return '<section class="sec"><div class="lnote" role="status">'+(LIVE==="loading"?'Loading universities and programmes…':
   'The latest universities and programmes could not be loaded. <button type="button" class="linkbtn" data-act="reload-data">Try again</button>')+'</div></section>';
@@ -1091,5 +1096,5 @@ syncLoad();
    route. No cookie, no identifier; the preview does not count. */
 try{if(API&&window.fetch&&!PREVIEW&&!sessionStorage.getItem("eduplan-visit")){sessionStorage.setItem("eduplan-visit","1");post({action:"visit",member:!!S.session,mode:L.mode}).catch(function(){});}}catch(e){}
 intro();
-loadLive();
+startLive();
 })();
