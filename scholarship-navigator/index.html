@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Scholarship Navigator</title>
+<meta name="description" content="Find campus scholarships for post-SPM students in Malaysia.">
+<style>
+/* ===== Theme: change the colours here ===== */
+:root{
+  --brand:#0a6ea8;        /* main colour: buttons, links, highlights */
+  --brand-dark:#085a8a;   /* button hover */
+  --brand-soft:#e4f2fa;   /* light tint behind selected / info boxes */
+  --ink:#14181d;          /* main text */
+  --muted:#56606b;        /* secondary text */
+  --line:#dfe4e9;         /* borders */
+  --bg:#ffffff;           /* page background */
+  --surface:#f4f7f9;      /* panels */
+  --warn-bg:#fdf3d8; --warn-ink:#7a5000;
+  --radius:16px;
+  --font:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans","Noto Sans SC","PingFang SC","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:17px;line-height:1.6}
+a{color:var(--brand)}
+button,a{font:inherit}
+:focus-visible{outline:3px solid var(--brand);outline-offset:3px}
+.wrap{max-width:960px;margin:0 auto;padding:16px 16px 48px}
+.zh{display:block;font-size:.85em;color:var(--muted);font-weight:400}
+
+/* Top bar: Back + breadcrumb */
+.topbar{display:flex;flex-direction:column;gap:10px;padding-bottom:16px;border-bottom:1px solid var(--line);margin-bottom:24px}
+.back{align-self:flex-start;display:inline-flex;align-items:center;gap:8px;min-height:48px;padding:0 18px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer}
+.back:hover:not([disabled]){border-color:var(--ink)}
+.back[disabled]{opacity:.4;cursor:default}
+.crumbs ol{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;align-items:center;gap:4px;font-size:15px}
+.crumbs li{display:flex;align-items:center;gap:4px}
+.crumbs li+li::before{content:"›";color:var(--muted);padding:0 4px}
+.crumbs a{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;text-decoration:none}
+.crumbs a:hover{text-decoration:underline}
+.crumbs [aria-current]{color:var(--ink);font-weight:600;padding:0 4px}
+
+/* Pages and transitions */
+.page{animation:enter .28s ease both}
+@keyframes enter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.page{animation:none}}
+h1{font-size:clamp(26px,6vw,38px);line-height:1.2;margin:0 0 8px;font-weight:700}
+h1:focus{outline:none}
+h2{font-size:21px;margin:0 0 12px}
+.lead{color:var(--muted);margin:0 0 24px;max-width:60ch}
+.step{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--brand);margin:0 0 6px}
+
+/* Page 1 */
+.hero{text-align:center;padding:24px 0}
+.hero .lead{margin-left:auto;margin-right:auto}
+.big-btn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;min-height:72px;min-width:min(100%,320px);padding:14px 32px;border:0;border-radius:var(--radius);background:var(--brand);color:#fff;font-size:22px;font-weight:700;cursor:pointer;box-shadow:0 6px 18px rgba(10,110,168,.25);transition:transform .15s ease,background .15s ease}
+.big-btn .zh{color:rgba(255,255,255,.85)}
+.big-btn:hover{background:var(--brand-dark);transform:translateY(-2px)}
+
+/* Choice cards (Page 2) and university cards (Page 3) */
+.cards{display:grid;grid-template-columns:1fr;gap:14px}
+@media (min-width:640px){.cards{grid-template-columns:1fr 1fr}}
+.card{display:flex;flex-direction:column;gap:8px;width:100%;text-align:left;padding:20px;border:1px solid var(--line);border-radius:var(--radius);background:var(--bg);color:var(--ink);cursor:pointer;transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}
+.card:hover:not([disabled]){border-color:var(--brand);box-shadow:0 6px 18px rgba(20,24,29,.08);transform:translateY(-2px)}
+.card[disabled]{cursor:default;background:var(--surface);color:var(--muted)}
+.card .title{font-size:20px;font-weight:700;line-height:1.3}
+.card .desc{color:var(--muted);font-size:16px}
+.card .go{margin-top:auto;padding-top:6px;color:var(--brand);font-weight:600}
+.badge{align-self:flex-start;font-size:13px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--line);color:var(--muted)}
+.uni-head{display:flex;align-items:center;gap:14px}
+.logo{flex:none;width:56px;height:56px;border-radius:12px;display:grid;place-items:center;background:var(--brand-soft);color:var(--brand);font-weight:700;font-size:16px;border:1px dashed var(--brand)}
+.logo img{width:100%;height:100%;object-fit:contain;border-radius:12px}
+
+/* Page 4 */
+.panel{background:var(--surface);border-radius:var(--radius);padding:20px;margin-bottom:16px}
+table.tiers{width:100%;border-collapse:collapse;background:var(--bg);border-radius:12px;overflow:hidden;font-variant-numeric:tabular-nums}
+.tiers th,.tiers td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--line)}
+.tiers th{font-size:14px;color:var(--muted);font-weight:600;background:var(--brand-soft)}
+.tiers td.pct{font-size:24px;font-weight:700;color:var(--brand);text-align:right}
+.tiers th:last-child{text-align:right}
+.tiers tr:last-child td{border-bottom:0}
+dl.info{margin:0;display:grid;grid-template-columns:1fr;gap:0}
+dl.info dt{font-weight:700;padding-top:14px}
+dl.info dt:first-child{padding-top:0}
+dl.info dd{margin:4px 0 0;padding-bottom:14px;border-bottom:1px solid var(--line)}
+dl.info dd:last-child{border-bottom:0;padding-bottom:0}
+@media (min-width:640px){dl.info{grid-template-columns:260px 1fr}dl.info dt,dl.info dd{padding:14px 0;margin:0;border-bottom:1px solid var(--line)}dl.info dt:first-child,dl.info dt:first-child+dd{padding-top:0}dl.info dt:last-of-type,dl.info dd:last-child{border-bottom:0;padding-bottom:0}}
+.todo{color:var(--warn-ink);background:var(--warn-bg);padding:1px 6px;border-radius:6px;font-style:italic}
+.actions{display:flex;flex-wrap:wrap;gap:12px;margin:20px 0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 24px;border-radius:999px;background:var(--brand);color:#fff;text-decoration:none;font-weight:600;border:0}
+.btn:hover{background:var(--brand-dark)}
+.btn[aria-disabled="true"]{background:var(--line);color:var(--muted);pointer-events:none}
+.note{background:var(--warn-bg);color:var(--warn-ink);border-radius:12px;padding:14px 16px;font-size:15px}
+.updated{color:var(--muted);font-size:14px;margin:0 0 20px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <button type="button" class="back" id="back">← Back <span aria-hidden="true">返回</span></button>
+    <nav class="crumbs" aria-label="Breadcrumb"><ol id="crumbs"></ol></nav>
+  </div>
+  <main id="app"></main>
+</div>
+
+<script>
+/* =====================================================================
+   DATA: edit only this part to add or change scholarship types,
+   universities and tiers. Pages 2, 3 and 4 are built from it.
+   - Text in square brackets, e.g. "[to be filled]", is shown highlighted
+     as missing information.
+   - logo: an image URL, or null for an initials placeholder.
+   - officialUrl: full https:// link; anything else shows a disabled button.
+   ===================================================================== */
+const scholarshipTypes = [
+  { id: "campus", name: "Campus Scholarship", zh: "校内奖学金",
+    description: "Scholarships and tuition waivers offered by universities and colleges, usually based on SPM results.",
+    available: true },
+  { id: "government", name: "Government Scholarship", zh: "政府奖学金",
+    description: "[to be filled]", available: false },
+  { id: "external", name: "External / Foundation Scholarship", zh: "外部及基金会奖学金",
+    description: "[to be filled]", available: false }
+];
+
+const universities = [
+  {
+    id: "utar",
+    type: "campus",
+    name: "UTAR",
+    fullName: "Universiti Tunku Abdul Rahman",
+    logo: null,
+    description: "Private university offering SPM-based entry scholarships.",
+    lastUpdated: "[to be filled]",
+    tiers: [                                   /* sample data provided by Eduplan */
+      { result: "SPM 7A",  waiver: "25%" },
+      { result: "SPM 8A",  waiver: "50%" },
+      { result: "SPM 8A+", waiver: "100%" }
+    ],
+    eligibility: "[to be filled]",
+    programmes: "[to be filled]",
+    howToApply: "[to be filled]",
+    deadline: "[to be filled]",
+    officialUrl: "[to be filled]"
+  },
+  {
+    id: "university-2",
+    type: "campus",
+    name: "[University name to be filled]",
+    fullName: "[to be filled]",
+    logo: null,
+    description: "[to be filled]",
+    lastUpdated: "[to be filled]",
+    tiers: [
+      { result: "[to be filled]", waiver: "[to be filled]" }
+    ],
+    eligibility: "[to be filled]",
+    programmes: "[to be filled]",
+    howToApply: "[to be filled]",
+    deadline: "[to be filled]",
+    officialUrl: "[to be filled]"
+  }
+];
+
+/* ===================== Page logic (no need to edit) ===================== */
+(function () {
+  "use strict";
+  const app = document.getElementById("app");
+  const crumbsEl = document.getElementById("crumbs");
+  const backBtn = document.getElementById("back");
+
+  /* Small DOM helper: h("div", {class: "x"}, child, "text", ...) */
+  function h(tag, attrs) {
+    const el = document.createElement(tag);
+    for (const k in attrs || {}) {
+      if (attrs[k] === null || attrs[k] === undefined || attrs[k] === false) continue;
+      if (k === "class") el.className = attrs[k];
+      else if (k === "onclick") el.addEventListener("click", attrs[k]);
+      else el.setAttribute(k, attrs[k] === true ? "" : attrs[k]);
+    }
+    for (let i = 2; i < arguments.length; i++) {
+      const c = arguments[i];
+      if (c === null || c === undefined || c === false) continue;
+      el.append(c instanceof Node ? c : document.createTextNode(String(c)));
+    }
+    return el;
+  }
+  const isTodo = v => typeof v === "string" && /^\s*\[.*\]\s*$/.test(v);
+  /* Text that may be a placeholder: placeholders get a visible highlight */
+  const val = v => (v === undefined || v === null || v === "" || isTodo(v))
+    ? h("span", { class: "todo" }, isTodo(v) ? v : "[to be filled]")
+    : document.createTextNode(String(v));
+  const bi = (en, zh) => [en, zh ? h("span", { class: "zh", lang: "zh" }, zh) : null];
+  const typeById = id => scholarshipTypes.find(t => t.id === id);
+  const uniById = id => universities.find(u => u.id === id);
+  function initials(u) {
+    if (isTodo(u.name)) return "?";
+    return u.name.replace(/[^A-Za-z0-9 ]/g, "").split(/\s+/).filter(Boolean)
+      .map(w => w[0]).join("").slice(0, 4).toUpperCase() || "?";
+  }
+
+  /* Routes: #/  ->  #/types  ->  #/types/<type>  ->  #/types/<type>/<university> */
+  function parse() {
+    const parts = location.hash.replace(/^#\/?/, "").split("/").filter(Boolean);
+    if (parts[0] !== "types") return { page: 1 };
+    const type = parts[1] && typeById(parts[1]);
+    if (!type || !type.available) return parts[1] ? { redirect: "#/types" } : { page: 2 };
+    if (!parts[2]) return { page: 3, type };
+    const uni = uniById(parts[2]);
+    if (!uni || uni.type !== type.id) return { redirect: "#/types/" + type.id };
+    return { page: 4, type, uni };
+  }
+  const go = hash => { location.hash = hash; };
+
+  function crumbs(r) {
+    const items = [{ label: "Scholarship", href: "#/" }];
+    if (r.page >= 2) items.push({ label: r.page === 2 ? "Scholarship type" : r.type.name, href: r.type ? "#/types/" + r.type.id : "#/types" });
+    if (r.page === 4) items.push({ label: isTodo(r.uni.name) ? "University" : r.uni.name, href: null });
+    crumbsEl.replaceChildren(...items.map((it, i) => {
+      const last = i === items.length - 1;
+      return h("li", null, last ? h("span", { "aria-current": "page" }, it.label) : h("a", { href: it.href }, it.label));
+    }));
+  }
+
+  /* ---- Page 1: entry ---- */
+  function page1() {
+    return h("section", { class: "page hero" },
+      h("p", { class: "step" }, "Step 1 of 4"),
+      h("h1", { tabindex: "-1" }, "Find a scholarship", h("span", { class: "zh", lang: "zh" }, "寻找奖学金")),
+      h("p", { class: "lead" }, "See which universities offer scholarships for SPM leavers, and what results you need."),
+      h("button", { type: "button", class: "big-btn", onclick: () => go("#/types") }, ...bi("Scholarship", "奖学金")));
+  }
+
+  /* ---- Page 2: scholarship type ---- */
+  function page2() {
+    return h("section", { class: "page" },
+      h("p", { class: "step" }, "Step 2 of 4"),
+      h("h1", { tabindex: "-1" }, "Choose a scholarship type", h("span", { class: "zh", lang: "zh" }, "选择奖学金类别")),
+      h("p", { class: "lead" }, "Pick the kind of scholarship you want to explore."),
+      h("div", { class: "cards" }, ...scholarshipTypes.map(t => {
+        const n = universities.filter(u => u.type === t.id).length;
+        return h("button", { type: "button", class: "card", disabled: !t.available,
+            onclick: t.available ? () => go("#/types/" + t.id) : null },
+          t.available ? null : h("span", { class: "badge" }, "Coming soon · 即将推出"),
+          h("span", { class: "title" }, ...bi(t.name, t.zh)),
+          h("span", { class: "desc" }, val(t.description)),
+          t.available ? h("span", { class: "go" }, n + (n === 1 ? " university" : " universities") + " →") : null);
+      })));
+  }
+
+  /* ---- Page 3: universities of a type ---- */
+  function logo(u) {
+    return h("span", { class: "logo", "aria-hidden": "true" },
+      u.logo ? h("img", { src: u.logo, alt: "" }) : initials(u));
+  }
+  function page3(type) {
+    const list = universities.filter(u => u.type === type.id);
+    return h("section", { class: "page" },
+      h("p", { class: "step" }, "Step 3 of 4"),
+      h("h1", { tabindex: "-1" }, type.name, h("span", { class: "zh", lang: "zh" }, type.zh)),
+      h("p", { class: "lead" }, "Choose a university to see its scholarship tiers and how to apply."),
+      list.length ? h("div", { class: "cards" }, ...list.map(u =>
+        h("button", { type: "button", class: "card", onclick: () => go("#/types/" + type.id + "/" + u.id) },
+          h("span", { class: "uni-head" }, logo(u),
+            h("span", null, h("span", { class: "title" }, val(u.name)),
+              u.fullName && !isTodo(u.fullName) ? h("span", { class: "desc", style: "display:block" }, u.fullName) : null)),
+          h("span", { class: "desc" }, val(u.description)),
+          h("span", { class: "go" }, "View scholarships →"))))
+        : h("p", { class: "note" }, "No universities listed yet."));
+  }
+
+  /* ---- Page 4: scholarship details ---- */
+  function page4(type, u) {
+    const official = typeof u.officialUrl === "string" && /^https?:\/\//.test(u.officialUrl);
+    const rows = [
+      ["Eligibility notes", "资格说明", u.eligibility],
+      ["Programmes covered", "适用课程", u.programmes],
+      ["How to apply", "申请方式", u.howToApply],
+      ["Deadline", "截止日期", u.deadline]
+    ];
+    return h("section", { class: "page" },
+      h("p", { class: "step" }, "Step 4 of 4"),
+      h("div", { class: "uni-head", style: "margin-bottom:12px" }, logo(u),
+        h("h1", { tabindex: "-1", style: "margin:0" }, val(u.name),
+          u.fullName && !isTodo(u.fullName) ? h("span", { class: "zh" }, u.fullName) : null)),
+      h("p", { class: "updated" }, "Last updated 最后更新: ", val(u.lastUpdated)),
+      h("div", { class: "panel" },
+        h("h2", null, "Scholarship tiers ", h("span", { lang: "zh", style: "color:var(--muted);font-weight:400" }, "奖学金等级")),
+        h("table", { class: "tiers" },
+          h("thead", null, h("tr", null, h("th", { scope: "col" }, "Result 成绩"), h("th", { scope: "col" }, "Tuition waiver 学费减免"))),
+          h("tbody", null, ...u.tiers.map(t => h("tr", null, h("td", null, val(t.result)), h("td", { class: "pct" }, val(t.waiver))))))),
+      h("div", { class: "panel" }, h("dl", { class: "info" }, ...rows.flatMap(([en, zh, v]) => [
+        h("dt", null, en, " ", h("span", { lang: "zh", style: "color:var(--muted);font-weight:400" }, zh)),
+        h("dd", null, val(v))]))),
+      h("div", { class: "actions" },
+        official
+          ? h("a", { class: "btn", href: u.officialUrl, target: "_blank", rel: "noopener" }, "Official website 官方网站 ↗")
+          : h("a", { class: "btn", "aria-disabled": "true", role: "link" }, "Official website (link to be added)")),
+      h("p", { class: "note", role: "note" },
+        "Information is for reference only. Please confirm with the university’s official website.",
+        h("span", { class: "zh", lang: "zh", style: "color:inherit" }, "资料仅供参考，请以大学官方网站公布为准。")));
+  }
+
+  /* ---- Render ---- */
+  let current = null;
+  function render() {
+    const r = parse();
+    if (r.redirect) { history.replaceState(null, "", r.redirect); return render(); }
+    current = r;
+    const view = r.page === 1 ? page1() : r.page === 2 ? page2() : r.page === 3 ? page3(r.type) : page4(r.type, r.uni);
+    app.replaceChildren(view);
+    crumbs(r);
+    backBtn.disabled = r.page === 1;
+    document.title = r.page === 4 ? (isTodo(r.uni.name) ? "University" : r.uni.name) + " scholarships"
+      : r.page === 3 ? r.type.name : "Scholarship Navigator";
+    window.scrollTo(0, 0);
+    const heading = app.querySelector("h1");
+    if (heading && render.ready) heading.focus({ preventScroll: true });
+    render.ready = true;
+  }
+  backBtn.addEventListener("click", () => {
+    const r = current || parse();
+    if (r.page === 4) go("#/types/" + r.type.id);
+    else if (r.page === 3) go("#/types");
+    else if (r.page === 2) go("#/");
+  });
+  window.addEventListener("hashchange", render);
+  render();
+})();
+</script>
+</body>
+</html>
