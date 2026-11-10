@@ -52,14 +52,27 @@ payment confirmation then calls `payMarkPaid_` (Payments.gs), which marks the ro
 
 ## Registration fee through Billplz (built)
 
-The website's **Pay registration fee** page (`#fee`, also in the menu) takes the EDUPLAN registration fee online
-through Billplz. Tuition payments stay requests that a counsellor confirms.
+Each university has its own registration (application) fee, and the student pays the fee of the programme they apply
+for. The website's **Pay registration fee** page (`#fee/<programme id>`; also in the menu and on the "Application sent"
+page) takes it online through Billplz. Tuition payments stay requests that a counsellor confirms.
 
-How it works:
+### Where the fees are kept
 
-1. A signed-in student opens `#fee` and presses **Pay**. `pay_create` (plan `registration`) makes a Billplz bill for
-   the amount in Script Property `PAY_REG_FEE` (never the browser's amount), records a row in the Payments tab
-   (status *Sent to payment page*, the Billplz bill id in *Transaction ID*) and sends the student to Billplz.
+Column `registration_fee_rm` in each school sheet:
+
+- **Institutions tab**: the university's registration fee in RM (number only, e.g. `200`).
+- **Programmes tab** (optional): a programme whose fee is different from the university's (e.g. `500` for Medicine).
+  Leave it empty to use the university's fee.
+
+Run `regFeeColumnSetup` once in the Apps Script editor to add the column to every school sheet (safe to run again).
+A university with no fee listed cannot be paid online: the page says a counsellor will send the details.
+
+### How a payment works
+
+1. A signed-in student opens `#fee/<programme>` and presses **Pay**. `pay_create` (plan `registration`, `prog`) reads
+   the fee for that programme from the published sheet data on the server (never the browser's amount), records a row
+   in the Payments tab (status *Sent to payment page*, programme id, Billplz bill id in *Transaction ID*) and sends the
+   student to Billplz.
 2. The student pays by FPX on Billplz's page.
 3. Billplz calls the Apps Script web app (callback) and sends the student back to the website. Both only ask
    Billplz again for the bill (`GET /api/v3/bills/<id>`); the row becomes *Paid* only when Billplz says the bill is paid
@@ -67,16 +80,16 @@ How it works:
 4. Once paid: the PDF receipt is saved in `Receipts/<yyyy-MM>/<ref>/` (link in the *Receipt* column) and emailed to
    the student. The website shows "Payment received" with the reference.
 
-Script Properties (Apps Script > Project Settings > Script Properties):
+### Script Properties (Apps Script > Project Settings > Script Properties)
 
 | Property | Value |
 |---|---|
 | `PAY_GATEWAY` | `billplz` |
 | `BILLPLZ_API_KEY` | Billplz > Settings > Keys & Integration > API Secret Key |
-| `BILLPLZ_COLLECTION_ID` | Billplz > Billing > the collection's ID (e.g. `abcd1234`) |
-| `BILLPLZ_SANDBOX` | `yes` while testing with a billplz-sandbox.com account; delete it for real payments |
-| `PAY_REG_FEE` | the fee in RM, e.g. `50` |
+| `BILLPLZ_COLLECTION_ID` | Billplz > Collection > the collection's ID |
+| `BILLPLZ_SANDBOX` | `yes` only with a billplz-sandbox.com account; not set for real payments |
 | `PAY_RETURN_URL` | optional: where Billplz sends the student back (default: the website's home page) |
 
-After setting them, deploy a new version of the web app (Deploy > Manage deployments > Edit > New version).
+Run `payCheckSetup` in the editor to check the settings and see which universities have a fee. After changing the
+script, deploy a new version of the web app (Deploy > Manage deployments > Edit > New version).
 Tests: `node tools/test-billplz.js`.

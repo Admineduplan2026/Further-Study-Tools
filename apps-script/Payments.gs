@@ -21,12 +21,14 @@
  * is paid for the right amount, so a faked callback or link cannot mark anything paid. The student is emailed the PDF
  * receipt; the same PDF is kept in Receipts/. Without a gateway the reply is {ok, ref, pending:true} as before.
  *
- * Registration fee (plan "registration"): a fixed amount set by EDUPLAN in Script Property PAY_REG_FEE (e.g. 50), paid
- * on the website's #fee page. The amount always comes from the server, never from the browser.
+ * Registration fee (plan "registration"): each university's own application fee, paid on the website's #fee/<programme>
+ * page. The amount comes from the school sheets (column registration_fee_rm: on the Institutions tab for the whole
+ * university, or on a Programmes row when that programme's fee is different), read on the server from the same data
+ * the website uses, never from the browser. A programme whose university has no fee listed cannot be paid online.
  *
  * Script Properties for Billplz: PAY_GATEWAY = billplz; BILLPLZ_API_KEY (API Secret Key, Billplz > Settings > Keys &
  * Integration); BILLPLZ_COLLECTION_ID (Billing > the collection's ID); BILLPLZ_SANDBOX = yes while testing with a
- * billplz-sandbox.com account (delete it for real payments); PAY_REG_FEE; optional PAY_RETURN_URL (default: the website).
+ * billplz-sandbox.com account (delete it for real payments); optional PAY_RETURN_URL (default: the website).
  */
 
 var PAY_TAB = 'Payments';
@@ -37,17 +39,33 @@ var PAY_STATUS = ['Requested: online payment not open yet', 'Sent to payment pag
 var PAY_PLANS = { semester: 'Per semester (instalments)', full: 'Full payment', registration: 'Registration fee' };
 var PAY_METHODS = { fpx: 'FPX online banking', tng: "Touch 'n Go eWallet", paypal: 'PayPal', online: 'Online (Billplz)' };
 
-/* What the payment page needs to know: the registration fee and whether online payment is open. */
-function payInfo_() {
-  var p = PropertiesService.getScriptProperties(), fee = Number(p.getProperty('PAY_REG_FEE'));
-  return { reg_fee: fee > 0 ? Math.round(fee * 100) / 100 : 0, online: p.getProperty('PAY_GATEWAY') === 'billplz' && !!p.getProperty('BILLPLZ_API_KEY'),
+/* What the payment page needs to know: whether online payment is open, and (with prog) that programme's registration fee. */
+function payInfo_(prog) {
+  var p = PropertiesService.getScriptProperties(), out = { online: p.getProperty('PAY_GATEWAY') === 'billplz' && !!p.getProperty('BILLPLZ_API_KEY'),
     sandbox: /^y/i.test(p.getProperty('BILLPLZ_SANDBOX') || '') };
+  if (prog) { var r = payRegFee_(prog); out.reg_fee = r.fee; out.programme = r.programme; out.institution = r.institution; }
+  return out;
+}
+
+/* The registration fee of a programme from the published sheet data: the programme's own registration_fee_rm, else its
+   university's. {fee (0 when none), programme, institution}. */
+function payRegFee_(progId) {
+  var id = String(progId || ''), data;
+  if (!id) return { fee: 0 };
+  try { data = JSON.parse(apiJson_()); } catch (err) { console.error('payRegFee_: ' + err); return { fee: 0 }; }
+  var p = (data.programmes || []).filter(function (x) { return String(x.programme_id) === id; })[0];
+  if (!p) return { fee: 0 };
+  var i = (data.institutions || []).filter(function (x) { return x.institution_id === p.institution_id; })[0] || {};
+  var fee = Number(p.registration_fee_rm) > 0 ? Number(p.registration_fee_rm) : Number(i.registration_fee_rm) > 0 ? Number(i.registration_fee_rm) : 0;
+  return { fee: Math.round(fee * 100) / 100, programme: p.programme_name, institution: i.short_name || i.name || p.institution_id };
 }
 
 function payCreate_(body) {
   var plan = String(body.plan || ''), method = String(body.method || ''), amount = Number(body.amount), total = Number(body.total);
-  if (plan === 'registration') {   // the fee is set by EDUPLAN, not by the browser
-    amount = total = payInfo_().reg_fee;
+  var reg = null;
+  if (plan === 'registration') {   // the university's fee from the sheet data, not the browser's amount
+    reg = payRegFee_(body.prog);
+    amount = total = reg.fee;
     method = 'online';
     if (!amount) return { error: 'not_set' };
   }
@@ -60,9 +78,9 @@ function payCreate_(body) {
     var email = String(sh.getRange(s.row, ACCOUNT_COL.email).getValue());
     var ref = 'PAY-' + Utilities.formatDate(new Date(), 'Asia/Kuala_Lumpur', 'yyyyMMdd') + '-' + Utilities.getUuid().slice(0, 4).toUpperCase();
     var tab = payTab_();
-    var checkout = payCheckout_(ref, email, method, amount, PAY_PLANS[plan]);
+    var checkout = payCheckout_(ref, email, method, amount, PAY_PLANS[plan], reg && (reg.institution + ' ' + reg.programme));
     if (checkout.error) return checkout;
-    tab.appendRow([new Date(), ref, accountCell_(email, 120), accountCell_(plan === 'registration' ? '' : body.prog, 60), PAY_PLANS[plan], PAY_METHODS[method],
+    tab.appendRow([new Date(), ref, accountCell_(email, 120), accountCell_(body.prog, 60), PAY_PLANS[plan], PAY_METHODS[method],
       Math.round(amount * 100) / 100, Math.round(total * 100) / 100, checkout.url ? PAY_STATUS[1] : PAY_STATUS[0], '', checkout.id || '', '']);
     statsActive_(sh, s.row);
     return checkout.url ? { ok: true, ref: ref, url: checkout.url } : { ok: true, ref: ref, pending: true };
@@ -70,11 +88,11 @@ function payCreate_(body) {
 }
 
 /* The gateway's checkout page for this payment, or {} while no gateway is connected (Script Property PAY_GATEWAY). */
-function payCheckout_(ref, email, method, amount, what) {
+function payCheckout_(ref, email, method, amount, what, detail) {
   var gateway = PropertiesService.getScriptProperties().getProperty('PAY_GATEWAY');
   if (!gateway) return {};
   // Only the registration fee (amount set on the server) goes online for now; tuition stays a request that a counsellor confirms.
-  if (gateway === 'billplz') return what === PAY_PLANS.registration ? billplzCreate_(ref, email, amount, what) : {};
+  if (gateway === 'billplz') return what === PAY_PLANS.registration ? billplzCreate_(ref, email, amount, what + (detail ? ': ' + detail : '')) : {};
   console.error('PAY_GATEWAY "' + gateway + '" is set but no checkout is built for it yet.');
   return {};
 }
@@ -105,7 +123,7 @@ function billplzCreate_(ref, email, amount, what) {
   var site = p.getProperty('PAY_RETURN_URL') || expoSite_().replace(/exhibition\/?$/, '');
   var bill = billplzFetch_('bills', { method: 'post', payload: {
     collection_id: coll, email: email, name: email.split('@')[0].slice(0, 255), amount: String(Math.round(amount * 100)),
-    description: ('EDUPLAN ' + (what || 'payment') + ' ' + ref).slice(0, 200),
+    description: ('EDUPLAN ' + (what || 'payment') + ' (' + ref + ')').slice(0, 200),
     callback_url: ScriptApp.getService().getUrl(), redirect_url: site,
     reference_1_label: 'Reference', reference_1: ref
   } });
@@ -125,7 +143,7 @@ function payBillplzCheck_(billId) {
   if (!row) return { error: 'not_found' };
   var ref = String(v[PAY_COL.ref - 1]), want = Math.round(Number(v[6]) * 100);
   var paid = bill.paid === true && bill.state === 'paid' && Number(bill.paid_amount != null ? bill.paid_amount : bill.amount) >= want;
-  if (!paid) return { paid: false, ref: ref, amount: Number(v[6]) };
+  if (!paid) return { paid: false, ref: ref, amount: Number(v[6]), prog: String(v[3] || '') };
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(20000)) return { error: 'busy' };
   var already;
@@ -134,7 +152,7 @@ function payBillplzCheck_(billId) {
     if (!already) { tab.getRange(row, PAY_COL.status).setValue('Paid'); tab.getRange(row, PAY_COL.paidOn).setValue(new Date()); }
   } finally { lock.releaseLock(); }
   if (!already) { payReceipt_(tab, row); payReceiptEmail_(tab, row); }
-  return { paid: true, ref: ref, amount: Number(v[6]) };
+  return { paid: true, ref: ref, amount: Number(v[6]), prog: String(v[3] || '') };
 }
 /* Emails the student their PDF receipt (once, after the PDF is saved). */
 function payReceiptEmail_(tab, row) {
@@ -256,7 +274,10 @@ function payCheckSetup() {
   out.push('PAY_GATEWAY: ' + (p.getProperty('PAY_GATEWAY') === 'billplz' ? 'OK (billplz)' : 'WRONG: must be billplz, now "' + (p.getProperty('PAY_GATEWAY') || '') + '"'));
   out.push('BILLPLZ_API_KEY: ' + (p.getProperty('BILLPLZ_API_KEY') ? 'set' : 'MISSING'));
   out.push('BILLPLZ_COLLECTION_ID: ' + (p.getProperty('BILLPLZ_COLLECTION_ID') ? 'set' : 'MISSING'));
-  out.push('PAY_REG_FEE: ' + (info.reg_fee ? 'RM ' + info.reg_fee : 'MISSING or not a number, now "' + (p.getProperty('PAY_REG_FEE') || '') + '"'));
+  var data = {}; try { data = JSON.parse(apiJson_()); } catch (err) {}
+  var withFee = (data.institutions || []).filter(function (i) { return Number(i.registration_fee_rm) > 0; });
+  out.push('Universities with a registration fee (registration_fee_rm): ' + withFee.length + ' of ' + (data.institutions || []).length +
+    (withFee.length ? ' (' + withFee.map(function (i) { return (i.short_name || i.institution_id) + ' RM ' + i.registration_fee_rm; }).join(', ') + ')' : ''));
   out.push('Mode: ' + (info.sandbox ? 'SANDBOX (test, billplz-sandbox.com)' : 'PRODUCTION (real money, billplz.com)'));
   var linked = false;
   if (info.online && p.getProperty('BILLPLZ_COLLECTION_ID')) {
@@ -264,7 +285,41 @@ function payCheckSetup() {
     out.push('Billplz check: ' + (c.error ? 'FAILED (' + (c.status === 401 ? 'API key wrong, or sandbox/production mixed up' : c.status === 404 ? 'Collection ID not found' : c.error + ' ' + (c.status || '')) + ')' : 'OK, collection "' + (c.title || '') + '"'));
   }
   linked = /Billplz check: OK/.test(out.join('\n'));
-  out.push(linked && info.reg_fee ? 'The website #fee page is OPEN (after a new deployment version).' : 'The website #fee page shows "not open yet" until the items above are fixed.');
+  out.push(linked && withFee.length ? 'The website registration fee payment is OPEN for those universities (after a new deployment version).' : 'Online registration fee payment stays closed until the items above are fixed.');
   console.log(out.join('\n'));
   return out.join('\n');
+}
+
+/* Run once from the Apps Script editor (function list: regFeeColumnSetup). Adds the column registration_fee_rm to every
+   school sheet: on the Institutions tab after hostel_fee_max (the university's registration fee) and on the Programmes
+   tab after tuition_fee_rm (only for a programme whose fee is different; leave it empty otherwise). Sheets that already
+   have the column are left as they are, so running it again is safe. Only the school sheets are opened. */
+function regFeeColumnSetup() {
+  var cols = [
+    { tab: SHEETS.institutions, after: 'hostel_fee_max', label: 'Registration fee (RM)\n报名费（RM）',
+      hint: 'Number only, e.g. 200. Paid online on the EDUPLAN website.' },
+    { tab: SHEETS.programmes, after: 'tuition_fee_rm', label: 'Registration fee (RM, if different)\n报名费（如与院校不同）',
+      hint: 'Number only. Empty = the university\'s fee.' }
+  ], done = [], skipped = [];
+  schoolFiles_().forEach(function (f) {
+    var ss;
+    try { ss = SpreadsheetApp.openById(f.getId()); } catch (err) { skipped.push(f.getName() + ' (cannot open)'); return; }
+    cols.forEach(function (c) {
+      var sh = ss.getSheetByName(c.tab);
+      if (!sh) { skipped.push(f.getName() + ' › ' + c.tab + ' (no tab)'); return; }
+      var keys = sh.getRange(KEY_ROW, 1, 1, sh.getLastColumn()).getValues()[0].map(function (k) { return String(k).trim(); });
+      if (keys.indexOf('registration_fee_rm') > -1) return;
+      var at = keys.indexOf(c.after);
+      if (at < 0) { skipped.push(f.getName() + ' › ' + c.tab + ' (no ' + c.after + ' column)'); return; }
+      sh.insertColumnAfter(at + 1);   // the new column takes the format of column `after`
+      var col = at + 2;
+      sh.getRange(1, col).setValue(c.label);
+      sh.getRange(KEY_ROW, col).setValue('registration_fee_rm');
+      sh.getRange(KEY_ROW + 1, col).setValue(c.hint);
+      done.push(f.getName() + ' › ' + c.tab);
+    });
+  });
+  var msg = 'Added registration_fee_rm to ' + done.length + ' tabs.' + (skipped.length ? '\nSkipped: ' + skipped.join('; ') : '');
+  console.log(msg);
+  return msg;
 }

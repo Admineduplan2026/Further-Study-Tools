@@ -556,7 +556,7 @@ function menu(){
   item("#portfolio","My portfolio","Saved programmes, quiz result and application")+
   item("#about","About us","Who we are and how we guide you")+
   item("#rewards","Exchange gifts","Mini game points for gifts")+
-  item("#fee","Pay registration fee","Secure online payment by FPX")+
+  item("#fee","Pay registration fee","Each university's fee, by FPX")+
   '<span class="mlabel">Explore</span>'+
   item("#faculty","Faculties","Choose a faculty, then a course")+
   item("#universities","Universities","Programmes by university and level")+

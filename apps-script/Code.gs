@@ -56,16 +56,16 @@ var CACHE_SECONDS = 21600;    // cached JSON is kept up to 6 hours, but replaced
 // Public fields per sheet. Fields ending in * are required.
 var FIELDS = {
   institutions: ['institution_id*', 'name*', 'short_name', 'type*', 'state', 'city', 'website', 'virtual_tour_url', 'admissions_email',
-    'admissions_phone', 'whatsapp', 'hostel', 'hostel_fee_min', 'hostel_fee_max', 'last_updated'],
+    'admissions_phone', 'whatsapp', 'hostel', 'hostel_fee_min', 'hostel_fee_max', 'registration_fee_rm', 'last_updated'],
   programmes: ['programme_id*', 'institution_id*', 'course*', 'also_in_courses', 'programme_name*', 'level*', 'study_mode', 'duration_years',
-    'intakes', 'campus', 'entry_spm', 'entry_uec', 'entry_olevel', 'entry_stpm', 'entry_other', 'english_requirement', 'tuition_fee_rm', 'mqa_reference',
+    'intakes', 'campus', 'entry_spm', 'entry_uec', 'entry_olevel', 'entry_stpm', 'entry_other', 'english_requirement', 'tuition_fee_rm', 'registration_fee_rm', 'mqa_reference',
     'application_deadline', 'apply_url', 'notes', 'overview', 'programme_structure', 'career_prospects', 'last_updated'],
   campus: ['scholarship_id*', 'institution_id*', 'scholarship_name', 'type', 'qualification*', 'minimum_result*',
     'waiver_percent', 'fixed_amount_rm', 'applies_to', 'other_conditions', 'deadline', 'info_url', 'last_updated'],
   foundation: ['option_id*', 'scholarship_name*', 'organiser', 'requirements*', 'award_value', 'deadline', 'info_url', 'last_updated'],
   faq: ['faq_id*', 'category', 'question*', 'answer*', 'last_updated']  // answers for the AI study assistant
 };
-var NUMBERS = ['hostel_fee_min', 'hostel_fee_max', 'duration_years', 'tuition_fee_rm', 'waiver_percent', 'fixed_amount_rm'];
+var NUMBERS = ['hostel_fee_min', 'hostel_fee_max', 'duration_years', 'tuition_fee_rm', 'registration_fee_rm', 'waiver_percent', 'fixed_amount_rm'];
 
 /* ---------------- Web app entry points ---------------- */
 
@@ -95,7 +95,7 @@ function doPost(e) {
     if (body && body.action === 'id_verify') return chatJson_(idVerify_(body));  // Identity.gs
     if (body && body.action === 'visit') return chatJson_(statsVisit_(body));  // Stats.gs
     if (body && body.action === 'pay_create') return chatJson_(payCreate_(body));  // Payments.gs
-    if (body && body.action === 'pay_info') return chatJson_(payInfo_());
+    if (body && body.action === 'pay_info') return chatJson_(payInfo_(body.prog));
     if (body && body.action === 'pay_check') return chatJson_(payBillplzCheck_(body.bill_id));
   } catch (err) {
     console.error('doPost ' + (body && body.action) + ': ' + (err && err.stack || err));

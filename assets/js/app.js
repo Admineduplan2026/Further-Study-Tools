@@ -967,7 +967,7 @@ V.stay=function(){
  var head='<section class="stack">'+flowStep("Accommodation")+'<span class="eyebrow">Apply with EDUPLAN</span>';
  if(a.sent)return head+'<h1>Application sent</h1><p class="lead">Thank you. Your reference number is <strong>'+esc(a.sent)+'</strong>. A counsellor will contact you about signatures, the application fee and the next steps.</p></section>'+
   '<section class="panel" style="max-width:760px"><h2>Next: pay your tuition fees</h2><p class="muted">Choose to pay per semester or in full, then your payment method (FPX, Touch \'n Go eWallet or PayPal).</p>'+
-  '<div class="row"><a class="btn" href="#pay">Pay tuition fees '+ARROW+'</a><button type="button" class="btn ghost" data-apply="clear">Start a new application</button><a class="btn ghost" href="#home">Back to home</a></div></section>';
+  '<div class="row"><a class="btn" href="#fee/'+encodeURIComponent(v.prog||"")+'">Pay the registration fee '+ARROW+'</a><a class="btn ghost" href="#pay">Pay tuition fees</a><button type="button" class="btn ghost" data-apply="clear">Start a new application</button><a class="btn ghost" href="#home">Back to home</a></div></section>';
  if(!a.complete)return head+'<h1>Finish your application first</h1><p class="lead">Accommodation help is the last step of the application.</p><div class="row"><a class="btn" href="#apply">Go to the application form</a></div></section>';
  var x=applyProg();
  return head+'<h1>Do you need help with accommodation?</h1><p class="lead">EDUPLAN can help you find a hostel or a room near '+esc(x?x.u.name:"your campus")+'.</p>'+
@@ -1424,35 +1424,40 @@ document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.targe
 /* ---------- Registration fee (#fee): a fixed fee set by EDUPLAN (Script Property PAY_REG_FEE), paid through Billplz.
    pay_create (plan "registration") returns the Billplz bill page; after paying, Billplz sends the student back here with
    ?billplz[id]=…, and pay_check asks Billplz itself whether the bill is paid (the server never trusts the address). ---------- */
-S.fee={info:null,loading:false,busy:false,err:"",check:null};
-function feeInfo(){if(S.fee.loading||S.fee.info||!pfLive())return;S.fee.loading=true;
- pfPost({action:"pay_info"}).then(function(d){S.fee.loading=false;S.fee.info=d&&!d.error?d:{reg_fee:0};if(S.view==="fee")rerender();})
-  .catch(function(){S.fee.loading=false;S.fee.info={reg_fee:0,failed:true};if(S.view==="fee")rerender();});}
-V.fee=function(){var f=S.fee,i=f.info,c=f.check;feeInfo();
- var head='<section class="stack"><span class="eyebrow">Payment</span><h1>Pay the registration fee</h1><p class="lead">Register with EDUPLAN for guidance on your further studies. You pay on Billplz\'s secure page by FPX online banking; EDUPLAN never sees your bank details.</p></section>';
+S.fee={info:{},loading:{},busy:false,err:"",check:null};S.feeProg="";
+/* The programme being paid for: #fee/<programme id>, else the programme of the application, else the one last viewed. */
+function feeProg(){return findProg(S.feeProg)||applyProg()||findProg(S.pick);}
+function regFeeOf(x){return x?(x.p.regFee>0?x.p.regFee:x.u.regFee>0?x.u.regFee:0):0;}
+function feeInfo(id){if(!id||S.fee.loading[id]||S.fee.info[id]||!pfLive())return;S.fee.loading[id]=true;
+ pfPost({action:"pay_info",prog:id}).then(function(d){S.fee.loading[id]=false;S.fee.info[id]=d&&!d.error?d:{reg_fee:0};if(S.view==="fee")rerender();})
+  .catch(function(){S.fee.loading[id]=false;S.fee.info[id]={reg_fee:0,failed:true};if(S.view==="fee")rerender();});}
+V.fee=function(){var f=S.fee,c=f.check,x=feeProg(),id=x?x.p.id:"",i=id?f.info[id]:null;feeInfo(id);
+ var head='<section class="stack"><span class="eyebrow">Payment</span><h1>Pay the registration fee</h1><p class="lead">Each university has its own registration (application) fee. You pay it on Billplz\'s secure page by FPX online banking; EDUPLAN never sees your bank details.</p>'+
+  (x?'<div class="pickcard"><span class="eyebrow">'+esc(x.u.fullName||x.u.name)+'</span><h2>'+esc(x.p.programme)+'</h2></div>':'')+'</section>';
  var res=c?(c.busy?'<div class="note" role="status">Checking your payment with Billplz…</div>':
    c.paid?'<div class="note" role="status"><b>Payment received. Thank you!</b><br>Reference <strong data-notr>'+esc(c.ref)+'</strong> · <span data-notr>'+esc(rm(c.amount))+'</span>. A receipt has been sent to your email.</div>':
    c.error?'<p class="err" role="alert">We could not confirm this payment yet. If money was taken from your account, please contact EDUPLAN with the time you paid.</p>':
    '<p class="err" role="alert">This payment was not completed. You can try again below.</p>'):'';
- if(!pfLive())return head+'<section class="panel" style="max-width:760px"><p class="hint">Online payment works on the live EDUPLAN website. This preview shows the page only.</p></section>';
- if(!i)return head+'<section class="panel" style="max-width:760px">'+res+'<p class="hint" role="status">Loading…</p></section>';
- if(!i.reg_fee||!i.online)return head+'<section class="panel" style="max-width:760px">'+res+'<p class="lead">Online payment of the registration fee is not open yet. A counsellor will send you the payment details.</p><div class="row"><a class="btn" href="#consultation">Ask a counsellor</a></div></section>';
- return head+'<section class="panel" style="max-width:760px">'+res+
-  '<dl class="paytot"><dt>Registration fee</dt><dd><b data-notr>'+esc(rm(i.reg_fee))+'</b></dd><dt>Pay with</dt><dd>FPX online banking (Billplz)</dd></dl>'+
+ var box=function(inner){return head+'<section class="panel" style="max-width:760px">'+res+inner+'</section>';};
+ if(!x)return box(UNIV.length?'<p class="lead">Choose the programme you are applying for first.</p><div class="row"><a class="btn" href="#universities">Find a programme</a></div>':'<p class="hint" role="status">Loading…</p>');
+ if(!pfLive())return box((regFeeOf(x)?'<dl class="paytot"><dt>Registration fee</dt><dd><b data-notr>'+esc(rm(regFeeOf(x)))+'</b></dd></dl>':'')+'<p class="hint">Online payment works on the live EDUPLAN website. This preview shows the page only.</p>');
+ if(!i)return box('<p class="hint" role="status">Loading…</p>');
+ if(!i.reg_fee||!i.online)return box('<p class="lead">'+(i.reg_fee?'Online payment is not open yet.':'The registration fee for this university is not listed yet.')+' A counsellor will send you the payment details.</p><div class="row"><a class="btn" href="#consultation">Ask a counsellor</a></div>');
+ return box('<dl class="paytot"><dt>Registration fee</dt><dd><b data-notr>'+esc(rm(i.reg_fee))+'</b></dd><dt>Pay with</dt><dd>FPX online banking (Billplz)</dd></dl>'+
   (i.sandbox?'<p class="hint">Test mode: no real money is taken.</p>':'')+
   (f.err?'<p class="err" role="alert">'+esc(f.err)+'</p>':'')+
   (!PF.s?'<p class="hint"><a href="#portfolio">Sign in</a> first, so the payment and receipt are linked to your account.</p>':'')+
-  '<div class="row"><button type="button" class="btn" data-feego'+(f.busy||!PF.s||(c&&c.paid)?' disabled':'')+'>'+(f.busy?'Please wait…':'Pay '+esc(rm(i.reg_fee))+' '+ARROW)+'</button></div></section>';
+  '<div class="row"><button type="button" class="btn" data-feego'+(f.busy||!PF.s||(c&&c.paid)?' disabled':'')+'>'+(f.busy?'Please wait…':'Pay '+esc(rm(i.reg_fee))+' '+ARROW)+'</button></div>');
 };
-function feeGo(){if(!PF.s||S.fee.busy)return;S.fee.busy=true;S.fee.err="";rerender();
- pfPost({action:"pay_create",token:PF.s.token,plan:"registration",method:"online"}).then(function(d){
+function feeGo(){var x=feeProg();if(!PF.s||S.fee.busy||!x)return;S.fee.busy=true;S.fee.err="";rerender();
+ pfPost({action:"pay_create",token:PF.s.token,plan:"registration",method:"online",prog:x.p.id}).then(function(d){
   if(d&&d.ok&&d.url){location.href=d.url;return;}S.fee.busy=false;
-  S.fee.err=d&&d.error==="signed_out"?"Please sign in again.":d&&d.error==="not_set"?"Online payment is not open yet. Please ask a counsellor.":"Could not start the payment. Please try again.";rerender();})
+  S.fee.err=d&&d.error==="signed_out"?"Please sign in again.":d&&d.error==="not_set"?"The registration fee for this university is not listed yet. Please ask a counsellor.":"Could not start the payment. Please try again.";rerender();})
  .catch(function(){S.fee.busy=false;S.fee.err="Could not reach EDUPLAN. Check your connection and try again.";rerender();});}
 document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-feego]");if(t)feeGo();});
 (function(){var m=/[?&]billplz(?:\[|%5B)id(?:\]|%5D)=([A-Za-z0-9_-]+)/i.exec(location.search);if(!m||!pfLive())return;
  S.fee.check={busy:true};try{history.replaceState(null,"",location.pathname+"#fee");}catch(e){location.hash="#fee";}
- pfPost({action:"pay_check",bill_id:m[1]}).then(function(d){S.fee.check=d||{error:"server"};if(S.view==="fee")rerender();})
+ pfPost({action:"pay_check",bill_id:m[1]}).then(function(d){S.fee.check=d||{error:"server"};if(d&&d.prog){S.feeProg=d.prog;try{history.replaceState(null,"","#fee/"+encodeURIComponent(d.prog));}catch(e){}}if(S.view==="fee")rerender();})
   .catch(function(){S.fee.check={error:"server"};if(S.view==="fee")rerender();});})();
 /* My portfolio: the payment plan and the last payment request. */
 function pfPayment(){var q=payQuote();
@@ -1901,6 +1906,7 @@ function route(){
   if(hit){if(S.app.v.prog!==hit.p.id){S.app.v.prog=hit.p.id;S.app.v.track="";}S.app.step=1;S.app.err={};S.app.complete=false;S.app.sent=null;applySave();r="apply";}
   else if(!pid||UNIV.length)r="apply";   /* before the sheet data arrives, keep the programme in the link */
  }
+ if(r==="fee"||r.indexOf("fee/")===0){S.feeProg=r.split("/")[1]?decodeURIComponent(r.split("/")[1]):"";if(S.feeProg)keepHash=true;r="fee";}
  if(r==="compare"||r.indexOf("compare/")===0){S.cmpIds=r.slice(8).split(",").map(function(x){try{return decodeURIComponent(x);}catch(e){return x;}}).filter(Boolean).slice(0,CMP_MAX);}
  if(r==="fit"&&S.view!=="fit")S.fitStep=null;
  S.payStep=r==="pay/method"?"method":"plan";if(r==="pay/method")r="pay/method";
@@ -2050,12 +2056,12 @@ function applyApi(d){
  (d.institutions||[]).forEach(function(i){inst[i.institution_id]=i;});
  FAC.fields.forEach(function(f){f.courses.forEach(function(c){c.universities=[];courses[c.id]=c;});});
  UNIV=(d.institutions||[]).map(function(i){return {id:i.institution_id,name:i.short_name||i.name,fullName:i.name,type:i.type,city:i.city,state:i.state,place:[i.city,i.state].filter(Boolean).join(", "),
-  website:i.website,tour:/^https:\/\//i.test(i.virtual_tour_url||"")?i.virtual_tour_url:"",email:i.admissions_email,phone:i.admissions_phone,whatsapp:i.whatsapp,lastUpdated:i.last_updated,progs:[]};})
+  website:i.website,tour:/^https:\/\//i.test(i.virtual_tour_url||"")?i.virtual_tour_url:"",email:i.admissions_email,phone:i.admissions_phone,whatsapp:i.whatsapp,regFee:i.registration_fee_rm,lastUpdated:i.last_updated,progs:[]};})
   .sort(function(a,b){return a.name<b.name?-1:1;});
  (d.programmes||[]).forEach(function(p){
   var i=inst[p.institution_id];if(!i)return;
   var prog={inst:p.institution_id,name:i.short_name||i.name,place:[i.city,i.state].filter(Boolean).join(", "),campus:p.campus,programme:p.programme_name,level:p.level,mode:p.study_mode,
-   years:p.duration_years,intakes:p.intakes,fee:p.tuition_fee_rm,entry:p.entry_spm,uec:p.entry_uec,olevel:p.entry_olevel,stpm:p.entry_stpm,entry_other:p.entry_other,english:p.english_requirement,
+   years:p.duration_years,intakes:p.intakes,fee:p.tuition_fee_rm,regFee:p.registration_fee_rm,entry:p.entry_spm,uec:p.entry_uec,olevel:p.entry_olevel,stpm:p.entry_stpm,entry_other:p.entry_other,english:p.english_requirement,
    deadline:p.application_deadline,mqa:p.mqa_reference,url:p.apply_url,notes:p.notes,overview:p.overview,structure:p.programme_structure,careers:p.career_prospects,course_id:p.course_id,id:p.programme_id};
   var u=univ(p.institution_id);if(u)u.progs.push(prog);
   uniq([p.course_id].concat(p.also_course_ids||[])).forEach(function(id){if(courses[id])courses[id].universities.push(prog);});
