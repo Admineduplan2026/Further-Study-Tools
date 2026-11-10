@@ -3604,11 +3604,13 @@ function payCheckSetup() {
   out.push('BILLPLZ_COLLECTION_ID: ' + (p.getProperty('BILLPLZ_COLLECTION_ID') ? 'set' : 'MISSING'));
   out.push('PAY_REG_FEE: ' + (info.reg_fee ? 'RM ' + info.reg_fee : 'MISSING or not a number, now "' + (p.getProperty('PAY_REG_FEE') || '') + '"'));
   out.push('Mode: ' + (info.sandbox ? 'SANDBOX (test, billplz-sandbox.com)' : 'PRODUCTION (real money, billplz.com)'));
+  var linked = false;
   if (info.online && p.getProperty('BILLPLZ_COLLECTION_ID')) {
     var c = billplzFetch_('collections/' + encodeURIComponent(p.getProperty('BILLPLZ_COLLECTION_ID')), { method: 'get' });
     out.push('Billplz check: ' + (c.error ? 'FAILED (' + (c.status === 401 ? 'API key wrong, or sandbox/production mixed up' : c.status === 404 ? 'Collection ID not found' : c.error + ' ' + (c.status || '')) + ')' : 'OK, collection "' + (c.title || '') + '"'));
   }
-  out.push(info.online && info.reg_fee ? 'The website #fee page is OPEN (after a new deployment version).' : 'The website #fee page shows "not open yet" until the items above are fixed.');
+  linked = /Billplz check: OK/.test(out.join('\n'));
+  out.push(linked && info.reg_fee ? 'The website #fee page is OPEN (after a new deployment version).' : 'The website #fee page shows "not open yet" until the items above are fixed.');
   console.log(out.join('\n'));
   return out.join('\n');
 }
