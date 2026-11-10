@@ -248,3 +248,21 @@ function payReceipt_(tab, row) {
     console.error('payReceipt_ ' + row + ': ' + err);
   } finally { lock.releaseLock(); }
 }
+
+/* Run this from the Apps Script editor (function list: payCheckSetup) to check the Billplz settings. It never prints
+   the API key. With every setting right it also asks Billplz for the collection, which proves the key and ID work. */
+function payCheckSetup() {
+  var p = PropertiesService.getScriptProperties(), info = payInfo_(), out = [];
+  out.push('PAY_GATEWAY: ' + (p.getProperty('PAY_GATEWAY') === 'billplz' ? 'OK (billplz)' : 'WRONG: must be billplz, now "' + (p.getProperty('PAY_GATEWAY') || '') + '"'));
+  out.push('BILLPLZ_API_KEY: ' + (p.getProperty('BILLPLZ_API_KEY') ? 'set' : 'MISSING'));
+  out.push('BILLPLZ_COLLECTION_ID: ' + (p.getProperty('BILLPLZ_COLLECTION_ID') ? 'set' : 'MISSING'));
+  out.push('PAY_REG_FEE: ' + (info.reg_fee ? 'RM ' + info.reg_fee : 'MISSING or not a number, now "' + (p.getProperty('PAY_REG_FEE') || '') + '"'));
+  out.push('Mode: ' + (info.sandbox ? 'SANDBOX (test, billplz-sandbox.com)' : 'PRODUCTION (real money, billplz.com)'));
+  if (info.online && p.getProperty('BILLPLZ_COLLECTION_ID')) {
+    var c = billplzFetch_('collections/' + encodeURIComponent(p.getProperty('BILLPLZ_COLLECTION_ID')), { method: 'get' });
+    out.push('Billplz check: ' + (c.error ? 'FAILED (' + (c.status === 401 ? 'API key wrong, or sandbox/production mixed up' : c.status === 404 ? 'Collection ID not found' : c.error + ' ' + (c.status || '')) + ')' : 'OK, collection "' + (c.title || '') + '"'));
+  }
+  out.push(info.online && info.reg_fee ? 'The website #fee page is OPEN (after a new deployment version).' : 'The website #fee page shows "not open yet" until the items above are fixed.');
+  console.log(out.join('\n'));
+  return out.join('\n');
+}
