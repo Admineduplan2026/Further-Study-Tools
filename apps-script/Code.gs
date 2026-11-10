@@ -77,7 +77,14 @@ function doGet(e) {
 /* POST: the AI study assistant (Chat.gs) and the application form (Apply.gs). */
 function doPost(e) {
   var body;
-  try { body = JSON.parse(e.postData.contents); } catch (err) { return chatJson_({ error: 'bad_request' }); }
+  try { body = JSON.parse(e.postData.contents); } catch (err) {
+    // Billplz's payment callback is a form POST (id, paid, x_signature …): check the bill with Billplz (Payments.gs).
+    if (e && e.parameter && e.parameter.id && e.parameter.collection_id) {
+      try { payBillplzCheck_(e.parameter.id); } catch (err2) { console.error('billplz callback: ' + err2); }
+      return ContentService.createTextOutput('OK');
+    }
+    return chatJson_({ error: 'bad_request' });
+  }
   // A script error is logged (Apps Script > Executions) and answered as {error:"server"}, so the website can say so.
   try {
     if (body && body.action === 'chat') return chatJson_(chatReply_(body.messages));
@@ -88,6 +95,8 @@ function doPost(e) {
     if (body && body.action === 'id_verify') return chatJson_(idVerify_(body));  // Identity.gs
     if (body && body.action === 'visit') return chatJson_(statsVisit_(body));  // Stats.gs
     if (body && body.action === 'pay_create') return chatJson_(payCreate_(body));  // Payments.gs
+    if (body && body.action === 'pay_info') return chatJson_(payInfo_());
+    if (body && body.action === 'pay_check') return chatJson_(payBillplzCheck_(body.bill_id));
   } catch (err) {
     console.error('doPost ' + (body && body.action) + ': ' + (err && err.stack || err));
     // The error's name and message (no stack, no data) help Eduplan see what failed straight from the website.

@@ -556,6 +556,7 @@ function menu(){
   item("#portfolio","My portfolio","Saved programmes, quiz result and application")+
   item("#about","About us","Who we are and how we guide you")+
   item("#rewards","Exchange gifts","Mini game points for gifts")+
+  item("#fee","Pay registration fee","Secure online payment by FPX")+
   '<span class="mlabel">Explore</span>'+
   item("#faculty","Faculties","Choose a faculty, then a course")+
   item("#universities","Universities","Programmes by university and level")+
@@ -1149,6 +1150,7 @@ function account(){
 window.addEventListener("eduplan:signedin",function(){S.session=ls("eduplan-session");STAFF.links=null;STAFF.err="";GOALS.list=null;GOALS.err="";});
 function intro(){
  if(/^#(next\/|compare\/)/.test(location.hash))return;   /* a shared programme or comparison link opens that page straight away */
+ if(/^#fee/.test(location.hash)||/[?&]billplz/i.test(location.search))return;   /* back from paying: show the payment result */
  try{if(sessionStorage.getItem("eduplan-intro")){if(!account())interests();return;}}catch(e){}
  var A=window.EDUPLAN_ABOUT;if(!A||/^#(privacy|portfolio)/.test(location.hash))return;
  var f=A.founder,photo=window.EDUPLAN_FOUNDER_PHOTO||(f.photo?"../"+f.photo:"");

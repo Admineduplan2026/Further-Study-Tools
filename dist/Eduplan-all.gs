@@ -82,7 +82,14 @@ function doGet(e) {
 /* POST: the AI study assistant (Chat.gs) and the application form (Apply.gs). */
 function doPost(e) {
   var body;
-  try { body = JSON.parse(e.postData.contents); } catch (err) { return chatJson_({ error: 'bad_request' }); }
+  try { body = JSON.parse(e.postData.contents); } catch (err) {
+    // Billplz's payment callback is a form POST (id, paid, x_signature …): check the bill with Billplz (Payments.gs).
+    if (e && e.parameter && e.parameter.id && e.parameter.collection_id) {
+      try { payBillplzCheck_(e.parameter.id); } catch (err2) { console.error('billplz callback: ' + err2); }
+      return ContentService.createTextOutput('OK');
+    }
+    return chatJson_({ error: 'bad_request' });
+  }
   // A script error is logged (Apps Script > Executions) and answered as {error:"server"}, so the website can say so.
   try {
     if (body && body.action === 'chat') return chatJson_(chatReply_(body.messages));
@@ -93,6 +100,8 @@ function doPost(e) {
     if (body && body.action === 'id_verify') return chatJson_(idVerify_(body));  // Identity.gs
     if (body && body.action === 'visit') return chatJson_(statsVisit_(body));  // Stats.gs
     if (body && body.action === 'pay_create') return chatJson_(payCreate_(body));  // Payments.gs
+    if (body && body.action === 'pay_info') return chatJson_(payInfo_());
+    if (body && body.action === 'pay_check') return chatJson_(payBillplzCheck_(body.bill_id));
   } catch (err) {
     console.error('doPost ' + (body && body.action) + ': ' + (err && err.stack || err));
     // The error's name and message (no stack, no data) help Eduplan see what failed straight from the website.
@@ -3350,10 +3359,20 @@ function newsSetup() {
  * "4. Payments (private)/Receipts/<yyyy-MM>/<PAY-...>/" and linked in the Receipt column. Add the bank slip or the
  * gateway's receipt to the same folder. The sheet trigger is turned on by driveOrganize (Drive.gs).
  *
- * No payment gateway is connected yet: the reply is {ok, ref, pending:true} and the website tells the student that a
- * counsellor will send the payment details. When Eduplan opens a merchant account (FPX / Touch 'n Go through a
- * Malaysian gateway, PayPal through PayPal Business), the gateway's checkout is added in payCheckout_ and the reply
- * carries {url} to send the student to the gateway's own page. Card and bank details are entered only there.
+ * Online payment through Billplz (Script Property PAY_GATEWAY = billplz): pay_create makes a Billplz bill and the reply
+ * carries {url}, the bill's own page, where the student pays by FPX (and DuitNow / cards when Billplz turned them on).
+ * Card and bank details are entered only there. When the bill is paid, Billplz calls this web app (callback, a form
+ * POST with the bill id, handled in Code.gs doPost) and sends the student back to the website (?billplz[id]=…), which
+ * asks pay_check. Both only ask Billplz again for the bill (GET /bills/<id>) and mark the row Paid when Billplz says it
+ * is paid for the right amount, so a faked callback or link cannot mark anything paid. The student is emailed the PDF
+ * receipt; the same PDF is kept in Receipts/. Without a gateway the reply is {ok, ref, pending:true} as before.
+ *
+ * Registration fee (plan "registration"): a fixed amount set by EDUPLAN in Script Property PAY_REG_FEE (e.g. 50), paid
+ * on the website's #fee page. The amount always comes from the server, never from the browser.
+ *
+ * Script Properties for Billplz: PAY_GATEWAY = billplz; BILLPLZ_API_KEY (API Secret Key, Billplz > Settings > Keys &
+ * Integration); BILLPLZ_COLLECTION_ID (Billing > the collection's ID); BILLPLZ_SANDBOX = yes while testing with a
+ * billplz-sandbox.com account (delete it for real payments); PAY_REG_FEE; optional PAY_RETURN_URL (default: the website).
  */
 
 var PAY_TAB = 'Payments';
@@ -3361,11 +3380,23 @@ var PAY_HEADERS = ['Time', 'Reference', 'Email', 'Programme', 'Plan', 'Method', 
   'Status', 'Paid on', 'Transaction ID', 'Receipt'];
 var PAY_COL = { ref: 2, status: 9, paidOn: 10, txn: 11, receipt: 12 };
 var PAY_STATUS = ['Requested: online payment not open yet', 'Sent to payment page', 'Paid', 'Cancelled'];
-var PAY_PLANS = { semester: 'Per semester (instalments)', full: 'Full payment' };
-var PAY_METHODS = { fpx: 'FPX online banking', tng: "Touch 'n Go eWallet", paypal: 'PayPal' };
+var PAY_PLANS = { semester: 'Per semester (instalments)', full: 'Full payment', registration: 'Registration fee' };
+var PAY_METHODS = { fpx: 'FPX online banking', tng: "Touch 'n Go eWallet", paypal: 'PayPal', online: 'Online (Billplz)' };
+
+/* What the payment page needs to know: the registration fee and whether online payment is open. */
+function payInfo_() {
+  var p = PropertiesService.getScriptProperties(), fee = Number(p.getProperty('PAY_REG_FEE'));
+  return { reg_fee: fee > 0 ? Math.round(fee * 100) / 100 : 0, online: p.getProperty('PAY_GATEWAY') === 'billplz' && !!p.getProperty('BILLPLZ_API_KEY'),
+    sandbox: /^y/i.test(p.getProperty('BILLPLZ_SANDBOX') || '') };
+}
 
 function payCreate_(body) {
   var plan = String(body.plan || ''), method = String(body.method || ''), amount = Number(body.amount), total = Number(body.total);
+  if (plan === 'registration') {   // the fee is set by EDUPLAN, not by the browser
+    amount = total = payInfo_().reg_fee;
+    method = 'online';
+    if (!amount) return { error: 'not_set' };
+  }
   if (!PAY_PLANS[plan] || !PAY_METHODS[method] || !(amount > 0 && amount < 1e6) || !(total >= amount && total < 1e7)) return { error: 'bad_request' };
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(10000)) return { error: 'busy' };
@@ -3375,20 +3406,93 @@ function payCreate_(body) {
     var email = String(sh.getRange(s.row, ACCOUNT_COL.email).getValue());
     var ref = 'PAY-' + Utilities.formatDate(new Date(), 'Asia/Kuala_Lumpur', 'yyyyMMdd') + '-' + Utilities.getUuid().slice(0, 4).toUpperCase();
     var tab = payTab_();
-    var checkout = payCheckout_(ref, email, method, amount);
-    tab.appendRow([new Date(), ref, accountCell_(email, 120), accountCell_(body.prog, 60), PAY_PLANS[plan], PAY_METHODS[method],
-      Math.round(amount * 100) / 100, Math.round(total * 100) / 100, checkout.url ? PAY_STATUS[1] : PAY_STATUS[0], '', '', '']);
+    var checkout = payCheckout_(ref, email, method, amount, PAY_PLANS[plan]);
+    if (checkout.error) return checkout;
+    tab.appendRow([new Date(), ref, accountCell_(email, 120), accountCell_(plan === 'registration' ? '' : body.prog, 60), PAY_PLANS[plan], PAY_METHODS[method],
+      Math.round(amount * 100) / 100, Math.round(total * 100) / 100, checkout.url ? PAY_STATUS[1] : PAY_STATUS[0], '', checkout.id || '', '']);
     statsActive_(sh, s.row);
     return checkout.url ? { ok: true, ref: ref, url: checkout.url } : { ok: true, ref: ref, pending: true };
   } finally { lock.releaseLock(); }
 }
 
 /* The gateway's checkout page for this payment, or {} while no gateway is connected (Script Property PAY_GATEWAY). */
-function payCheckout_(ref, email, method, amount) {
+function payCheckout_(ref, email, method, amount, what) {
   var gateway = PropertiesService.getScriptProperties().getProperty('PAY_GATEWAY');
   if (!gateway) return {};
+  // Only the registration fee (amount set on the server) goes online for now; tuition stays a request that a counsellor confirms.
+  if (gateway === 'billplz') return what === PAY_PLANS.registration ? billplzCreate_(ref, email, amount, what) : {};
   console.error('PAY_GATEWAY "' + gateway + '" is set but no checkout is built for it yet.');
   return {};
+}
+
+/* ---------- Billplz (API v3) ---------- */
+function billplzBase_() {
+  return /^y/i.test(PropertiesService.getScriptProperties().getProperty('BILLPLZ_SANDBOX') || '') ? 'https://www.billplz-sandbox.com/api/v3/' : 'https://www.billplz.com/api/v3/';
+}
+function billplzFetch_(path, opts) {
+  var key = PropertiesService.getScriptProperties().getProperty('BILLPLZ_API_KEY');
+  if (!key) return { error: 'not_set' };
+  opts = opts || {};
+  opts.muteHttpExceptions = true;
+  opts.headers = { Authorization: 'Basic ' + Utilities.base64Encode(key + ':') };
+  try {
+    var res = UrlFetchApp.fetch(billplzBase_() + path, opts), code = res.getResponseCode(), data = JSON.parse(res.getContentText() || '{}');
+    if (code < 200 || code >= 300) { console.error('Billplz ' + path + ' ' + code + ': ' + res.getContentText().slice(0, 300)); return { error: 'gateway', status: code }; }
+    return data;
+  } catch (err) {
+    console.error('Billplz ' + path + ' failed: ' + err);
+    return { error: 'gateway' };
+  }
+}
+/* A Billplz bill for this payment: {url, id}. Billplz takes the amount in sen. */
+function billplzCreate_(ref, email, amount, what) {
+  var p = PropertiesService.getScriptProperties(), coll = p.getProperty('BILLPLZ_COLLECTION_ID');
+  if (!coll) return { error: 'not_set' };
+  var site = p.getProperty('PAY_RETURN_URL') || expoSite_().replace(/exhibition\/?$/, '');
+  var bill = billplzFetch_('bills', { method: 'post', payload: {
+    collection_id: coll, email: email, name: email.split('@')[0].slice(0, 255), amount: String(Math.round(amount * 100)),
+    description: ('EDUPLAN ' + (what || 'payment') + ' ' + ref).slice(0, 200),
+    callback_url: ScriptApp.getService().getUrl(), redirect_url: site,
+    reference_1_label: 'Reference', reference_1: ref
+  } });
+  if (bill.error || !bill.url || !bill.id) return { error: bill.error || 'gateway' };
+  return { url: bill.url, id: bill.id };
+}
+/* Asks Billplz whether a bill is paid; marks its row Paid (once) and emails the receipt. {paid, ref, amount} or {error}. */
+function payBillplzCheck_(billId) {
+  var id = String(billId || '');
+  if (!/^[A-Za-z0-9_-]{4,40}$/.test(id)) return { error: 'bad_request' };
+  var bill = billplzFetch_('bills/' + encodeURIComponent(id), { method: 'get' });
+  if (bill.error) return bill;
+  var tab = payTab_(), last = tab.getLastRow();
+  if (last < 2) return { error: 'not_found' };
+  var vals = tab.getRange(2, 1, last - 1, PAY_HEADERS.length).getValues(), row = 0, v = null;
+  for (var i = 0; i < vals.length; i++) if (String(vals[i][PAY_COL.txn - 1]) === id) { row = i + 2; v = vals[i]; break; }
+  if (!row) return { error: 'not_found' };
+  var ref = String(v[PAY_COL.ref - 1]), want = Math.round(Number(v[6]) * 100);
+  var paid = bill.paid === true && bill.state === 'paid' && Number(bill.paid_amount != null ? bill.paid_amount : bill.amount) >= want;
+  if (!paid) return { paid: false, ref: ref, amount: Number(v[6]) };
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(20000)) return { error: 'busy' };
+  var already;
+  try {
+    already = String(tab.getRange(row, PAY_COL.status).getValue()) === 'Paid';
+    if (!already) { tab.getRange(row, PAY_COL.status).setValue('Paid'); tab.getRange(row, PAY_COL.paidOn).setValue(new Date()); }
+  } finally { lock.releaseLock(); }
+  if (!already) { payReceipt_(tab, row); payReceiptEmail_(tab, row); }
+  return { paid: true, ref: ref, amount: Number(v[6]) };
+}
+/* Emails the student their PDF receipt (once, after the PDF is saved). */
+function payReceiptEmail_(tab, row) {
+  try {
+    var v = tab.getRange(row, 1, 1, PAY_HEADERS.length).getValues()[0], ref = String(v[1]), email = accountEmail_(v[2]), url = String(v[PAY_COL.receipt - 1] || '');
+    if (!email) return;
+    var m = /folders\/([\w-]+)/.exec(url), files = m ? DriveApp.getFolderById(m[1]).getFilesByType(MimeType.PDF) : null, pdf = files && files.hasNext() ? files.next().getBlob() : null;
+    MailApp.sendEmail({ to: email, name: 'EDUPLAN', subject: 'EDUPLAN 付款收据 · Payment receipt ' + ref,
+      body: '我们已收到你的付款，收据附在这封电邮里。\nWe have received your payment. Your receipt is attached.\n\n' +
+        '编号 Reference: ' + ref + '\n项目 For: ' + v[4] + '\n金额 Amount: RM ' + Number(v[6]).toFixed(2) + '\n\nEDUPLAN',
+      attachments: pdf ? [pdf] : [] });
+  } catch (err) { console.warn('receipt email ' + row + ': ' + err); }
 }
 
 /* The "Payments" tab of "Eduplan Payments" (4. Payments (private)), created when missing. */
@@ -3479,7 +3583,7 @@ function payReceipt_(tab, row) {
       ['Transaction ID', v[10] || '(none recorded)']];
     var html = '<html><head><style>body{font-family:Arial,sans-serif;font-size:12px;color:#1c2733;margin:36px}h1{font-size:20px;margin:0 0 4px}' +
       '.s{color:#58616c;margin:0 0 18px}table{border-collapse:collapse;width:100%}td{border:1px solid #d5dde5;padding:8px}td:first-child{width:34%;background:#f2f6f9}' +
-      '.f{margin-top:18px;color:#58616c;font-size:10px}</style></head><body><h1>Eduplan payment record</h1><p class="s">Tuition fee payment received by Eduplan</p><table>' +
+      '.f{margin-top:18px;color:#58616c;font-size:10px}</style></head><body><h1>EDUPLAN payment receipt</h1><p class="s">' + applyEsc_(v[4] || 'Payment') + ' received by EDUPLAN</p><table>' +
       rows.map(function (x) { return '<tr><td>' + applyEsc_(x[0]) + '</td><td>' + applyEsc_(x[1]) + '</td></tr>'; }).join('') + '</table>' +
       '<p class="f">Saved automatically by Eduplan on ' + applyEsc_(when(new Date())) + ' (Malaysia time) when this payment was marked Paid. ' +
       'The bank slip or the payment provider&#39;s receipt is kept in the same folder.</p></body></html>';

@@ -1421,6 +1421,39 @@ document.addEventListener("change",function(ev){var t=ev.target;if(!t.hasAttribu
  if(t.hasAttribute("data-paymethod")){S.pay.method=t.getAttribute("data-paymethod");paySave();rerender();}});
 document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-paygo],[data-paynext]");if(!t)return;
  if(t.hasAttribute("data-paynext")&&!S.pay.plan){ev.preventDefault();return;}if(t.hasAttribute("data-paygo"))payGo();});
+/* ---------- Registration fee (#fee): a fixed fee set by EDUPLAN (Script Property PAY_REG_FEE), paid through Billplz.
+   pay_create (plan "registration") returns the Billplz bill page; after paying, Billplz sends the student back here with
+   ?billplz[id]=…, and pay_check asks Billplz itself whether the bill is paid (the server never trusts the address). ---------- */
+S.fee={info:null,loading:false,busy:false,err:"",check:null};
+function feeInfo(){if(S.fee.loading||S.fee.info||!pfLive())return;S.fee.loading=true;
+ pfPost({action:"pay_info"}).then(function(d){S.fee.loading=false;S.fee.info=d&&!d.error?d:{reg_fee:0};if(S.view==="fee")rerender();})
+  .catch(function(){S.fee.loading=false;S.fee.info={reg_fee:0,failed:true};if(S.view==="fee")rerender();});}
+V.fee=function(){var f=S.fee,i=f.info,c=f.check;feeInfo();
+ var head='<section class="stack"><span class="eyebrow">Payment</span><h1>Pay the registration fee</h1><p class="lead">Register with EDUPLAN for guidance on your further studies. You pay on Billplz\'s secure page by FPX online banking; EDUPLAN never sees your bank details.</p></section>';
+ var res=c?(c.busy?'<div class="note" role="status">Checking your payment with Billplz…</div>':
+   c.paid?'<div class="note" role="status"><b>Payment received. Thank you!</b><br>Reference <strong data-notr>'+esc(c.ref)+'</strong> · <span data-notr>'+esc(rm(c.amount))+'</span>. A receipt has been sent to your email.</div>':
+   c.error?'<p class="err" role="alert">We could not confirm this payment yet. If money was taken from your account, please contact EDUPLAN with the time you paid.</p>':
+   '<p class="err" role="alert">This payment was not completed. You can try again below.</p>'):'';
+ if(!pfLive())return head+'<section class="panel" style="max-width:760px"><p class="hint">Online payment works on the live EDUPLAN website. This preview shows the page only.</p></section>';
+ if(!i)return head+'<section class="panel" style="max-width:760px">'+res+'<p class="hint" role="status">Loading…</p></section>';
+ if(!i.reg_fee||!i.online)return head+'<section class="panel" style="max-width:760px">'+res+'<p class="lead">Online payment of the registration fee is not open yet. A counsellor will send you the payment details.</p><div class="row"><a class="btn" href="#consultation">Ask a counsellor</a></div></section>';
+ return head+'<section class="panel" style="max-width:760px">'+res+
+  '<dl class="paytot"><dt>Registration fee</dt><dd><b data-notr>'+esc(rm(i.reg_fee))+'</b></dd><dt>Pay with</dt><dd>FPX online banking (Billplz)</dd></dl>'+
+  (i.sandbox?'<p class="hint">Test mode: no real money is taken.</p>':'')+
+  (f.err?'<p class="err" role="alert">'+esc(f.err)+'</p>':'')+
+  (!PF.s?'<p class="hint"><a href="#portfolio">Sign in</a> first, so the payment and receipt are linked to your account.</p>':'')+
+  '<div class="row"><button type="button" class="btn" data-feego'+(f.busy||!PF.s||(c&&c.paid)?' disabled':'')+'>'+(f.busy?'Please wait…':'Pay '+esc(rm(i.reg_fee))+' '+ARROW)+'</button></div></section>';
+};
+function feeGo(){if(!PF.s||S.fee.busy)return;S.fee.busy=true;S.fee.err="";rerender();
+ pfPost({action:"pay_create",token:PF.s.token,plan:"registration",method:"online"}).then(function(d){
+  if(d&&d.ok&&d.url){location.href=d.url;return;}S.fee.busy=false;
+  S.fee.err=d&&d.error==="signed_out"?"Please sign in again.":d&&d.error==="not_set"?"Online payment is not open yet. Please ask a counsellor.":"Could not start the payment. Please try again.";rerender();})
+ .catch(function(){S.fee.busy=false;S.fee.err="Could not reach EDUPLAN. Check your connection and try again.";rerender();});}
+document.addEventListener("click",function(ev){var t=ev.target.closest&&ev.target.closest("[data-feego]");if(t)feeGo();});
+(function(){var m=/[?&]billplz(?:\[|%5B)id(?:\]|%5D)=([A-Za-z0-9_-]+)/i.exec(location.search);if(!m||!pfLive())return;
+ S.fee.check={busy:true};try{history.replaceState(null,"",location.pathname+"#fee");}catch(e){location.hash="#fee";}
+ pfPost({action:"pay_check",bill_id:m[1]}).then(function(d){S.fee.check=d||{error:"server"};if(S.view==="fee")rerender();})
+  .catch(function(){S.fee.check={error:"server"};if(S.view==="fee")rerender();});})();
 /* My portfolio: the payment plan and the last payment request. */
 function pfPayment(){var q=payQuote();
  if(!q||!S.app.v.prog)return '<p class="muted">After you apply for a programme, choose here how to pay the tuition fees: per semester or in full.</p><div class="row"><a class="btn ghost" href="#universities">Find a programme</a></div>';
