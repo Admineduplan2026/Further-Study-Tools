@@ -758,7 +758,35 @@ document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&
  newsCall(op==="draft-all"?{op:"draft",all:true}:{op:op});});
 document.addEventListener("submit",function(e){if(!e.target||e.target.id!=="news-form")return;e.preventDefault();
  newsCall({op:"save",subject:document.getElementById("news-subject").value,body:document.getElementById("news-body").value});});
+/* Staff activity (StaffActivity.gs): each opening of the staff portal is logged (at most once per 5 minutes per tab),
+   and the activity admins (ACTIVITY_ADMINS, default admin.eduplan@gmail.com) see who has been working: one row per
+   person and the newest events of the last 30 days. Other staff never see this box (the server answers "forbidden"). */
+var ACT={d:null,err:"",busy:false,viewAt:0};
+var ACT_STATE={online:["Working now","gpill ok"],today:["Active today","gpill"],recent:["Active in the last 3 days","gpill"],idle:["Not active","gpill bad"]};
+function actView(){var se=ls("eduplan-session");if(!live||!se||!se.token||!se.staff)return;var now=Date.now();
+ try{var last=Number(sessionStorage.getItem("eduplan-staff-view")||0);if(now-last<3e5)return;sessionStorage.setItem("eduplan-staff-view",String(now));}catch(e){if(now-ACT.viewAt<3e5)return;}
+ ACT.viewAt=now;post({action:"account_activity",token:se.token,op:"view",page:"staff"}).catch(function(){});}
+function actCall(){var se=ls("eduplan-session");if(!live||!se||!se.token||!se.staff||ACT.busy)return;ACT.busy=true;
+ post({action:"account_activity",token:se.token,op:"list"}).then(function(r){ACT.busy=false;if(r&&r.people){ACT.d=r;ACT.err="";}else ACT.err=r&&r.error||"server";if(L.view==="staff")render(true);})
+  .catch(function(){ACT.busy=false;ACT.err="server";if(L.view==="staff")render(true);});}
+function activityBox(){
+ if(ACT.err==="forbidden"||ACT.err==="bad_request")return "";   /* not an activity admin, or the server is not updated yet */
+ if(ACT.err&&!ACT.d)return '<section class="sec"><div class="sh"><h2>Staff activity</h2></div><div class="empty">The activity log could not be loaded. Please try again.</div></section>';
+ if(!ACT.d)return '<section class="sec"><div class="sh"><h2>Staff activity</h2></div><div class="lnote" role="status">Loading the activity log…</div></section>';
+ var d=ACT.d;
+ var ppl=d.people.length?'<div class="acttw"><table class="acttbl"><thead><tr><th>Staff</th><th>Status</th><th>Last sign-in</th><th>Last activity</th><th>Changes today</th><th>Changes, 7 days</th><th>Portal opened, 7 days</th><th>Active days</th></tr></thead><tbody>'+
+  d.people.map(function(p){var st=ACT_STATE[p.state]||ACT_STATE.idle;
+   return '<tr><td data-notr>'+esc(p.email)+'</td><td><span class="'+st[1]+'">'+esc(st[0])+'</span></td><td data-notr>'+esc(p.lastSignIn||"—")+'</td><td data-notr>'+esc(p.lastSeen)+'</td>'+
+    '<td data-notr>'+p.changesToday+'</td><td data-notr>'+p.changesWeek+'</td><td data-notr>'+p.opensWeek+'</td><td data-notr>'+p.activeDays+' / 7</td></tr>';}).join("")+'</tbody></table></div>'
+  :'<div class="empty">No staff activity in the last 30 days.</div>';
+ var evs=d.events.length?'<details class="gdone"><summary><span>Latest events</span> (<span data-notr>'+d.events.length+'</span>)</summary><div class="acttw"><table class="acttbl"><thead><tr><th>Time (MYT)</th><th>Staff</th><th>What</th><th>Detail</th></tr></thead><tbody>'+
+  d.events.map(function(e){return '<tr><td data-notr>'+esc(e.at)+'</td><td data-notr>'+esc(e.email)+'</td><td>'+esc(e.event)+'</td><td data-notr>'+esc(e.detail||"—")+'</td></tr>';}).join("")+'</tbody></table></div></details>':'';
+ return '<section class="sec"><div class="sh"><h2>Staff activity</h2><button type="button" class="btn ghost" data-act-refresh'+(ACT.busy?' disabled':'')+'>Refresh</button></div>'+
+  '<p class="hint">Who has been working in the staff portal in the last <span data-notr>'+d.days+'</span> <span>days</span>: sign-ins, portal opened and changes made. Kept in the "Staff activity" tab of Eduplan Student Portfolios; rows are never changed.</p>'+ppl+evs+'</section>';}
+document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&e.target.closest("[data-act-refresh]");if(t)actCall();});
 function loadStaff(){var se=ls("eduplan-session");
+ if(se&&se.staff)actView();
+ if(se&&se.staff&&!ACT.d&&!ACT.busy&&!ACT.err)actCall();
  if(se&&se.staff&&!GOALS.list&&!GOALS.busy)goalsCall({});
  if(se&&se.staff&&!NEWS.d&&!NEWS.busy&&!NEWS.err)newsCall({op:"get"});
  if(app.querySelector(".gcd")&&!GOALS.timer)GOALS.timer=setInterval(goalsTick,1000);
@@ -768,7 +796,7 @@ function loadStaff(){var se=ls("eduplan-session");
   if(L.view==="staff")render(true);}).catch(function(){STAFF.busy=false;STAFF.err="server";if(L.view==="staff")render(true);});}
 function staffView(){var se=ls("eduplan-session"),site=window.EDUPLAN_SITE_URL||"",ex=window.EDUPLAN_EXHIBITION_URL||"";
  var head='<section class="hero sthero"><div class="hwrap"><span class="eyebrow">EDUPLAN</span><h1>Staff portal</h1>'+
-  (se&&se.email?'<p class="lead"><span>Signed in as</span> <span data-notr>'+esc(se.email)+'</span></p><p class="hint">Each link opens only for staff it is shared with in Google Drive.</p>':'')+'</div></section>';
+  (se&&se.email?'<p class="lead"><span>Signed in as</span> <span data-notr>'+esc(se.email)+'</span></p><p class="hint">Each link opens only for staff it is shared with in Google Drive.</p><p class="hint">Sign-ins, openings of this portal and changes made here are recorded in the staff activity log.</p>':'')+'</div></section>';
  function card(it){var t=STAFF_TEXT[it.key]||[it.key,"","🔗"];
   return '<a class="act" href="'+esc(it.url)+'" target="_blank" rel="noopener"><span class="acti" aria-hidden="true">'+t[2]+'</span>'+
    '<span class="actb"><b>'+esc(t[0])+'</b><span>'+esc(t[1])+'</span>'+(it.private?'<span class="stp">Private</span>':'')+'</span><span class="actgo" aria-hidden="true">↗</span></a>';}
@@ -780,7 +808,7 @@ function staffView(){var se=ls("eduplan-session"),site=window.EDUPLAN_SITE_URL||
  var web=[{key:"w-site",url:site,t:["EDUPLAN website","The student website","🌐"]},{key:"w-expo",url:ex,t:["EDUPLAN Activity website","For organisers and schools","🎪"]},
   {key:"w-manual",url:"https://github.com/Admineduplan2026/Further-Study-Tools/tree/claude/website-eduplan-artifacts-mb4z44/docs",t:["Guides","How each part of EDUPLAN works","📘"]}]
   .filter(function(x){return x.url;}).map(function(x){STAFF_TEXT[x.key]=x.t;return {key:x.key,url:x.url};});
- return head+'<div class="page">'+goalsBox()+newsBox()+body+group("web",web)+'</div>';}
+ return head+'<div class="page">'+goalsBox()+activityBox()+newsBox()+body+group("web",web)+'</div>';}
 /* The game on its own page (#game), opened from About us: a page of its own works in every browser and in the Claude
    preview, where scrolling to a section of a long page does not always move. */
 function gameView(){return '<div class="page gpage"><p><a class="glink" href="#about">← About us</a></p>'+gameBox()+'</div>';}

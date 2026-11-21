@@ -48,6 +48,12 @@ var ACCOUNT_PW_ROUNDS = 400;            // HMAC rounds per password check
 var ACCOUNT_PW_TRIES = 8;               // wrong passwords per email in 15 minutes
 
 function accountAction_(body) {
+  var result = accountRoute_(body);
+  staffLogChange_(body, result);   // StaffActivity.gs: a change made in the staff portal is logged
+  return result;
+}
+
+function accountRoute_(body) {
   switch (body.action) {
     case 'account_code': return accountCode_(body);
     case 'account_verify': return accountVerify_(body);
@@ -62,6 +68,7 @@ function accountAction_(body) {
     case 'account_goals': return accountGoals_(body);   // StaffGoals.gs
     case 'account_news': return accountNews_(body);     // News.gs
     case 'account_game': return accountGame_(body);     // Rewards.gs
+    case 'account_activity': return accountActivity_(body);   // StaffActivity.gs
   }
   return { error: 'bad_request' };
 }
@@ -383,6 +390,7 @@ function accountSessionOut_(sh, row, email, isNew, how) {
   sh.getRange(row, ACCOUNT_COL.sessions).setValue(accountSessionsText_(list.slice(-ACCOUNT_MAX_SESSIONS)));
   sh.getRange(row, ACCOUNT_COL.signin).setValue(now);
   statsActive_(sh, row); statsLog_(email, isNew ? 'Registered' : 'Signed in');   // Stats.gs
+  staffLogSign_(email, 'Signed in');   // StaffActivity.gs (staff emails only)
   var out = { token: token, email: email, days: ACCOUNT_SESSION_DAYS, data: accountData_(sh, row) };
   if (accountIsStaff_(email)) out.staff = true;   // the website opens its staff page (#staff)
   var portal = accountStaffPortal_(email);
@@ -445,6 +453,7 @@ function accountLogout_(body) {
     if (s) {
       sh.getRange(s.row, ACCOUNT_COL.sessions).setValue(accountSessionsText_(s.list.filter(function (x) { return x.h !== s.h; })));
       statsLog_(sh.getRange(s.row, ACCOUNT_COL.email).getValue(), 'Signed out');
+      staffLogSign_(sh.getRange(s.row, ACCOUNT_COL.email).getValue(), 'Signed out');   // StaffActivity.gs
     }
     return { ok: true };
   } finally {

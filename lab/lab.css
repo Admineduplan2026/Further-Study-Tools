@@ -703,3 +703,11 @@ html:not([lang="en"]) .l-en{display:none}
 .rwcost b{font-size:20px;color:var(--brand,#0a6ea8)}
 .rwgift .btn{margin-top:auto}
 .rwhero .row{margin-top:12px}.rwhero .rwplay{background:#fff;color:var(--brand,#0a6ea8)}
+
+/* Staff activity (StaffActivity.gs): tables scroll inside their own box on phones */
+.acttw{overflow-x:auto;margin-top:10px;border:1px solid var(--line,#e2e8ee);border-radius:14px;background:#fff}
+.acttbl{width:100%;border-collapse:collapse;font-size:13.5px;min-width:640px}
+.acttbl th,.acttbl td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line,#e2e8ee);vertical-align:top}
+.acttbl th{font-size:12px;font-weight:600;color:var(--muted);background:#f5f8fb}
+.acttbl tr:last-child td{border-bottom:0}
+.acttbl td{font-variant-numeric:tabular-nums}
