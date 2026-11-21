@@ -34,3 +34,30 @@
 | `Opened staff portal` | 打开员工页面 #staff |
 | `Goals` | 新增、完成或删除长期目标（详情写操作和目标编号） |
 | `News` | 草拟、保存、批准或放弃最新消息邮件 |
+
+## 程序员页面（#dev）
+
+程序员用自己的电邮登入网站后，会自动打开 **#dev**；员工页面最上方也有「Developer portal」的入口。页面会显示：
+
+- **薪水和出粮日**：月薪、每月几号出粮、下次出粮日期（倒数天数）、已验收任务的奖金合计
+- **任务**：Task 1、2、3……的名称、开始和截止日期、状态（剩几天或已逾期）
+- **验收报告**：已验收的任务显示分数、奖金、验收日期和报告摘要；有「报告链接」的话会显示打开完整报告的按钮
+
+程序员只看得到自己的资料。`ACTIVITY_ADMINS`（默认 admin.eduplan@gmail.com）从员工页面进入后，可以从下拉选单查看任何程序员。程序员的登入和打开页面也会记进「Staff activity」。
+
+### 资料在哪里
+
+都在私人的 **Eduplan Student Portfolios**。薪水只存在这里，不会出现在网站代码或 GitHub 上。
+
+| 分页 | 一行代表 | 栏位 |
+|---|---|---|
+| `Developer tasks` | 一个程序员的一个任务 | 电邮、Task、名称、开始、截止、状态（Not started / In progress / Submitted / Accepted / Not accepted）、分数、奖金 RM、验收日期、验收报告、报告链接 |
+| `Developer pay` | 一个程序员 | 电邮、名字、月薪 RM、出粮日（每月 1–31 号）、备注 |
+
+### 设定
+
+1. 在 Apps Script 执行 **devPortalSetup**（建立两个分页，并放好 Task 1 至 3）。
+2. 打开 Eduplan Student Portfolios：
+   - `Developer tasks`：把 A 栏的「填 Xinyi 的电邮」改成 Xinyi 的电邮（3 行都要改）。
+   - `Developer pay`：A 栏填 Xinyi 的电邮，C 栏填月薪（只填数字），D 栏填每月几号出粮。
+3. 之后每验收一个任务，就在那一行把状态改成 `Accepted`，填上分数、奖金、验收日期和报告摘要。新任务就加一行。

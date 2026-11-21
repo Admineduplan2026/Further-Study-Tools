@@ -69,6 +69,7 @@ function accountRoute_(body) {
     case 'account_news': return accountNews_(body);     // News.gs
     case 'account_game': return accountGame_(body);     // Rewards.gs
     case 'account_activity': return accountActivity_(body);   // StaffActivity.gs
+    case 'account_dev': return accountDev_(body);             // DevPortal.gs
   }
   return { error: 'bad_request' };
 }
@@ -393,6 +394,7 @@ function accountSessionOut_(sh, row, email, isNew, how) {
   staffLogSign_(email, 'Signed in');   // StaffActivity.gs (staff emails only)
   var out = { token: token, email: email, days: ACCOUNT_SESSION_DAYS, data: accountData_(sh, row) };
   if (accountIsStaff_(email)) out.staff = true;   // the website opens its staff page (#staff)
+  if (devIs_(email)) out.dev = true;   // DevPortal.gs: the website opens the developer page (#dev)
   var portal = accountStaffPortal_(email);
   if (portal) out.portal = portal;
   out.has_password = !!String(sh.getRange(row, ACCOUNT_COL.pw).getValue() || '');

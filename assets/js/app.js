@@ -1218,6 +1218,7 @@ function pfGoogle(cred){
 function pfSignedIn(d){
  PF.s={token:d.token,email:d.email,exp:Date.now()+(d.days||30)*864e5};
  if(d.staff)PF.s.staff=true;   /* staff (Account.gs STAFF_EMAILS): the staff page #staff opens after signing in */
+ if(d.dev)PF.s.dev=true;   /* a developer (DevPortal.gs): the developer page #dev opens after signing in */
  if(/^https:\/\//.test(d.portal||""))PF.s.portal=d.portal;
  store(PF_KEY,PF.s);
  PF.step="email";PF.msg="";PF.err="";PF.loaded=Date.now();
@@ -1226,6 +1227,7 @@ function pfSignedIn(d){
  pfStatus("Signed in. Your progress is saved automatically.");
  try{window.dispatchEvent(new CustomEvent("eduplan:signedin"));}catch(e){}
  if(PF.s.staff){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}pfStatus("Staff account: opening the staff portal…");setTimeout(function(){location.hash="#staff";},400);}
+ else if(PF.s.dev){try{sessionStorage.setItem("eduplan-intro","1");}catch(e){}pfStatus("Developer account: opening your page…");setTimeout(function(){location.hash="#dev";},400);}
 }
 /* Sign-in for other screens (the lab's opening screens): the same account and portfolio as My portfolio. */
 function pfDone(d){if(d&&d.token){pfSignedIn(d);render(true);}return d;}

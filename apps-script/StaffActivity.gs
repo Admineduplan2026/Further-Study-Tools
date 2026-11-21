@@ -26,9 +26,9 @@ function staffLog_(email, event, detail) {
   } catch (err) { console.error('staffLog_: ' + err); }
 }
 
-/* Logs a sign-in or sign-out for staff emails only (Account.gs calls this next to statsLog_). */
+/* Logs a sign-in or sign-out for staff and developer emails only (Account.gs calls this next to statsLog_). */
 function staffLogSign_(email, event) {
-  if (accountIsStaff_(email)) staffLog_(String(email).toLowerCase(), event, '');
+  if (accountIsStaff_(email) || devIs_(email)) staffLog_(String(email).toLowerCase(), event, '');   // DevPortal.gs
 }
 
 /* The emails that may read the log on the website. */
@@ -86,7 +86,7 @@ function actList_(now) {
     p.lastSeen = Math.max(p.lastSeen, ms);
     if (ev === 'Signed in') p.lastSignIn = Math.max(p.lastSignIn, ms);
     if (ACT_CHANGES_LABEL_[ev]) { if (d === today) p.changesToday++; if (inWeek) p.changesWeek++; }
-    if (ev === 'Opened staff portal' && inWeek) p.opensWeek++;
+    if ((ev === 'Opened staff portal' || ev === 'Opened developer portal') && inWeek) p.opensWeek++;
     if (inWeek) p.days[d] = true;
   });
   var list = Object.keys(people).map(function (k) {

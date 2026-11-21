@@ -784,6 +784,45 @@ function activityBox(){
  return '<section class="sec"><div class="sh"><h2>Staff activity</h2><button type="button" class="btn ghost" data-act-refresh'+(ACT.busy?' disabled':'')+'>Refresh</button></div>'+
   '<p class="hint">Who has been working in the staff portal in the last <span data-notr>'+d.days+'</span> <span>days</span>: sign-ins, portal opened and changes made. Kept in the "Staff activity" tab of Eduplan Student Portfolios; rows are never changed.</p>'+ppl+evs+'</section>';}
 document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&e.target.closest("[data-act-refresh]");if(t)actCall();});
+/* Developer portal (#dev, DevPortal.gs): a programmer sees their tasks with due dates, the acceptance report of each
+   finished task, their salary and the next payday. The data is in the private sheet, never in this code. Activity
+   admins pick any developer from the list (from the staff portal). */
+var DEV={d:null,err:"",busy:false,who:""};
+var DEV_PILL={"Accepted":"gpill ok","Not accepted":"gpill bad","Submitted":"gpill","In progress":"gpill","Not started":"gpill"};
+function devCall(who){var se=ls("eduplan-session");if(!live||!se||!se.token)return;DEV.busy=true;DEV.who=who||DEV.who||"";
+ var body={action:"account_dev",token:se.token};if(DEV.who)body.who=DEV.who;
+ post(body).then(function(r){DEV.busy=false;if(r&&!r.error){DEV.d=r;DEV.err="";}else{DEV.err=r&&r.error||"server";DEV.d=null;}if(L.view==="dev")render(true);})
+  .catch(function(){DEV.busy=false;DEV.err="server";if(L.view==="dev")render(true);});}
+function loadDev(){if(!DEV.d&&!DEV.busy&&!DEV.err)devCall();}
+function devDays(iso){if(!iso)return null;var end=Date.parse(iso+"T23:59:59+08:00");return Math.ceil((end-Date.now())/864e5);}
+function devView(){var se=ls("eduplan-session");
+ var head='<section class="hero sthero"><div class="hwrap"><span class="eyebrow">EDUPLAN</span><h1>Developer portal</h1>'+
+  (se&&se.email?'<p class="lead"><span>Signed in as</span> <span data-notr>'+esc(se.email)+'</span></p>':'')+
+  '<p class="hint">Your tasks, due dates, acceptance reports, salary and payday. Only you and EDUPLAN admins can see this page.</p></div></section>';
+ if(!se||!se.token)return head+'<div class="page"><div class="empty">Please <a href="'+esc(mainLink("#portfolio"))+'">sign in</a> with your developer email.</div></div>';
+ if(DEV.err)return head+'<div class="page"><div class="empty">'+(DEV.err==="forbidden"?'This email is not on the developer list.':DEV.err==="signed_out"?'Please sign in again.':'Your page could not be loaded. Please try again.')+'</div></div>';
+ if(!DEV.d)return head+'<div class="page"><div class="lnote" role="status">Loading your page…</div></div>';
+ var r=DEV.d,v=r.dev;
+ var pick=r.devs&&r.devs.length?'<section class="sec"><label class="field"><span>Developer</span><select id="dev-pick">'+r.devs.map(function(e){return '<option value="'+esc(e)+'"'+(v&&v.email===e?' selected':'')+' data-notr>'+esc(e)+'</option>';}).join("")+'</select></label></section>':'';
+ if(!v)return head+'<div class="page">'+pick+'<div class="empty">No developer is set up yet. Add one in the "Developer tasks" and "Developer pay" tabs of Eduplan Student Portfolios.</div></div>';
+ var p=v.pay,nd=p&&p.nextPay?devDays(p.nextPay):null;
+ var pay='<section class="sec"><div class="sh"><h2>Salary and payday</h2></div><div class="devpay">'+
+  '<div class="devk"><span>Monthly salary</span><b data-notr>'+(p&&p.salary!==null?rm(p.salary):'—')+'</b></div>'+
+  '<div class="devk"><span>Payday</span><b>'+(p&&p.payday?'<span>Day</span> <span data-notr>'+p.payday+'</span> <span>of each month</span>':'<span>Not set yet</span>')+'</b></div>'+
+  '<div class="devk"><span>Next payday</span><b data-notr>'+(p&&p.nextPay?esc(p.nextPay):'—')+'</b>'+(nd!==null?'<span class="hint">'+(nd<=0?'<span>Today</span>':'<span data-notr>'+nd+'</span> <span>days left</span>')+'</span>':'')+'</div>'+
+  '<div class="devk"><span>Bonus from accepted tasks</span><b data-notr>'+rm(v.bonusTotal||0)+'</b></div></div>'+
+  (p&&p.note?'<p class="hint" data-notr>'+esc(p.note)+'</p>':'')+'</section>';
+ var tasks=v.tasks.length?v.tasks.map(function(t){var d=devDays(t.due),open=t.status!=="Accepted"&&t.status!=="Not accepted";
+   return '<li class="devt"><div class="devth"><span class="gdue" data-notr>'+esc(t.task)+'</span><span class="'+(DEV_PILL[t.status]||"gpill")+'">'+esc(t.status)+'</span></div>'+
+    '<h3 data-notr>'+esc(t.title)+'</h3>'+
+    '<p class="devdates"><span>Start</span> <b data-notr>'+esc(t.start||"—")+'</b> · <span>Due</span> <b data-notr>'+esc(t.due||"—")+'</b>'+
+     (open&&d!==null?(d<0?' · <span class="gpill bad">Overdue</span>':' · <span data-notr>'+d+'</span> <span>days left</span>'):'')+'</p>'+
+    (t.status==="Accepted"||t.status==="Not accepted"||t.score!==null?'<div class="devrep"><p class="devrh">Acceptance report</p>'+
+     '<p><span>Score</span> <b data-notr>'+(t.score!==null?t.score+' / 100':'—')+'</b>'+(t.bonus!==null?' · <span>Bonus</span> <b data-notr>'+rm(t.bonus)+'</b>':'')+(t.acceptedOn?' · <span>Accepted on</span> <b data-notr>'+esc(t.acceptedOn)+'</b>':'')+'</p>'+
+     (t.report?'<p class="devrt" data-notr>'+esc(t.report)+'</p>':'')+(t.link?'<p><a href="'+esc(t.link)+'" target="_blank" rel="noopener">Open the full report ↗</a></p>':'')+'</div>':'')+'</li>';}).join("")
+  :'<li class="empty">No tasks yet.</li>';
+ return head+'<div class="page">'+pick+pay+'<section class="sec"><div class="sh"><h2>Tasks</h2></div><ul class="devts">'+tasks+'</ul></section></div>';}
+document.addEventListener("change",function(e){var t=e.target;if(t&&t.id==="dev-pick"){DEV.d=null;devCall(t.value);render(true);}});
 function loadStaff(){var se=ls("eduplan-session");
  if(se&&se.staff)actView();
  if(se&&se.staff&&!ACT.d&&!ACT.busy&&!ACT.err)actCall();
@@ -808,7 +847,8 @@ function staffView(){var se=ls("eduplan-session"),site=window.EDUPLAN_SITE_URL||
  var web=[{key:"w-site",url:site,t:["EDUPLAN website","The student website","🌐"]},{key:"w-expo",url:ex,t:["EDUPLAN Activity website","For organisers and schools","🎪"]},
   {key:"w-manual",url:"https://github.com/Admineduplan2026/Further-Study-Tools/tree/claude/website-eduplan-artifacts-mb4z44/docs",t:["Guides","How each part of EDUPLAN works","📘"]}]
   .filter(function(x){return x.url;}).map(function(x){STAFF_TEXT[x.key]=x.t;return {key:x.key,url:x.url};});
- return head+'<div class="page">'+goalsBox()+activityBox()+newsBox()+body+group("web",web)+'</div>';}
+ var devEntry='<section class="sec"><div class="acts"><a class="act" href="#dev"><span class="acti" aria-hidden="true">🧑‍💻</span><span class="actb"><b>Developer portal</b><span>Tasks, due dates, acceptance reports, salary and payday</span></span><span class="actgo" aria-hidden="true">→</span></a></div></section>';
+ return head+'<div class="page">'+devEntry+goalsBox()+activityBox()+newsBox()+body+group("web",web)+'</div>';}
 /* The game on its own page (#game), opened from About us: a page of its own works in every browser and in the Claude
    preview, where scrolling to a section of a long page does not always move. */
 function gameView(){return '<div class="page gpage"><p><a class="glink" href="#about">← About us</a></p>'+gameBox()+'</div>';}
@@ -949,9 +989,11 @@ function help(){
 var top=document.getElementById("top"),app=document.getElementById("app"),helpBox=document.getElementById("helpbox"),sheet=document.getElementById("sheet");
 /* A signed-in staff account lands on the staff portal, not the student search on the home page. */
 function staffSession(){var se=ls("eduplan-session");return !!(se&&se.staff&&se.token&&se.exp>Date.now());}
+function devSession(){var se=ls("eduplan-session");return !!(se&&se.dev&&!se.staff&&se.token&&se.exp>Date.now());}
 function route(){var h=(location.hash||"#home").slice(1);
  if((h===""||h==="home")&&staffSession()){h="staff";try{history.replaceState(null,"","#staff");}catch(e){}}
- L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about",game:"game",staff:"staff",rewards:"rewards"}[h]||"home");}
+ else if((h===""||h==="home")&&devSession()){h="dev";try{history.replaceState(null,"","#dev");}catch(e){}}
+ L.view=window.EDUPLAN_HOST&&!window.EDUPLAN_HOST.owns(h)?"app":({results:"results",saved:"saved",about:"about",game:"game",staff:"staff",rewards:"rewards",dev:"dev"}[h]||"home");}
 function chrome(){
  S.saved=ls("eduplan-saved")||[];S.quiz=ls("eduplan-quiz")||S.quiz;S.session=ls("eduplan-session");if(S.session&&!(S.session.token&&S.session.exp>Date.now()))S.session=null;
  var lang=top.querySelector(".lang");top.innerHTML=topbar()+(L.menu?menu():"")+(L.info?modeInfo():"");if(lang)top.querySelector(".bar").appendChild(lang);
@@ -964,11 +1006,12 @@ function render(keep){
  document.body.classList.toggle("lab-own",L.view!=="app");
  if(L.view==="app"){sheet.innerHTML="";document.body.classList.remove("locked");return;}   /* the main app draws this page */
  if(L.view==="results"&&locked())L.view="home";
- app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():L.view==="game"?gameView():L.view==="staff"?staffView():L.view==="rewards"?rewardsView():home();
+ app.innerHTML=L.view==="results"?(L.mode==="scholarship"?schResults():resultsView()):L.view==="saved"?savedView():L.view==="about"?aboutView():L.view==="game"?gameView():L.view==="staff"?staffView():L.view==="dev"?devView():L.view==="rewards"?rewardsView():home();
  sheet.innerHTML=L.detail?detailSheet():"";document.body.classList.toggle("locked",!!L.detail);
  if(L.view==="about"){aboutFx();aboutNet();}
  if(L.view==="game")aboutFx();
  if(L.view==="staff")loadStaff();
+ if(L.view==="dev")loadDev();
  if(!keep)window.scrollTo(0,0);
 }
 function go(view){if(location.hash==="#"+view)render();else location.hash="#"+view;}
@@ -1060,7 +1103,7 @@ function langBox(){var zh=false;try{zh=localStorage.getItem("eduplan-lang")==="z
   '<button type="button" data-lang="zh" lang="zh-Hans" aria-pressed="'+zh+'">中文</button></div>';}
 function interests(){
  var skipped=false;try{skipped=!!sessionStorage.getItem("eduplan-ints-skip");}catch(e){}
- if(skipped||myInts().length>=3||/^#(privacy|portfolio|staff)/.test(location.hash)||(ls("eduplan-session")||{}).staff||document.querySelector(".ipick")||!intFacs().length)return false;
+ if(skipped||myInts().length>=3||/^#(privacy|portfolio|staff|dev)/.test(location.hash)||(ls("eduplan-session")||{}).staff||(ls("eduplan-session")||{}).dev||document.querySelector(".ipick")||!intFacs().length)return false;
  var pick=myInts().slice(0,3),d=document.createElement("div");d.className="intro ipick";d.setAttribute("role","dialog");d.setAttribute("aria-modal","true");d.setAttribute("aria-labelledby","ipick-h");
  function draw(){
   d.innerHTML=langBox()+'<div class="iblobs" aria-hidden="true"><i></i><i></i><i></i></div><div class="iwrap">'+
