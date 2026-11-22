@@ -32,6 +32,14 @@ var DEV_REPORT_HEAD = ['Email 电邮', 'Week 周', 'Submitted at 提交时间', 
   'Status 状态 (Submitted/Reviewed)', 'Feedback 回馈'];
 var DEV_STATUS = ['Not started', 'In progress', 'Submitted', 'Accepted', 'Not accepted'];
 var DEV_PAYOUT_TYPES = ['Bonus', 'Allowance', 'Other'];
+/* The type of a bonus-record row ("Bonus", "Allowance" or "Other"), or '' for salary, empty or anything else. */
+function devPayoutType_(v) {
+  var t = devText_(v).toLowerCase();
+  if (t === 'bonus' || t === '奖金' || t === '獎金') return 'Bonus';
+  if (t === 'allowance' || t === '津贴' || t === '津貼') return 'Allowance';
+  if (t === 'other' || t === '其他') return 'Other';
+  return '';
+}
 var DEV_REPORT_MAX = 10 * 1024 * 1024;   // 10 MB per weekly report file
 var DEV_REPORT_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -110,12 +118,12 @@ function devFor_(email, now) {
     salary: devNum_(payRow[2]), payday: devNum_(payRow[3]), nextPay: devNextPay_(payRow[3], now), note: devText_(payRow[4]).slice(0, 300)
   } : null;
 
-  // Bonus records: every row of the bonus record except salary (salary is counted from the monthly salary below).
+  // Bonus records: only rows whose type is clearly Bonus, Allowance or Other (English or Chinese). A salary row, or a row
+  // with an empty or unknown type, is left out: salary is counted from the monthly salary below, never twice.
   var bonuses = devRows_(DEV_PAYOUTS, DEV_PAYOUT_HEAD).filter(function (r) {
-    return accountEmail_(r[0]) === email && devText_(r[2]) !== 'Salary';
+    return accountEmail_(r[0]) === email && devPayoutType_(r[2]) && devNum_(r[3]);
   }).map(function (r) {
-    var type = devText_(r[2]);
-    return { date: devDate_(r[1]), type: DEV_PAYOUT_TYPES.indexOf(type) >= 0 ? type : 'Bonus', amount: devNum_(r[3]) || 0,
+    return { date: devDate_(r[1]), type: devPayoutType_(r[2]), amount: devNum_(r[3]) || 0,
       note: devText_(r[4]).slice(0, 200), link: /^https:\/\//.test(devText_(r[5])) ? devText_(r[5]) : '' };
   }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
   var bonusSum = bonuses.reduce(function (t, b) { return t + b.amount; }, 0);
