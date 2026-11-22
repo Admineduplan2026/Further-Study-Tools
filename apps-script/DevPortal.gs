@@ -1,14 +1,17 @@
 /**
  * Developer portal (#dev on the website): each developer signs in with their own email and sees only their own page:
- *   - pay: monthly salary, payday, and what has been paid so far (salary, bonus, total) from the payout record;
+ *   - income: total income so far = monthly salary x months worked (from the start date, this month included)
+ *     + every bonus record; the bonus records (date, type, amount, note, report link); salary and next payday;
  *   - tasks: every task in one table, newest first (start, due, status, score, bonus, details, acceptance report);
  *   - weekly reports: the developer uploads one report per week (summary + file); EDUPLAN marks it reviewed.
  * The data lives in the private spreadsheet "Eduplan Student Portfolios" (Stats.gs), so salaries never appear in the
  * website code or on GitHub. Report files go to Drive: "Eduplan Databases/6. Developer reports (private)/<email>".
  *   - Developer tasks    Email, Task, Title, Start, Due, Status, Score, Bonus RM, Accepted on, Report summary,
  *                        Report link, Details. Status: Not started, In progress, Submitted, Accepted, Not accepted.
- *   - Developer pay      Email, Name, Monthly salary RM, Payday (1-31), Note.
- *   - Developer payouts  Email, Date, Type (Salary, Bonus, Allowance, Other), Amount RM, Note: one row per payment made.
+ *   - Developer pay      Email, Name, Monthly salary RM, Payday (1-31), Note, Start date (empty: the month of the
+ *                        earliest task).
+ *   - Developer payouts  The bonus record: Email, Date, Type (Bonus, Allowance, Other), Amount RM, Note, Report link.
+ *                        Salary is not entered here (it is counted from the monthly salary); a Salary row is ignored.
  *   - Developer reports  Email, Week, Submitted at, Summary, File name, File link, Status (Submitted, Reviewed), Feedback.
  * The activity admins (StaffActivity.gs ACTIVITY_ADMINS, default admin.eduplan@gmail.com) can open any developer's
  * page, add tasks from the website, and see every report.
@@ -23,12 +26,12 @@
 var DEV_TASKS = 'Developer tasks', DEV_PAY = 'Developer pay', DEV_PAYOUTS = 'Developer payouts', DEV_REPORTS = 'Developer reports';
 var DEV_TASK_HEAD = ['Email 电邮', 'Task 任务', 'Title 名称', 'Start 开始', 'Due 截止', 'Status 状态', 'Score 分数',
   'Bonus RM 奖金', 'Accepted on 验收日期', 'Report summary 验收报告', 'Report link 报告链接', 'Details 任务内容'];
-var DEV_PAY_HEAD = ['Email 电邮', 'Name 名字', 'Monthly salary RM 月薪', 'Payday 出粮日 (1-31)', 'Note 备注'];
-var DEV_PAYOUT_HEAD = ['Email 电邮', 'Date 日期', 'Type 类别 (Salary/Bonus/Allowance/Other)', 'Amount RM 金额', 'Note 备注'];
+var DEV_PAY_HEAD = ['Email 电邮', 'Name 名字', 'Monthly salary RM 月薪', 'Payday 出粮日 (1-31)', 'Note 备注', 'Start date 开始日期 (YYYY-MM-DD)'];
+var DEV_PAYOUT_HEAD = ['Email 电邮', 'Date 日期', 'Type 类别 (Bonus/Allowance/Other)', 'Amount RM 金额', 'Note 备注', 'Report link 报告链接'];
 var DEV_REPORT_HEAD = ['Email 电邮', 'Week 周', 'Submitted at 提交时间', 'Summary 摘要', 'File name 文件名', 'File link 文件链接',
   'Status 状态 (Submitted/Reviewed)', 'Feedback 回馈'];
 var DEV_STATUS = ['Not started', 'In progress', 'Submitted', 'Accepted', 'Not accepted'];
-var DEV_PAYOUT_TYPES = ['Salary', 'Bonus', 'Allowance', 'Other'];
+var DEV_PAYOUT_TYPES = ['Bonus', 'Allowance', 'Other'];
 var DEV_REPORT_MAX = 10 * 1024 * 1024;   // 10 MB per weekly report file
 var DEV_REPORT_TYPES = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -107,15 +110,23 @@ function devFor_(email, now) {
     salary: devNum_(payRow[2]), payday: devNum_(payRow[3]), nextPay: devNextPay_(payRow[3], now), note: devText_(payRow[4]).slice(0, 300)
   } : null;
 
-  var payouts = devRows_(DEV_PAYOUTS, DEV_PAYOUT_HEAD).filter(function (r) { return accountEmail_(r[0]) === email; }).map(function (r) {
+  // Bonus records: every row of the bonus record except salary (salary is counted from the monthly salary below).
+  var bonuses = devRows_(DEV_PAYOUTS, DEV_PAYOUT_HEAD).filter(function (r) {
+    return accountEmail_(r[0]) === email && devText_(r[2]) !== 'Salary';
+  }).map(function (r) {
     var type = devText_(r[2]);
-    return { date: devDate_(r[1]), type: DEV_PAYOUT_TYPES.indexOf(type) >= 0 ? type : 'Other', amount: devNum_(r[3]) || 0, note: devText_(r[4]).slice(0, 200) };
+    return { date: devDate_(r[1]), type: DEV_PAYOUT_TYPES.indexOf(type) >= 0 ? type : 'Bonus', amount: devNum_(r[3]) || 0,
+      note: devText_(r[4]).slice(0, 200), link: /^https:\/\//.test(devText_(r[5])) ? devText_(r[5]) : '' };
   }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
-  var paid = { salary: 0, bonus: 0, other: 0, total: 0 };
-  payouts.forEach(function (p) {
-    if (p.type === 'Salary') paid.salary += p.amount; else if (p.type === 'Bonus' || p.type === 'Allowance') paid.bonus += p.amount; else paid.other += p.amount;
-    paid.total += p.amount;
-  });
+  var bonusSum = bonuses.reduce(function (t, b) { return t + b.amount; }, 0);
+
+  // Salary earned: monthly salary x months from the start month to this month (this month included).
+  var start = payRow ? devDate_(payRow[5]) : '';
+  if (!start) start = tasks.reduce(function (m, t) { return t.start && (!m || t.start < m) ? t.start : m; }, '');
+  var today = Utilities.formatDate(now, 'Asia/Kuala_Lumpur', 'yyyy-MM-dd'), months = 0;
+  if (start && start <= today) months = (Number(today.slice(0, 4)) - Number(start.slice(0, 4))) * 12 + Number(today.slice(5, 7)) - Number(start.slice(5, 7)) + 1;
+  var monthly = pay && pay.salary ? pay.salary : 0;
+  var income = { salary: monthly * months, months: months, start: start, bonus: bonusSum, total: monthly * months + bonusSum };
 
   var reports = devRows_(DEV_REPORTS, DEV_REPORT_HEAD).filter(function (r) { return accountEmail_(r[0]) === email; }).map(function (r) {
     return { week: devText_(r[1]), at: devTime_(r[2]), summary: devText_(r[3]).slice(0, 2000), file: devText_(r[4]),
@@ -123,7 +134,7 @@ function devFor_(email, now) {
   }).reverse();   // newest first
 
   var bonusTotal = tasks.reduce(function (s, t) { return s + (t.status === 'Accepted' && t.bonus ? t.bonus : 0); }, 0);
-  return { email: email, name: payRow ? devText_(payRow[1]) : '', tasks: tasks, pay: pay, payouts: payouts, paid: paid,
+  return { email: email, name: payRow ? devText_(payRow[1]) : '', tasks: tasks, pay: pay, income: income, bonuses: bonuses,
     reports: reports, bonusTotal: bonusTotal };
 }
 
@@ -219,11 +230,12 @@ function devPortalSetup() {
   }
   p.getRange('A:B').setNumberFormat('@'); p.setColumnWidth(1, 200); p.setColumnWidth(5, 300);
   if (p.getLastRow() < 2) p.getRange(2, 1, 1, DEV_PAY_HEAD.length).setValues([['填 Xinyi 的电邮', 'Xinyi', '', '', '']]);
-  po.getRange('B:B').setNumberFormat('@'); po.setColumnWidth(1, 200); po.setColumnWidth(3, 220); po.setColumnWidth(5, 300);
+  po.getRange('B:B').setNumberFormat('@'); po.setColumnWidth(1, 200); po.setColumnWidth(3, 220); po.setColumnWidth(5, 300); po.setColumnWidth(6, 320);
+  p.getRange('F:F').setNumberFormat('@');
   po.getRange(2, 3, 1000, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(DEV_PAYOUT_TYPES, true).setAllowInvalid(false).build());
   rp.getRange('C:C').setNumberFormat('yyyy-mm-dd hh:mm'); rp.setColumnWidth(1, 200); rp.setColumnWidth(4, 360); rp.setColumnWidth(6, 260); rp.setColumnWidth(8, 300);
   rp.getRange(2, 7, 1000, 1).setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(['Submitted', 'Reviewed'], true).setAllowInvalid(false).build());
   driveFolder_('devreports');   // Drive.gs: the folder for report files
   console.log('Developer portal ready: ' + t.getParent().getUrl() + ' (tabs "' + [DEV_TASKS, DEV_PAY, DEV_PAYOUTS, DEV_REPORTS].join('", "') + '"). ' +
-    'Type the developer\'s email in column A, the salary and payday in "' + DEV_PAY + '", and one row per payment in "' + DEV_PAYOUTS + '".');
+    'Type the developer\'s email in column A, the salary, payday and start date in "' + DEV_PAY + '", and one row per bonus in "' + DEV_PAYOUTS + '".');
 }

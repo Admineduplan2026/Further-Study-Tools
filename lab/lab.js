@@ -817,16 +817,15 @@ function devView(){var se=ls("eduplan-session"),dis=DEV.busy?' disabled':'';
  var note=(DEV.msg?'<p class="note" role="status">'+esc(DEV.msg)+'</p>':'')+(DEV.formErr?'<p class="err" role="alert">'+esc(DEV_ERR[DEV.formErr]||DEV_ERR.server)+'</p>':'');
  if(!v)return head+'<div class="page">'+pick+note+'<div class="empty">No developer is set up yet. Add one in the "Developer tasks" and "Developer pay" tabs of Eduplan Student Portfolios.</div></div>';
 
- /* Pay: monthly salary, payday, and what has been paid so far */
- var p=v.pay,nd=p&&p.nextPay?devDays(p.nextPay):null,pd=v.paid||{salary:0,bonus:0,total:0};
+ /* Income: monthly salary x months worked + every bonus record; then the bonus record with its reports */
+ var p=v.pay,nd=p&&p.nextPay?devDays(p.nextPay):null,inc=v.income||{salary:0,months:0,bonus:0,total:0},bl=v.bonuses||[];
  var pay='<section class="sec"><div class="sh"><h2>Salary and bonus</h2></div><div class="devpay">'+
-  '<div class="devk devtot"><span>Total received so far</span><b data-notr>'+rm(pd.total||0)+'</b><span class="hint"><span>Salary</span> <span data-notr>'+rm(pd.salary||0)+'</span> · <span>Bonus</span> <span data-notr>'+rm(pd.bonus||0)+'</span></span></div>'+
-  '<div class="devk"><span>Monthly salary</span><b data-notr>'+(p&&p.salary!==null?rm(p.salary):'—')+'</b></div>'+
+  '<div class="devk devtot"><span>Total income so far</span><b data-notr>'+rm(inc.total||0)+'</b><span class="hint"><span>Salary</span> <span data-notr>'+rm(p&&p.salary?p.salary:0)+' × '+(inc.months||0)+'</span> <span>months</span> · <span>Bonus</span> <span data-notr>'+rm(inc.bonus||0)+'</span></span></div>'+
+  '<div class="devk"><span>Monthly salary</span><b data-notr>'+(p&&p.salary!==null?rm(p.salary):'—')+'</b>'+(p&&p.note?'<span class="hint" data-notr>'+esc(p.note)+'</span>':'')+'</div>'+
   '<div class="devk"><span>Next payday</span><b data-notr>'+(p&&p.nextPay?esc(p.nextPay):'—')+'</b>'+(p&&p.payday?'<span class="hint"><span>Day</span> <span data-notr>'+p.payday+'</span> <span>of each month</span>'+(nd!==null?' · '+(nd<=0?'<span>Today</span>':'<span data-notr>'+nd+'</span> <span>days left</span>'):'')+'</span>':'<span class="hint">Not set yet</span>')+'</div>'+
-  '<div class="devk"><span>Bonus from accepted tasks</span><b data-notr>'+rm(v.bonusTotal||0)+'</b></div></div>'+
-  (p&&p.note?'<p class="hint" data-notr>'+esc(p.note)+'</p>':'')+
-  (v.payouts&&v.payouts.length?'<details class="gdone"><summary><span>Payment history</span> (<span data-notr>'+v.payouts.length+'</span>)</summary><div class="acttw"><table class="acttbl"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead><tbody>'+
-   v.payouts.map(function(x){return '<tr><td data-notr>'+esc(x.date||"—")+'</td><td>'+esc(x.type)+'</td><td data-notr>'+rm(x.amount)+'</td><td data-notr>'+esc(x.note||"—")+'</td></tr>';}).join("")+'</tbody></table></div></details>':'<p class="hint">No payments recorded yet.</p>')+'</section>';
+  '<div class="devk"><span>Bonus total</span><b data-notr>'+rm(inc.bonus||0)+'</b></div></div>'+
+  (bl.length?'<details class="gdone" open><summary><span>Bonus records</span> (<span data-notr>'+bl.length+'</span>)</summary><div class="acttw"><table class="acttbl"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th><th>Report</th></tr></thead><tbody>'+
+   bl.map(function(x){return '<tr><td data-notr>'+esc(x.date||"—")+'</td><td>'+esc(x.type)+'</td><td data-notr><b>'+rm(x.amount)+'</b></td><td data-notr>'+esc(x.note||"—")+'</td><td>'+(x.link?'<a href="'+esc(x.link)+'" target="_blank" rel="noopener">View report ↗</a>':'—')+'</td></tr>';}).join("")+'</tbody></table></div></details>':'<p class="hint">No bonus records yet.</p>')+'</section>';
 
  /* Tasks: one table, newest first; the acceptance report and details open under each row */
  var rows=v.tasks.length?v.tasks.map(function(t){var d=devDays(t.due),open=t.status!=="Accepted"&&t.status!=="Not accepted";
