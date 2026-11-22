@@ -169,6 +169,7 @@ function accountDev_(body) {
   var me = accountEmail_(sh.getRange(s.row, ACCOUNT_COL.email).getValue());
   var admin = actIsAdmin_(me), devs = devEmails_();   // StaffActivity.gs
   var who = accountEmail_(body.who) || me, op = String(body.op || '');
+  if (admin && !accountEmail_(body.who) && devs.indexOf(me) < 0 && devs.length) who = devs[0];   // an admin opens the first developer
   if (who !== me && !admin) return { error: 'forbidden' };
   if (op === 'report') {
     if (devs.indexOf(me) < 0) return { error: 'forbidden' };   // each developer uploads their own reports

@@ -796,7 +796,9 @@ function devCall(who,extra){var se=ls("eduplan-session");if(!live||!se||!se.toke
  var body={action:"account_dev",token:se.token};if(DEV.who)body.who=DEV.who;Object.keys(extra||{}).forEach(function(k){body[k]=extra[k];});
  if(extra&&L.view==="dev")render(true);
  post(body).then(function(r){DEV.busy=false;
-  if(r&&!r.error){DEV.d=r;DEV.err="";DEV.formErr="";DEV.msg=extra&&extra.op==="report"?"Report submitted.":extra&&extra.op==="task_add"?"Task added.":"";}
+  if(r&&!r.error){DEV.d=r;DEV.err="";DEV.formErr="";DEV.msg=extra&&extra.op==="report"?"Report submitted.":extra&&extra.op==="task_add"?"Task added.":"";
+   /* an admin who is not a developer: open the first developer on the list */
+   if(!r.dev&&r.devs&&r.devs.length&&!extra){devCall(r.devs[0]);return;}}
   else if(extra){DEV.formErr=r&&r.error||"server";}else{DEV.err=r&&r.error||"server";DEV.d=null;}
   if(L.view==="dev")render(true);})
   .catch(function(){DEV.busy=false;if(extra)DEV.formErr="server";else DEV.err="server";if(L.view==="dev")render(true);});}
@@ -811,7 +813,7 @@ function devView(){var se=ls("eduplan-session"),dis=DEV.busy?' disabled':'';
  if(DEV.err)return head+'<div class="page"><div class="empty">'+(DEV.err==="forbidden"?'This email is not on the developer list.':DEV.err==="signed_out"?'Please sign in again.':'Your page could not be loaded. Please try again.')+'</div></div>';
  if(!DEV.d)return head+'<div class="page"><div class="lnote" role="status">Loading your page…</div></div>';
  var r=DEV.d,v=r.dev,mine=v&&se.email&&v.email===String(se.email).toLowerCase();
- var pick=r.devs&&r.devs.length?'<section class="sec"><label class="field"><span>Developer</span><select id="dev-pick">'+r.devs.map(function(e){return '<option value="'+esc(e)+'"'+(v&&v.email===e?' selected':'')+' data-notr>'+esc(e)+'</option>';}).join("")+'</select></label></section>':'';
+ var pick=r.devs&&r.devs.length?'<section class="sec"><label class="field"><span>Developer</span><select id="dev-pick">'+(v?'':'<option value="" selected>Choose</option>')+r.devs.map(function(e){return '<option value="'+esc(e)+'"'+(v&&v.email===e?' selected':'')+' data-notr>'+esc(e)+'</option>';}).join("")+'</select></label></section>':'';
  var note=(DEV.msg?'<p class="note" role="status">'+esc(DEV.msg)+'</p>':'')+(DEV.formErr?'<p class="err" role="alert">'+esc(DEV_ERR[DEV.formErr]||DEV_ERR.server)+'</p>':'');
  if(!v)return head+'<div class="page">'+pick+note+'<div class="empty">No developer is set up yet. Add one in the "Developer tasks" and "Developer pay" tabs of Eduplan Student Portfolios.</div></div>';
 
@@ -858,7 +860,7 @@ function devView(){var se=ls("eduplan-session"),dis=DEV.busy?' disabled':'';
  var reports='<section class="sec"><div class="sh"><h2>Weekly reports</h2></div>'+reps+upload+'</section>';
 
  return head+'<div class="page">'+pick+note+pay+tasks+reports+'</div>';}
-document.addEventListener("change",function(e){var t=e.target;if(t&&t.id==="dev-pick"){DEV.d=null;DEV.msg="";DEV.formErr="";devCall(t.value);render(true);}});
+document.addEventListener("change",function(e){var t=e.target;if(t&&t.id==="dev-pick"&&t.value){DEV.d=null;DEV.msg="";DEV.formErr="";devCall(t.value);render(true);}});
 document.addEventListener("submit",function(e){var f=e.target;if(!f)return;
  if(f.id==="dev-task"){e.preventDefault();var g=function(id){return (document.getElementById(id)||{}).value||"";};
   devCall(DEV.who||(DEV.d&&DEV.d.dev&&DEV.d.dev.email)||"",{op:"task_add",task:g("dt-task"),title:g("dt-title"),start:g("dt-start"),due:g("dt-due"),details:g("dt-details")});return;}
