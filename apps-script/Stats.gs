@@ -2,7 +2,8 @@
  * Eduplan student overview: who registered, signed in and used the website, and how many guests visited.
  * Everything is in the private spreadsheet "Eduplan Student Portfolios" (Account.gs; in "Eduplan Databases/3. Students and
  * visitors (private)", Drive.gs), next to the "Students" tab:
- *   - Students     one row per student; column L "Last active" is updated whenever the student uses the website.
+ *   - Students     one row per student; column M "Last active" is updated whenever the student uses the website
+ *                  (column L is the password, Account.gs).
  *   - Sign-in log  one row per event: Registered (first sign-in), Signed in, Signed out, Deleted portfolio.
  *   - Visits       one row per day (Malaysia time): visits by guests and by signed-in students, and by route.
  *                  Guests are counted anonymously: no cookies, no IP address, no identifier; one count per browser tab.
@@ -13,7 +14,7 @@
  */
 
 var STATS_LOG = 'Sign-in log', STATS_VISITS = 'Visits', STATS_OVERVIEW = 'Overview';
-var STATS_ACTIVE_COL = 12;   // column L of Students
+var STATS_ACTIVE_COL = 13;   // column M of Students (column L, 12, is the password: Account.gs ACCOUNT_COL.pw)
 var STATS_MODES = ['interest', 'scholarship', 'guidance'];
 
 function statsBook_() { return accountSheet_().getParent(); }
@@ -65,6 +66,7 @@ function statsVisit_(body) {
 
 /* Adds the Last active column, the log, the visits and the Overview tab with live formulas and a chart. */
 function statsSetup() {
+  statsRepairColumns_();
   var st = accountSheet_(), ss = st.getParent();
   ss.setSpreadsheetTimeZone('Asia/Kuala_Lumpur');
   ss.setRecalculationInterval(SpreadsheetApp.RecalculationInterval.MINUTE);   // "active now" keeps up to date
@@ -87,9 +89,9 @@ function statsSetup() {
     ['Registered students (all time)', '=COUNTA(' + S + 'A2:A)'],
     ['New registrations today', '=COUNTIFS(' + S + 'B2:B,">="&TODAY())'],
     ['New registrations, last 7 days', '=COUNTIFS(' + S + 'B2:B,">="&TODAY()-6)'],
-    ['Active in the last 15 minutes ("online now")', '=COUNTIFS(' + S + 'L2:L,">="&NOW()-15/1440)'],
-    ['Active today', '=COUNTIFS(' + S + 'L2:L,">="&TODAY())'],
-    ['Active, last 7 days', '=COUNTIFS(' + S + 'L2:L,">="&TODAY()-6)'],
+    ['Active in the last 15 minutes ("online now")', '=COUNTIFS(' + S + 'M2:M,">="&NOW()-15/1440)'],
+    ['Active today', '=COUNTIFS(' + S + 'M2:M,">="&TODAY())'],
+    ['Active, last 7 days', '=COUNTIFS(' + S + 'M2:M,">="&TODAY()-6)'],
     ['', ''],
     ['Sign-ins', ''],
     ['Sign-ins today (existing accounts)', '=COUNTIFS(' + L + 'A2:A,">="&TODAY(),' + L + 'C2:C,"Signed in")'],
@@ -110,7 +112,7 @@ function statsSetup() {
   ov.setColumnWidth(1, 330); ov.setColumnWidth(2, 90);
 
   ov.getRange('D1').setValue('Latest activity (most recent first)').setFontWeight('bold').setFontSize(12);
-  ov.getRange('D2').setFormula('=IFERROR(QUERY(' + S + 'A2:L,"select A, L, C, B where A is not null order by L desc limit 25 label A \'Email\', L \'Last active\', C \'Last sign-in\', B \'Registered\'",0),"No students yet")');
+  ov.getRange('D2').setFormula('=IFERROR(QUERY(' + S + 'A2:M,"select A, M, C, B where A is not null order by M desc limit 25 label A \'Email\', M \'Last active\', C \'Last sign-in\', B \'Registered\'",0),"No students yet")');
   ov.getRange('D30').setValue('Latest sign-in events').setFontWeight('bold').setFontSize(12);
   ov.getRange('D31').setFormula("=IFERROR(QUERY(" + L + "A2:C,\"select A, B, C where A is not null order by A desc limit 25 label A 'Time', B 'Email', C 'Event'\",0),\"No events yet\")");
   ov.getRange('E:F').setNumberFormat('yyyy-mm-dd hh:mm'); ov.getRange('G:G').setNumberFormat('yyyy-mm-dd hh:mm');
@@ -122,4 +124,30 @@ function statsSetup() {
   ov.insertChart(chart);
   ov.setFrozenRows(0);
   console.log('Overview ready: ' + ss.getUrl());
+}
+
+
+/* Repairs the Students tab after an older version wrote "Last active" into column L, the password column: L gets its
+   header and text format back, every value in L that is not a password hash (a date) moves to M ("Last active") and is
+   cleared from L. Those students then have no password: the website offers "Set my password" (an emailed code).
+   Safe to run again; statsSetup runs it first. */
+function statsRepairColumns_() {
+  var st = accountSheet_(), pw = ACCOUNT_COL.pw, n = st.getLastRow();   // Account.gs
+  st.getRange(1, pw).setValue(ACCOUNT_HEADERS[pw - 1]).setFontWeight('bold').setBackground('#e4f2fa');
+  st.getRange(1, STATS_ACTIVE_COL).setValue('Last active').setFontWeight('bold').setBackground('#e4f2fa');
+  if (n < 2) return 0;
+  var L = st.getRange(2, pw, n - 1, 1), M = st.getRange(2, STATS_ACTIVE_COL, n - 1, 1);
+  var lv = L.getValues(), mv = M.getValues(), moved = 0;
+  for (var i = 0; i < lv.length; i++) {
+    var v = lv[i][0];
+    if (v === '' || v == null) continue;
+    if (typeof v === 'string' && /^p1\$/.test(v)) continue;   // a real password hash stays
+    if (!mv[i][0]) mv[i][0] = v instanceof Date ? v : '';
+    lv[i][0] = '';
+    moved++;
+  }
+  L.setNumberFormat('@').setValues(lv);
+  M.setValues(mv);
+  console.log('statsRepairColumns_: ' + moved + ' row(s) had a date in the password column; moved to "Last active".');
+  return moved;
 }

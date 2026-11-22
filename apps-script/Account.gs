@@ -397,7 +397,7 @@ function accountSessionOut_(sh, row, email, isNew, how) {
   if (devIs_(email)) out.dev = true;   // DevPortal.gs: the website opens the developer page (#dev)
   var portal = accountStaffPortal_(email);
   if (portal) out.portal = portal;
-  out.has_password = !!String(sh.getRange(row, ACCOUNT_COL.pw).getValue() || '');
+  out.has_password = /^p1\$/.test(String(sh.getRange(row, ACCOUNT_COL.pw).getValue() || ''));   // a hash, not a stray date
   return out;
 }
 
