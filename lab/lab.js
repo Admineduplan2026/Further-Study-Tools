@@ -787,42 +787,88 @@ document.addEventListener("click",function(e){var t=e.target&&e.target.closest&&
 /* Developer portal (#dev, DevPortal.gs): a programmer sees their tasks with due dates, the acceptance report of each
    finished task, their salary and the next payday. The data is in the private sheet, never in this code. Activity
    admins pick any developer from the list (from the staff portal). */
-var DEV={d:null,err:"",busy:false,who:""};
-var DEV_PILL={"Accepted":"gpill ok","Not accepted":"gpill bad","Submitted":"gpill","In progress":"gpill","Not started":"gpill"};
-function devCall(who){var se=ls("eduplan-session");if(!live||!se||!se.token)return;DEV.busy=true;DEV.who=who||DEV.who||"";
- var body={action:"account_dev",token:se.token};if(DEV.who)body.who=DEV.who;
- post(body).then(function(r){DEV.busy=false;if(r&&!r.error){DEV.d=r;DEV.err="";}else{DEV.err=r&&r.error||"server";DEV.d=null;}if(L.view==="dev")render(true);})
-  .catch(function(){DEV.busy=false;DEV.err="server";if(L.view==="dev")render(true);});}
+var DEV={d:null,err:"",busy:false,who:"",msg:"",formErr:""};
+var DEV_PILL={"Accepted":"gpill ok","Not accepted":"gpill bad","Submitted":"gpill","In progress":"gpill","Not started":"gpill","Reviewed":"gpill ok"};
+var DEV_ERR={bad_week:"Choose the week.",empty:"Write a summary or attach a file.",bad_type:"This file type is not accepted. Use PDF, Word, PowerPoint, Excel, an image or a text file.",
+ too_large:"The file is larger than 10 MB.",missing:"Fill in the task and its title.",bad_date:"Check the start and due dates.",busy:"Busy. Please try again in a moment.",
+ forbidden:"Not allowed for this account.",server:"Something went wrong. Please try again."};
+function devCall(who,extra){var se=ls("eduplan-session");if(!live||!se||!se.token)return;DEV.busy=true;DEV.who=who||DEV.who||"";
+ var body={action:"account_dev",token:se.token};if(DEV.who)body.who=DEV.who;Object.keys(extra||{}).forEach(function(k){body[k]=extra[k];});
+ if(extra&&L.view==="dev")render(true);
+ post(body).then(function(r){DEV.busy=false;
+  if(r&&!r.error){DEV.d=r;DEV.err="";DEV.formErr="";DEV.msg=extra&&extra.op==="report"?"Report submitted.":extra&&extra.op==="task_add"?"Task added.":"";}
+  else if(extra){DEV.formErr=r&&r.error||"server";}else{DEV.err=r&&r.error||"server";DEV.d=null;}
+  if(L.view==="dev")render(true);})
+  .catch(function(){DEV.busy=false;if(extra)DEV.formErr="server";else DEV.err="server";if(L.view==="dev")render(true);});}
 function loadDev(){if(!DEV.d&&!DEV.busy&&!DEV.err)devCall();}
 function devDays(iso){if(!iso)return null;var end=Date.parse(iso+"T23:59:59+08:00");return Math.ceil((end-Date.now())/864e5);}
-function devView(){var se=ls("eduplan-session");
+function devWeekOptions(){var a=[];for(var i=1;i<=12;i++)a.push("Week "+i);return a;}
+function devView(){var se=ls("eduplan-session"),dis=DEV.busy?' disabled':'';
  var head='<section class="hero sthero"><div class="hwrap"><span class="eyebrow">EDUPLAN</span><h1>Developer portal</h1>'+
   (se&&se.email?'<p class="lead"><span>Signed in as</span> <span data-notr>'+esc(se.email)+'</span></p>':'')+
-  '<p class="hint">Your tasks, due dates, acceptance reports, salary and payday. Only you and EDUPLAN admins can see this page.</p></div></section>';
+  '<p class="hint">Your pay, tasks and weekly reports. Only you and EDUPLAN admins can see this page.</p></div></section>';
  if(!se||!se.token)return head+'<div class="page"><div class="empty">Please <a href="'+esc(mainLink("#portfolio"))+'">sign in</a> with your developer email.</div></div>';
  if(DEV.err)return head+'<div class="page"><div class="empty">'+(DEV.err==="forbidden"?'This email is not on the developer list.':DEV.err==="signed_out"?'Please sign in again.':'Your page could not be loaded. Please try again.')+'</div></div>';
  if(!DEV.d)return head+'<div class="page"><div class="lnote" role="status">Loading your page…</div></div>';
- var r=DEV.d,v=r.dev;
+ var r=DEV.d,v=r.dev,mine=v&&se.email&&v.email===String(se.email).toLowerCase();
  var pick=r.devs&&r.devs.length?'<section class="sec"><label class="field"><span>Developer</span><select id="dev-pick">'+r.devs.map(function(e){return '<option value="'+esc(e)+'"'+(v&&v.email===e?' selected':'')+' data-notr>'+esc(e)+'</option>';}).join("")+'</select></label></section>':'';
- if(!v)return head+'<div class="page">'+pick+'<div class="empty">No developer is set up yet. Add one in the "Developer tasks" and "Developer pay" tabs of Eduplan Student Portfolios.</div></div>';
- var p=v.pay,nd=p&&p.nextPay?devDays(p.nextPay):null;
- var pay='<section class="sec"><div class="sh"><h2>Salary and payday</h2></div><div class="devpay">'+
+ var note=(DEV.msg?'<p class="note" role="status">'+esc(DEV.msg)+'</p>':'')+(DEV.formErr?'<p class="err" role="alert">'+esc(DEV_ERR[DEV.formErr]||DEV_ERR.server)+'</p>':'');
+ if(!v)return head+'<div class="page">'+pick+note+'<div class="empty">No developer is set up yet. Add one in the "Developer tasks" and "Developer pay" tabs of Eduplan Student Portfolios.</div></div>';
+
+ /* Pay: monthly salary, payday, and what has been paid so far */
+ var p=v.pay,nd=p&&p.nextPay?devDays(p.nextPay):null,pd=v.paid||{salary:0,bonus:0,total:0};
+ var pay='<section class="sec"><div class="sh"><h2>Salary and bonus</h2></div><div class="devpay">'+
+  '<div class="devk devtot"><span>Total received so far</span><b data-notr>'+rm(pd.total||0)+'</b><span class="hint"><span>Salary</span> <span data-notr>'+rm(pd.salary||0)+'</span> · <span>Bonus</span> <span data-notr>'+rm(pd.bonus||0)+'</span></span></div>'+
   '<div class="devk"><span>Monthly salary</span><b data-notr>'+(p&&p.salary!==null?rm(p.salary):'—')+'</b></div>'+
-  '<div class="devk"><span>Payday</span><b>'+(p&&p.payday?'<span>Day</span> <span data-notr>'+p.payday+'</span> <span>of each month</span>':'<span>Not set yet</span>')+'</b></div>'+
-  '<div class="devk"><span>Next payday</span><b data-notr>'+(p&&p.nextPay?esc(p.nextPay):'—')+'</b>'+(nd!==null?'<span class="hint">'+(nd<=0?'<span>Today</span>':'<span data-notr>'+nd+'</span> <span>days left</span>')+'</span>':'')+'</div>'+
+  '<div class="devk"><span>Next payday</span><b data-notr>'+(p&&p.nextPay?esc(p.nextPay):'—')+'</b>'+(p&&p.payday?'<span class="hint"><span>Day</span> <span data-notr>'+p.payday+'</span> <span>of each month</span>'+(nd!==null?' · '+(nd<=0?'<span>Today</span>':'<span data-notr>'+nd+'</span> <span>days left</span>'):'')+'</span>':'<span class="hint">Not set yet</span>')+'</div>'+
   '<div class="devk"><span>Bonus from accepted tasks</span><b data-notr>'+rm(v.bonusTotal||0)+'</b></div></div>'+
-  (p&&p.note?'<p class="hint" data-notr>'+esc(p.note)+'</p>':'')+'</section>';
- var tasks=v.tasks.length?v.tasks.map(function(t){var d=devDays(t.due),open=t.status!=="Accepted"&&t.status!=="Not accepted";
-   return '<li class="devt"><div class="devth"><span class="gdue" data-notr>'+esc(t.task)+'</span><span class="'+(DEV_PILL[t.status]||"gpill")+'">'+esc(t.status)+'</span></div>'+
-    '<h3 data-notr>'+esc(t.title)+'</h3>'+
-    '<p class="devdates"><span>Start</span> <b data-notr>'+esc(t.start||"—")+'</b> · <span>Due</span> <b data-notr>'+esc(t.due||"—")+'</b>'+
-     (open&&d!==null?(d<0?' · <span class="gpill bad">Overdue</span>':' · <span data-notr>'+d+'</span> <span>days left</span>'):'')+'</p>'+
-    (t.status==="Accepted"||t.status==="Not accepted"||t.score!==null?'<div class="devrep"><p class="devrh">Acceptance report</p>'+
-     '<p><span>Score</span> <b data-notr>'+(t.score!==null?t.score+' / 100':'—')+'</b>'+(t.bonus!==null?' · <span>Bonus</span> <b data-notr>'+rm(t.bonus)+'</b>':'')+(t.acceptedOn?' · <span>Accepted on</span> <b data-notr>'+esc(t.acceptedOn)+'</b>':'')+'</p>'+
-     (t.report?'<p class="devrt" data-notr>'+esc(t.report)+'</p>':'')+(t.link?'<p><a href="'+esc(t.link)+'" target="_blank" rel="noopener">Open the full report ↗</a></p>':'')+'</div>':'')+'</li>';}).join("")
-  :'<li class="empty">No tasks yet.</li>';
- return head+'<div class="page">'+pick+pay+'<section class="sec"><div class="sh"><h2>Tasks</h2></div><ul class="devts">'+tasks+'</ul></section></div>';}
-document.addEventListener("change",function(e){var t=e.target;if(t&&t.id==="dev-pick"){DEV.d=null;devCall(t.value);render(true);}});
+  (p&&p.note?'<p class="hint" data-notr>'+esc(p.note)+'</p>':'')+
+  (v.payouts&&v.payouts.length?'<details class="gdone"><summary><span>Payment history</span> (<span data-notr>'+v.payouts.length+'</span>)</summary><div class="acttw"><table class="acttbl"><thead><tr><th>Date</th><th>Type</th><th>Amount</th><th>Note</th></tr></thead><tbody>'+
+   v.payouts.map(function(x){return '<tr><td data-notr>'+esc(x.date||"—")+'</td><td>'+esc(x.type)+'</td><td data-notr>'+rm(x.amount)+'</td><td data-notr>'+esc(x.note||"—")+'</td></tr>';}).join("")+'</tbody></table></div></details>':'<p class="hint">No payments recorded yet.</p>')+'</section>';
+
+ /* Tasks: one table, newest first; the acceptance report and details open under each row */
+ var rows=v.tasks.length?v.tasks.map(function(t){var d=devDays(t.due),open=t.status!=="Accepted"&&t.status!=="Not accepted";
+   var left=open&&d!==null?(d<0?'<span class="gpill bad">Overdue</span>':'<span data-notr>'+d+'</span> <span>days left</span>'):'';
+   var more=(t.details?'<p><b>Details</b></p><p class="devrt" data-notr>'+esc(t.details)+'</p>':'')+
+    (t.report||t.score!==null?'<p class="devrh">Acceptance report</p>'+(t.acceptedOn?'<p><span>Accepted on</span> <b data-notr>'+esc(t.acceptedOn)+'</b></p>':'')+(t.report?'<p class="devrt" data-notr>'+esc(t.report)+'</p>':''):'')+
+    (t.link?'<p><a href="'+esc(t.link)+'" target="_blank" rel="noopener">Open the full report ↗</a></p>':'');
+   return '<tr><td data-notr><b>'+esc(t.task)+'</b></td><td data-notr>'+esc(t.title)+'</td><td data-notr>'+esc(t.start||"—")+'</td><td><span data-notr>'+esc(t.due||"—")+'</span>'+(left?'<br><span class="hint">'+left+'</span>':'')+'</td>'+
+    '<td><span class="'+(DEV_PILL[t.status]||"gpill")+'">'+esc(t.status)+'</span></td><td data-notr>'+(t.score!==null?t.score+' / 100':'—')+'</td><td data-notr>'+(t.bonus!==null?rm(t.bonus):'—')+'</td></tr>'+
+    (more?'<tr class="devmore"><td colspan="7"><details><summary>Details and acceptance report</summary><div class="devrep">'+more+'</div></details></td></tr>':'');}).join("")
+  :'<tr><td colspan="7">No tasks yet.</td></tr>';
+ var tasks='<section class="sec"><div class="sh"><h2>Tasks</h2></div><div class="acttw"><table class="acttbl"><thead><tr><th>Task</th><th>Title</th><th>Start</th><th>Due</th><th>Status</th><th>Score</th><th>Bonus</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+  (r.admin?'<details class="gdone"><summary>Add a task</summary><form id="dev-task" class="devform"><div class="devgrid">'+
+   '<label class="field"><span>Task</span><input id="dt-task" maxlength="40" placeholder="Task 4" required></label>'+
+   '<label class="field"><span>Title</span><input id="dt-title" maxlength="200" required></label>'+
+   '<label class="field"><span>Start</span><input id="dt-start" type="date" required></label>'+
+   '<label class="field"><span>Due</span><input id="dt-due" type="date" required></label></div>'+
+   '<label class="field"><span>Details</span><textarea id="dt-details" rows="4" maxlength="3000"></textarea></label>'+
+   '<div class="row"><button class="btn" type="submit"'+dis+'>Add task</button></div></form></details>':'')+'</section>';
+
+ /* Weekly reports: the developer uploads one per week; EDUPLAN marks it reviewed */
+ var reps=v.reports&&v.reports.length?'<div class="acttw"><table class="acttbl"><thead><tr><th>Week</th><th>Submitted</th><th>Summary</th><th>File</th><th>Status</th><th>Feedback</th></tr></thead><tbody>'+
+  v.reports.map(function(x){return '<tr><td data-notr><b>'+esc(x.week)+'</b></td><td data-notr>'+esc(x.at)+'</td><td class="devrt" data-notr>'+esc(x.summary||"—")+'</td><td>'+(x.link?'<a href="'+esc(x.link)+'" target="_blank" rel="noopener" data-notr>'+esc(x.file||"File")+'</a>':'—')+'</td>'+
+   '<td><span class="'+(DEV_PILL[x.status]||"gpill")+'">'+esc(x.status)+'</span></td><td class="devrt" data-notr>'+esc(x.feedback||"—")+'</td></tr>';}).join("")+'</tbody></table></div>'
+  :'<p class="hint">No weekly reports yet.</p>';
+ var upload=mine?'<form id="dev-report" class="devform"><h3>Upload this week\'s report</h3><div class="devgrid">'+
+   '<label class="field"><span>Week</span><select id="dr-week">'+devWeekOptions().map(function(w){return '<option data-notr>'+w+'</option>';}).join("")+'</select></label>'+
+   '<label class="field"><span>File (PDF, Word, PowerPoint, Excel or image, up to 10 MB)</span><input id="dr-file" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.png,.jpg,.jpeg,.webp,.txt"></label></div>'+
+   '<label class="field"><span>Summary: what you did this week, what is left, any problems</span><textarea id="dr-summary" rows="5" maxlength="2000"></textarea></label>'+
+   '<div class="row"><button class="btn" type="submit"'+dis+'>'+(DEV.busy?'Uploading…':'Submit report')+'</button></div></form>':'';
+ var reports='<section class="sec"><div class="sh"><h2>Weekly reports</h2></div>'+reps+upload+'</section>';
+
+ return head+'<div class="page">'+pick+note+pay+tasks+reports+'</div>';}
+document.addEventListener("change",function(e){var t=e.target;if(t&&t.id==="dev-pick"){DEV.d=null;DEV.msg="";DEV.formErr="";devCall(t.value);render(true);}});
+document.addEventListener("submit",function(e){var f=e.target;if(!f)return;
+ if(f.id==="dev-task"){e.preventDefault();var g=function(id){return (document.getElementById(id)||{}).value||"";};
+  devCall(DEV.who||(DEV.d&&DEV.d.dev&&DEV.d.dev.email)||"",{op:"task_add",task:g("dt-task"),title:g("dt-title"),start:g("dt-start"),due:g("dt-due"),details:g("dt-details")});return;}
+ if(f.id!=="dev-report")return;e.preventDefault();
+ var week=document.getElementById("dr-week").value,summary=document.getElementById("dr-summary").value,inp=document.getElementById("dr-file"),file=inp&&inp.files&&inp.files[0];
+ if(!file){devCall("",{op:"report",week:week,summary:summary});return;}
+ if(file.size>10*1024*1024){DEV.formErr="too_large";render(true);return;}
+ var rd=new FileReader();rd.onload=function(){var data=String(rd.result||"").replace(/^data:[^,]*,/,"");
+  devCall("",{op:"report",week:week,summary:summary,file:{name:file.name,type:file.type||"application/octet-stream",data:data}});};
+ rd.onerror=function(){DEV.formErr="server";render(true);};rd.readAsDataURL(file);});
 function loadStaff(){var se=ls("eduplan-session");
  if(se&&se.staff)actView();
  if(se&&se.staff&&!ACT.d&&!ACT.busy&&!ACT.err)actCall();

@@ -104,7 +104,7 @@ function actList_(now) {
   });
   return { people: list, events: events, days: ACT_DAYS };
 }
-var ACT_CHANGES_LABEL_ = { Goals: true, News: true };
+var ACT_CHANGES_LABEL_ = { Goals: true, News: true, 'Weekly report': true, 'Task added': true };
 
 /* Run once from the editor (select staffActivitySetup, Run): adds the tab and formats the time column. */
 function staffActivitySetup() {

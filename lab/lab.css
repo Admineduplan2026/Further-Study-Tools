@@ -722,3 +722,9 @@ html:not([lang="en"]) .l-en{display:none}
 .devdates{margin:0;font-size:14px;color:var(--muted)}.devdates b{color:var(--ink);font-variant-numeric:tabular-nums}
 .devrep{background:var(--soft);border-radius:12px;padding:12px 14px;display:grid;gap:6px;font-size:14px}.devrep p{margin:0}
 .devrh{font-weight:700;color:#12715b}.devrt{white-space:pre-wrap;line-height:1.6}
+.devtot{border-color:var(--brand,#0a6ea8);background:#eef7fd}
+.devmore td{background:#f8fafc}.devmore summary{cursor:pointer;font-size:13.5px;color:var(--muted)}
+.devform{display:grid;gap:12px;margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.devform h3{margin:0;font-size:16px}.devgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.acttbl td.devrt{white-space:pre-wrap;min-width:180px}
+.acttbl td{white-space:nowrap}.acttbl td.devrt,.devmore td{white-space:normal}

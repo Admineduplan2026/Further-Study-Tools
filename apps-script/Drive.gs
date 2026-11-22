@@ -30,6 +30,7 @@ var DRIVE_NAMES = {
   people: '3. Students and visitors (private)',
   pay: '4. Payments (private)',
   expo: '5. Exhibitions (private)',
+  devreports: '6. Developer reports (private)',
   receipts: 'Receipts'
 };
 
