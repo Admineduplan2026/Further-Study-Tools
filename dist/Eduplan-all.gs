@@ -1821,14 +1821,22 @@ function devFor_(email, now) {
     salary: devNum_(payRow[2]), payday: devNum_(payRow[3]), nextPay: devNextPay_(payRow[3], now), note: devText_(payRow[4]).slice(0, 300)
   } : null;
 
-  // Bonus records: only rows whose type is clearly Bonus, Allowance or Other (English or Chinese). A salary row, or a row
-  // with an empty or unknown type, is left out: salary is counted from the monthly salary below, never twice.
-  var bonuses = devRows_(DEV_PAYOUTS, DEV_PAYOUT_HEAD).filter(function (r) {
-    return accountEmail_(r[0]) === email && devPayoutType_(r[2]) && devNum_(r[3]);
+  // Bonus records: every accepted task with a bonus (from Developer tasks, counted automatically), plus extra rows in
+  // Developer payouts whose type is Bonus, Allowance or Other. A payouts row that names a task already counted
+  // ("Task 1" in its note) is skipped, so a task bonus is never counted twice. Salary rows are never counted here.
+  var taskBonuses = tasks.filter(function (t) { return t.status === 'Accepted' && t.bonus; }).map(function (t) {
+    return { date: t.acceptedOn, type: 'Bonus', amount: t.bonus, note: (t.task + ' ' + t.title).trim() + (t.score !== null ? ' · ' + t.score + '/100' : ''), link: t.link };
+  });
+  var taskNames = tasks.filter(function (t) { return t.status === 'Accepted' && t.bonus; }).map(function (t) { return t.task.toLowerCase().replace(/\s+/g, ''); });
+  var extras = devRows_(DEV_PAYOUTS, DEV_PAYOUT_HEAD).filter(function (r) {
+    if (accountEmail_(r[0]) !== email || !devPayoutType_(r[2]) || !devNum_(r[3])) return false;
+    var note = devText_(r[4]).toLowerCase().replace(/\s+/g, '');
+    return !taskNames.some(function (n) { return n && note.indexOf(n) >= 0; });
   }).map(function (r) {
     return { date: devDate_(r[1]), type: devPayoutType_(r[2]), amount: devNum_(r[3]) || 0,
       note: devText_(r[4]).slice(0, 200), link: /^https:\/\//.test(devText_(r[5])) ? devText_(r[5]) : '' };
-  }).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
+  });
+  var bonuses = taskBonuses.concat(extras).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : 0; });
   var bonusSum = bonuses.reduce(function (t, b) { return t + b.amount; }, 0);
 
   // Salary earned: monthly salary x months from the start month to this month (this month included).

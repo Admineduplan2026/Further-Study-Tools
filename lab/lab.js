@@ -834,7 +834,7 @@ function devView(){var se=ls("eduplan-session"),dis=DEV.busy?' disabled':'';
     (t.report||t.score!==null?'<p class="devrh">Acceptance report</p>'+(t.acceptedOn?'<p><span>Accepted on</span> <b data-notr>'+esc(t.acceptedOn)+'</b></p>':'')+(t.report?'<p class="devrt" data-notr>'+esc(t.report)+'</p>':''):'')+
     (t.link?'<p><a href="'+esc(t.link)+'" target="_blank" rel="noopener">Open the full report ↗</a></p>':'');
    return '<tr><td data-notr><b>'+esc(t.task)+'</b></td><td data-notr>'+esc(t.title)+'</td><td data-notr>'+esc(t.start||"—")+'</td><td><span data-notr>'+esc(t.due||"—")+'</span>'+(left?'<br><span class="hint">'+left+'</span>':'')+'</td>'+
-    '<td><span class="'+(DEV_PILL[t.status]||"gpill")+'">'+esc(t.status)+'</span></td><td data-notr>'+(t.score!==null?t.score+' / 100':'—')+'</td><td data-notr>'+(t.bonus!==null?rm(t.bonus):'—')+'</td></tr>'+
+    '<td><span class="'+(DEV_PILL[t.status]||"gpill")+'">'+esc(t.status)+'</span></td><td data-notr>'+(t.score!==null?t.score+' / 100':'—')+'</td><td data-notr>'+(t.bonus?rm(t.bonus):'—')+'</td></tr>'+
     (more?'<tr class="devmore"><td colspan="7"><details><summary>Details and acceptance report</summary><div class="devrep">'+more+'</div></details></td></tr>':'');}).join("")
   :'<tr><td colspan="7">No tasks yet.</td></tr>';
  var tasks='<section class="sec"><div class="sh"><h2>Tasks</h2></div><div class="acttw"><table class="acttbl"><thead><tr><th>Task</th><th>Title</th><th>Start</th><th>Due</th><th>Status</th><th>Score</th><th>Bonus</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
